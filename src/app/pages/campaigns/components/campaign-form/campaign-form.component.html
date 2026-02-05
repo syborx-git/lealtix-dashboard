@@ -74,18 +74,7 @@
         </div>
       </div>
 
-      <div class="col-12">
-        <div class="field">
-          <label for="description" class="font-semibold text-gray-800 mb-2">Descripción</label>
-          <textarea
-            id="description"
-            formControlName="description"
-            rows="3"
-            placeholder="Describe la campaña"
-            class="rounded border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition text-gray-900 w-full"
-          ></textarea>
-        </div>
-      </div>
+      <!-- La descripción del reward/beneficio se muestra en la sección de Promoción cuando aplica -->
 
       <!-- Promoción -->
       <div class="col-12">
@@ -128,6 +117,22 @@
         <div class="field">
           <label for="callToAction" class="font-semibold text-gray-800 mb-2">Call to Action</label>
           <input id="callToAction" pInputText formControlName="callToAction" placeholder="Ej: ¡Aprovecha ahora!" class="rounded border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition text-gray-900 w-full" />
+        </div>
+      </div>
+
+      <!-- Descripción del beneficio (solo para 'Ninguno (Solo Promoción)') -->
+      <div class="col-12" *ngIf="isPromoTypeCustom()">
+        <div class="field">
+          <label for="descriptionReward" class="font-semibold text-gray-800 mb-2">Descripción del Beneficio <span class="text-red-500">*</span></label>
+          <textarea
+            id="descriptionReward"
+            formControlName="description"
+            rows="3"
+            placeholder="Describe qué estás promocionando"
+            class="rounded border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition text-gray-900 w-full"
+          ></textarea>
+          <small *ngIf="campaignForm.get('description')?.errors?.['required'] && campaignForm.get('description')?.touched" class="text-red-600 text-sm block">La descripción del beneficio es requerida</small>
+          <small *ngIf="campaignForm.get('description')?.errors?.['minlength'] && campaignForm.get('description')?.touched" class="text-red-600 text-sm block">La descripción debe tener al menos 3 caracteres</small>
         </div>
       </div>
 
