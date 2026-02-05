@@ -55,13 +55,9 @@ export class RewardFormComponent implements OnInit, OnChanges {
   private lastLoadedTenantId: number | null = null;
   private isUpdatingValidators = false;
   rewardTypes = [
-    { label: 'Ninguno (solo promoción)', value: RewardType.NONE },
     { label: 'Descuento porcentual', value: RewardType.PERCENT_DISCOUNT },
     { label: 'Monto fijo', value: RewardType.FIXED_AMOUNT },
-    // { label: 'Producto gratis', value: RewardType.FREE_PRODUCT }, // TODO: Fix TreeSelect integration
-    // Temporarily removed: BUY_X_GET_Y and CUSTOM
-    // { label: 'Compra X lleva Y', value: RewardType.BUY_X_GET_Y },
-    // { label: 'Personalizado', value: RewardType.CUSTOM }
+    { label: 'Personalizado / Solo promoción', value: RewardType.CUSTOM }
   ];
 
   isSubmitting = false;
