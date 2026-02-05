@@ -80,9 +80,7 @@ export class CampaignFormComponent implements OnInit {
     { label: 'Descuento porcentual', value: PromoType.DISCOUNT },
     { label: 'Descuento por monto', value: PromoType.AMOUNT },
     { label: 'Compra uno lleva otro', value: PromoType.BOGO },
-    { label: 'Artículo gratuito', value: PromoType.FREE_ITEM },
-    { label: 'Promoción personalizada', value: PromoType.CUSTOM }
-  ];
+    { label: 'Artículo gratuito', value: PromoType.FREE_ITEM }  ];
 
   statusOptions = [
     { label: 'Borrador', value: CampaignStatus.DRAFT },
@@ -226,6 +224,8 @@ export class CampaignFormComponent implements OnInit {
       status: campaign.status,
       isAutomatic: campaign.isAutomatic
     });
+    // Aplicar validadores dependientes del promoType tras cargar
+    this.onPromoTypeChange();
   }
 
   private setupImagePreview(): void {
@@ -254,6 +254,7 @@ export class CampaignFormComponent implements OnInit {
   onPromoTypeChange(): void {
     const promoType = this.campaignForm.get('promoType')?.value;
     const promoValueControl = this.campaignForm.get('promoValue');
+    const descriptionControl = this.campaignForm.get('description');
 
     // Reset promo value when type changes
     promoValueControl?.setValue('');
@@ -265,12 +266,24 @@ export class CampaignFormComponent implements OnInit {
       promoValueControl?.clearValidators();
     }
 
+    // Si es 'Solo Promoción' (CUSTOM) entonces la descripción del reward es requerida
+    if (promoType === PromoType.CUSTOM) {
+      descriptionControl?.setValidators([Validators.required, Validators.minLength(3)]);
+    } else {
+      descriptionControl?.clearValidators();
+    }
+
     promoValueControl?.updateValueAndValidity();
+    descriptionControl?.updateValueAndValidity();
   }
 
   shouldShowPromoValue(): boolean {
     const promoType = this.campaignForm.get('promoType')?.value;
     return promoType === PromoType.DISCOUNT || promoType === PromoType.AMOUNT || promoType === PromoType.CUSTOM;
+  }
+
+  isPromoTypeCustom(): boolean {
+    return this.campaignForm.get('promoType')?.value === PromoType.CUSTOM;
   }
 
   getPromoValueLabel(): string {
