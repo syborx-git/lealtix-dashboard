@@ -431,4 +431,50 @@ export class CampaignService {
         })
       );
   }
+
+  /**
+   * Envía emails masivos para una campaña
+   * POST /campaigns/{id}/send
+   *
+   * Inicia el proceso de envío masivo de emails para la campaña especificada.
+   * La campaña debe estar en estado READY para poder iniciar el envío.
+   *
+   * @param campaignId ID de la campaña
+   * @returns Observable con el resultado del envío
+   */
+  sendMassiveEmails(campaignId: number): Observable<{
+    status: string;
+    message: string;
+    campaignId: number;
+    currentStatus: string;
+  }> {
+    return this.http.post<any>(`${this.baseUrl}/${campaignId}/send`, {})
+      .pipe(
+        map(response => {
+          // Manejar respuesta directa del backend
+          if (response.status === 'SUCCESS') {
+            return {
+              status: response.status,
+              message: response.message,
+              campaignId: response.campaignId,
+              currentStatus: response.currentStatus
+            };
+          } else {
+            throw new Error(response.message || 'Error al enviar emails');
+          }
+        }),
+        tap({
+          next: (response) => {
+            console.log('Envío de emails iniciado:', response);
+          },
+          error: (error: any) => {
+            console.error('Error al enviar emails:', error);
+          }
+        }),
+        catchError(error => {
+          console.error('Error en sendMassiveEmails:', error);
+          return throwError(() => error);
+        })
+      );
+  }
 }
