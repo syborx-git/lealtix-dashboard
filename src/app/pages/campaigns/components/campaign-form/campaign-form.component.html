@@ -216,6 +216,264 @@
         </div>
       </div>
 
+      <!-- REWARD/BENEFICIO SECTION -->
+      <div class="col-12">
+        <h3 class="text-lg font-semibold mb-3">Beneficio del Cliente</h3>
+      </div>
+
+      <!-- Tipo de Reward -->
+      <div class="col-12">
+        <div class="field">
+          <label for="rewardType" class="font-semibold">
+            Tipo de beneficio <span class="text-red-500">*</span>
+            <i class="pi pi-info-circle ml-2 text-500"
+               pTooltip="Selecciona el tipo de beneficio que recibirán tus clientes. Cada tipo tiene configuraciones específicas."
+               tooltipPosition="right"></i>
+          </label>
+          <p-select
+            id="rewardType"
+            formControlName="rewardType"
+            [options]="rewardTypes"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Seleccione el tipo de beneficio"
+            class="w-full"
+            [styleClass]="campaignForm.get('rewardType')?.invalid && campaignForm.get('rewardType')?.touched ? 'ng-invalid ng-dirty' : ''"
+          ></p-select>
+
+          <!-- Mensaje de error inline -->
+          <p-message
+            *ngIf="campaignForm.get('rewardType')?.invalid && campaignForm.get('rewardType')?.touched"
+            severity="warn"
+            text="Debes seleccionar un tipo de beneficio para continuar"
+            styleClass="mt-2 w-full">
+          </p-message>
+
+          <!-- Mensaje de ayuda informativo -->
+          <small class="text-500 block mt-2" *ngIf="!campaignForm.get('rewardType')?.value">
+            💡 Elige cómo quieres recompensar a tus clientes
+          </small>
+        </div>
+      </div>
+
+      <!-- Valor Numérico (para PERCENT_DISCOUNT y FIXED_AMOUNT) -->
+      <div class="col-12 md:col-6" *ngIf="showNumericValue">
+        <div class="field">
+          <label for="numericValue" class="font-semibold">
+            {{ numericValueLabel }} <span class="text-red-500">*</span>
+            <i class="pi pi-info-circle ml-2 text-500"
+               [pTooltip]="selectedRewardType === 'PERCENT_DISCOUNT' ? 'Ingresa el porcentaje de descuento (1-100%)' : 'Ingresa el monto fijo en pesos que se descontará'"
+               tooltipPosition="right"></i>
+          </label>
+          <p-inputnumber
+            id="numericValue"
+            formControlName="numericValue"
+            class="w-full"
+            [min]="0"
+            [max]="selectedRewardType === 'PERCENT_DISCOUNT' ? 100 : 999999"
+            [suffix]="selectedRewardType === 'PERCENT_DISCOUNT' ? '%' : ''"
+            [prefix]="selectedRewardType === 'FIXED_AMOUNT' ? '$' : ''"
+            [styleClass]="campaignForm.get('numericValue')?.invalid && campaignForm.get('numericValue')?.touched ? 'ng-invalid ng-dirty' : ''"
+          ></p-inputnumber>
+          <small class="p-error" *ngIf="campaignForm.get('numericValue')?.invalid && campaignForm.get('numericValue')?.touched">
+            Este campo es requerido
+          </small>
+          <small class="text-500 block mt-1" *ngIf="!campaignForm.get('numericValue')?.invalid && selectedRewardType === 'PERCENT_DISCOUNT'">
+            Ejemplo: 20 para un 20% de descuento
+          </small>
+          <small class="text-500 block mt-1" *ngIf="!campaignForm.get('numericValue')?.invalid && selectedRewardType === 'FIXED_AMOUNT'">
+            Ejemplo: 50 para $50 de descuento
+          </small>
+        </div>
+      </div>
+
+      <!-- ID de Producto (para FREE_PRODUCT y BUY_X_GET_Y) -->
+      <div class="col-12" *ngIf="showProductId">
+        <!-- Mensaje info para 2x1 -->
+        <p-message
+          *ngIf="show2x1Product"
+          severity="info"
+          text="Selecciona el producto que participará en la promoción. El cliente comprará 1 y recibirá 1 adicional gratis."
+          [styleClass]="'w-full mb-3'">
+        </p-message>
+
+        <div class="field">
+          <label for="productId" class="font-semibold">
+            {{ productIdLabel }} <span class="text-red-500">*</span>
+            <i class="pi pi-info-circle ml-2 text-500"
+               [pTooltip]="productIdHelperText"
+               tooltipPosition="right"></i>
+          </label>
+          <p-treeSelect
+            id="productId"
+            [options]="productTree"
+            selectionMode="single"
+            [placeholder]="isLoadingProducts ? 'Cargando catálogo...' : 'Selecciona categoría → producto'"
+            [(ngModel)]="selectedProductNode"
+            [ngModelOptions]="{standalone: true}"
+            (ngModelChange)="onProductTreeSelect($event)"
+            [style]="{ width: '100%' }"
+            [filter]="true"
+            [loading]="isLoadingProducts"
+            [disabled]="isLoadingProducts"
+          ></p-treeSelect>
+          <small class="p-error" *ngIf="campaignForm.get('productId')?.invalid && campaignForm.get('productId')?.touched">
+            Debes seleccionar un producto
+          </small>
+          <small class="text-500 block mt-2" *ngIf="campaignForm.get('productId')?.value && !campaignForm.get('productId')?.invalid">
+            <strong>✓ Producto seleccionado:</strong> ID {{ campaignForm.get('productId')?.value }}
+          </small>
+        </div>
+      </div>
+
+      <!-- Cantidades para BUY_X_GET_Y (2x1 promotion) -->
+      <div class="col-12 md:col-6" *ngIf="showBuyGetQuantities">
+        <div class="field">
+          <label for="buyQuantity" class="font-semibold">
+            Cantidad a comprar <span class="text-red-500">*</span>
+            <i class="pi pi-info-circle ml-2 text-500"
+               pTooltip="Número de productos que el cliente debe comprar para recibir los gratis en la promoción 2x1"
+               tooltipPosition="right"></i>
+          </label>
+          <p-inputnumber
+            id="buyQuantity"
+            formControlName="buyQuantity"
+            class="w-full"
+            [min]="1"
+            [useGrouping]="false"
+            [styleClass]="campaignForm.get('buyQuantity')?.invalid && campaignForm.get('buyQuantity')?.touched ? 'ng-invalid ng-dirty' : ''"
+          ></p-inputnumber>
+          <small class="p-error" *ngIf="campaignForm.get('buyQuantity')?.invalid && campaignForm.get('buyQuantity')?.touched">
+            Este campo es requerido
+          </small>
+          <small class="text-500 block mt-1" *ngIf="!campaignForm.get('buyQuantity')?.invalid">
+            Ej: 1 para "Compra 1"
+          </small>
+        </div>
+      </div>
+
+      <div class="col-12 md:col-6" *ngIf="showBuyGetQuantities">
+        <div class="field">
+          <label for="freeQuantity" class="font-semibold">
+            Cantidad gratis <span class="text-red-500">*</span>
+            <i class="pi pi-info-circle ml-2 text-500"
+               pTooltip="Número de unidades que el cliente recibirá gratis al cumplir el requisito de compra"
+               tooltipPosition="right"></i>
+          </label>
+          <p-inputnumber
+            id="freeQuantity"
+            formControlName="freeQuantity"
+            class="w-full"
+            [min]="1"
+            [useGrouping]="false"
+            [styleClass]="campaignForm.get('freeQuantity')?.invalid && campaignForm.get('freeQuantity')?.touched ? 'ng-invalid ng-dirty' : ''"
+          ></p-inputnumber>
+          <small class="p-error" *ngIf="campaignForm.get('freeQuantity')?.invalid && campaignForm.get('freeQuantity')?.touched">
+            Este campo es requerido
+          </small>
+          <small class="text-500 block mt-1" *ngIf="!campaignForm.get('freeQuantity')?.invalid">
+            Ej: 1 para "Lleva 1 gratis"
+          </small>
+        </div>
+      </div>
+
+      <!-- Descripción del Reward (requerida solo si NO es NONE) -->
+      <div class="col-12" *ngIf="selectedRewardType && selectedRewardType !== 'NONE'">
+        <div class="field">
+          <div class="flex justify-content-between align-items-center mb-2">
+            <label for="rewardDescription" class="font-semibold">
+              Descripción del beneficio <span class="text-red-500">*</span>
+              <i class="pi pi-info-circle ml-2 text-500"
+                 pTooltip="Describe claramente el beneficio que recibirán los clientes. Máximo 500 caracteres." tooltipPosition="right"></i>
+            </label>
+            <small class="text-500">
+              {{ (campaignForm.get('rewardDescription')?.value || '').length }}/500
+            </small>
+          </div>
+          <textarea
+            pTextarea
+            id="rewardDescription"
+            formControlName="rewardDescription"
+            rows="3"
+            class="w-full"
+            placeholder="Descripción del beneficio (máximo 500 caracteres)"
+            [class.ng-invalid]="campaignForm.get('rewardDescription')?.invalid && campaignForm.get('rewardDescription')?.touched"
+            [class.ng-dirty]="campaignForm.get('rewardDescription')?.invalid && campaignForm.get('rewardDescription')?.touched"
+            maxlength="500"
+          ></textarea>
+          <small class="p-error" *ngIf="campaignForm.get('rewardDescription')?.hasError('required') && campaignForm.get('rewardDescription')?.touched">
+            Este campo es requerido
+          </small>
+          <small class="p-error" *ngIf="campaignForm.get('rewardDescription')?.hasError('maxlength') && campaignForm.get('rewardDescription')?.touched">
+            La descripción no puede exceder 500 caracteres
+          </small>
+          <small class="text-500 block mt-1" *ngIf="!campaignForm.get('rewardDescription')?.invalid">
+            Explica claramente qué recibirá el cliente
+          </small>
+        </div>
+      </div>
+
+      <!-- Mensaje informativo cuando se selecciona NONE -->
+      <div class="col-12" *ngIf="selectedRewardType === 'NONE'">
+        <div class="p-3 border-round bg-blue-50 border-1 border-blue-200">
+          <div class="flex align-items-start gap-2">
+            <i class="pi pi-info-circle text-blue-600 mt-1"></i>
+            <div>
+              <p class="m-0 font-semibold text-blue-900">Campaña sin beneficio económico</p>
+              <p class="m-0 mt-1 text-sm text-blue-800">
+                Esta campaña será solo promocional (por ejemplo: lanzamiento de nuevo producto, anuncio de evento, etc.).
+                No se asignará ningún descuento o beneficio económico a los clientes.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Campos opcionales del reward (solo si NO es NONE) -->
+      <div class="col-12 md:col-6" *ngIf="selectedRewardType && selectedRewardType !== 'NONE'">
+        <div class="field">
+          <label for="minPurchaseAmount" class="font-semibold">
+            Monto mínimo de compra (opcional)
+            <i class="pi pi-info-circle ml-2 text-500"
+               pTooltip="Define un monto mínimo de compra para que el beneficio sea válido"
+               tooltipPosition="right"></i>
+          </label>
+          <p-inputnumber
+            id="minPurchaseAmount"
+            formControlName="minPurchaseAmount"
+            class="w-full"
+            [min]="0"
+            prefix="$"
+            placeholder="0.00"
+          ></p-inputnumber>
+          <small class="text-500 block mt-1">
+            Ejemplo: $500 mínimo de compra para usar el beneficio
+          </small>
+        </div>
+      </div>
+
+      <div class="col-12 md:col-6" *ngIf="selectedRewardType && selectedRewardType !== 'NONE'">
+        <div class="field">
+          <label for="usageLimit" class="font-semibold">
+            Límite de uso (opcional)
+            <i class="pi pi-info-circle ml-2 text-500"
+               pTooltip="Número máximo de veces que este beneficio puede ser usado en total"
+               tooltipPosition="right"></i>
+          </label>
+          <p-inputnumber
+            id="usageLimit"
+            formControlName="usageLimit"
+            class="w-full"
+            [min]="1"
+            [useGrouping]="false"
+            placeholder="Sin límite"
+          ></p-inputnumber>
+          <small class="text-500 block mt-1">
+            Ejemplo: 100 para limitar a 100 usos totales
+          </small>
+        </div>
+      </div>
+
       <!-- Estados y configuración avanzada -->
       <div class="col-12" *ngIf="isEditMode()">
         <h3 class="text-lg font-semibold mb-3">Estado</h3>
