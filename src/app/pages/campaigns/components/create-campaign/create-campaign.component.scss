@@ -382,6 +382,241 @@
       padding: 1.5rem;
     }
   }
+
+  // Email Confirmation Dialog Styles
+  ::ng-deep .email-confirmation-dialog {
+    .p-dialog-header {
+      background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+      color: white;
+      border: none;
+      padding: 1.25rem 1.5rem !important;
+      border-radius: 12px 12px 0 0;
+
+      .p-dialog-title {
+        display: none; // Hide default title
+      }
+    }
+
+    .p-dialog-content {
+      padding: 1.5rem !important;
+      background: #ffffff;
+      
+      .p-dialog-close {
+        color: white;
+        background: transparent;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+      }
+    }
+
+    .p-dialog-footer {
+      padding: 1.5rem !important;
+      border-top: 1px solid var(--surface-border);
+      background: var(--surface-50);
+    }
+  }
+
+  // Email Dialog Content Styles
+  .email-dialog-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+
+    .main-message {
+      margin-bottom: 0.5rem;
+
+      h3 {
+        color: var(--primary-700);
+      }
+    }
+
+    .info-box {
+      padding: 1rem;
+      border-radius: 8px;
+      background: var(--surface-50);
+      border: 1px solid var(--surface-200);
+      transition: all 0.2s ease;
+
+      &.segmentation-info {
+        background: linear-gradient(135deg, var(--primary-50) 0%, var(--primary-100) 100%);
+        border-color: var(--primary-200);
+
+        i {
+          color: var(--primary-600);
+        }
+
+        p {
+          color: var(--primary-900);
+        }
+      }
+
+      &.secondary-info {
+        background: var(--primary-50);
+        border-color: var(--primary-200);
+        padding: 0.75rem 1rem;
+
+        i {
+          min-width: 1.2rem;
+          text-align: center;
+          animation: spin 2s linear infinite;
+        }
+
+        span {
+          color: var(--primary-700);
+        }
+      }
+    }
+
+    .warning-box {
+      padding: 1rem;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--orange-50) 0%, rgba(255, 193, 7, 0.05) 100%);
+      border: 1px solid var(--orange-200);
+
+      i {
+        color: var(--orange-600);
+      }
+
+      p {
+        color: var(--orange-900);
+      }
+
+      ul {
+        list-style: none;
+        padding: 0;
+
+        li {
+          color: var(--orange-800);
+          display: flex;
+          gap: 0.5rem;
+
+          strong {
+            color: var(--orange-900);
+            min-width: 60px;
+          }
+        }
+      }
+    }
+  }
+
+  // Footer Actions - Mobile First
+  .footer-actions {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.75rem;
+
+    p-button {
+      ::ng-deep {
+        .p-button {
+          width: 100%;
+          font-size: 0.875rem;
+          padding: 0.75rem 1rem;
+          font-weight: 500;
+          border-radius: 6px;
+          transition: all 0.2s ease;
+
+          &.p-button-raised {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+            &:hover:not(:disabled) {
+              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+              transform: translateY(-1px);
+            }
+          }
+
+          &.p-button-outlined {
+            border: 2px solid var(--surface-300);
+
+            &:hover:not(:disabled) {
+              background: var(--surface-100);
+              border-color: var(--surface-400);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 991px) {
+  .create-campaign-container {
+    padding: 1rem;
+  }
+
+  ::ng-deep .email-confirmation-dialog {
+    .p-dialog {
+      margin: 0.5rem !important;
+      width: calc(100% - 1rem) !important;
+      max-width: 400px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+    }
+
+    .p-dialog-header {
+      padding: 1rem 1.25rem !important;
+
+      .flex {
+        gap: 0.75rem !important;
+
+        i {
+          font-size: 1rem;
+        }
+
+        span {
+          font-size: 1rem;
+        }
+      }
+    }
+
+    .p-dialog-content {
+      padding: 1.25rem !important;
+    }
+
+    .p-dialog-footer {
+      padding: 1rem !important;
+    }
+  }
+
+  .email-dialog-content {
+    .info-box,
+    .warning-box {
+      padding: 0.75rem !important;
+      gap: 0.5rem !important;
+
+      i {
+        font-size: 1rem !important;
+      }
+
+      p {
+        font-size: 0.75rem !important;
+      }
+
+      ul li {
+        font-size: 0.75rem !important;
+      }
+    }
+  }
+
+  .footer-actions {
+    gap: 0.5rem !important;
+
+    p-button ::ng-deep .p-button {
+      padding: 0.625rem 0.875rem !important;
+      font-size: 0.8125rem !important;
+    }
+  }
 }// Responsive adjustments
 @media (max-width: 991px) {
   .create-campaign-container {
