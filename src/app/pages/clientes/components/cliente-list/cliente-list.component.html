@@ -1,0 +1,156 @@
+<p-toolbar styleClass="mb-6">
+  <ng-template pTemplate="start">
+    <p-button
+      label="Nuevo Cliente"
+      icon="pi pi-plus"
+      severity="secondary"
+      class="mr-2"
+      styleClass="text-sm p-button-sm"
+      (onClick)="openDialogNuevoCliente()"
+    ></p-button>
+  </ng-template>
+
+  <ng-template pTemplate="end">
+    <p-button
+      label="Descargar Plantilla"
+      icon="pi pi-download"
+      severity="secondary"
+      outlined
+      styleClass="text-sm p-button-sm mr-2"
+      (onClick)="descargarPlantilla()"
+    ></p-button>
+
+    <p-fileUpload
+      name="file"
+      chooseLabel="Cargar Plantilla"
+      accept=".csv,.xlsx"
+      multiple="false"
+      auto="false"
+      customUpload="true"
+      styleClass="p-button-sm"
+      (onSelect)="onFileSelected($event)"
+    ></p-fileUpload>
+  </ng-template>
+</p-toolbar>
+
+  <!-- Global loading overlay -->
+  <div class="global-loading-overlay" *ngIf="cargando()">
+    <div class="global-loading-backdrop"></div>
+    <div class="global-loading-spinner">
+      <p-progressSpinner strokeWidth="6" styleClass="custom-spinner"></p-progressSpinner>
+    </div>
+  </div>
+
+<p-table
+  #dt
+  [value]="clientes()"
+  [rows]="pageSize"
+  [columns]="['nombreCompleto', 'email', 'genero', 'telefono']"
+  [paginator]="true"
+  [totalRecords]="totalRecords()"
+  [lazy]="true"
+  (onLazyLoad)="onLazyLoad($event)"
+  [globalFilterFields]="['nombreCompleto', 'email', 'genero']"
+  [tableStyle]="{ 'min-width': '75rem' }"
+  [(selection)]="selectedClientes"
+  [rowHover]="true"
+  dataKey="id"
+  currentPageReportTemplate="Showing {first} to {last} of {totalRecords} clientes"
+  [showCurrentPageReport]="true"
+  [rowsPerPageOptions]="[10, 30, 50]"
+>
+  <ng-template #caption>
+    <div class="flex items-center justify-between">
+      <h5 class="m-0">Clientes</h5>
+      <p-iconfield>
+        <p-inputicon styleClass="pi pi-search" />
+        <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Buscar..." />
+      </p-iconfield>
+    </div>
+  </ng-template>
+  <ng-template #header>
+    <tr>
+      <th pSortableColumn="nombreCompleto" style="min-width: 15rem">
+        Nombre
+        <p-sortIcon field="nombreCompleto" />
+      </th>
+      <th pSortableColumn="email" style="min-width: 18rem">
+        Email
+        <p-sortIcon field="email" />
+      </th>
+      <th pSortableColumn="genero" style="min-width: 10rem">
+        Género
+        <p-sortIcon field="genero" />
+      </th>
+      <th pSortableColumn="telefono" style="min-width: 12rem">
+        Teléfono
+        <p-sortIcon field="telefono" />
+      </th>
+      <th style="min-width: 10rem"></th>
+    </tr>
+  </ng-template>
+  <ng-template #body let-cliente>
+    <tr class="fixed-row">
+      <td style="min-width: 15rem">{{ cliente.nombreCompleto }}</td>
+      <td style="min-width: 18rem">{{ cliente.email }}</td>
+      <td style="min-width: 10rem">
+        <p-tag
+          [value]="cliente.genero"
+          [severity]="getGeneroBadgeSeverity(cliente.genero)"
+        ></p-tag>
+      </td>
+      <td style="min-width: 12rem">{{ cliente.telefono || '-' }}</td>
+      <td>
+        <p-button
+          icon="pi pi-pencil"
+          class="mr-2"
+          [rounded]="true"
+          [outlined]="true"
+          (click)="openDialogEditarCliente(cliente)"
+        />
+        <p-button
+          icon="pi pi-trash"
+          severity="danger"
+          [rounded]="true"
+          [outlined]="true"
+          (click)="confirmarEliminar(cliente)"
+        />
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template #emptymessage>
+    <tr>
+      <td colspan="5" class="text-center py-6">
+        <div class="flex flex-column align-items-center gap-3">
+          <i class="pi pi-users text-6xl text-400"></i>
+          <h3 class="text-xl font-medium m-0">No se encontraron clientes</h3>
+          <p class="text-500 m-0">Intenta ajustar los filtros de búsqueda o agrega un nuevo cliente.</p>
+        </div>
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template #loadingbody>
+    <tr *ngFor="let i of [0, 1, 2]">
+      <td *ngFor="let j of [0, 1, 2, 3, 4]">
+        <p-skeleton></p-skeleton>
+      </td>
+    </tr>
+  </ng-template>
+</p-table>
+
+<!-- Cliente Dialog Component -->
+<app-cliente-dialog
+  [(visible)]="mostrarDialogoNuevo"
+  [clienteEnEdicion]="clienteEnEdicion"
+  [clienteForm]="formNuevoCliente"
+  [generoOptions]="generoOptions"
+  [submitted]="submitted"
+  (save)="guardarNuevoCliente()"
+  (hide)="hideDialogoNuevo()"
+></app-cliente-dialog>
+
+<!-- Toast para mensajes -->
+<p-toast position="top-right"></p-toast>
+
+<!-- Confirmación de eliminación -->
+<p-confirmdialog [style]="{ width: '450px' }"></p-confirmdialog>
