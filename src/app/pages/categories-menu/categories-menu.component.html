@@ -38,8 +38,12 @@
     </div>
 </div>
 
-<p-table #dt [value]="categories()" [rows]="10" [columns]="cols" [paginator]="true" [globalFilterFields]="['name', 'description']"
-    [tableStyle]="{ 'min-width': '75rem' }" [(selection)]="selectedCategories" [rowHover]="true" dataKey="id"
+<p-table #dt [value]="categories()"
+    [rows]="10" [columns]="cols" [paginator]="true"
+    [globalFilterFields]="['name', 'description']"
+    [tableStyle]="{ 'min-width': '75rem' }"
+    [(selection)]="selectedCategories"
+    [rowHover]="true" dataKey="id"
     currentPageReportTemplate="Showing {first} to {last} of {totalRecords} categories" [showCurrentPageReport]="true"
     [rowsPerPageOptions]="[10, 30, 50]">
     <ng-template #caption>

@@ -1,37 +1,79 @@
-<p-toolbar styleClass="mb-6">
+<p-toolbar styleClass="mb-3">
   <ng-template pTemplate="start">
     <p-button
       label="Nuevo Cliente"
       icon="pi pi-plus"
-      severity="secondary"
-      class="mr-2"
       styleClass="text-sm p-button-sm"
       (onClick)="openDialogNuevoCliente()"
     ></p-button>
   </ng-template>
 
   <ng-template pTemplate="end">
-    <p-button
-      label="Descargar Plantilla"
-      icon="pi pi-download"
-      severity="secondary"
-      outlined
-      styleClass="text-sm p-button-sm mr-2"
-      (onClick)="descargarPlantilla()"
-    ></p-button>
+    <div class="flex gap-2">
+      <p-button
+        label="Descargar Plantilla"
+        icon="pi pi-download"
+        severity="secondary"
+        outlined
+        styleClass="text-sm p-button-sm"
+        (onClick)="descargarPlantilla()"
+      ></p-button>
 
-    <p-fileUpload
-      name="file"
-      chooseLabel="Cargar Plantilla"
-      accept=".csv,.xlsx"
-      multiple="false"
-      auto="false"
-      customUpload="true"
-      styleClass="p-button-sm"
-      (onSelect)="onFileSelected($event)"
-    ></p-fileUpload>
+      <input
+        #fileInput
+        type="file"
+        accept=".csv,.xlsx"
+        (change)="onFileSelected($event)"
+        style="display: none"
+      />
+
+      <p-button
+        label="Cargar Plantilla"
+        icon="pi pi-upload"
+        styleClass="text-sm p-button-sm"
+        (onClick)="fileInput.click()"
+      ></p-button>
+    </div>
   </ng-template>
 </p-toolbar>
+
+<!-- Modal de Confirmación de Carga de Archivo -->
+<p-dialog
+  [(visible)]="mostrarModalCargaArchivo"
+  [modal]="true"
+  header="Confirmar Carga de Archivo"
+  [style]="{ width: '100%', maxWidth: '400px' }"
+  [closeOnEscape]="true"
+>
+  <div class="flex flex-column gap-4">
+    <div class="flex align-items-center gap-3">
+      <i class="pi pi-file text-3xl text-primary"></i>
+      <div class="flex flex-column">
+        <span class="font-medium">{{ archivoSeleccionado?.name }}</span>
+        <small class="text-500">{{ (archivoSeleccionado?.size || 0) / 1024 | number : '1.0-0' }} KB</small>
+      </div>
+    </div>
+    <p class="m-0 text-500">¿Deseas cargar este archivo? Se importarán todos los clientes.</p>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="flex gap-2 justify-content-end">
+      <p-button
+        label="Cancelar"
+        icon="pi pi-times"
+        severity="secondary"
+        styleClass="text-sm p-button-sm"
+        (onClick)="cancelarCargaArchivo()"
+      ></p-button>
+      <p-button
+        label="Cargar"
+        icon="pi pi-check"
+        styleClass="text-sm p-button-sm"
+        (onClick)="confirmarCargaArchivo()"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
 
   <!-- Global loading overlay -->
   <div class="global-loading-overlay" *ngIf="cargando()">
@@ -48,8 +90,6 @@
   [columns]="['nombreCompleto', 'email', 'genero', 'telefono']"
   [paginator]="true"
   [totalRecords]="totalRecords()"
-  [lazy]="true"
-  (onLazyLoad)="onLazyLoad($event)"
   [globalFilterFields]="['nombreCompleto', 'email', 'genero']"
   [tableStyle]="{ 'min-width': '75rem' }"
   [(selection)]="selectedClientes"
@@ -58,7 +98,9 @@
   currentPageReportTemplate="Showing {first} to {last} of {totalRecords} clientes"
   [showCurrentPageReport]="true"
   [rowsPerPageOptions]="[10, 30, 50]"
->
+  [lazy]="true"
+  [first]="first"
+  (onLazyLoad)="onLazyLoad($event)">
   <ng-template #caption>
     <div class="flex items-center justify-between">
       <h5 class="m-0">Clientes</h5>
@@ -126,13 +168,6 @@
           <h3 class="text-xl font-medium m-0">No se encontraron clientes</h3>
           <p class="text-500 m-0">Intenta ajustar los filtros de búsqueda o agrega un nuevo cliente.</p>
         </div>
-      </td>
-    </tr>
-  </ng-template>
-  <ng-template #loadingbody>
-    <tr *ngFor="let i of [0, 1, 2]">
-      <td *ngFor="let j of [0, 1, 2, 3, 4]">
-        <p-skeleton></p-skeleton>
       </td>
     </tr>
   </ng-template>

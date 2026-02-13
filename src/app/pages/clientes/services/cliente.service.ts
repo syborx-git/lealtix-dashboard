@@ -29,28 +29,43 @@ export class ClienteService {
    * Obtiene lista paginada de clientes por tenantId
    */
   getClientes(params: ClienteSearchParams): Observable<ClienteListResponse> {
-    // El backend expone: GET /tenant-customers/tenant/{tenantId}?page=..&pageSize=..
+    // El backend expone: GET /tenant-customers/tenant/{tenantId}?page=..&size=..
     let httpParams = new HttpParams()
       .set('page', (params.page ?? 0).toString())
-      .set('pageSize', (params.pageSize ?? 10).toString());
+      .set('size', (params.pageSize ?? 10).toString());
 
     if (params.email) {
       httpParams = httpParams.set('email', params.email);
     }
 
+    // If frontend passed sort info (PrimeNG lazy), translate to backend sort param
+    // Backend expects sort as 'field,asc' or 'field,desc' (Spring Data style)
+    if (params.sortField) {
+      const dir = params.sortOrder ?? 'asc';
+      httpParams = httpParams.set('sort', `${params.sortField},${dir}`);
+    }
+
     const url = `${this.baseUrl}/tenant/${params.tenantId}`;
+    console.log(`[ClienteService] Solicitando clientes: page=${params.page}, size=${params.pageSize}, url=${url}`);
     return this.http.get<GenericResponse<any>>(url, { params: httpParams })
       .pipe(
         map(response => {
           const obj = this.mapGenericResponse<any>(response);
+
+          // El backend ahora devuelve estructura paginada completa:
+          // { size, last, totalPages, page, content[], totalElements }
+          const content = obj.content && Array.isArray(obj.content) ? obj.content : [];
+          console.log(`[ClienteService] Respuesta: ${content.length} registros, totalElements=${obj.totalElements}, totalPages=${obj.totalPages}`);
+
           // Map backend shape to ClienteListResponse
-          const content = (obj.content || []).map((it: any) => this.mapBackendCustomerToCliente(it));
+          const mappedContent = content.map((it: any) => this.mapBackendCustomerToCliente(it));
+
           const result: ClienteListResponse = {
-            content,
-            totalElements: obj.totalElements ?? obj.numberOfElements ?? 0,
-            totalPages: obj.totalPages ?? 0,
-            currentPage: obj.number ?? obj.pageable?.pageNumber ?? 0,
-            pageSize: obj.pageSize ?? obj.size ?? (params.pageSize ?? 10)
+            content: mappedContent,
+            totalElements: obj.totalElements ?? 0,
+            totalPages: obj.totalPages ?? 1,
+            currentPage: obj.page ?? (params.page ?? 0),
+            pageSize: obj.size ?? (params.pageSize ?? 10)
           };
           return result;
         }),
@@ -133,11 +148,11 @@ export class ClienteService {
    * Soft-delete usando el endpoint PUT /tenant-customers/{id}/deactivate
    */
   deleteCliente(id: number): Observable<void> {
-    return this.http.put<GenericResponse<any>>(`${this.baseUrl}/${id}/deactivate`, null)
+    return this.http.delete(`${this.baseUrl}/${id}`)
       .pipe(
         map(() => undefined),
         tap(() => {
-          console.log('Cliente eliminado (soft) exitosamente');
+          console.log('Cliente eliminado exitosamente');
         }),
         catchError(error => {
           console.error('Error al eliminar cliente:', error);
