@@ -57,6 +57,8 @@ export interface ClienteSearchParams {
   email?: string;
   page?: number;
   pageSize?: number;
+  sortField?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export const GENERO_OPTIONS = [

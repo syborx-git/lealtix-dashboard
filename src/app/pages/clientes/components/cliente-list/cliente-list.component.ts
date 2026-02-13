@@ -84,10 +84,18 @@ export class ClienteListComponent implements OnInit {
   emailFilter = '';
   pageSize = 10;
   currentPage = 0;
+  // PrimeNG table first index for lazy paging
+  first = 0;
   tenantId = 0;
+  sortField: string | null = null;
+  sortOrder: 'asc' | 'desc' | null = null;
   clienteEnEdicion: Cliente | null = null;
   selectedClientes: Cliente[] = [];
   cols: any[] = [];
+
+  // File Upload Modal
+  mostrarModalCargaArchivo = false;
+  archivoSeleccionado: File | null = null;
 
   // Formularios
   formNuevoCliente: FormGroup;
@@ -148,18 +156,7 @@ export class ClienteListComponent implements OnInit {
 
   // ================== Carga de Datos ==================
 
-  // small debounce to avoid duplicate initial calls
-  private _lastCargaAt = 0;
-
   private async cargarClientes(): Promise<void> {
-    const now = Date.now();
-    if (now - this._lastCargaAt < 600) {
-      // skip duplicate calls within 600ms window
-      console.debug('cargarClientes: duplicate call skipped');
-      return;
-    }
-    this._lastCargaAt = now;
-
     // Si no hay tenantId válido, intentar obtenerlo primero
     if (!this.tenantId || this.tenantId <= 0) {
       await this.readTenantId();
@@ -177,7 +174,9 @@ export class ClienteListComponent implements OnInit {
         tenantId: this.tenantId,
         email: this.emailFilter,
         page: this.currentPage,
-        pageSize: this.pageSize
+        pageSize: this.pageSize,
+        sortField: this.sortField ?? undefined,
+        sortOrder: this.sortOrder ?? undefined
       })
       .subscribe({
         next: (response: ClienteListResponse) => {
@@ -197,13 +196,55 @@ export class ClienteListComponent implements OnInit {
       });
   }
 
+  onPageChange(event: any): void {
+    console.log('onPageChange event:', event);
+
+    // Si cambió el tamaño de página, volver a la primera página
+    const oldPageSize = this.pageSize;
+    const newPageSize = event.rows ?? this.pageSize;
+
+    if (newPageSize !== oldPageSize) {
+      console.log(`Tamaño de página cambió de ${oldPageSize} a ${newPageSize}, reseteando a página 0`);
+      this.currentPage = 0;
+      this.first = 0;
+    } else {
+      // Si no cambió el tamaño, solo actualizar la página
+      this.currentPage = event.page ?? 0;
+    }
+
+    this.pageSize = newPageSize;
+    console.log(`Paginación: page=${this.currentPage}, pageSize=${this.pageSize}`);
+    this.cargarClientes();
+  }
+
   onLazyLoad(event: any): void {
-    this.currentPage = event.first ? event.first / this.pageSize : 0;
+    console.log('onLazyLoad event:', event);
+
+    // PrimeNG lazy event may contain page, first and rows. Compute safely.
+    const rows = event.rows ?? this.pageSize;
+    const firstIndex = event.first ?? (event.page != null ? event.page * rows : 0);
+
+    this.first = firstIndex;
+    this.pageSize = rows;
+    this.currentPage = event.page != null ? event.page : Math.floor(firstIndex / rows);
+
+    // Capture sort info from PrimeNG LazyLoad event
+    if (event.sortField) {
+      this.sortField = event.sortField;
+      // PrimeNG sortOrder is numeric: 1 = asc, -1 = desc
+      this.sortOrder = event.sortOrder === -1 ? 'desc' : 'asc';
+    } else {
+      this.sortField = null;
+      this.sortOrder = null;
+    }
+
+    console.log(`Lazy load -> first=${this.first}, page=${this.currentPage}, pageSize=${this.pageSize}`);
     this.cargarClientes();
   }
 
   aplicarFiltros(): void {
     this.currentPage = 0;
+    this.first = 0;
     this.cargarClientes();
   }
 
@@ -260,6 +301,9 @@ export class ClienteListComponent implements OnInit {
           });
           this.hideDialogoNuevo();
           this.cargandoFormulario.set(false);
+          this.currentPage = 0;
+          this.first = 0;
+          this.emailFilter = '';
           this.cargarClientes();
         },
         error: (error: any) => {
@@ -293,6 +337,9 @@ export class ClienteListComponent implements OnInit {
           });
           this.hideDialogoNuevo();
           this.cargandoFormulario.set(false);
+          this.currentPage = 0;
+          this.first = 0;
+          this.emailFilter = '';
           this.cargarClientes();
         },
         error: (error: any) => {
@@ -378,7 +425,7 @@ export class ClienteListComponent implements OnInit {
   }
 
   onFileSelected(event: any): void {
-    const files = event.files;
+    const files = event.target?.files || event.files;
     if (!files || files.length === 0) return;
 
     const file = files[0];
@@ -395,6 +442,21 @@ export class ClienteListComponent implements OnInit {
       return;
     }
 
+    // Guardar archivo y mostrar modal de confirmación
+    this.archivoSeleccionado = file;
+    this.mostrarModalCargaArchivo = true;
+  }
+
+  cancelarCargaArchivo(): void {
+    this.archivoSeleccionado = null;
+    this.mostrarModalCargaArchivo = false;
+  }
+
+  confirmarCargaArchivo(): void {
+    if (!this.archivoSeleccionado) return;
+
+    const file = this.archivoSeleccionado;
+    this.mostrarModalCargaArchivo = false;
     this.uploadedFiles = [file];
 
     // Parsear el archivo
@@ -419,6 +481,8 @@ export class ClienteListComponent implements OnInit {
 
               this.uploadedFiles = [];
               this.cargando.set(false);
+              this.first = 0;
+              this.currentPage = 0;
               this.cargarClientes();
             },
             error: (error: any) => {
@@ -497,6 +561,11 @@ export class ClienteListComponent implements OnInit {
 
   onGlobalFilter(table: any, event: Event): void {
     const target = event.target as HTMLInputElement;
-    table.filterGlobal(target.value, 'contains');
+    const value = target.value;
+    // Use server-side filtering (lazy) instead of client-side filter
+    this.emailFilter = value;
+    this.currentPage = 0;
+    this.first = 0;
+    this.cargarClientes();
   }
 }
