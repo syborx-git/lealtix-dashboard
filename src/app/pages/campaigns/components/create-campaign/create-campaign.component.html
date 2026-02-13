@@ -640,64 +640,69 @@
     </div>
   </ng-template>
 
-  <div class="email-dialog-content">
-    <!-- Main Message -->
-    <div class="main-message">
-      <div class="flex gap-3 mb-4">
-        <div class="flex-shrink-0">
-          <div class="w-3rem h-3rem flex align-items-center justify-content-center border-round-2xl bg-primary-100">
-            <i class="pi pi-envelope text-primary text-xl"></i>
+    <div class="email-dialog-content">
+      <!-- Main Message -->
+      <div class="email-header p-3">
+        <div class="flex gap-3 align-items-center">
+          <div class="icon-wrap flex-shrink-0">
+            <div class="icon-bg">
+              <i class="pi pi-envelope"></i>
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h3 class="m-0 mb-1 title">Envío Masivo de Emails</h3>
+            <p class="m-0 subtitle">Se enviará un email promocional a todos los usuarios seleccionados</p>
           </div>
         </div>
-        <div class="flex-1">
-          <h3 class="m-0 mb-1 text-base font-semibold text-900">Envío Masivo de Emails</h3>
-          <p class="m-0 text-sm text-600 line-height-2">
-            Se enviará un email promocional a todos los usuarios seleccionados
-          </p>
+      </div>
+
+      <!-- Details grid -->
+      <div class="email-body p-3">
+        <div class="grid">
+          <div class="col-12">
+            <div class="card segmentation-card mb-3">
+              <div class="flex align-items-start gap-3">
+                <i class="pi pi-users card-icon"></i>
+                <div class="flex-1 min-w-0">
+                  <p class="label">Audiencia</p>
+                  <p class="value" title="{{ campaignForm.get('segmentation')?.value?.join(', ') || 'Todos los clientes' }}">
+                    {{ campaignForm.get('segmentation')?.value?.join(', ') || 'Todos los clientes' }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="card warning-card mb-3">
+              <div class="flex gap-3 align-items-start">
+                <i class="pi pi-exclamation-triangle warning-icon"></i>
+                <div class="flex-1 min-w-0">
+                  <p class="label warning-label">Importante</p>
+                  <ul class="warning-list m-0 pl-3">
+                    <li><strong>Tiempo:</strong> El proceso puede tardar varios minutos</li>
+                    <li><strong>Irreversible:</strong> No podrás cancelar el envío</li>
+                    <li><strong>Revisar:</strong> Asegúrate de haber validado la campaña</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="card info-card">
+              <div class="flex align-items-center gap-3">
+                <i class="pi pi-spin pi-spinner info-icon"></i>
+                <div>
+                  <p class="m-0 info-text">El envío se procesará en segundo plano</p>
+                  <p class="m-0 text-xs text-500">Recibirás una notificación cuando finalice</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-
-    <!-- Segmentation Info -->
-    <div class="info-box segmentation-info mb-3">
-      <div class="flex align-items-start gap-2">
-        <i class="pi pi-users text-primary flex-shrink-0 mt-2"></i>
-        <div class="flex-1 min-w-0">
-          <p class="m-0 text-xs text-600 font-semibold uppercase letter-spacing-1 mb-1">Audiencia</p>
-          <p class="m-0 text-sm font-semibold text-900">
-            {{ campaignForm.get('segmentation')?.value?.join(', ') || 'Todos los clientes' }}
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Important Notice -->
-    <div class="warning-box mb-3">
-      <div class="flex gap-2">
-        <i class="pi pi-exclamation-circle text-orange-600 flex-shrink-0 text-lg mt-1"></i>
-        <div class="flex-1 min-w-0">
-          <p class="m-0 mb-2 text-xs text-orange-900 font-semibold uppercase letter-spacing-1">
-            <i class="pi pi-exclamation-triangle mr-1" style="font-size: 0.75rem;"></i> Importante
-          </p>
-          <ul class="m-0 pl-0 text-xs text-orange-800 line-height-2">
-            <li class="mb-1"><strong>Tiempo:</strong> El proceso puede tardar varios minutos</li>
-            <li class="mb-1"><strong>Irreversible:</strong> No podrás cancelar el envío</li>
-            <li><strong>Revisar:</strong> Asegúrate de haber validado la campaña</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <!-- Processing Info -->
-    <div class="info-box secondary-info">
-      <div class="flex align-items-center gap-2">
-        <i class="pi pi-spin pi-spinner text-primary-500"></i>
-        <span class="text-xs text-600">
-          El envío se procesará en segundo plano
-        </span>
-      </div>
-    </div>
-  </div>
 
   <ng-template pTemplate="footer">
     <div class="footer-actions">

@@ -1,0 +1,67 @@
+/* Estilos específicos para componente Cliente List */
+/* Homologado con patrones de PrimeNG del proyecto */
+
+:host {
+  display: block;
+}
+
+:host ::ng-deep {
+  // Global loading overlay - Consistente con otros componentes
+  .global-loading-overlay {
+    position: relative;
+  }
+
+  .global-loading-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.04);
+    backdrop-filter: blur(2px);
+    z-index: 10;
+  }
+
+  .global-loading-spinner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 11;
+    pointer-events: none;
+  }
+
+  // Tabla - Estilos PrimeNG estándar
+  .p-datatable {
+    .fixed-row {
+      transition: background-color 0.2s ease;
+    }
+  }
+
+  // Inputs en formularios
+  .p-inputtext,
+  .p-datepicker,
+  .p-select {
+    width: 100%;
+  }
+
+  // Skeleton loading
+  .p-skeleton {
+    border-radius: 4px;
+  }
+
+  // Ajustes del paginador para alinear el selector de rows-per-page
+  .p-paginator {
+    .p-paginator-rpp {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .p-dropdown {
+      margin: 0 0.25rem;
+      vertical-align: middle;
+    }
+
+    .p-paginator-current {
+      margin-left: 0.5rem;
+    }
+  }
+}
