@@ -1,3 +1,61 @@
+/* Styles para el diálogo de confirmación de email */
+.email-dialog-content {
+  .email-header {
+    .icon-wrap {
+      .icon-bg {
+        width: 3rem;
+        height: 3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.75rem;
+        background: rgba(var(--primary-color-rgb, 33,150,243), 0.08);
+        color: var(--primary-color, #0ea5e9);
+        i { font-size: 1.25rem; }
+      }
+    }
+
+    .title { font-size: 1rem; font-weight: 600; color: var(--text-color, #111827); }
+    .subtitle { font-size: 0.875rem; color: var(--text-600, #6b7280); }
+  }
+
+  .email-body {
+    .card {
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      background: var(--surface-0, #fff);
+      box-shadow: 0 1px 0 rgba(16,24,40,0.03);
+      border: 1px solid rgba(15,23,42,0.04);
+    }
+
+    .segmentation-card {
+      .card-icon { color: var(--primary-color, #0ea5e9); font-size: 1.25rem; }
+      .label { font-size: 0.625rem; color: var(--text-600, #6b7280); text-transform: uppercase; letter-spacing: .06em; margin: 0 0 .125rem 0; }
+      .value { font-size: 0.95rem; font-weight: 600; color: var(--text-color, #111827); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    }
+
+    .warning-card {
+      border-left: 3px solid rgba(249,115,22,0.12);
+      background: rgba(255,247,237,0.6);
+      .warning-icon { color: var(--warning-color, #f97316); font-size: 1.25rem; }
+      .warning-label { color: var(--warning-color, #b45309); font-size: 0.675rem; text-transform: uppercase; margin-bottom: 0.25rem; }
+      .warning-list { color: #92400e; font-size: 0.8rem; margin-top: 0.25rem; }
+    }
+
+    .info-card {
+      background: rgba(15,23,42,0.02);
+      .info-icon { color: var(--primary-color, #0ea5e9); font-size: 1.25rem; }
+      .info-text { font-weight: 600; color: var(--text-color, #111827); }
+      p.text-xs { color: var(--text-500, #6b7280); }
+    }
+  }
+
+  /* Responsive: asegurar buena disposición en móviles */
+  @media (max-width: 520px) {
+    .email-header .title { font-size: 0.95rem; }
+    .email-body .value { white-space: normal; }
+  }
+}
 // Create Campaign Component Styles
 // Professional, modern styling using PrimeNG utilities
 

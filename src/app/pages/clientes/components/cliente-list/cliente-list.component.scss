@@ -1,0 +1,92 @@
+/* Estilos específicos para componente Cliente List */
+/* Homologado con patrones de PrimeNG del proyecto */
+
+:host {
+  display: block;
+}
+
+:host ::ng-deep {
+  // Global loading overlay - Consistente con otros componentes
+  .global-loading-overlay {
+    position: relative;
+  }
+
+  .global-loading-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.04);
+    backdrop-filter: blur(2px);
+    z-index: 10;
+  }
+
+  .global-loading-spinner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 11;
+    pointer-events: none;
+  }
+
+  // Tabla - Estilos PrimeNG estándar
+  .p-datatable {
+    .fixed-row {
+      transition: background-color 0.2s ease;
+    }
+  }
+
+  // Inputs en formularios
+  .p-inputtext,
+  .p-datepicker,
+
+  // Skeleton loading
+  .p-skeleton {
+    border-radius: 4px;
+  }
+
+  // Ajustes del paginador para alinear el selector de rows-per-page
+  .p-paginator {
+    padding: 0.5rem 1rem;
+
+    .p-paginator-rpp {
+      display: inline-flex !important;
+      align-items: center;
+      gap: 0.5rem;
+      margin-right: 1rem;
+
+      .p-paginator-rpp-label {
+        font-size: 0.875rem;
+        white-space: nowrap;
+      }
+
+      .p-dropdown {
+        width: auto;
+        min-width: fit-content;
+      }
+
+      .p-select {
+        width: auto !important;
+        min-width: 70px;
+
+        .p-select-label {
+          padding: 0.375rem 0.75rem;
+          font-size: 0.875rem;
+        }
+      }
+    }
+
+    .p-paginator-current {
+      margin: 0 0.5rem;
+      font-size: 0.875rem;
+      white-space: nowrap;
+    }
+
+    .p-paginator-left-content,
+    .p-paginator-right-content {
+      display: inline-flex;
+      align-items: center;
+      gap: 1rem;
+    }
+  }
+}

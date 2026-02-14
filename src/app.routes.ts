@@ -19,6 +19,9 @@ import { MiPaginaComponent } from '@/pages/mi-pagina/mi-pagina.component';
 // import eliminado: MenuPrintComponent
 import { MenuClassicPrintComponent } from '@/pages/menu-classic-print/menu-classic-print.component';
 
+// Cliente components
+import { ClienteListComponent } from '@/pages/clientes/components/cliente-list/cliente-list.component';
+
 export const appRoutes: Routes = [
     // Everything under /dashboard/**
     // Public auth routes under /dashboard/auth/
@@ -48,6 +51,7 @@ export const appRoutes: Routes = [
                     { path: 'campaign-templates', component: CampaignTemplatesListComponent, title: 'Plantillas de Campañas' },
                     { path: 'manual-redemption', component: ManualRedemptionComponent, title: 'Redención Manual' },
                     { path: 'mi-pagina', component: MiPaginaComponent, title: 'Mi Página' },
+                    { path: 'clientes', component: ClienteListComponent, title: 'Gestión de Clientes' },
                     // Ruta eliminada: menu-print
                     { path: 'menu-classic-print', component: MenuClassicPrintComponent, title: 'Imprimir Menú Clásico' }
                 ]
