@@ -22,6 +22,9 @@ import { MenuClassicPrintComponent } from '@/pages/menu-classic-print/menu-class
 // Cliente components
 import { ClienteListComponent } from '@/pages/clientes/components/cliente-list/cliente-list.component';
 
+// Comandix component
+import { ComandixComponent } from '@/pages/comandix/comandix.component';
+
 export const appRoutes: Routes = [
     // Everything under /dashboard/**
     // Public auth routes under /dashboard/auth/
@@ -52,6 +55,7 @@ export const appRoutes: Routes = [
                     { path: 'manual-redemption', component: ManualRedemptionComponent, title: 'Redención Manual' },
                     { path: 'mi-pagina', component: MiPaginaComponent, title: 'Mi Página' },
                     { path: 'clientes', component: ClienteListComponent, title: 'Gestión de Clientes' },
+                    { path: 'comandix', component: ComandixComponent, title: 'Comandix - Comanda Inteligente' },
                     // Ruta eliminada: menu-print
                     { path: 'menu-classic-print', component: MenuClassicPrintComponent, title: 'Imprimir Menú Clásico' }
                 ]
