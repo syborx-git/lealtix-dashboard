@@ -62,6 +62,12 @@ export class AppMenu implements OnInit {
                         routerLink: ['/dashboard/mi-pagina'],
                         visible: false // Will be updated based on products check
                     },
+                    {
+                        label: 'Mi Comanda',
+                        icon: 'pi pi-fw pi-shopping-cart',
+                        routerLink: ['/dashboard/comandix'],
+                        visible: false // Will be updated based on products check
+                    },
                     { label: 'Reportes', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/dashboard/uikit/charts'], visible: false },
                     { label: 'Usuarios', icon: 'pi pi-fw pi-id-card', routerLink: ['/dashboard/uikit/formlayout'], visible: false },
                     { label: 'Utils', icon: 'pi pi-fw pi-table', routerLink: ['/dashboard/uikit/table'], visible: false }
@@ -130,6 +136,10 @@ export class AppMenu implements OnInit {
                                         const miPaginaItem = this.model[0]?.items?.find(item => item.label === 'Mi Página');
                                         if (miPaginaItem) {
                                             miPaginaItem.visible = hasProducts;
+                                        }
+                                        const comandixItem = this.model[0]?.items?.find(item => item.label === 'Mi Comanda');
+                                        if (comandixItem) {
+                                            comandixItem.visible = hasProducts;
                                         }
                                     },
                                     error: (err) => {
