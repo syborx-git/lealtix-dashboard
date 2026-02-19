@@ -75,13 +75,15 @@
   </ng-template>
 </p-dialog>
 
-  <!-- Global loading overlay -->
-  <div class="global-loading-overlay" *ngIf="cargando()">
+<!-- Global loading overlay -->
+@if (cargando()) {
+  <div class="global-loading-overlay">
     <div class="global-loading-backdrop"></div>
     <div class="global-loading-spinner">
       <p-progressSpinner strokeWidth="6" styleClass="custom-spinner"></p-progressSpinner>
     </div>
   </div>
+}
 
 <p-table
   #dt
@@ -106,7 +108,7 @@
       <h5 class="m-0">Clientes</h5>
       <p-iconfield>
         <p-inputicon styleClass="pi pi-search" />
-        <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Buscar..." />
+        <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" />
       </p-iconfield>
     </div>
   </ng-template>

@@ -1,8 +1,8 @@
 
 <!-- Banner persistente de bienvenida -->
-<div class="mb-4" *ngIf="showWelcomeBanner()">
-    <div class="border-round p-4 shadow-2" style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-left: 4px solid #F59E0B;">
-        <div class="flex align-items-center justify-content-between flex-wrap gap-3">
+<div class="mb-5" *ngIf="showWelcomeBanner()">
+    <div class="border-round-xl p-4 shadow-2" style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-left: 4px solid #F59E0B;">
+        <div class="flex align-items-center justify-content-between flex-wrap gap-4">
             <div class="flex align-items-start gap-3 flex-1">
                 <span translate="no" class="text-4xl" style="line-height: 1;">🚀</span>
                 <div>
@@ -16,22 +16,22 @@
                 iconPos="right"
                 severity="warn"
                 (onClick)="navigateToWelcomeCampaign()"
-                styleClass="white-space-nowrap">
+                styleClass="white-space-nowrap p-button-sm">
             </p-button>
         </div>
     </div>
 </div>
 
-<div class="flex flex-col md:flex-row gap-8">
+<div class="flex flex-col gap-5">
   <div class="w-full">
-    <div class="card flex flex-col gap-6 bg-white rounded-xl shadow-md p-6">
-      <div class="w-full overflow-x-auto stepper-wrapper">
+    <div class="card flex flex-col gap-5 bg-white border-round-xl shadow-2 p-5">
+      <div class="w-full overflow-x-auto stepper-wrapper mb-3">
         <p-stepper
           [value]="step"
           (valueChange)="onStepChange($event)"
           orientation="vertical"
           [class.mobile-stepper]="isMobile"
-          class="responsive-stepper mb-4">
+          class="responsive-stepper">
           <p-step-list translate="no" class="notranslate">
             <p-step [value]="1">Datos Generales</p-step>
             <p-step [value]="2">Historia y Filosofía</p-step>
@@ -42,13 +42,13 @@
         </p-stepper>
       </div>
 
-      <form [formGroup]="landingForm" class="flex flex-col gap-6">
+      <form [formGroup]="landingForm" class="flex flex-col gap-5">
         <ng-container [ngSwitch]="step">
         <!-- Paso 1: Datos Generales -->
-  <div *ngSwitchCase="1" class="flex flex-col gap-4">
-          <div class="flex flex-col gap-2 mb-2">
-              <div class="flex items-center gap-2">
-              <label translate="no" class="font-semibold text-gray-800 notranslate" for="logo">Logo del negocio</label>
+  <div *ngSwitchCase="1" class="flex flex-col gap-5">
+          <div class="flex flex-col gap-3">
+              <div class="flex align-items-center gap-2 mb-2">
+              <label translate="no" class="font-semibold text-900 notranslate" for="logo">Logo del negocio</label>
               <button
                 pButton
                 type="button"
@@ -68,32 +68,33 @@
               (onSelect)="onFileSelect($event)"
               chooseLabel="Seleccionar logo"
               chooseIcon="pi pi-upload"
-              class="w-full logo-fileupload"
+              styleClass="w-full"
+              class="logo-fileupload"
             ></p-fileUpload>
-            <small translate="no" class="text-500 block mt-2 notranslate" *ngIf="landingForm.get('logo')?.value && landingForm.get('logo')?.value.name">Archivo: {{ landingForm.get('logo')?.value.name }}</small>
+            <small translate="no" class="text-600 block mt-2 notranslate" *ngIf="landingForm.get('logo')?.value && landingForm.get('logo')?.value.name">Archivo: {{ landingForm.get('logo')?.value.name }}</small>
             <ng-container *ngIf="getLogoPreview()">
-              <div class="logo-preview mt-3">
-                <div class="logo-preview__frame">
+              <div class="logo-preview mt-3 p-3 surface-50 border-round-lg">
+                <div class="logo-preview__frame border-round-xl">
                   <img
                     [src]="getLogoPreview()"
                     alt="Logo preview"
                     class="logo-preview__image"
                   />
                 </div>
-                <div class="ml-3 text-sm text-gray-600">
-                  <div translate="no" class="font-medium notranslate">Preview del logo</div>
-                  <div class="flex items-center gap-2">
-                    <div translate="no" class="text-xs text-gray-500 notranslate">Tu marca se mostrará asi en la pagina web.</div>
-                    <button pButton type="button" icon="pi pi-times" class="p-button-sm p-button-text p-button-danger" (click)="removeLogo()" pTooltip="Eliminar logo" tooltipPosition="top"></button>
+                <div class="ml-3 text-sm text-700">
+                  <div translate="no" class="font-semibold notranslate mb-1">Preview del logo</div>
+                  <div class="flex align-items-center gap-2">
+                    <div translate="no" class="text-xs text-600 notranslate">Tu marca se mostrará así en la página web.</div>
+                    <button pButton type="button" icon="pi pi-times" severity="danger" class="p-button-sm p-button-text" (click)="removeLogo()" pTooltip="Eliminar logo" tooltipPosition="top"></button>
                   </div>
                 </div>
               </div>
             </ng-container>
-            <p-message *ngIf="landingForm.get('logo')?.invalid && landingForm.get('logo')?.touched" severity="error" variant="text" size="small">El logo es requerido</p-message>
+            <p-message *ngIf="landingForm.get('logo')?.invalid && landingForm.get('logo')?.touched" severity="error" [text]="'El logo es requerido'"></p-message>
           </div>
-          <div class="flex flex-col gap-2 mb-2">
-              <div class="flex items-center gap-2">
-              <label translate="no" class="font-semibold text-gray-800 notranslate" for="businessName">Nombre del negocio <span class="text-red-500" *ngIf="isRequired('businessName')">*</span></label>
+          <div class="flex flex-col gap-3">
+              <div class="flex align-items-center gap-2 mb-2">
+              <label translate="no" class="font-semibold text-900 notranslate" for="businessName">Nombre del negocio <span class="text-red-500" *ngIf="isRequired('businessName')">*</span></label>
               <button
                 pButton
                 type="button"
@@ -105,13 +106,13 @@
                 [attr.aria-label]="'Descripción del campo nombre del negocio'"
               ></button>
             </div>
-            <input pInputText id="businessName" formControlName="businessName" placeholder="Escribe el nombre del negocio" class="rounded border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition text-gray-900" maxlength="50"/>
-            <p-message *ngIf="landingForm.get('businessName')?.invalid && landingForm.get('businessName')?.touched" severity="error" variant="text" size="small">El nombre es requerido</p-message>
+            <input pInputText id="businessName" formControlName="businessName" placeholder="Escribe el nombre del negocio" class="w-full" maxlength="50"/>
+            <p-message *ngIf="landingForm.get('businessName')?.invalid && landingForm.get('businessName')?.touched" severity="error" [text]="'El nombre es requerido'"></p-message>
           </div>
 
-          <div class="flex flex-col gap-2 mb-2">
-              <div class="flex items-center gap-2">
-              <label translate="no" class="font-semibold text-gray-800 notranslate" for="slogan">Eslogan o breve descripción <span class="text-red-500" *ngIf="isRequired('slogan')">*</span></label>
+          <div class="flex flex-col gap-3">
+              <div class="flex align-items-center gap-2 mb-2">
+              <label translate="no" class="font-semibold text-900 notranslate" for="slogan">Eslogan o breve descripción <span class="text-red-500" *ngIf="isRequired('slogan')">*</span></label>
               <button
                 pButton
                 type="button"
@@ -124,16 +125,16 @@
               ></button>
             </div>
             <textarea pTextarea id="slogan" formControlName="slogan" rows="2" placeholder="Escribe tu eslogan" maxlength="100"
-                      class="rounded border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition text-gray-900"></textarea>
-            <p-message *ngIf="landingForm.get('slogan')?.invalid && landingForm.get('slogan')?.touched" severity="error" variant="text" size="small">El eslogan es requerido</p-message>
+                      class="w-full"></textarea>
+            <p-message *ngIf="landingForm.get('slogan')?.invalid && landingForm.get('slogan')?.touched" severity="error" [text]="'El eslogan es requerido'"></p-message>
           </div>
         </div>
 
         <!-- Paso 2: Historia y Filosofía -->
-        <div *ngSwitchCase="2" class="flex flex-col gap-4">
-          <div class="flex flex-col gap-2 mb-2">
-              <div class="flex items-center gap-2">
-              <label translate="no" class="font-semibold text-gray-800 notranslate" for="history">Historia <span class="text-red-500" *ngIf="isRequired('history')">*</span></label>
+        <div *ngSwitchCase="2" class="flex flex-col gap-5">
+          <div class="flex flex-col gap-3">
+              <div class="flex align-items-center gap-2 mb-2">
+              <label translate="no" class="font-semibold text-900 notranslate" for="history">Historia <span class="text-red-500" *ngIf="isRequired('history')">*</span></label>
               <button
                 pButton
                 type="button"
@@ -146,15 +147,13 @@
               ></button>
             </div>
             <textarea pTextarea id="history" formControlName="history" rows="4" maxlength="500"
-                     placeholder="✨ Cuéntanos tu historia...
-📍 ¿Cómo nació tu negocio?
-🍰 ¿Qué te inspira cada día?"
-                     maxlength="500" class="rounded border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition text-gray-900"></textarea>
-            <p-message *ngIf="landingForm.get('history')?.invalid && landingForm.get('history')?.touched" severity="error" variant="text" size="small">La historia es requerida</p-message>
+                     placeholder="✨ Cuéntanos tu historia...&#10;📍 ¿Cómo nació tu negocio?&#10;🍰 ¿Qué te inspira cada día?"
+                     class="w-full"></textarea>
+            <p-message *ngIf="landingForm.get('history')?.invalid && landingForm.get('history')?.touched" severity="error" [text]="'La historia es requerida'"></p-message>
           </div>
-          <div class="flex flex-col gap-2 mb-2">
-              <div class="flex items-center gap-2">
-              <label translate="no" class="font-semibold text-gray-800 notranslate" for="vision">Visión <span class="text-red-500" *ngIf="isRequired('vision')">*</span></label>
+          <div class="flex flex-col gap-3">
+              <div class="flex align-items-center gap-2 mb-2">
+              <label translate="no" class="font-semibold text-900 notranslate" for="vision">Visión <span class="text-red-500" *ngIf="isRequired('vision')">*</span></label>
               <button
                 pButton
                 type="button"
@@ -167,18 +166,17 @@
               ></button>
             </div>
             <textarea pTextarea id="vision" formControlName="vision" rows="4"
-            placeholder="👀 Cuéntanos tu visión...
-✨ ¿Cómo quieres impactar a tus clientes, tu comunidad o el mundo?"
-            maxlength="500" class="rounded border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition text-gray-900"></textarea>
-            <p-message *ngIf="landingForm.get('vision')?.invalid && landingForm.get('vision')?.touched" severity="error" variant="text" size="small">La visión es requerida</p-message>
+            placeholder="👀 Cuéntanos tu visión...&#10;✨ ¿Cómo quieres impactar a tus clientes, tu comunidad o el mundo?"
+            maxlength="500" class="w-full"></textarea>
+            <p-message *ngIf="landingForm.get('vision')?.invalid && landingForm.get('vision')?.touched" severity="error" [text]="'La visión es requerida'"></p-message>
           </div>
         </div>
 
         <!-- Paso 3: Información de Contacto -->
-        <div *ngSwitchCase="3" class="flex flex-col gap-4">
-          <div class="flex flex-col gap-2 mb-2">
-              <div class="flex items-center gap-2">
-              <label translate="no" class="font-semibold text-gray-800 notranslate" for="address">Dirección <span class="text-red-500" *ngIf="isRequired('address')">*</span></label>
+        <div *ngSwitchCase="3" class="flex flex-col gap-5">
+          <div class="flex flex-col gap-3">
+              <div class="flex align-items-center gap-2 mb-2">
+              <label translate="no" class="font-semibold text-900 notranslate" for="address">Dirección <span class="text-red-500" *ngIf="isRequired('address')">*</span></label>
               <button
                 pButton
                 type="button"
@@ -190,12 +188,12 @@
                 [attr.aria-label]="'Descripción del campo dirección'"
               ></button>
             </div>
-            <textarea pTextarea id="address" formControlName="address" rows="2" placeholder="Dirección" class="rounded border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition text-gray-900"></textarea>
-            <p-message *ngIf="landingForm.get('address')?.invalid && landingForm.get('address')?.touched" severity="error" variant="text" size="small">La dirección es requerida</p-message>
+            <textarea pTextarea id="address" formControlName="address" rows="2" placeholder="Dirección" class="w-full"></textarea>
+            <p-message *ngIf="landingForm.get('address')?.invalid && landingForm.get('address')?.touched" severity="error" [text]="'La dirección es requerida'"></p-message>
           </div>
-          <div class="flex flex-col gap-2 mb-2">
-              <div class="flex items-center gap-2">
-              <label translate="no" class="font-semibold text-gray-800 notranslate" for="phone">Teléfono <span class="text-red-500" *ngIf="isRequired('phone')">*</span></label>
+          <div class="flex flex-col gap-3">
+              <div class="flex align-items-center gap-2 mb-2">
+              <label translate="no" class="font-semibold text-900 notranslate" for="phone">Teléfono <span class="text-red-500" *ngIf="isRequired('phone')">*</span></label>
               <button
                 pButton
                 type="button"
@@ -207,12 +205,12 @@
                 [attr.aria-label]="'Descripción del campo teléfono'"
               ></button>
             </div>
-            <input pInputText id="phone" formControlName="phone" placeholder="Teléfono" class="rounded border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition text-gray-900" />
-            <p-message *ngIf="landingForm.get('phone')?.invalid && landingForm.get('phone')?.touched" severity="error" variant="text" size="small">El teléfono es requerido</p-message>
+            <input pInputText id="phone" formControlName="phone" placeholder="Teléfono" class="w-full" />
+            <p-message *ngIf="landingForm.get('phone')?.invalid && landingForm.get('phone')?.touched" severity="error" [text]="'El teléfono es requerido'"></p-message>
           </div>
-          <div class="flex flex-col gap-2 mb-2">
-              <div class="flex items-center gap-2">
-              <label translate="no" class="font-semibold text-gray-800 notranslate" for="email">Bussines Email</label>
+          <div class="flex flex-col gap-3">
+              <div class="flex align-items-center gap-2 mb-2">
+              <label translate="no" class="font-semibold text-900 notranslate" for="email">Bussines Email</label>
               <button
                 pButton
                 type="button"
@@ -224,12 +222,12 @@
                 [attr.aria-label]="'Descripción del campo email'"
               ></button>
             </div>
-            <input pInputText id="email" formControlName="email" placeholder="Email del negocio" class="rounded border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition text-gray-900" />
-            <p-message *ngIf="landingForm.get('email')?.invalid && landingForm.get('email')?.touched" severity="error" variant="text" size="small">Email inválido o requerido</p-message>
+            <input pInputText id="email" formControlName="email" placeholder="Email del negocio" class="w-full" />
+            <p-message *ngIf="landingForm.get('email')?.invalid && landingForm.get('email')?.touched" severity="error" [text]="'Email inválido o requerido'"></p-message>
           </div>
-          <div class="flex flex-col gap-2">
-              <div class="flex items-center gap-2">
-              <label translate="no" class="font-semibold text-gray-800 notranslate" for="schedule">Horarios <span translate="no" class="text-red-500" *ngIf="isRequired('schedule')">*</span></label>
+          <div class="flex flex-col gap-3">
+              <div class="flex align-items-center gap-2 mb-2">
+              <label translate="no" class="font-semibold text-900 notranslate" for="schedule">Horarios <span translate="no" class="text-red-500" *ngIf="isRequired('schedule')">*</span></label>
               <button
                 pButton
                 type="button"
@@ -242,22 +240,19 @@
               ></button>
             </div>
             <textarea pTextarea id="schedule" formControlName="schedule" rows="4" maxlength="250"
-            placeholder="🕐 Indica tus horarios de atención
-Ejemplo:
-Lunes a Viernes de 8:00 a 20:00 Hrs.
-Sábados y Domingos de 9:00 a 18:00 Hrs."
-            class="rounded border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition text-gray-900"></textarea>
-            <p-message *ngIf="landingForm.get('schedule')?.invalid && landingForm.get('schedule')?.touched" severity="error" variant="text" size="small">Los horarios son requeridos</p-message>
+            placeholder="🕐 Indica tus horarios de atención&#10;Ejemplo:&#10;Lunes a Viernes de 8:00 a 20:00 Hrs.&#10;Sábados y Domingos de 9:00 a 18:00 Hrs."
+            class="w-full"></textarea>
+            <p-message *ngIf="landingForm.get('schedule')?.invalid && landingForm.get('schedule')?.touched" severity="error" [text]="'Los horarios son requeridos'"></p-message>
           </div>
         </div>
 
         <!-- Paso 4: Redes Sociales -->
-        <div *ngSwitchCase="4" class="flex flex-col gap-4">
+        <div *ngSwitchCase="4" class="flex flex-col gap-5">
           <ng-container *ngFor="let social of socialPlatforms">
             <!-- Temporalmente ocultamos LinkedIn -->
-            <div class="flex flex-col gap-2" *ngIf="social.control !== 'linkedin'">
-              <div class="flex items-center gap-2">
-                <label translate="no" class="font-semibold text-gray-800 notranslate" [for]="social.control">{{social.name}}</label>
+            <div class="flex flex-col gap-3" *ngIf="social.control !== 'linkedin'">
+              <div class="flex align-items-center gap-2 mb-2">
+                <label translate="no" class="font-semibold text-900 notranslate" [for]="social.control">{{social.name}}</label>
                 <button
                   pButton
                   type="button"
@@ -269,9 +264,9 @@ Sábados y Domingos de 9:00 a 18:00 Hrs."
                   [attr.aria-label]="'Ayuda para ' + social.name"
                 ></button>
               </div>
-              <div class="p-inputgroup">
-                <span translate="no" class="p-inputgroup-addon bg-gray-100 rounded-l mr-4"><i [class]="social.icon"></i></span>
-                <input translate="no" class="notranslate rounded-r border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition text-gray-900" pInputText [id]="social.control" [formControlName]="social.control" placeholder="{{social.name}}" />
+              <div class="p-inputgroup flex-1">
+                <span translate="no" class="p-inputgroup-addon surface-100"><i [class]="social.icon"></i></span>
+                <input translate="no" class="notranslate flex-1" pInputText [id]="social.control" [formControlName]="social.control" placeholder="{{social.name}}" />
               </div>
             </div>
           </ng-container>
@@ -280,10 +275,10 @@ Sábados y Domingos de 9:00 a 18:00 Hrs."
         <!-- Paso 5: Vista Previa -->
         <div *ngSwitchCase="5" class="flex flex-col gap-4">
           <!-- Datos Generales -->
-          <p-panel header="Datos Generales" [toggleable]="false">
+          <p-panel header="Datos Generales" [toggleable]="false" styleClass="shadow-1">
             <div class="preview-section">
               <div class="preview-logo-container" *ngIf="getLogoPreview()">
-                <img [src]="getLogoPreview()" alt="Logo" class="preview-logo" />
+                <img [src]="getLogoPreview()" alt="Logo" class="preview-logo border-round-lg" />
               </div>
               <div class="preview-field">
                 <label translate="no" class="preview-label notranslate">Nombre del Negocio</label>
@@ -297,7 +292,7 @@ Sábados y Domingos de 9:00 a 18:00 Hrs."
           </p-panel>
 
           <!-- Historia y Filosofía -->
-          <p-panel header="Historia y Filosofía" [toggleable]="false">
+          <p-panel header="Historia y Filosofía" [toggleable]="false" styleClass="shadow-1">
             <div class="preview-section">
               <div class="preview-field">
                 <label translate="no" class="preview-label notranslate">Historia</label>
@@ -305,7 +300,7 @@ Sábados y Domingos de 9:00 a 18:00 Hrs."
                   <p class="preview-text" [innerHTML]="landingForm.value.history"></p>
                 </div>
                 <ng-template #historyPlaceholder>
-                  <p class="preview-text text-gray-400"><em>Cuéntanos tu historia para mostrarla aquí.</em></p>
+                  <p class="preview-text text-500"><em>Cuéntanos tu historia para mostrarla aquí.</em></p>
                 </ng-template>
               </div>
               <div class="preview-field">
@@ -314,14 +309,14 @@ Sábados y Domingos de 9:00 a 18:00 Hrs."
                   <p class="preview-text" [innerHTML]="landingForm.value.vision"></p>
                 </div>
                 <ng-template #visionPlaceholder>
-                  <p class="preview-text text-gray-400"><em>Define la visión para mostrarla aquí.</em></p>
+                  <p class="preview-text text-500"><em>Define la visión para mostrarla aquí.</em></p>
                 </ng-template>
               </div>
             </div>
           </p-panel>
 
           <!-- Información de Contacto -->
-          <p-panel header="Información de Contacto" [toggleable]="false">
+          <p-panel header="Información de Contacto" [toggleable]="false" styleClass="shadow-1">
             <div class="preview-section">
               <div class="preview-field">
                 <label translate="no" class="preview-label notranslate">Dirección</label>
@@ -343,7 +338,7 @@ Sábados y Domingos de 9:00 a 18:00 Hrs."
           </p-panel>
 
           <!-- Redes Sociales -->
-          <p-panel header="Redes Sociales" [toggleable]="false">
+          <p-panel header="Redes Sociales" [toggleable]="false" styleClass="shadow-1">
             <div class="preview-section">
               <div *ngFor="let social of socialPlatforms" class="preview-field">
                 <label translate="no" class="preview-label notranslate">
@@ -355,16 +350,16 @@ Sábados y Domingos de 9:00 a 18:00 Hrs."
           </p-panel>
 
 
-          <div class="flex flex-row gap-4 justify-end">
-            <button pButton type="button" label="Atrás" class="p-button-secondary rounded" (click)="prevStep()"></button>
-            <button pButton type="button" label="Guardar cambios" class="p-button-success rounded" (click)="save()"></button>
+          <div class="flex flex-row gap-3 justify-content-end mt-4">
+            <button pButton type="button" label="Atrás" severity="secondary" class="p-button-sm" (click)="prevStep()"></button>
+            <button pButton type="button" label="Guardar cambios" severity="success" icon="pi pi-check" class="p-button-sm" (click)="save()"></button>
           </div>
         </div>
       </ng-container>
 
-      <div class="flex flex-row gap-4 justify-end" *ngIf="step < 5">
-        <button pButton type="button" label="Anterior" class="p-button-secondary rounded" (click)="prevStep()" [disabled]="step === 1"></button>
-        <button pButton type="button" label="Siguiente" class="p-button-primary rounded" (click)="nextStep()"></button>
+      <div class="flex flex-row gap-3 justify-content-end mt-4" *ngIf="step < 5">
+        <button pButton type="button" label="Anterior" severity="secondary" class="p-button-sm" (click)="prevStep()" [disabled]="step === 1"></button>
+        <button pButton type="button" label="Siguiente" icon="pi pi-arrow-right" iconPos="right" class="p-button-sm" (click)="nextStep()"></button>
       </div>
       </form>
     </div>
@@ -376,20 +371,19 @@ Sábados y Domingos de 9:00 a 18:00 Hrs."
   [(visible)]="showSetupPrompt"
   [modal]="true"
   [closable]="false"
-  [style]="{ width: '28rem', textAlign: 'center', borderRadius: '1.25rem', overflow: 'hidden' }"
-  contentStyle="padding:2rem 1.75rem; border-radius:1.25rem;"
+  [style]="{ width: '30rem', maxWidth: '90vw' }"
+  contentStyleClass="border-round-xl"
   baseZIndex="2100"
 >
-  <div class="flex flex-col items-center gap-3 text-center">
-    <span translate="no" class="text-4xl" aria-hidden="true">🌟</span>
-    <h2 class="font-bold text-2xl text-primary-700">{{ setupPromptText.title }}</h2>
-    <p class="text-gray-700 line-height-3">
-      {{ setupPromptText.description }}
-    </p>
+  <div class="congrats-modal-content">
+    <span translate="no" class="emoji-celebration" aria-hidden="true">🌟</span>
+    <h2 class="congrats-title">{{ setupPromptText.title }}</h2>
+    <p class="congrats-description">{{ setupPromptText.description }}</p>
     <button
       pButton
       type="button"
-      class="p-button-primary w-full mt-2"
+      class="congrats-button"
+      icon="pi pi-play"
       [label]="setupPromptCta"
       (click)="startConfiguration()"
     ></button>
@@ -400,21 +394,22 @@ Sábados y Domingos de 9:00 a 18:00 Hrs."
   [(visible)]="showCongrats"
   [modal]="true"
   [closable]="false"
-  [style]="{ width: '30rem', textAlign: 'center', borderRadius: '1.5rem', overflow: 'hidden' }"
-  contentStyle="padding:2.5rem 2rem; border-radius:1.5rem;"
+  [style]="{ width: '32rem', maxWidth: '90vw' }"
+  contentStyleClass="border-round-xl"
   baseZIndex="2000"
 >
-  <div class="flex flex-col items-center justify-center gap-4">
-    <div style="font-size:2.2rem;">🎉</div>
-    <h2 class="font-bold text-2xl text-primary-700 mb-2">¡Felicidades!</h2>
-    <div class="text-lg text-gray-700 mb-2">
+  <div class="congrats-modal-content">
+    <div class="emoji-celebration">🎉</div>
+    <h2 class="congrats-title">¡Felicidades!</h2>
+    <div class="congrats-description">
       Estás a un paso de dejar tu página lista.<br>
       ¡Configura tu menú y haz que tus clientes se enamoren de tus productos! 🍰☕
     </div>
     <button pButton
         label="Configura tu menú"
         icon="pi pi-cog"
-        class="p-button-rounded p-button-success mt-3"
+        severity="success"
+        class="congrats-button"
         (click)="goToMenuConfig()">
     </button>
   </div>

@@ -1,0 +1,230 @@
+/* ============================================================================
+   CAMPAIGN LIST - Estilos de componente
+   Alineados con el sistema de diseño Lealtix
+   ============================================================================ */
+
+:host {
+  display: block;
+}
+
+/* === TOOLBAR === */
+::ng-deep .p-toolbar {
+  background: linear-gradient(135deg, var(--lealtix-slate-50) 0%, white 100%) !important;
+  border: 1px solid var(--lealtix-slate-200) !important;
+  border-radius: var(--lealtix-radius-lg) !important;
+  padding: 1rem 1.5rem !important;
+  box-shadow: var(--lealtix-shadow-sm) !important;
+}
+
+/* === TABLA === */
+::ng-deep .p-datatable {
+  .p-datatable-header {
+    background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%) !important;
+    color: white !important;
+    border-radius: var(--lealtix-radius-lg) var(--lealtix-radius-lg) 0 0 !important;
+    padding: 1.25rem 1.5rem !important;
+    font-weight: 600 !important;
+
+    h5 {
+      color: white !important;
+      font-weight: 700 !important;
+      margin: 0 !important;
+    }
+
+    input {
+      border-radius: var(--lealtix-radius-md) !important;
+    }
+  }
+
+  .p-datatable-thead > tr > th {
+    background: var(--lealtix-slate-100) !important;
+    color: var(--lealtix-slate-700) !important;
+    font-weight: 600 !important;
+    border-color: var(--lealtix-slate-200) !important;
+    padding: 1rem !important;
+  }
+
+  .p-datatable-tbody > tr {
+    transition: all 0.2s ease !important;
+
+    &:hover {
+      background-color: var(--lealtix-slate-50) !important;
+    }
+
+    > td {
+      border-color: var(--lealtix-slate-200) !important;
+      padding: 1rem !important;
+    }
+  }
+}
+
+/* === VALIDATION BADGES === */
+.validation-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--lealtix-radius-md);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  box-shadow: var(--lealtix-shadow-sm);
+
+  i {
+    font-size: 0.875rem;
+  }
+
+  .badge-text {
+    line-height: 1;
+  }
+}
+
+/* Badge completa - Verde */
+.badge-complete {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: 1px solid #059669;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--lealtix-shadow-md);
+  }
+}
+
+/* Badge incompleta - Naranja/Advertencia */
+.badge-incomplete {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  border: 1px solid #d97706;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--lealtix-shadow-md);
+  }
+}
+
+/* === CHIPS === */
+::ng-deep .p-chip {
+  background: var(--lealtix-primary-50);
+  color: var(--lealtix-primary-700);
+  border: 1px solid var(--lealtix-primary-200);
+  border-radius: var(--lealtix-radius-full);
+  font-weight: 600;
+  transition: all 0.2s ease;
+
+  &.p-chip-outlined {
+    background: transparent;
+    border-color: var(--lealtix-slate-300);
+    color: var(--lealtix-slate-700);
+
+    &:hover {
+      background: var(--lealtix-slate-50);
+      border-color: var(--lealtix-slate-400);
+    }
+  }
+}
+
+/* === BOTONES === */
+::ng-deep .p-button {
+  border-radius: var(--lealtix-radius-lg) !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: var(--lealtix-shadow-md) !important;
+  }
+
+  &.p-button-rounded {
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+
+    &:hover {
+      transform: translateY(-2px) scale(1.05);
+    }
+  }
+
+  &.p-button-danger {
+    &.p-button-outlined {
+      color: #dc2626 !important;
+      border-color: #fca5a5 !important;
+      background: transparent !important;
+
+      &:hover {
+        background-color: #fee2e2 !important;
+        border-color: #f87171 !important;
+        color: #b91c1c !important;
+      }
+    }
+  }
+}
+
+/* === TOOLTIP === */
+::ng-deep .p-tooltip {
+  max-width: 300px;
+  border-radius: var(--lealtix-radius-md);
+  box-shadow: var(--lealtix-shadow-xl);
+
+  .p-tooltip-text {
+    white-space: pre-line;
+    line-height: 1.5;
+    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
+  }
+}
+
+/* === EMPTY STATE === */
+.p-datatable-emptymessage {
+  td {
+    padding: 3rem 1rem !important;
+  }
+
+  h3 {
+    color: var(--lealtix-slate-800);
+    font-weight: 700;
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    color: var(--lealtix-slate-500);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+}
+
+/* === UTILITY CLASSES === */
+.min-w-200 {
+  min-width: 200px;
+}
+
+.w-200 {
+  width: 200px;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+  ::ng-deep .p-datatable {
+    .p-datatable-header {
+      padding: 1rem !important;
+    }
+
+    .p-datatable-thead > tr > th,
+    .p-datatable-tbody > tr > td {
+      padding: 0.75rem !important;
+      font-size: 0.875rem;
+    }
+  }
+
+  .validation-badge {
+    font-size: 0.6875rem;
+    padding: 0.2rem 0.5rem;
+
+    i {
+      font-size: 0.75rem;
+    }
+  }
+}

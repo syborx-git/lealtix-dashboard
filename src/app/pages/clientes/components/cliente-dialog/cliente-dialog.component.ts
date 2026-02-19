@@ -22,11 +22,12 @@ import { MessageModule } from 'primeng/message';
     SelectModule,
     MessageModule
   ],
+  styleUrls: ['./cliente-dialog.component.scss'],
   template: `
     <p-dialog
       [(visible)]="visible"
       [modal]="true"
-      [style]="{ width: '600px' }"
+      [style]="{ width: '36rem', maxWidth: '90vw' }"
       [contentStyle]="{ 'max-height': 'calc(90vh - 120px)', 'overflow': 'auto' }"
       [dismissableMask]="true"
       [maximizable]="true"
@@ -36,19 +37,19 @@ import { MessageModule } from 'primeng/message';
     >
       <ng-template #header>
         <div class="flex align-items-center gap-3">
-          <i [class]="clienteEnEdicion ? 'pi pi-pencil text-2xl text-primary' : 'pi pi-user-plus text-2xl text-primary'"></i>
+          <i [class]="clienteEnEdicion ? 'pi pi-pencil' : 'pi pi-user-plus'"></i>
           <div>
-            <h2 class="m-0 text-xl font-semibold">{{ clienteEnEdicion ? 'Editar Cliente' : 'Nuevo Cliente' }}</h2>
+            <h2>{{ clienteEnEdicion ? 'Editar Cliente' : 'Nuevo Cliente' }}</h2>
           </div>
         </div>
       </ng-template>
 
-      <div class="p-5">
+      <div class="cliente-form-container">
         <form [formGroup]="clienteForm" class="p-fluid">
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-2">
             <!-- Nombre Completo -->
             <div class="col-span-full">
-              <label for="nombreCompleto" class="block text-sm font-medium mb-2">
+              <label for="nombreCompleto">
                 Nombre Completo <span class="text-red-500">*</span>
               </label>
               <input
@@ -60,15 +61,13 @@ import { MessageModule } from 'primeng/message';
               <p-message
                 *ngIf="clienteForm.get('nombreCompleto')?.invalid && (clienteForm.get('nombreCompleto')?.touched || submitted)"
                 severity="error"
-                variant="text"
-                size="small"
-                text="Nombre es requerido"
+                [text]="'Nombre es requerido'"
               ></p-message>
             </div>
 
             <!-- Email -->
             <div>
-              <label for="email" class="block text-sm font-medium mb-2">
+              <label for="email">
                 Email <span class="text-red-500">*</span>
               </label>
               <input
@@ -81,15 +80,13 @@ import { MessageModule } from 'primeng/message';
               <p-message
                 *ngIf="clienteForm.get('email')?.invalid && (clienteForm.get('email')?.touched || submitted)"
                 severity="error"
-                variant="text"
-                size="small"
-                text="Email válido es requerido"
+                [text]="'Email válido es requerido'"
               ></p-message>
             </div>
 
             <!-- Teléfono (Opcional) -->
             <div>
-              <label for="telefono" class="block text-sm font-medium mb-2">
+              <label for="telefono">
                 Teléfono <span class="text-gray-500">(Opcional)</span>
               </label>
               <input
@@ -104,15 +101,13 @@ import { MessageModule } from 'primeng/message';
               <p-message
                 *ngIf="clienteForm.get('telefono')?.invalid && (clienteForm.get('telefono')?.touched || submitted)"
                 severity="error"
-                variant="text"
-                size="small"
-                text="Teléfono debe contener 10 dígitos numéricos"
+                [text]="'Teléfono debe contener 10 dígitos numéricos'"
               ></p-message>
             </div>
 
             <!-- Fecha de Nacimiento -->
             <div>
-              <label for="fechaNacimiento" class="block text-sm font-medium mb-2">
+              <label for="fechaNacimiento">
                 Fecha de Nacimiento <span class="text-red-500">*</span>
               </label>
               <p-datepicker
@@ -129,15 +124,13 @@ import { MessageModule } from 'primeng/message';
               <p-message
                 *ngIf="clienteForm.get('fechaNacimiento')?.invalid && (clienteForm.get('fechaNacimiento')?.touched || submitted)"
                 severity="error"
-                variant="text"
-                size="small"
                 [text]="getFechaError()"
               ></p-message>
             </div>
 
             <!-- Género -->
             <div>
-              <label for="genero" class="block text-sm font-medium mb-2">
+              <label for="genero">
                 Género <span class="text-red-500">*</span>
               </label>
               <p-select
@@ -151,9 +144,7 @@ import { MessageModule } from 'primeng/message';
               <p-message
                 *ngIf="clienteForm.get('genero')?.invalid && (clienteForm.get('genero')?.touched || submitted)"
                 severity="error"
-                variant="text"
-                size="small"
-                text="Género es requerido"
+                [text]="'Género es requerido'"
               ></p-message>
             </div>
           </div>
@@ -161,7 +152,7 @@ import { MessageModule } from 'primeng/message';
       </div>
 
       <ng-template #footer>
-        <div class="flex justify-end gap-3 p-3">
+        <div class="cliente-dialog-footer">
           <p-button
             label="Cancelar"
             icon="pi pi-times"
@@ -178,11 +169,6 @@ import { MessageModule } from 'primeng/message';
       </ng-template>
     </p-dialog>
   `
-  ,
-  styles: [`
-    :host ::ng-deep .cliente-dialog .p-dialog-content { padding: 0 !important; }
-    .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
-  `]
 })
 export class ClienteDialogComponent {
   @Input() visible: boolean = false;

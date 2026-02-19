@@ -53,27 +53,7 @@ import { REWARD_TYPE_OPTIONS } from '../../constants/reward-types';
   ],
   providers: [MessageService],
   templateUrl: './campaign-form.component.html',
-  styles: [`
-    :host {
-      display: block;
-    }
-
-    .border-primary {
-      border: 2px solid var(--primary-color) !important;
-    }
-
-    .cursor-pointer {
-      cursor: pointer;
-    }
-
-    .max-w-200 {
-      max-width: 200px;
-    }
-
-    .max-h-150 {
-      max-height: 150px;
-    }
-  `]
+  styleUrls: ['./campaign-form.component.scss']
 })
 export class CampaignFormComponent implements OnInit {
   private destroyRef = inject(DestroyRef);

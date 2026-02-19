@@ -86,6 +86,7 @@ export class ComandixComponent implements OnInit, OnDestroy {
 
   // Diálogo de nuevo cliente
   mostrarDialogoNuevoCliente = false;
+  sidebarCarrito = false;
   formNuevoCliente!: FormGroup;
   generoOptions = GENERO_OPTIONS;
   submittedCliente = false;
