@@ -1,0 +1,138 @@
+/* You can add global styles to this file, and also import other style files */
+@use './tailwind.css';
+@use './layout/layout.scss';
+@use 'primeicons/primeicons.css';
+@use './demo/demo.scss';
+
+/* Info button/icon unified styling */
+.info-button {
+	color: #F59E0B !important; /* soft orange */
+	opacity: 0.95;
+	padding: 0.15rem 0.35rem; /* fixed small padding */
+}
+
+.info-button:hover,
+.info-button:focus {
+	color: #D97706 !important; /* slightly darker orange on hover */
+}
+
+/* Generic info icon color across the app - match PrimeNG look in both light/dark
+	 Target any element with the icon classes (span or i), and button icon variants */
+.pi.pi-info-circle,
+.p-button .pi.pi-info-circle,
+.p-button .p-button-icon.pi-info-circle,
+.p-button-icon.pi-info-circle {
+	color: #F59E0B !important; /* soft orange */
+	opacity: 1 !important;
+}
+
+/* Align info icon to the right within label blocks */
+.field > label.font-semibold,
+label.font-semibold {
+	display: flex;
+	align-items: center;
+}
+
+.field > label.font-semibold .pi.pi-info-circle,
+label.font-semibold .pi.pi-info-circle {
+	margin-left: auto; /* push icon to right */
+	padding-left: 0.35rem; /* fixed spacing from label */
+}
+
+/* Logout button emphasis in sidebar */
+.logout-button {
+  font-weight: 700 !important; /* bold */
+  color: var(--text-color) !important;
+}
+
+/* Ensure sidebar footer styling doesn't get hidden */
+.sidebar-footer {
+	padding: 1rem;
+	border-top: 1px solid var(--surface-border);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+/* Dark mode: match the topbar moon icon color (primary) so info buttons remain visible */
+:root[class*='app-dark'] .info-button,
+.app-dark .info-button {
+	color: var(--primary-color, #F59E0B) !important;
+	opacity: 1 !important;
+}
+
+:root[class*='app-dark'] .info-button:hover,
+.app-dark .info-button:hover,
+:root[class*='app-dark'] .info-button:focus,
+.app-dark .info-button:focus {
+	color: color-mix(in srgb, var(--primary-color, #F59E0B) 80%, black 20%) !important;
+}
+
+/* Dark mode for standalone info icons */
+:root[class*='app-dark'] .pi.pi-info-circle,
+.app-dark .pi.pi-info-circle,
+:root[class*='app-dark'] .p-button .pi.pi-info-circle,
+.app-dark .p-button .pi.pi-info-circle,
+:root[class*='app-dark'] .p-button-icon.pi.pi-info-circle,
+.app-dark .p-button-icon.pi.pi-info-circle {
+	color: var(--primary-color, #F59E0B) !important;
+	opacity: 1 !important;
+}
+
+/* Ensure landing URL label text is visible in dark mode for Mi Página component only */
+:root[class*='app-dark'] app-mi-pagina .url-label,
+.app-dark app-mi-pagina .url-label {
+	color: #ffffff !important;
+	/* override inline light background on the label in dark mode */
+	background-color: var(--surface-ground, #0b1220) !important;
+	border-color: rgba(255,255,255,0.06) !important;
+}
+
+/* Mobile / dark-mode safety: ensure info icons/buttons remain visible
+	 Some utility classes may override icon color on small screens; force visibility. */
+@media (max-width: 991px) {
+	/* mobile safety: ensure info icons are visible in dark mode */
+	:root[class*='app-dark'] .pi.pi-info-circle,
+	.app-dark .pi.pi-info-circle,
+	:root[class*='app-dark'] .p-button .pi.pi-info-circle,
+	.app-dark .p-button .pi.pi-info-circle,
+	:root[class*='app-dark'] .p-button-icon.pi.pi-info-circle,
+	.app-dark .p-button-icon.pi.pi-info-circle,
+	i.pi.pi-info-circle.text-500 {
+		color: var(--primary-color, #F59E0B) !important;
+		opacity: 1 !important;
+	}
+}
+
+/* Social icons: use brand colours and ensure contrast across themes */
+.p-inputgroup-addon i[class*='pi-'],
+.preview-label i[class*='pi-'],
+i[class*='pi-']._social-icon {
+	/* default: use text color variable for consistency */
+	color: var(--text-color, #111827) !important;
+	opacity: 1 !important;
+}
+
+/* Specific brand colours */
+i.pi-facebook { color: #1877F2 !important; }
+i.pi-instagram { color: #E1306C !important; }
+i.pi-twitter { color: #1DA1F2 !important; }
+i.pi-youtube { color: #FF0000 !important; }
+i.pi-whatsapp { color: #25D366 !important; }
+
+/* Dark-mode and mobile safety: force visibility for social icons */
+:root[class*='app-dark'] i.pi-facebook,
+.app-dark i.pi-facebook,
+:root[class*='app-dark'] i.pi-instagram,
+.app-dark i.pi-instagram,
+:root[class*='app-dark'] i.pi-twitter,
+.app-dark i.pi-twitter,
+:root[class*='app-dark'] i.pi-youtube,
+.app-dark i.pi-youtube,
+:root[class*='app-dark'] .p-inputgroup-addon i[class*='pi-'],
+.app-dark .p-inputgroup-addon i[class*='pi-'] {
+	opacity: 1 !important;
+}
+
+/* Backward compatibility: small input addon adjustments */
+.p-inputgroup-addon.bg-gray-100 { background-color: var(--surface-card, #fff) !important; }

@@ -1,181 +1,419 @@
- .logo-preview {
-	 display: flex;
-	 align-items: center;
- }
+/* ============================================================================
+   LANDING EDITOR - Estilos de componente
+   Alineados con el sistema de diseño Lealtix
+   ============================================================================ */
 
- .logo-preview__frame {
-	 width: 160px;
-	 height: 72px;
-	 border-radius: 16px;
-	 background: #f8fafc;
-	 border: 1px solid rgba(15, 23, 42, 0.08);
-	 display: flex;
-	 align-items: center;
-	 justify-content: center;
-	 padding: 0.5rem;
-	 box-shadow: 0 12px 20px rgba(15, 23, 42, 0.08);
- }
+/* === STEPPER RESPONSIVO === */
+.stepper-wrapper {
+  position: relative;
 
- .logo-preview__image {
-	 max-width: 100%;
-	 max-height: 100%;
-	 object-fit: contain;
- }
+  @media (max-width: 768px) {
+    .responsive-stepper {
+      ::ng-deep .p-stepper-nav {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
 
-/* Hide default browser "No file chosen" text for the logo fileupload and keep our custom filename display */
-.logo-fileupload ::ng-deep .p-fileupload-content {
-	display: none !important;
+      ::ng-deep .p-step {
+        padding: 0.5rem;
+      }
+    }
+  }
 }
 
-.logo-fileupload ::ng-deep .p-fileupload-choose {
-	width: 100%;
+/* === BOTONES DE INFORMACIÓN === */
+.info-button {
+  width: 2rem !important;
+  height: 2rem !important;
+  padding: 0 !important;
+  color: var(--lealtix-primary-500) !important;
+
+  &:hover {
+    background-color: var(--lealtix-primary-50) !important;
+  }
 }
 
-// Vista Previa con PrimeNG panels
+/* === PREVIEW DEL LOGO === */
+.logo-preview {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: linear-gradient(135deg, var(--lealtix-slate-50) 0%, var(--lealtix-primary-50) 100%);
+  border: 1px solid var(--lealtix-slate-200);
+
+  &__frame {
+    background: white;
+    padding: 1rem;
+    box-shadow: var(--lealtix-shadow-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 120px;
+    min-height: 120px;
+  }
+
+  &__image {
+    max-width: 100px;
+    max-height: 100px;
+    object-fit: contain;
+    display: block;
+  }
+
+  /* Botón de eliminar logo con mejor contraste */
+  ::ng-deep .p-button-danger.p-button-text {
+    color: #dc2626 !important;
+    background-color: #fee2e2 !important;
+    border: 1px solid #fecaca !important;
+
+    &:hover {
+      background-color: #fecaca !important;
+      border-color: #fca5a5 !important;
+      color: #b91c1c !important;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2) !important;
+    }
+
+    &:active {
+      background-color: #fca5a5 !important;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* === FILE UPLOAD === */
+::ng-deep .logo-fileupload {
+  .p-fileupload-choose {
+    background: var(--lealtix-primary-500) !important;
+    border-color: var(--lealtix-primary-500) !important;
+    border-radius: var(--lealtix-radius-lg) !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+
+    &:hover {
+      background: var(--lealtix-primary-600) !important;
+      transform: translateY(-1px);
+      box-shadow: var(--lealtix-shadow-md) !important;
+    }
+  }
+}
+
+/* === SECCIÓN DE PREVIEW === */
 .preview-section {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .preview-logo-container {
   display: flex;
   justify-content: center;
-  margin-bottom: 1rem;
+  padding: 1.5rem;
+  background: var(--lealtix-slate-50);
+  border-radius: var(--lealtix-radius-lg);
 }
 
 .preview-logo {
-  max-width: 120px;
-  max-height: 120px;
+  max-width: 150px;
+  max-height: 150px;
   object-fit: contain;
-  border-radius: 0.5rem;
-  border: 1px solid #e2e8f0;
-  padding: 0.5rem;
-  background: #f8fafc;
+  box-shadow: var(--lealtix-shadow-md);
 }
 
 .preview-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--lealtix-slate-200);
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
 }
 
 .preview-label {
-  font-size: 0.875rem;
+  display: block;
   font-weight: 600;
-  color: #64748b;
-  margin: 0;
+  font-size: 0.875rem;
+  color: var(--lealtix-slate-600);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
 .preview-value {
+  color: var(--lealtix-slate-900);
   font-size: 1rem;
-  color: #1e293b;
+  line-height: 1.6;
   margin: 0;
-  line-height: 1.5;
+  word-wrap: break-word;
 }
 
 .preview-text {
-  font-size: 0.95rem;
-  color: #334155;
+  color: var(--lealtix-slate-800);
+  font-size: 0.9375rem;
+  line-height: 1.7;
   margin: 0;
-  line-height: 1.6;
   white-space: pre-line;
 }
 
-// Responsive Stepper Styles
-.stepper-wrapper {
-  -webkit-overflow-scrolling: touch;
+/* === PANELES DE PREVIEW === */
+::ng-deep .preview-section {
+  p-panel {
+    .p-panel-header {
+      background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%);
+      color: white;
+      font-weight: 700;
+      border-radius: var(--lealtix-radius-lg) var(--lealtix-radius-lg) 0 0;
+      padding: 1rem 1.25rem;
+    }
+
+    .p-panel-content {
+      padding: 1.5rem;
+    }
+  }
 }
 
-.responsive-stepper {
-  ::ng-deep .p-step {
-    transition: all 0.2s ease;
-  }
+/* === CAMPOS DE FORMULARIO === */
+::ng-deep {
+  .p-inputtext,
+  .p-inputtextarea {
+    border-radius: var(--lealtix-radius-md) !important;
+    border-color: var(--lealtix-slate-300) !important;
+    transition: all 0.2s ease !important;
+    font-size: 0.9375rem !important;
 
-  // Mobile: simular orientación horizontal
-  &.mobile-stepper {
-    ::ng-deep .p-stepper-panels {
-      margin-top: 1rem;
+    &:focus {
+      border-color: var(--lealtix-primary-500) !important;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
     }
 
-    ::ng-deep .p-step-list {
-      display: flex;
-      flex-direction: row;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      padding-bottom: 0.4rem;
-    }
-
-    /* tighter separators and reduced gaps so more steps fit without manual scroll */
-    ::ng-deep .p-stepper-separator {
-      flex: 0 0 auto;
-      width: 0.9rem;
-      height: auto;
-      margin: 0 0.125rem;
-    }
-
-    ::ng-deep .p-step {
-      flex: 0 0 auto;
-      min-width: 52px; /* smaller to fit more steps */
-      text-align: center;
-    }
-
-    ::ng-deep .p-step-header {
-      flex-direction: column;
-      padding: 0.25rem 0.35rem; /* reduced padding */
-    }
-
-    ::ng-deep .p-step-number {
-      width: 1.75rem;
-      height: 1.75rem;
-      font-size: 0.82rem;
-      margin-bottom: 0.18rem;
-    }
-
-    ::ng-deep .p-step-title {
-      font-size: 0.6rem;
-      line-height: 1.05;
-      max-width: 56px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: normal;
-      word-wrap: break-word;
+    &::placeholder {
+      color: var(--lealtix-slate-400) !important;
     }
   }
 
-  // General mobile styles
-  @media (max-width: 767px) {
-    ::ng-deep .p-stepper-header {
-      padding: 0.5rem 0.25rem;
+  .p-inputgroup-addon {
+    background: var(--lealtix-slate-100) !important;
+    border-color: var(--lealtix-slate-300) !important;
+    color: var(--lealtix-slate-600) !important;
+    border-radius: var(--lealtix-radius-md) 0 0 var(--lealtix-radius-md) !important;
+  }
+}
+
+/* === MENSAJES === */
+::ng-deep .p-message {
+  border-radius: var(--lealtix-radius-md) !important;
+  font-size: 0.875rem !important;
+
+  &.p-message-error {
+    background-color: var(--lealtix-danger-light) !important;
+    border-color: var(--lealtix-danger-dark) !important;
+    color: var(--lealtix-danger-dark) !important;
+  }
+}
+
+/* === DIÁLOGOS === */
+::ng-deep .p-dialog {
+  .p-dialog-content {
+    background: white;
+    border-radius: var(--lealtix-radius-xl);
+    padding: 2rem !important;
+  }
+
+  .p-dialog-header {
+    border-radius: var(--lealtix-radius-xl) var(--lealtix-radius-xl) 0 0;
+  }
+
+  /* Estilos específicos para modales de felicitaciones/configuración */
+  h2 {
+    color: var(--lealtix-primary-700) !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.025em;
+    line-height: 1.3 !important;
+    margin: 0.5rem 0 !important;
+  }
+
+  p, div.text-lg, div.line-height-3 {
+    color: var(--lealtix-slate-700) !important;
+    line-height: 1.7 !important;
+    text-align: center;
+    margin: 0 !important;
+  }
+
+  .text-5xl {
+    font-size: 4rem !important;
+    line-height: 1 !important;
+    display: inline-block;
+    animation: bounceIn 0.6s ease-out;
+  }
+
+  /* Mejora de alineación del contenedor flex */
+  .flex-column {
+    width: 100%;
+    display: flex !important;
+    flex-direction: column !important;
+
+    &.align-items-center {
+      align-items: center !important;
     }
 
-    ::ng-deep .p-step {
-      font-size: 0.75rem;
-    }
-
-    ::ng-deep .p-step-number {
-      width: 2rem;
-      height: 2rem;
-      font-size: 0.875rem;
+    &.text-center {
+      > * {
+        text-align: center !important;
+      }
     }
   }
 
-  // Very small screens - more compact
-  @media (max-width: 480px) {
-    &.mobile-stepper {
-      ::ng-deep .p-step-title {
-        display: none;
+  /* Contenedor específico del modal */
+  .flex.flex-column {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* Botones dentro de diálogos */
+  .p-button {
+    padding: 0.75rem 1.5rem !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    border-radius: var(--lealtix-radius-lg) !important;
+    transition: all 0.2s ease !important;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--lealtix-shadow-lg) !important;
+    }
+  }
+}
+
+/* === ESTILOS ESPECÍFICOS PARA MODAL DE FELICITACIONES === */
+.congrats-modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1.5rem;
+  width: 100%;
+  padding: 0.5rem;
+}
+
+.emoji-celebration {
+  font-size: 4rem;
+  line-height: 1;
+  animation: bounceIn 0.6s ease-out;
+  display: block;
+  margin: 0 auto;
+}
+
+.congrats-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--lealtix-primary-700);
+  margin: 0;
+  padding: 0 1rem;
+  line-height: 1.3;
+  letter-spacing: -0.025em;
+  width: 100%;
+}
+
+.congrats-description {
+  font-size: 1rem;
+  color: var(--lealtix-slate-700);
+  line-height: 1.7;
+  margin: 0;
+  padding: 0 1rem;
+  max-width: 28rem;
+  width: 100%;
+}
+
+.congrats-button {
+  width: 100%;
+  padding: 0.875rem 1.5rem !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  margin-top: 0.5rem;
+}
+
+/* Animación para emojis en modales */
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-10deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1) rotate(5deg);
+  }
+  70% {
+    transform: scale(0.95) rotate(-2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* === STEPPER VERTICAL === */
+::ng-deep .p-stepper {
+  &.p-stepper-vertical {
+    .p-step {
+      padding: 1rem 0;
+
+      .p-step-header {
+        padding: 0.75rem 1rem;
+        border-radius: var(--lealtix-radius-md);
+        transition: all 0.2s ease;
+
+        &:hover {
+          background-color: var(--lealtix-slate-100);
+        }
       }
 
-      ::ng-deep .p-step {
-        min-width: 50px;
-      }
-
-      ::ng-deep .p-step-number {
-        width: 1.75rem;
-        height: 1.75rem;
-        font-size: 0.8rem;
+      &.p-step-active {
+        .p-step-header {
+          background: linear-gradient(135deg, var(--lealtix-primary-50) 0%, var(--lealtix-primary-100) 100%);
+          border-left: 3px solid var(--lealtix-primary-500);
+          font-weight: 600;
+        }
       }
     }
   }
+}
+
+/* === RESPONSIVO === */
+@media (max-width: 768px) {
+  .logo-preview {
+    flex-direction: column;
+    text-align: center;
+
+    &__frame {
+      margin: 0 auto;
+    }
+  }
+
+  .preview-logo {
+    max-width: 120px;
+    max-height: 120px;
+  }
+}
+
+/* === ANIMACIONES SUTILES === */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.preview-field,
+.logo-preview {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* === ACCESIBILIDAD === */
+.info-button:focus-visible,
+.p-button:focus-visible {
+  outline: 2px solid var(--lealtix-primary-500) !important;
+  outline-offset: 2px !important;
 }

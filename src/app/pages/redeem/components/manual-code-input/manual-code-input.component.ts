@@ -39,7 +39,7 @@ interface RewardData {
   ],
   providers: [MessageService],
   templateUrl: './manual-code-input.component.html',
-  styleUrls: ['./manual-code-input.component.css']
+  styleUrls: ['./manual-code-input.component.scss']
 })
 export class ManualCodeInputComponent {
   private campaignService = inject(CampaignService);
