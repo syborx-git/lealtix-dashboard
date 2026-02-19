@@ -1,7 +1,7 @@
 <div class="manual-input-container">
   <p-toast></p-toast>
 
-  <p-card styleClass="input-card">
+  <p-card styleClass="input-card border-round-xl shadow-2">
     <ng-template pTemplate="header">
       <div class="card-header">
         <i class="pi pi-qrcode"></i>
@@ -11,7 +11,7 @@
 
     <div class="input-content">
       <p class="description">
-        Ingresa el código del cupón y el monto de compra para validar el descuento:
+        Ingresa el código del cupón y el monto de compra para validar el descuento
       </p>
 
       <div class="form-group">
@@ -45,10 +45,12 @@
           inputStyleClass="w-full"
           [disabled]="loading"
         ></p-inputNumber>
-        <small class="text-red-600 mt-1 block font-semibold" *ngIf="purchaseAmount !== undefined && purchaseAmount !== null && purchaseAmount > 0 && rewardData && purchaseAmount < rewardData.minPurchaseAmount">
-          <i class="pi pi-exclamation-triangle"></i>
-          Este cupón requiere una compra mínima de ${{ rewardData.minPurchaseAmount.toFixed(2) }}
-        </small>
+        @if (purchaseAmount !== undefined && purchaseAmount !== null && purchaseAmount > 0 && rewardData && purchaseAmount < rewardData.minPurchaseAmount) {
+          <small class="text-red-600 mt-1">
+            <i class="pi pi-exclamation-triangle"></i>
+            Este cupón requiere una compra mínima de ${{ rewardData.minPurchaseAmount.toFixed(2) }}
+          </small>
+        }
       </div>
 
       <div class="button-group">
@@ -62,94 +64,105 @@
         </p-button>
       </div>
 
-      <p-message
-        *ngIf="errorMessage"
-        severity="error"
-        [text]="errorMessage"
-        styleClass="error-message">
-      </p-message>
+      @if (errorMessage) {
+        <p-message
+          severity="error"
+          [text]="errorMessage"
+          styleClass="error-message">
+        </p-message>
+      }
 
       <!-- Resultado del descuento -->
-      <div *ngIf="showResult && rewardData" class="result-section">
-        <p-divider></p-divider>
+      @if (showResult && rewardData) {
+        <div class="result-section">
+          <p-divider></p-divider>
 
-        <h3 class="result-title">
-          <i class="pi pi-check-circle"></i>
-          Cupón Validado
-        </h3>
+          <h3 class="result-title">
+            <i class="pi pi-check-circle"></i>
+            Cupón Validado
+          </h3>
 
-        <div class="reward-info">
-          <p class="reward-description">{{ rewardData.description }}</p>
-          <div class="info-requirements">
-            <div class="requirement-item" *ngIf="rewardData.minPurchaseAmount > 0">
-              <i class="pi pi-shopping-cart"></i>
-              <div class="requirement-content">
-                <span class="requirement-label">Compra mínima:</span>
-                <span class="requirement-value">${{ rewardData.minPurchaseAmount.toFixed(2) }}</span>
+          <div class="reward-info">
+            <p class="reward-description">{{ rewardData.description }}</p>
+
+            <div class="info-requirements">
+              @if (rewardData.minPurchaseAmount > 0) {
+                <div class="requirement-item">
+                  <i class="pi pi-shopping-cart"></i>
+                  <div class="requirement-content">
+                    <span class="requirement-label">Compra mínima:</span>
+                    <span class="requirement-value">${{ rewardData.minPurchaseAmount.toFixed(2) }}</span>
+                  </div>
+                </div>
+              }
+              @if (rewardData.usageLimit > 0) {
+                <div class="requirement-item">
+                  <i class="pi pi-replay"></i>
+                  <div class="requirement-content">
+                    <span class="requirement-label">Límite de uso:</span>
+                    <span class="requirement-value">{{ rewardData.usageCount }} / {{ rewardData.usageLimit }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+
+            @if (rewardData.minPurchaseAmount > 0 || rewardData.usageLimit > 0) {
+              <p-divider></p-divider>
+            }
+
+            <div class="calculation-details">
+              <div class="detail-row">
+                <span class="detail-label">Monto original:</span>
+                <span class="detail-value">${{ (purchaseAmount ?? 0).toFixed(2) }}</span>
               </div>
-            </div>
-            <div class="requirement-item" *ngIf="rewardData.usageLimit > 0">
-              <i class="pi pi-replay"></i>
-              <div class="requirement-content">
-                <span class="requirement-label">Límite de uso:</span>
-                <span class="requirement-value">{{ rewardData.usageCount }} / {{ rewardData.usageLimit }}</span>
-              </div>
-            </div>
-          </div>
 
-          <p-divider *ngIf="rewardData.minPurchaseAmount > 0 || rewardData.usageLimit > 0"></p-divider>
-          <div class="calculation-details">
-            <div class="detail-row">
-              <span class="detail-label">Monto original:</span>
-              <span class="detail-value">${{ (purchaseAmount ?? 0).toFixed(2) }}</span>
-            </div>
-
-            <div class="detail-row discount-row">
-              <span class="detail-label">
-                Descuento
-                <span *ngIf="rewardData.rewardType === 'PERCENT_DISCOUNT'">
-                  ({{ rewardData.numericValue }}%)
+              <div class="detail-row discount-row">
+                <span class="detail-label">
+                  Descuento
+                  @if (rewardData.rewardType === 'PERCENT_DISCOUNT') {
+                    <span>({{ rewardData.numericValue }}%)</span>
+                  }
+                  @if (rewardData.rewardType === 'FIXED_AMOUNT') {
+                    <span>(${{ rewardData.numericValue }}):</span>
+                  }
                 </span>
-                <span *ngIf="rewardData.rewardType === 'FIXED_AMOUNT'">
-                  (${{ rewardData.numericValue }})
-                </span>:
-              </span>
-              <span class="detail-value discount-value">-${{ discountAmount.toFixed(2) }}</span>
+                <span class="detail-value discount-value">-${{ discountAmount.toFixed(2) }}</span>
+              </div>
+
+              <p-divider></p-divider>
+
+              <div class="detail-row total-row">
+                <span class="detail-label"><strong>Total a pagar:</strong></span>
+                <span class="detail-value total-value"><strong>${{ finalAmount.toFixed(2) }}</strong></span>
+              </div>
             </div>
 
-            <p-divider></p-divider>
-
-            <div class="detail-row total-row">
-              <span class="detail-label"><strong>Total a pagar:</strong></span>
-              <span class="detail-value total-value"><strong>${{ finalAmount.toFixed(2) }}</strong></span>
+            <div class="usage-info">
+              <small>
+                <i class="pi pi-info-circle"></i>
+                Uso {{ rewardData.usageCount + 1 }} de {{ rewardData.usageLimit }}
+              </small>
             </div>
           </div>
 
-          <div class="usage-info">
-            <small>
-              <i class="pi pi-info-circle"></i>
-              Uso {{ rewardData.usageCount + 1 }} de {{ rewardData.usageLimit }}
-            </small>
+          <div class="action-buttons">
+            <p-button
+              label="Aplicar Descuento"
+              icon="pi pi-check"
+              severity="success"
+              styleClass="w-full">
+            </p-button>
+            <p-button
+              label="Cancelar"
+              icon="pi pi-times"
+              severity="secondary"
+              [outlined]="true"
+              (onClick)="resetForm()"
+              styleClass="w-full">
+            </p-button>
           </div>
         </div>
-
-        <div class="action-buttons">
-          <p-button
-            label="Aplicar Descuento"
-            icon="pi pi-check"
-            severity="success"
-            styleClass="w-full mb-2">
-          </p-button>
-          <p-button
-            label="Cancelar"
-            icon="pi pi-times"
-            severity="secondary"
-            [outlined]="true"
-            (onClick)="resetForm()"
-            styleClass="w-full">
-          </p-button>
-        </div>
-      </div>
+      }
     </div>
   </p-card>
 </div>

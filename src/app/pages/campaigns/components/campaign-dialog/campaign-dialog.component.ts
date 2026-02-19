@@ -49,17 +49,18 @@ import { DateRangeValidator } from '../../utils/date-range.validator';
   template: `
     <p-dialog
       [(visible)]="visible"
-      [style]="{ width: '600px' }"
+      [style]="{ width: '36rem', maxWidth: '90vw' }"
       [contentStyle]="{ 'max-height': 'calc(90vh - 120px)', 'overflow': 'auto' }"
       [header]="isEditMode ? 'Editar Campaña' : 'Nueva Campaña'"
       [modal]="true"
       [maximizable]="true"
       [resizable]="true"
       styleClass="campaign-dialog"
+      contentStyleClass="campaign-dialog-content"
       (onHide)="onHide()">
 
-      <ng-template #content>
-  <div class="p-4">
+      <ng-template pTemplate="content">
+        <div class="campaign-form-container">
 
           <!-- Template selector (only for new campaigns) -->
           <div class="mb-4" *ngIf="!isEditMode && showTemplateSelector && templates().length > 0">
@@ -101,19 +102,18 @@ import { DateRangeValidator } from '../../utils/date-range.validator';
 
               <div class="space-y-4">
                 <div>
-                  <div class="flex items-center gap-2 mb-2">
-                    <label for="title" class="block font-medium">
+                  <div class="flex align-items-center gap-2 mb-2">
+                    <label for="title" class="field-label">
                       Título <span class="text-red-500">*</span>
                     </label>
                     <button
                       pButton
                       type="button"
                       icon="pi pi-info-circle"
-                      class="p-button-rounded p-button-sm p-button-text text-primary-600"
+                      class="p-button-sm p-button-text p-button-plain info-button"
                       pTooltip="Un mensaje claro y emocional que resalte la propuesta de valor."
                       tooltipPosition="top"
                       appTouchTooltip
-                      aria-label="Descripción del campo título"
                     ></button>
                   </div>
                   <input
@@ -129,31 +129,26 @@ import { DateRangeValidator } from '../../utils/date-range.validator';
                   <p-message
                     *ngIf="campaignForm.get('title')?.errors?.['required'] && campaignForm.get('title')?.touched"
                     severity="error"
-                    variant="text"
-                    size="small">
-                    El título es requerido
+                    [text]="'El título es requerido'">
                   </p-message>
                   <p-message
                     *ngIf="campaignForm.get('title')?.errors?.['minlength'] && campaignForm.get('title')?.touched"
                     severity="error"
-                    variant="text"
-                    size="small">
-                    El título debe tener al menos 3 caracteres
+                    [text]="'El título debe tener al menos 3 caracteres'">
                   </p-message>
                 </div>
 
                 <div>
-                  <div class="flex items-center gap-2 mb-2">
-                    <label for="subtitle" class="block font-medium">Subtítulo</label>
+                  <div class="flex align-items-center gap-2 mb-2">
+                    <label for="subtitle" class="field-label">Subtítulo</label>
                     <button
                       pButton
                       type="button"
                       icon="pi pi-info-circle"
-                      class="p-button-rounded p-button-sm p-button-text text-primary-600"
+                      class="p-button-sm p-button-text p-button-plain info-button"
                       pTooltip="Añade un contexto breve que apoye al título sin repetirlo."
                       tooltipPosition="top"
                       appTouchTooltip
-                      aria-label="Descripción del campo subtítulo"
                     ></button>
                   </div>
                   <input
@@ -534,40 +529,95 @@ import { DateRangeValidator } from '../../utils/date-range.validator';
         </div>
       </ng-template>
 
-      <ng-template #footer>
-        <div class="flex justify-content-end gap-3 p-3">
+      <ng-template pTemplate="footer">
+        <div class="campaign-dialog-footer">
           <p-button
             label="Cancelar"
             icon="pi pi-times"
-            text
-            (click)="hide.emit()"
+            severity="secondary"
+            [outlined]="true"
+            (onClick)="hide.emit()"
           />
           <p-button
             [label]="isEditMode ? 'Actualizar' : 'Guardar'"
             icon="pi pi-check"
+            severity="success"
             [loading]="saving()"
             [disabled]="campaignForm.invalid"
-            (click)="save.emit()"
+            (onClick)="save.emit()"
           />
         </div>
       </ng-template>
     </p-dialog>
   `,
   styles: [`
-    :host ::ng-deep .campaign-dialog .p-dialog-content {
+    /* === DIÁLOGO CAMPAÑA (homologado) === */
+    ::ng-deep .campaign-dialog .p-dialog-header {
+      background: linear-gradient(135deg, var(--lealtix-primary-500, #6366f1) 0%, var(--lealtix-primary-600, #4f46e5) 100%);
+      color: white;
+      padding: 1.25rem 1.5rem;
+      border-radius: var(--lealtix-radius-xl) var(--lealtix-radius-xl) 0 0;
+    }
+
+    .campaign-dialog-content { padding: 0 !important; }
+
+    .campaign-form-container { padding: 1.5rem; }
+
+    .field-label {
+      font-weight: 600;
+      color: var(--lealtix-slate-800);
+      display: block;
+    }
+
+    ::ng-deep .info-button {
+      width: 2rem !important;
+      height: 2rem !important;
       padding: 0 !important;
+      color: var(--lealtix-primary-500) !important;
+    }
+
+    ::ng-deep .p-inputtext,
+    ::ng-deep .p-inputtextarea {
+      border-radius: var(--lealtix-radius-md) !important;
+      border-color: var(--lealtix-slate-300) !important;
+    }
+
+    ::ng-deep .p-message {
+      margin-top: 0.5rem;
+    }
+
+    .campaign-dialog-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--lealtix-slate-200);
+      background: var(--lealtix-slate-50);
     }
 
     .border-primary {
-      border: 2px solid var(--primary-color) !important;
+      border: 2px solid var(--lealtix-primary-500) !important;
+      box-shadow: 0 0 0 3px var(--lealtix-primary-50) !important;
     }
 
     .cursor-pointer {
       cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .cursor-pointer:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--lealtix-shadow-md);
     }
 
     .space-y-4 > :not([hidden]) ~ :not([hidden]) {
       margin-top: 1rem;
+    }
+
+    h4 {
+      color: var(--lealtix-slate-800);
+      font-weight: 700;
+      margin-bottom: 1rem;
     }
   `]
 })

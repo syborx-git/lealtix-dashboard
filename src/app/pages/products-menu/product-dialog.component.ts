@@ -18,93 +18,78 @@ import { TouchTooltipDirective } from '@/shared/directives/touch-tooltip.directi
     standalone: true,
     imports: [CommonModule, ReactiveFormsModule, FormsModule, DialogModule, ButtonModule, FileUploadModule, InputTextModule, TextareaModule, InputNumberModule, MessageModule, CheckboxModule, SelectModule, TooltipModule, TouchTooltipDirective],
     template: `
-    <p-dialog [(visible)]="visible" [style]="{ width: '450px' }" header="Detalle de Producto" [modal]="true" (onHide)="onHide()">
+    <p-dialog [(visible)]="visible" [style]="{ width: '32rem', maxWidth: '90vw' }" header="Detalle de Producto" [modal]="true" styleClass="product-dialog" contentStyleClass="product-dialog-content" (onHide)="onHide()">
         <ng-template #content>
-            <div class="p-4">
+            <div class="product-form-container">
                 <!-- Categories Row -->
                 <div class="mb-4">
-                    <div class="flex items-center justify-between mb-2">
-                        <label class="block font-semibold">Categoria</label>
-                        <button pButton type="button" icon="pi pi-info-circle" class="p-button-text p-button-plain p-button-sm" pTooltip="Selecciona la categoría donde quieres ubicar este producto. Si aún no existe, debes crear una nueva categoría." tooltipPosition="top" appTouchTooltip></button>
+                    <div class="flex align-items-center justify-between mb-2">
+                        <label class="field-label">Categoria</label>
+                        <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Selecciona la categoría donde quieres ubicar este producto. Si aún no existe, debes crear una nueva categoría." tooltipPosition="top" appTouchTooltip></button>
                     </div>
                     <div class="flex items-center gap-3">
                         <div class="flex-1">
-                            <p-select [(ngModel)]="product.categoryId" (ngModelChange)="categoryChange.emit($event)"
-                                [options]="categoriesArrayValue" optionLabel="label" optionValue="value"
-                                placeholder="Seleccione..." styleClass="w-full"></p-select>
+                            <p-select [(ngModel)]="product.categoryId" (ngModelChange)="categoryChange.emit($event)" [options]="categoriesArrayValue" optionLabel="label" optionValue="value" placeholder="Seleccione..." styleClass="w-full"></p-select>
                         </div>
-
                     </div>
                     <div class="mt-2">
-                        <p-message *ngIf="(!product || product.categoryId === null || product.categoryId === undefined) && submitted"
-                            severity="error" variant="text" size="small">Categoria es requerida</p-message>
+                        <p-message *ngIf="(!product || product.categoryId === null || product.categoryId === undefined) && submitted" severity="error" [text]="'Categoria es requerida'"></p-message>
                     </div>
                 </div>
 
                 <!-- Product form -->
-                <form [formGroup]="productForm" class="space-y-4">
+                <form [formGroup]="productForm" class="product-form">
                     <input type="hidden" formControlName="img_url" />
 
-                    <div>
-                        <div class="flex items-center justify-between mb-2">
-                            <label for="name" class="block font-medium">Nombre</label>
-                            <button pButton type="button" icon="pi pi-info-circle" class="p-button-text p-button-plain p-button-sm" pTooltip="Nombre corto y claro del producto (ej. Café Americano). Será mostrado a tus clientes." tooltipPosition="top" appTouchTooltip></button>
+                    <div class="form-field">
+                        <div class="flex align-items-center justify-between mb-2">
+                            <label for="name" class="field-label">Nombre</label>
+                            <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Nombre corto y claro del producto (ej. Café Americano). Será mostrado a tus clientes." tooltipPosition="top" appTouchTooltip></button>
                         </div>
-                        <input type="text" pInputText id="name" formControlName="name" required autofocus class="w-full" />
-                        <p-message *ngIf="productForm.get('name')?.invalid && (productForm.get('name')?.touched || submitted)"
-                            severity="error" variant="text" size="small">Nombre es requerido.</p-message>
+                        <input type="text" pInputText id="name" formControlName="name" required autofocus placeholder="Ej: Café Americano" class="w-full" />
+                        <p-message *ngIf="productForm.get('name')?.invalid && (productForm.get('name')?.touched || submitted)" severity="error" [text]="'Nombre es requerido'"></p-message>
                     </div>
 
-                    <div>
-                        <div class="flex items-center justify-between mb-2">
-                            <label for="description" class="block font-medium">Descripción</label>
-                            <button pButton type="button" icon="pi pi-info-circle" class="p-button-text p-button-plain p-button-sm" pTooltip="Describe brevemente el producto: ingredientes, tamaño o notas importantes. Esto ayuda a tus clientes a elegir." tooltipPosition="top" appTouchTooltip></button>
+                    <div class="form-field">
+                        <div class="flex align-items-center justify-between mb-2">
+                            <label for="description" class="field-label">Descripción</label>
+                            <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Describe brevemente el producto: ingredientes, tamaño o notas importantes. Esto ayuda a tus clientes a elegir." tooltipPosition="top" appTouchTooltip></button>
                         </div>
-                        <textarea id="description" pTextarea formControlName="description" rows="3" class="w-full"></textarea>
-                        <p-message *ngIf="productForm.get('description')?.invalid && (productForm.get('description')?.touched || submitted)"
-                            severity="error" variant="text" size="small">Descripción es requerida.</p-message>
+                        <textarea id="description" pTextarea formControlName="description" rows="3" placeholder="Descripción breve..." class="w-full"></textarea>
+                        <p-message *ngIf="productForm.get('description')?.invalid && (productForm.get('description')?.touched || submitted)" severity="error" [text]="'La descripción es requerida'"></p-message>
                     </div>
 
-                    <div class="flex flex-col items-start gap-3">
-                        <!-- Price + Active checkbox row -->
-                        <div class="w-full flex items-start gap-4">
-                            <div class="flex-1">
-                                <div class="flex items-center justify-between mb-2">
-                                    <label for="price" class="block font-medium">Precio</label>
-                                    <button pButton type="button" icon="pi pi-info-circle" class="p-button-text p-button-plain p-button-sm" pTooltip="Ingresa el precio en pesos mexicanos. Si el producto tiene variaciones, define el precio base aquí." tooltipPosition="top" appTouchTooltip></button>
-                                </div>
-                                <p-inputnumber id="price" formControlName="price" mode="currency" currency="MXN" locale="en-US" class="w-40" />
-                                <p-message *ngIf="productForm?.get('price')?.invalid && (productForm.get('price')?.touched || submitted)"
-                                    severity="error" variant="text" size="small">Precio es requerido.</p-message>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="flex align-items-center justify-between mb-2">
+                                <label for="price" class="field-label">Precio</label>
+                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Ingresa el precio en pesos mexicanos. Si el producto tiene variaciones, define el precio base aquí." tooltipPosition="top" appTouchTooltip></button>
                             </div>
+                            <p-inputnumber id="price" formControlName="price" mode="currency" currency="MXN" locale="en-US" class="w-full" />
+                            <p-message *ngIf="productForm?.get('price')?.invalid && (productForm.get('price')?.touched || submitted)" severity="error" [text]="'Precio es requerido'"></p-message>
+                        </div>
 
-                            <div class="flex-none flex items-center mt-6 gap-2">
-                                <label for="isActive" class="block font-medium mb-2">Activo</label>
+                        <div class="form-col form-col-narrow">
+                            <label for="isActive" class="field-label">Activo</label>
+                            <div class="flex align-items-center gap-2">
                                 <p-checkbox formControlName="isActive" binary="true" inputId="isActive" (onChange)="onActiveChange($event.checked)"></p-checkbox>
-                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-text p-button-plain p-button-sm" pTooltip="Activa para mostrar el producto en el menú. Desactiva si quieres ocultarlo temporalmente." tooltipPosition="top" appTouchTooltip></button>
+                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Activa para mostrar el producto en el menú. Desactiva si quieres ocultarlo temporalmente." tooltipPosition="top" appTouchTooltip></button>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Imagen (URL o subir) -->
-                        <div class="w-full">
-                            <div class="flex items-center justify-between mb-2">
-                                <label class="block font-medium">Imagen (URL o subir)</label>
-                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-text p-button-plain p-button-sm" pTooltip="Sube una imagen clara del producto o pega la URL. Recomendado: formato PNG/JPG, máximo 2MB. La imagen ayuda a que los clientes reconozcan el producto." tooltipPosition="top" appTouchTooltip></button>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <p-fileUpload mode="basic" name="productImage" accept="image/*" maxFileSize="2000000"
-                                    chooseLabel="Seleccionar imagen" chooseIcon="pi pi-upload"
-                                    (onSelect)="onProductFileSelect.emit($event)">
-                                    <ng-template pTemplate="empty">
-                                        <span>No hay archivo seleccionado</span>
-                                    </ng-template>
-                                </p-fileUpload>
-                                <div *ngIf="productImagePreview || productForm.get('img_url')?.value" class="flex items-center gap-2">
-                                    <img [src]="productImagePreview || productForm.get('img_url')?.value" alt="Product image preview"
-                                        class="rounded shadow border border-gray-200" style="max-width:100px; max-height:64px; object-fit:contain;" />
-                                    <button pButton type="button" icon="pi pi-times" class="p-button-sm p-button-text p-button-danger"
-                                        (click)="onRemoveImageClick()" pTooltip="Eliminar imagen" tooltipPosition="top"></button>
-                                </div>
+                    <div class="form-field">
+                        <div class="flex align-items-center justify-between mb-2">
+                            <label class="field-label">Imagen (URL o subir)</label>
+                            <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Sube una imagen clara del producto o pega la URL. Recomendado: formato PNG/JPG, máximo 2MB." tooltipPosition="top" appTouchTooltip></button>
+                        </div>
+                        <div class="flex align-items-center gap-3">
+                            <p-fileUpload mode="basic" name="productImage" accept="image/*" maxFileSize="2000000" chooseLabel="Seleccionar imagen" chooseIcon="pi pi-upload" (onSelect)="onProductFileSelect.emit($event)">
+                                <ng-template pTemplate="empty"><span>No hay archivo seleccionado</span></ng-template>
+                            </p-fileUpload>
+                            <div *ngIf="productImagePreview || productForm.get('img_url')?.value" class="flex align-items-center gap-2">
+                                <img [src]="productImagePreview || productForm.get('img_url')?.value" alt="Product image preview" class="product-preview" />
+                                <button pButton type="button" icon="pi pi-times" class="p-button-sm p-button-text p-button-danger" (click)="onRemoveImageClick()" pTooltip="Eliminar imagen" tooltipPosition="top"></button>
                             </div>
                         </div>
                     </div>
@@ -113,13 +98,64 @@ import { TouchTooltipDirective } from '@/shared/directives/touch-tooltip.directi
         </ng-template>
 
         <ng-template #footer>
-            <div class="flex justify-end gap-3 p-3">
-                <p-button label="Cancelar" icon="pi pi-times" text (click)="hide.emit()" />
-                <p-button label="Guardar" icon="pi pi-check" (click)="save.emit()" />
+            <div class="product-dialog-footer">
+                <p-button label="Cancelar" icon="pi pi-times" severity="secondary" [outlined]="true" (onClick)="hide.emit()" />
+                <p-button label="Guardar" icon="pi pi-check" severity="success" (onClick)="save.emit()" />
             </div>
         </ng-template>
     </p-dialog>
-    `
+    `,
+    styles: [`
+        /* === DIALOGO PRODUCTO (homologado) === */
+        ::ng-deep .product-dialog .p-dialog-header {
+            background: linear-gradient(135deg, var(--lealtix-primary-500, #6366f1) 0%, var(--lealtix-primary-600, #4f46e5) 100%);
+            color: white;
+            padding: 1.25rem 1.5rem;
+            border-radius: 1rem 1rem 0 0;
+        }
+
+        .product-dialog-content { padding: 0 !important; }
+
+        .product-form-container { padding: 1.5rem; }
+
+        .product-form { display:flex; flex-direction:column; gap:1.25rem; }
+
+        .form-field { display:flex; flex-direction:column; gap:0.5rem; }
+
+        .field-label { font-weight:600; color:var(--lealtix-slate-800); }
+
+        .form-row { display:flex; gap:1rem; }
+        .form-col { flex:1; }
+        .form-col-narrow { width:8rem; }
+
+        ::ng-deep .info-button { width:2rem !important; height:2rem !important; padding:0 !important; color:var(--lealtix-primary-500) !important; }
+
+        /* === BOTÓN DANGER HOMOLOGADO === */
+        ::ng-deep .p-button-danger {
+            &.p-button-text {
+                background: transparent !important;
+                color: #dc2626 !important;
+                border: none !important;
+
+                &:hover {
+                    background-color: #fee2e2 !important;
+                    color: #b91c1c !important;
+                }
+
+                &:active {
+                    background-color: #fecaca !important;
+                }
+            }
+        }
+
+        ::ng-deep .product-preview { max-width:100px; max-height:64px; object-fit:contain; border-radius:0.5rem; box-shadow:var(--lealtix-shadow-sm); border:1px solid var(--lealtix-slate-200); }
+
+        ::ng-deep .p-inputtext, ::ng-deep .p-inputtextarea, ::ng-deep .p-inputnumber { border-radius:0.75rem !important; border-color:var(--lealtix-slate-300) !important; }
+
+        ::ng-deep .p-message { margin-top:0.5rem; }
+
+        .product-dialog-footer { display:flex; justify-content:flex-end; gap:0.75rem; padding:1rem 1.5rem; border-top:1px solid var(--lealtix-slate-200); background:var(--lealtix-slate-50); }
+    `]
 })
 export class ProductDialogComponent implements OnChanges {
     @Input() visible: boolean = false;

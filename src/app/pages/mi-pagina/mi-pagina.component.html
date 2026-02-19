@@ -1,51 +1,48 @@
 <p-toast></p-toast>
 
 <!-- Spinner de carga -->
-<div *ngIf="isLoading()" class="flex justify-content-center align-items-center" style="min-height: 400px;">
-  <p-progressSpinner></p-progressSpinner>
-</div>
+@if (isLoading()) {
+  <div class="flex justify-content-center align-items-center" style="min-height: 400px;">
+    <p-progressSpinner></p-progressSpinner>
+  </div>
+}
 
 <!-- Contenido principal -->
-<div *ngIf="!isLoading()">
+@if (!isLoading()) {
+  <div class="mi-pagina-container">
 
-  <!-- Encabezado -->
-  <div class="mb-4">
-    <div class="flex align-items-center gap-3 mb-2">
-      <i class="pi pi-globe text-4xl" style="color: var(--primary-color);"></i>
-      <div>
-        <h2 class="m-0 mb-1" style="font-size: 1.75rem; font-weight: 600; color: #1e293b;">Mi Página</h2>
-        <p class="m-0" style="font-size: 0.875rem; color: #64748b;">Comparte tu landing page con tus clientes</p>
+    <!-- Encabezado -->
+    <div class="page-header">
+      <div class="header-content">
+        <i class="pi pi-globe header-icon"></i>
+        <div class="header-text">
+          <h2 class="header-title">Mi Página</h2>
+          <p class="header-subtitle">Comparte tu landing page con tus clientes</p>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Estado de publicación -->
-  <div class="mb-4">
-    <p-card>
-      <div class="flex align-items-center gap-3">
-        <i [class]="isPublished() ? 'pi pi-check-circle text-3xl text-green-500' : 'pi pi-times-circle text-3xl text-red-500'"></i>
-        <div>
-          <h3 class="m-0 mb-1 text-lg font-semibold">
-            Estado:
-            <span [class]="isPublished() ? 'text-green-500' : 'text-red-500'">
-              {{ isPublished() ? 'Publicada' : 'No Publicada' }}
-            </span>
+    <!-- Estado de publicación -->
+    <p-card styleClass="status-card border-round-xl shadow-1">
+      <div class="status-content">
+        <i [class]="isPublished() ? 'pi pi-check-circle status-icon-success' : 'pi pi-times-circle status-icon-error'"></i>
+        <div class="status-text">
+          <h3 class="status-title">
+            Estado: <span [class]="isPublished() ? 'text-success' : 'text-error'">{{ isPublished() ? 'Publicada' : 'No Publicada' }}</span>
           </h3>
-          <p class="m-0 text-sm" style="color: #64748b;">
+          <p class="status-description">
             {{ isPublished() ? 'Tu página está lista para compartir' : 'Agrega productos para publicar tu página' }}
           </p>
         </div>
       </div>
     </p-card>
-  </div>
 
-  <!-- Sección URL Pública - Ancho completo -->
-  <div class="mb-4">
-    <p-card>
+    <!-- Sección URL Pública -->
+    <p-card styleClass="url-card border-round-xl shadow-1">
       <ng-template pTemplate="header">
-        <div class="px-3 pt-3 pb-2">
-          <h3 class="m-0 flex align-items-center gap-2 font-semibold">
-            <i class="pi pi-link text-primary"></i>
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="pi pi-link"></i>
             URL Pública de tu Landing Page
           </h3>
         </div>
@@ -54,16 +51,12 @@
       <div class="url-section">
         <!-- Campo URL con botón copiar -->
         <div class="url-input-wrapper">
-          <label class="block mb-2 font-semibold text-sm" style="color: #475569;">Dirección de tu página</label>
+          <label class="field-label">Dirección de tu página</label>
           <div class="p-inputgroup">
             <span class="p-inputgroup-addon">
               <i class="pi pi-globe"></i>
             </span>
-            <label
-              class="url-label"
-              [title]="landingUrl()"
-              style="display:block; background-color: #f8f9fa; font-family: 'Courier New', monospace; font-size: 0.9rem; padding: .5rem .75rem; border-radius: .375rem; word-break: break-all;"
-            >
+            <label class="url-label" [title]="landingUrl()">
               {{ landingUrl() }}
             </label>
             <button
@@ -71,48 +64,45 @@
               pButton
               label="Copiar"
               icon="pi pi-copy"
+              styleClass="p-button-sm"
               (click)="copyUrl()"
               [disabled]="!landingUrl()"
               pTooltip="Copiar URL al portapapeles"
               tooltipPosition="top"
             ></button>
           </div>
-          <small class="block mt-2" style="color: #64748b;">
-            <i class="pi pi-info-circle mr-1"></i>
-            Comparte esta URL con tus clientes para que accedan a tu catálogo de productos
+          <small class="field-hint">
+            <i class="pi pi-info-circle"></i>
+            Comparte esta URL con tus clientes para que accedan a tu catálogo
           </small>
         </div>
 
-        <!-- Divider vertical en desktop, horizontal en mobile -->
         <p-divider layout="vertical" styleClass="divider-desktop"></p-divider>
         <p-divider layout="horizontal" styleClass="divider-mobile"></p-divider>
 
-        <!-- Botón de acción -->
+        <!-- Vista previa -->
         <div class="url-action-wrapper">
-          <label class="block mb-2 font-semibold text-sm" style="color: #475569;">Vista previa</label>
+          <label class="field-label">Vista previa</label>
           <a
             [href]="landingUrl()"
             target="_blank"
             rel="noopener noreferrer"
-            class="p-button p-button-outlined p-component w-full justify-content-center"
+            class="p-button p-button-outlined p-component preview-button"
             [class.p-disabled]="!landingUrl()"
-            style="min-height: 42px;"
           >
-            <i class="pi pi-external-link mr-2"></i>
+            <i class="pi pi-external-link"></i>
             <span>Abrir en nueva pestaña</span>
           </a>
         </div>
       </div>
     </p-card>
-  </div>
 
-  <!-- Sección Código QR - Ancho completo -->
-  <div class="mb-4">
-    <p-card>
+    <!-- Sección Código QR -->
+    <p-card styleClass="qr-card border-round-xl shadow-1">
       <ng-template pTemplate="header">
-        <div class="px-3 pt-3 pb-2">
-          <h3 class="m-0 flex align-items-center gap-2 font-semibold">
-            <i class="pi pi-qrcode text-primary"></i>
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="pi pi-qrcode"></i>
             Código QR de tu Landing Page
           </h3>
         </div>
@@ -121,7 +111,7 @@
       <div class="qr-section-content">
         <!-- QR Code centrado -->
         <div class="qr-display-area">
-          <div class="qr-container p-4 border-round">
+          <div class="qr-container">
             <qrcode
               #qrcodeElement
               [qrdata]="landingUrl()"
@@ -142,6 +132,7 @@
             pButton
             label="Descargar QR"
             icon="pi pi-download"
+            styleClass="p-button-sm"
             severity="success"
             (click)="downloadQR()"
             [disabled]="!landingUrl()"
@@ -151,6 +142,7 @@
             pButton
             label="Imprimir QR"
             icon="pi pi-print"
+            styleClass="p-button-sm"
             severity="secondary"
             (click)="printQR()"
             [disabled]="!landingUrl()"
@@ -162,7 +154,7 @@
         <!-- Ideas de uso -->
         <div class="qr-tips">
           <h4 class="tips-title">
-            <i class="pi pi-lightbulb mr-2"></i>Ideas para usar tu QR
+            <i class="pi pi-lightbulb"></i>Ideas para usar tu QR
           </h4>
           <div class="tips-grid">
             <div class="tip-item">
@@ -197,60 +189,55 @@
         </div>
       </div>
     </p-card>
-  </div>
 
-  <!-- Sección Menú Imprimible -->
-  <div class="mb-4" *ngIf="isPublished()">
-    <p-card>
-      <ng-template pTemplate="header">
-        <div class="px-3 pt-3 pb-2">
-          <h3 class="m-0 flex align-items-center gap-2 font-semibold">
-            <i class="pi pi-file-pdf text-primary"></i>
-            Menú Imprimible
-          </h3>
-        </div>
-      </ng-template>
+    <!-- Sección Menú Imprimible -->
+    @if (isPublished()) {
+      <p-card styleClass="menu-card border-round-xl shadow-1">
+        <ng-template pTemplate="header">
+          <div class="card-header">
+            <h3 class="card-title">
+              <i class="pi pi-file-pdf"></i>
+              Menú Imprimible
+            </h3>
+          </div>
+        </ng-template>
 
-      <div class="flex flex-column gap-3">
-        <p class="m-0" style="color: #64748b;">
-          <i class="pi pi-info-circle mr-2"></i>
-          Genera una versión imprimible de tu menú completo con todos tus productos y categorías.
-        </p>
+        <div class="menu-content">
+          <p class="menu-description">
+            <i class="pi pi-info-circle"></i>
+            Genera una versión imprimible de tu menú completo con todos tus productos y categorías.
+          </p>
 
-        <div class="flex gap-2 flex-wrap">
           <a
             routerLink="/dashboard/menu-classic-print"
-            class="p-button p-button-primary p-component"
-            style="text-decoration: none;"
+            class="p-button p-button-primary p-component menu-button"
           >
-            <i class="pi pi-print mr-2"></i>
+            <i class="pi pi-print"></i>
             <span>Ver Menú para Imprimir</span>
           </a>
+
+          <small class="menu-hint">
+            💡 <strong>Consejo:</strong> El menú imprimible incluye todas tus categorías y productos activos.
+          </small>
         </div>
+      </p-card>
+    }
 
-        <small class="block" style="color: #94a3b8;">
-          💡 <strong>Consejo:</strong> El menú imprimible incluye todas tus categorías y productos activos con sus imágenes, descripciones y precios.
-        </small>
-      </div>
-    </p-card>
-  </div>
-
-  <!-- Información adicional -->
-  <div class="grid" *ngIf="!isPublished()">
-    <div class="col-12 mt-3">
-      <div class="border-round p-4 shadow-2" style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-left: 4px solid #F59E0B;">
-        <div class="flex align-items-start gap-3">
-          <i class="pi pi-exclamation-triangle text-3xl" style="color: #F59E0B;"></i>
-          <div>
-            <h4 class="mt-0 mb-2 font-semibold" style="color: #92400E;">Página no publicada</h4>
-            <p class="m-0 line-height-3" style="color: #78350F;">
+    <!-- Información adicional -->
+    @if (!isPublished()) {
+      <div class="warning-container">
+        <div class="warning-card">
+          <i class="pi pi-exclamation-triangle warning-icon"></i>
+          <div class="warning-content">
+            <h4 class="warning-title">Página no publicada</h4>
+            <p class="warning-text">
               Para que tu página esté disponible públicamente, necesitas tener al menos un producto registrado.
               Ve a la sección <strong>Productos</strong> para agregar tu primer producto.
             </p>
           </div>
         </div>
       </div>
-    </div>
-  </div>
+    }
 
-</div>
+  </div>
+}

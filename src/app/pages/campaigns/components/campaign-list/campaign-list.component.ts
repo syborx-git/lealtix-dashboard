@@ -57,77 +57,7 @@ interface TableColumn {
     ],
     providers: [ConfirmationService, MessageService],
     templateUrl: './campaign-list.component.html',
-    styles: [
-        `
-            :host {
-                display: block;
-            }
-
-            .min-w-200 {
-                min-width: 200px;
-            }
-
-            .w-200 {
-                width: 200px;
-            }
-
-            /* Estilos para badges de validación */
-            .validation-badge {
-                display: inline-flex;
-                align-items: center;
-                gap: 0.375rem;
-                padding: 0.25rem 0.625rem;
-                border-radius: 0.375rem;
-                font-size: 0.75rem;
-                font-weight: 600;
-                white-space: nowrap;
-                transition: all 0.2s ease;
-            }
-
-            .validation-badge i {
-                font-size: 0.875rem;
-            }
-
-            .badge-text {
-                line-height: 1;
-            }
-
-            /* Badge completa - Verde */
-            .badge-complete {
-                background-color: #10b981;
-                color: white;
-            }
-
-            .badge-complete:hover {
-                background-color: #059669;
-                transform: translateY(-1px);
-                box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
-            }
-
-            /* Badge incompleta - Naranja/Advertencia */
-            .badge-incomplete {
-                background-color: #f59e0b;
-                color: white;
-            }
-
-            .badge-incomplete:hover {
-                background-color: #d97706;
-                transform: translateY(-1px);
-                box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
-            }
-
-            /* Estilos para tooltip personalizado */
-            ::ng-deep .p-tooltip {
-                max-width: 300px;
-            }
-
-            ::ng-deep .p-tooltip .p-tooltip-text {
-                white-space: pre-line;
-                line-height: 1.5;
-                font-size: 0.875rem;
-            }
-        `
-    ]
+    styleUrls: ['./campaign-list.component.scss']
 })
 export class CampaignListComponent implements OnInit {
     campaigns = signal<CampaignResponse[]>([]);

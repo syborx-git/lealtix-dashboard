@@ -51,7 +51,7 @@
             <h5 class="m-0">Categorías del Menú</h5>
             <p-iconfield>
                 <p-inputicon styleClass="pi pi-search" />
-                <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Buscar..." />
+                <input pInputText type="text" (input)="onGlobalFilter(dt, $event)"  />
             </p-iconfield>
         </div>
     </ng-template>
@@ -129,20 +129,20 @@
     [(visible)]="showCategoryReminderDialog"
     [modal]="true"
     [closable]="false"
-    [style]="{ width: '28rem', textAlign: 'center', borderRadius: '1.25rem', overflow: 'hidden' }"
-    contentStyle="padding:2rem 1.75rem; border-radius:1.25rem;"
+    [style]="{ width: '30rem', maxWidth: '90vw' }"
+    contentStyleClass="border-round-xl"
     baseZIndex="2100"
 >
-    <div class="flex flex-col items-center gap-3 text-center">
-        <span class="text-4xl" aria-hidden="true">🏷️</span>
-        <h2 class="font-bold text-2xl text-primary-700">{{ categoryReminderProps.title }}</h2>
-        <p class="text-gray-700 line-height-3">
+    <div class="category-modal-content">
+        <span class="category-emoji" aria-hidden="true">🏷️</span>
+        <h2 class="category-title">{{ categoryReminderProps.title }}</h2>
+        <p class="category-description">
             {{ categoryReminderProps.description }}
         </p>
         <button
             pButton
             type="button"
-            class="p-button-primary w-full mt-2"
+            class="category-button"
             [label]="categoryReminderProps.buttonText"
             (click)="handleCategoryReminderAcknowledged()"
         ></button>
@@ -155,26 +155,27 @@
   [(visible)]="showFirstCategoryCongrats"
   [modal]="true"
   [closable]="false"
-  [style]="{ width: '30rem', textAlign: 'center', borderRadius: '1.5rem', overflow: 'hidden' }"
-  contentStyle="padding:2.5rem 2rem; border-radius:1.5rem;"
+  [style]="{ width: '32rem', maxWidth: '90vw' }"
+  contentStyleClass="border-round-xl"
   baseZIndex="2000"
 >
-  <div class="flex flex-col items-center justify-center gap-4">
-    <div style="font-size:2.2rem;">✅</div>
-    <h2 class="font-bold text-2xl text-primary-700 mb-2">¡Perfecto! Ya tienes tu primera categoría</h2>
-    <div class="text-lg text-gray-700 mb-2">
+  <div class="category-modal-content">
+    <div class="category-emoji">✅</div>
+    <h2 class="category-title">¡Perfecto! Ya tienes tu primera categoría</h2>
+    <div class="category-description">
       Ahora puedes comenzar a crear productos y asignarlos a esta categoría.
     </div>
-    <div class="flex gap-3 mt-3">
+    <div class="flex gap-3 mt-3 w-full" style="justify-content: center;">
       <button pButton
           label="Lo haré después"
-          class="p-button-outlined"
+          severity="secondary"
+          [outlined]="true"
           (click)="closeFirstCategoryDialog()">
       </button>
       <button pButton
           label="Crear mi primer producto"
           icon="pi pi-plus"
-          class="p-button-success"
+          severity="success"
           (click)="goToCreateProduct()">
       </button>
     </div>

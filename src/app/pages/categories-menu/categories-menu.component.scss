@@ -1,53 +1,142 @@
+/* ============================================================================
+   CATEGORIES MENU - Estilos de componente
+   Alineados con el sistema de diseño Lealtix
+   ============================================================================ */
+
+/* === TABLA: ESTILOS DE FILAS === */
 .fixed-row {
-  height: 80px; /* fixed row height for consistent table layout */
+  height: 80px;
   transition: all 0.3s ease;
+
+  > td {
+    vertical-align: middle;
+  }
 }
 
-.fixed-row > td {
-  vertical-align: middle; /* center content vertically */
-}
-
-/* Ensure table rows keep constant height even when content wraps */
-.p-datatable-tbody > tr.fixed-row {
+::ng-deep .p-datatable-tbody > tr.fixed-row {
   height: 80px !important;
 }
 
-/* Drag and Drop styles */
+/* === DRAG AND DROP === */
 .fixed-row {
   cursor: grab;
-}
 
-.fixed-row:active {
-  cursor: grabbing;
+  &:active {
+    cursor: grabbing;
+  }
+
+  &:hover .pi-bars {
+    color: var(--lealtix-primary-500) !important;
+  }
+
+  &.p-highlight {
+    background-color: rgba(99, 102, 241, 0.05);
+  }
 }
 
 .drag-over {
-  background-color: rgba(var(--primary-color-rgb, 59, 130, 246), 0.1) !important;
-  border-top: 2px solid var(--primary-color, #3b82f6);
+  background-color: rgba(99, 102, 241, 0.1) !important;
+  border-top: 2px solid var(--lealtix-primary-500);
 }
 
-.fixed-row.p-highlight {
-  background-color: rgba(var(--primary-color-rgb, 59, 130, 246), 0.05);
-}
-
-/* Draggable handle indicator */
 .pi-bars {
   font-size: 1.2rem;
   transition: color 0.2s ease;
 }
 
-.fixed-row:hover .pi-bars {
-  color: var(--primary-color, #3b82f6) !important;
+/* === BOTÓN DANGER CON MEJOR CONTRASTE === */
+::ng-deep .p-button-danger {
+  &.p-button-outlined {
+    color: #dc2626 !important;
+    border-color: #fca5a5 !important;
+    background: transparent !important;
+
+    &:hover {
+      background-color: #fee2e2 !important;
+      border-color: #f87171 !important;
+      color: #b91c1c !important;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2) !important;
+    }
+
+    &:active {
+      background-color: #fecaca !important;
+      transform: translateY(0);
+    }
+  }
+
+  &:not(.p-button-outlined) {
+    background: #dc2626 !important;
+    border-color: #dc2626 !important;
+
+    &:hover {
+      background: #b91c1c !important;
+      border-color: #b91c1c !important;
+      transform: translateY(-1px);
+      box-shadow: var(--lealtix-shadow-md) !important;
+    }
+  }
 }
 
-/* Global loading overlay styles */
+/* === TOOLBAR === */
+::ng-deep .p-toolbar {
+  background: linear-gradient(135deg, var(--lealtix-slate-50) 0%, white 100%) !important;
+  border: 1px solid var(--lealtix-slate-200) !important;
+  border-radius: var(--lealtix-radius-lg) !important;
+  padding: 1rem 1.5rem !important;
+  box-shadow: var(--lealtix-shadow-sm) !important;
+}
+
+/* === TABLA === */
+::ng-deep .p-datatable {
+  .p-datatable-header {
+    background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%) !important;
+    color: white !important;
+    border-radius: var(--lealtix-radius-lg) var(--lealtix-radius-lg) 0 0 !important;
+    padding: 1.25rem 1.5rem !important;
+    font-weight: 600 !important;
+
+    h5 {
+      color: white !important;
+      font-weight: 700 !important;
+      margin: 0 !important;
+    }
+
+    input {
+      border-radius: var(--lealtix-radius-md) !important;
+    }
+  }
+
+  .p-datatable-thead > tr > th {
+    background: var(--lealtix-slate-100) !important;
+    color: var(--lealtix-slate-700) !important;
+    font-weight: 600 !important;
+    border-color: var(--lealtix-slate-200) !important;
+    padding: 1rem !important;
+  }
+
+  .p-datatable-tbody > tr {
+    transition: all 0.2s ease !important;
+
+    &:hover {
+      background-color: var(--lealtix-slate-50) !important;
+    }
+
+    > td {
+      border-color: var(--lealtix-slate-200) !important;
+      padding: 1rem !important;
+    }
+  }
+}
+
+/* === LOADING OVERLAY === */
 .global-loading-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 9999; /* on top of everything */
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -59,7 +148,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.35);
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
 }
 
 .global-loading-spinner {
@@ -70,12 +160,130 @@
   justify-content: center;
   width: 120px;
   height: 120px;
-  border-radius: 8px;
-  background: rgba(255,255,255,0.9);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  border-radius: var(--lealtix-radius-lg);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: var(--lealtix-shadow-xl);
 }
 
 .custom-spinner {
   width: 64px;
   height: 64px;
+}
+
+/* === MODALES === */
+::ng-deep .p-dialog {
+  .p-dialog-content {
+    background: white;
+    border-radius: var(--lealtix-radius-xl);
+    padding: 2rem !important;
+  }
+
+  .p-dialog-header {
+    border-radius: var(--lealtix-radius-xl) var(--lealtix-radius-xl) 0 0;
+  }
+
+  h2 {
+    color: var(--lealtix-primary-700) !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.025em;
+    line-height: 1.3 !important;
+    margin: 0.5rem 0 !important;
+  }
+
+  p, div {
+    color: var(--lealtix-slate-700) !important;
+    line-height: 1.7 !important;
+  }
+
+  .p-button {
+    padding: 0.75rem 1.5rem !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    border-radius: var(--lealtix-radius-lg) !important;
+    transition: all 0.2s ease !important;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--lealtix-shadow-lg) !important;
+    }
+  }
+}
+
+/* === ESTILOS ESPECÍFICOS PARA MODALES === */
+.category-modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1.5rem;
+  width: 100%;
+  padding: 0.5rem;
+}
+
+.category-emoji {
+  font-size: 3.5rem;
+  line-height: 1;
+  animation: bounceIn 0.6s ease-out;
+  display: block;
+  margin: 0 auto;
+}
+
+.category-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--lealtix-primary-700);
+  margin: 0;
+  padding: 0 1rem;
+  line-height: 1.3;
+  letter-spacing: -0.025em;
+  width: 100%;
+}
+
+.category-description {
+  font-size: 1rem;
+  color: var(--lealtix-slate-700);
+  line-height: 1.7;
+  margin: 0;
+  padding: 0 1rem;
+  max-width: 28rem;
+  width: 100%;
+}
+
+.category-button {
+  width: 100%;
+  padding: 0.875rem 1.5rem !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  margin-top: 0.5rem;
+}
+
+/* === BOTONES DE ACCIÓN EN LA TABLA === */
+::ng-deep .p-button-rounded {
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  transition: all 0.2s ease !important;
+
+  &:hover {
+    transform: translateY(-2px) scale(1.05);
+  }
+}
+
+/* === ANIMACIÓN === */
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-10deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1) rotate(5deg);
+  }
+  70% {
+    transform: scale(0.95) rotate(-2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
 }

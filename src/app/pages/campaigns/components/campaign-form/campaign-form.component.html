@@ -47,29 +47,35 @@
 
       <div class="col-12 md:col-6">
         <div class="field">
-          <label for="title" class="font-semibold text-gray-800 mb-2">Título <span class="text-red-500">*</span></label>
+          <label for="title" class="field-label">Título <span class="text-red-500">*</span></label>
           <input
             id="title"
             pInputText
             formControlName="title"
             placeholder="Escribe el título"
-            class="rounded border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition text-gray-900 w-full"
+            class="w-full"
             [class.p-invalid]="isFieldInvalid('title')"
           />
-            <small *ngIf="campaignForm.get('title')?.errors?.['required'] && campaignForm.get('title')?.touched" class="text-red-600 text-sm block">El título es requerido</small>
-            <small *ngIf="campaignForm.get('title')?.errors?.['minlength'] && campaignForm.get('title')?.touched" class="text-red-600 text-sm block">El título debe tener al menos 3 caracteres</small>
+          <p-message
+            *ngIf="campaignForm.get('title')?.errors?.['required'] && campaignForm.get('title')?.touched"
+            severity="error"
+            [text]="'El título es requerido'"></p-message>
+          <p-message
+            *ngIf="campaignForm.get('title')?.errors?.['minlength'] && campaignForm.get('title')?.touched"
+            severity="error"
+            [text]="'El título debe tener al menos 3 caracteres'"></p-message>
         </div>
       </div>
 
       <div class="col-12 md:col-6">
         <div class="field">
-          <label for="subtitle" class="font-semibold text-gray-800 mb-2">Subtítulo</label>
+          <label for="subtitle" class="field-label">Subtítulo</label>
           <input
             id="subtitle"
             pInputText
             formControlName="subtitle"
             placeholder="Subtítulo (opcional)"
-            class="rounded border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition text-gray-900 w-full"
+            class="w-full"
           />
         </div>
       </div>
@@ -83,8 +89,8 @@
 
       <div class="col-12 md:col-6">
         <div class="field">
-          <label for="promoType" class="font-semibold text-gray-800 mb-2">Tipo de Promoción</label>
-          <select id="promoType" formControlName="promoType" (change)="onPromoTypeChange()" class="rounded border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition text-gray-900 w-full">
+          <label for="promoType" class="field-label">Tipo de Promoción</label>
+          <select id="promoType" formControlName="promoType" (change)="onPromoTypeChange()" class="w-full">
             <option value="">Seleccionar tipo</option>
             <option *ngFor="let option of promoTypeOptions" [value]="option.value">{{ option.label }}</option>
           </select>
@@ -115,24 +121,30 @@
 
       <div class="col-12">
         <div class="field">
-          <label for="callToAction" class="font-semibold text-gray-800 mb-2">Call to Action</label>
-          <input id="callToAction" pInputText formControlName="callToAction" placeholder="Ej: ¡Aprovecha ahora!" class="rounded border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition text-gray-900 w-full" />
+          <label for="callToAction" class="field-label">Call to Action</label>
+          <input id="callToAction" pInputText formControlName="callToAction" placeholder="Ej: ¡Aprovecha ahora!" class="w-full" />
         </div>
       </div>
 
       <!-- Descripción del beneficio (solo para 'Ninguno (Solo Promoción)') -->
       <div class="col-12" *ngIf="isPromoTypeCustom()">
         <div class="field">
-          <label for="descriptionReward" class="font-semibold text-gray-800 mb-2">Descripción del Beneficio <span class="text-red-500">*</span></label>
+          <label for="descriptionReward" class="field-label">Descripción del Beneficio <span class="text-red-500">*</span></label>
           <textarea
             id="descriptionReward"
             formControlName="description"
             rows="3"
             placeholder="Describe qué estás promocionando"
-            class="rounded border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition text-gray-900 w-full"
+            class="w-full"
           ></textarea>
-          <small *ngIf="campaignForm.get('description')?.errors?.['required'] && campaignForm.get('description')?.touched" class="text-red-600 text-sm block">La descripción del beneficio es requerida</small>
-          <small *ngIf="campaignForm.get('description')?.errors?.['minlength'] && campaignForm.get('description')?.touched" class="text-red-600 text-sm block">La descripción debe tener al menos 3 caracteres</small>
+          <p-message
+            *ngIf="campaignForm.get('description')?.errors?.['required'] && campaignForm.get('description')?.touched"
+            severity="error"
+            [text]="'La descripción del beneficio es requerida'"></p-message>
+          <p-message
+            *ngIf="campaignForm.get('description')?.errors?.['minlength'] && campaignForm.get('description')?.touched"
+            severity="error"
+            [text]="'La descripción debe tener al menos 3 caracteres'"></p-message>
         </div>
       </div>
 
@@ -187,16 +199,19 @@
 
       <div class="col-12 md:col-6">
         <div class="field">
-          <label for="channels" class="font-semibold text-gray-800 mb-2">Canales</label>
-            <input id="channels" pInputText placeholder="Email, SMS, App" (blur)="onChannelsChange($event)" class="rounded border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition text-gray-900 w-full" />
-            <small *ngIf="campaignForm.get('channels')?.invalid && campaignForm.get('channels')?.touched" class="text-red-600 text-sm block">Agrega al menos un canal</small>
+          <label for="channels" class="field-label">Canales</label>
+            <input id="channels" pInputText placeholder="Email, SMS, App" (blur)="onChannelsChange($event)" class="w-full" />
+            <p-message
+              *ngIf="campaignForm.get('channels')?.invalid && campaignForm.get('channels')?.touched"
+              severity="error"
+              [text]="'Agrega al menos un canal'"></p-message>
             <small class="text-500">Escribe los canales separados por coma (ej: Email, SMS, App)</small>
         </div>
       </div>
       <div class="col-12 md:col-6">
         <div class="field">
-          <label for="segmentation" class="font-semibold text-gray-800 mb-2">Segmentación</label>
-          <input id="segmentation" pInputText formControlName="segmentation" placeholder="Ej: Clientes premium" class="rounded border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition text-gray-900 w-full" />
+          <label for="segmentation" class="field-label">Segmentación</label>
+          <input id="segmentation" pInputText formControlName="segmentation" placeholder="Ej: Clientes premium" class="w-full" />
         </div>
       </div>
 
@@ -207,11 +222,11 @@
 
       <div class="col-12">
         <div class="field">
-          <label for="imageUrl" class="font-semibold text-gray-800 mb-2">URL de Imagen</label>
-          <input id="imageUrl" pInputText formControlName="imageUrl" placeholder="https://ejemplo.com/imagen.jpg" class="rounded border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition text-gray-900 w-full" />
+          <label for="imageUrl" class="field-label">URL de Imagen</label>
+          <input id="imageUrl" pInputText formControlName="imageUrl" placeholder="https://ejemplo.com/imagen.jpg" class="w-full" />
           <!-- Preview de imagen -->
           <div class="mt-2" *ngIf="imagePreview()">
-            <img [src]="imagePreview()" alt="Preview" class="max-w-200 max-h-150 border-round" (error)="onImageError()" style="max-width:200px; max-height:150px;" />
+            <img [src]="imagePreview()" alt="Preview" class="border-round border-1" (error)="onImageError()" style="max-width:200px; max-height:150px;" />
           </div>
         </div>
       </div>
@@ -481,8 +496,8 @@
 
       <div class="col-12 md:col-6" *ngIf="isEditMode()">
         <div class="field">
-          <label for="status" class="font-semibold text-gray-800 mb-2">Estado de la Campaña</label>
-          <select id="status" formControlName="status" class="rounded border border-gray-300 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition text-gray-900 w-full">
+          <label for="status" class="field-label">Estado de la Campaña</label>
+          <select id="status" formControlName="status" class="w-full">
             <option value="">Seleccionar estado</option>
             <option *ngFor="let option of statusOptions" [value]="option.value">{{ option.label }}</option>
           </select>
