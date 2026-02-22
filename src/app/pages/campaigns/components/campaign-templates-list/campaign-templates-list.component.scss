@@ -220,6 +220,19 @@
   border-top: 2px solid var(--lealtix-slate-200);
 }
 
+/* Estado visual cuando la plantilla está en uso */
+.in-use-card {
+  opacity: 0.55;
+  pointer-events: auto;
+  filter: grayscale(0.15);
+}
+
+.in-use-card .template-title,
+.in-use-card .content-text,
+.in-use-card .template-category {
+  color: var(--lealtix-slate-500) !important;
+}
+
 /* Buttons styling */
 ::ng-deep .template-footer .p-button {
   border-radius: var(--lealtix-radius-lg) !important;

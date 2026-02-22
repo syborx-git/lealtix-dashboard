@@ -272,7 +272,7 @@
         <p-divider></p-divider>
 
         <!-- Cupón de Descuento -->
-        <div class="coupon-section">
+        <div *ngIf="selectedCliente" class="coupon-section">
           <label class="section-label">
             <i class="pi pi-ticket mr-2"></i>
             Cupón
