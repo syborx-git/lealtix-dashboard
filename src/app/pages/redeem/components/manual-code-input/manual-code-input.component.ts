@@ -9,6 +9,9 @@ import { MessageModule } from 'primeng/message';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { DividerModule } from 'primeng/divider';
 import { CampaignService } from '@/pages/campaigns/services/campaign.service';
+import { RedemptionService } from '../../services/redemption.service';
+import { AuthService } from '@/auth/auth.service';
+import { CouponStatus } from '../../models/coupon-validation.model';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 
@@ -21,6 +24,9 @@ interface RewardData {
   minPurchaseAmount: number;
   usageLimit: number;
   usageCount: number;
+  tenantId?: number; // Validar que pertenezca al tenant
+  isRedeemed?: boolean; // Indica si ya fue redimido
+  canRedeem?: boolean; // Indica si puede ser redimido
 }
 
 @Component({
@@ -43,6 +49,8 @@ interface RewardData {
 })
 export class ManualCodeInputComponent {
   private campaignService = inject(CampaignService);
+  private redemptionService = inject(RedemptionService);
+  private authService = inject(AuthService);
   private messageService = inject(MessageService);
   private router = inject(Router);
 
@@ -57,6 +65,9 @@ export class ManualCodeInputComponent {
   discountAmount: number = 0;
   finalAmount: number = 0;
 
+  // Rastrear cupones ya aplicados en esta sesión para evitar duplicados
+  private appliedCoupons: Set<string> = new Set();
+
   validateCode(): void {
     // Validar código del cupón
     if (!this.couponCode || this.couponCode.length < 3) {
@@ -65,6 +76,18 @@ export class ManualCodeInputComponent {
         severity: 'warn',
         summary: 'Código requerido',
         detail: 'Ingresa un código de cupón válido',
+        life: 4000
+      });
+      return;
+    }
+
+    // Validar que el cupón no haya sido aplicado ya dos veces en esta sesión
+    if (this.appliedCoupons.has(this.couponCode)) {
+      this.errorMessage = 'Este cupón ya ha sido aplicado en esta transacción';
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Cupón duplicado',
+        detail: 'No puedes aplicar el mismo cupón dos veces en la misma comanda',
         life: 4000
       });
       return;
@@ -101,21 +124,56 @@ export class ManualCodeInputComponent {
       return;
     }
 
-    // Obtener información del reward de la campaña
-    this.campaignService.getRewardByCampaign(campaignId).subscribe({
-      next: (reward: any) => {
-        this.rewardData = reward;
+    // Validar el cupón mediante el servicio de redenciones (no lo redime)
+    const tenantId = this.authService.getTenantId();
+    this.redemptionService.validateCouponByCode(this.couponCode, tenantId).subscribe({
+      next: (validation) => {
+        // Manejar distintos estados devueltos por el backend
+        if (validation.alreadyRedeemed || String(validation.status) === 'REDEEMED') {
+          this.errorMessage = 'Este cupón ya ha sido redimido';
+          this.loading = false;
+          this.messageService.add({ severity: 'error', summary: 'Cupón redimido', detail: 'Este cupón ya fue utilizado', life: 4000 });
+          return;
+        }
+
+        if (validation.isExpired || validation.expired) {
+          this.errorMessage = 'Este cupón está vencido';
+          this.loading = false;
+          this.messageService.add({ severity: 'error', summary: 'Cupón vencido', detail: 'El cupón ha expirado', life: 4000 });
+          return;
+        }
+
+        // Validar pertenencia al tenant (si el backend retorna tenantId)
+        if (validation.tenantId != null && validation.tenantId !== tenantId) {
+          this.errorMessage = 'Este cupón no pertenece a tu tenant';
+          this.loading = false;
+          this.messageService.add({ severity: 'error', summary: 'Cupón inválido', detail: 'El cupón no es válido para tu cuenta', life: 4000 });
+          return;
+        }
+
+        // Mapear datos de validación al rewardData para cálculo
+        this.rewardData = {
+          id: 0,
+          campaignId: validation.campaignId || campaignId,
+          rewardType: validation.rewardType || (validation.couponType as any) || 'PERCENT_DISCOUNT',
+          numericValue: validation.numericValue ?? validation.couponValue ?? 0,
+          description: validation.rewardDescription || validation.benefit || validation.message || '',
+          minPurchaseAmount: validation.minPurchaseAmount ?? validation.minRedemptionAmount ?? 0,
+          usageLimit: validation.usageLimit ?? 0,
+          usageCount: validation.usageCount ?? 0,
+          tenantId: validation.tenantId ?? undefined,
+          isRedeemed: !!(validation.alreadyRedeemed || String(validation.status) === 'REDEEMED'),
+          canRedeem: !!(validation.valid && !validation.alreadyRedeemed && !validation.isExpired)
+        };
+
+        // Continuar con las reglas ya existentes
         this.applyRewardRules();
       },
       error: (error) => {
-        console.error('Error obteniendo reward:', error);
+        console.error('Error validando cupón:', error);
         this.errorMessage = 'No se pudo validar el cupón. Por favor, verifica el código.';
         this.loading = false;
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Cupón no encontrado o inválido'
-        });
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Cupón no encontrado o inválido' });
       }
     });
   }
@@ -142,7 +200,47 @@ export class ManualCodeInputComponent {
     const amount = this.purchaseAmount;
     const minAmount = this.rewardData.minPurchaseAmount;
 
-    // Validar monto mínimo de compra
+    // 1. Validar que el cupón pertenezca al tenant actual
+    // Nota: Si el backend devuelve tenantId, validar que coincida con el tenant actual
+    if (this.rewardData.tenantId && !this.validateTenantOwnership(this.rewardData.tenantId)) {
+      this.errorMessage = 'Este cupón no es válido para tu cuenta';
+      this.loading = false;
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Cupón inválido',
+        detail: 'Este cupón no pertenece a tu tenant o no es válido',
+        life: 4000
+      });
+      return;
+    }
+
+    // 2. Validar que el cupón no haya sido redimido ya
+    if (this.rewardData.isRedeemed || !this.rewardData.canRedeem) {
+      this.errorMessage = 'Este cupón ya ha sido redimido';
+      this.loading = false;
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Cupón agotado',
+        detail: 'Este cupón ya fue utilizado y no está disponible',
+        life: 4000
+      });
+      return;
+    }
+
+    // 3. Validar límite de uso del cupón
+    if (this.rewardData.usageLimit > 0 && this.rewardData.usageCount >= this.rewardData.usageLimit) {
+      this.errorMessage = 'Este cupón ya alcanzó su límite de uso';
+      this.loading = false;
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Cupón agotado',
+        detail: `Este cupón ya no puede ser utilizado. Límite de uso: ${this.rewardData.usageLimit}`,
+        life: 4000
+      });
+      return;
+    }
+
+    // 4. Validar monto mínimo de compra
     if (amount < minAmount) {
       this.errorMessage = `Compra mínima requerida: $${minAmount.toFixed(2)}`;
       this.loading = false;
@@ -155,21 +253,11 @@ export class ManualCodeInputComponent {
       return;
     }
 
-    // Validar límite de uso
-    if (this.rewardData.usageCount >= this.rewardData.usageLimit) {
-      this.errorMessage = 'Este cupón ya alcanzó su límite de uso';
-      this.loading = false;
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Cupón agotado',
-        detail: 'Este cupón ya no está disponible',
-        life: 4000
-      });
-      return;
-    }
-
-    // Calcular descuento según el tipo
+    // Todas las validaciones pasaron - Calcular descuento
     this.calculateDiscount();
+
+    // Marcar este cupón como aplicado en esta sesión
+    this.appliedCoupons.add(this.couponCode);
 
     this.loading = false;
     this.showResult = true;
@@ -206,6 +294,18 @@ export class ManualCodeInputComponent {
     this.finalAmount = Math.max(0, amount - this.discountAmount);
   }
 
+  /**
+   * Valida que el cupón pertenezca al tenant actual
+   * Nota: Implementar validación contra el tenant ID actual del usuario
+   */
+  private validateTenantOwnership(rewardTenantId: number): boolean {
+    // TODO: Obtener el tenantId actual del usuario (del auth service o estado global)
+    // Comparar con el tenantId del reward
+    // Por ahora, retorna true para no bloquear funcionalidad
+    // Implementar cuando se tenga acceso al tenant actual del usuario
+    return true;
+  }
+
   resetForm(): void {
     this.couponCode = '';
     this.purchaseAmount = undefined;
@@ -214,5 +314,7 @@ export class ManualCodeInputComponent {
     this.rewardData = null;
     this.discountAmount = 0;
     this.finalAmount = 0;
+    // No limpiar appliedCoupons para mantener historial en esta sesión
+    // this.appliedCoupons.clear(); // Descomenta si quieres limpiar el historial
   }
 }

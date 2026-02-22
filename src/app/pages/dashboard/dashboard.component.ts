@@ -7,14 +7,22 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { BadgeModule } from 'primeng/badge';
 import { PaginatorModule } from 'primeng/paginator';
 import { MessageModule } from 'primeng/message';
+import { TooltipModule } from 'primeng/tooltip';
 import { forkJoin } from 'rxjs';
 import { DashboardService } from './dashboard.service';
+import { DashboardLoyaltyService } from './dashboard-loyalty.service';
 import { TenantService } from '@/pages/admin-page/service/tenant.service';
 import {
   TimeSeriesCountDTO,
   CouponStatsDTO,
   SalesSummaryDTO,
-  CampaignPerformanceDTO
+  CampaignPerformanceDTO,
+  RepeatPurchaseRateDTO,
+  IdentifiedVsGeneralDTO,
+  CustomerLTVDTO,
+  CouponConversionDTO,
+  CustomizationAnalysisDTO,
+  CampaignROIDTO
 } from './dashboard.models';
 
 interface Insight {
@@ -34,7 +42,8 @@ interface Insight {
     SkeletonModule,
     BadgeModule,
     PaginatorModule,
-    MessageModule
+    MessageModule,
+    TooltipModule
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
@@ -58,6 +67,17 @@ export class DashboardComponent implements OnInit {
   ventasResumen = signal<SalesSummaryDTO | null>(null);
   campanasPerformance = signal<CampaignPerformanceDTO[]>([]);
 
+  // Loyalty Metrics Signals
+  repeatPurchaseRate = signal<RepeatPurchaseRateDTO | null>(null);
+  identifiedVsGeneral = signal<IdentifiedVsGeneralDTO | null>(null);
+  customerLTV = signal<CustomerLTVDTO[]>([]);
+  couponConversion = signal<CouponConversionDTO[]>([]);
+  customizationAnalysis = signal<CustomizationAnalysisDTO[]>([]);
+  campaignROI = signal<CampaignROIDTO[]>([]);
+
+  // Loading signals for loyalty metrics
+  loyaltyLoading = signal(false);
+
   // Chart data signals
   lineChartData = signal<any>(null);
   lineChartOptions = signal<any>(null);
@@ -65,11 +85,14 @@ export class DashboardComponent implements OnInit {
   barChartOptions = signal<any>(null);
   doughnutData = signal<any>(null);
   doughnutOptions = signal<any>(null);
+  identifiedVsGeneralChartData = signal<any>(null);
+  identifiedVsGeneralChartOptions = signal<any>(null);
 
   private tenantId = 0;
 
   constructor(
     private dashboardService: DashboardService,
+    private dashboardLoyaltyService: DashboardLoyaltyService,
     private tenantService: TenantService
   ) {}
 
@@ -253,7 +276,14 @@ export class DashboardComponent implements OnInit {
       nuevos: this.dashboardService.clientesNuevosPorPeriodo(this.tenantId, fromIso, toIso),
       cupones: this.dashboardService.statsCupones(this.tenantId, fromIso, toIso),
       ventas: this.dashboardService.resumenVentas(this.tenantId, fromIso, toIso),
-      performance: this.dashboardService.rendimientoCampanas(this.tenantId, fromIso, toIso)
+      performance: this.dashboardService.rendimientoCampanas(this.tenantId, fromIso, toIso),
+      // Nuevas métricas de lealtad
+      repeatPurchase: this.dashboardLoyaltyService.repeatPurchaseRate(this.tenantId, fromIso, toIso),
+      identifiedVsGen: this.dashboardLoyaltyService.identifiedVsGeneral(this.tenantId, fromIso, toIso),
+      customerLTV: this.dashboardLoyaltyService.customerLTV(this.tenantId, fromIso, toIso),
+      couponConv: this.dashboardLoyaltyService.couponConversion(this.tenantId, fromIso, toIso),
+      customization: this.dashboardLoyaltyService.customizationAnalysis(this.tenantId, fromIso, toIso),
+      roi: this.dashboardLoyaltyService.campaignROI(this.tenantId, fromIso, toIso)
     }).subscribe({
       next: (res) => {
         // Normalizar respuestas que pueden venir envueltas
@@ -269,9 +299,25 @@ export class DashboardComponent implements OnInit {
         this.ventasResumen.set(ventas);
         this.campanasPerformance.set(performance);
 
+        // Asignar nuevas métricas de lealtad
+        const repeatRate = this.extractValue(res.repeatPurchase);
+        const idVsGen = this.extractValue(res.identifiedVsGen);
+        const ltv = this.extractArray(res.customerLTV);
+        const couponConv = this.extractArray(res.couponConv);
+        const customization = this.extractArray(res.customization);
+        const roi = this.extractArray(res.roi);
+
+        this.repeatPurchaseRate.set(repeatRate);
+        this.identifiedVsGeneral.set(idVsGen);
+        this.customerLTV.set(ltv);
+        this.couponConversion.set(couponConv);
+        this.customizationAnalysis.set(customization);
+        this.campaignROI.set(roi);
+
         this.buildLineChart(nuevos);
         this.buildBarChart(cupones);
         this.buildDoughnut(cupones);
+        this.buildIdentifiedVsGeneralChart(idVsGen);
 
         this.generateInsights();
         this.loading.set(false);
@@ -328,6 +374,23 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  private buildIdentifiedVsGeneralChart(data: IdentifiedVsGeneralDTO | null): void {
+    if (!data) return;
+
+    const labels = ['Identificadas', 'Generales'];
+    const chartData = {
+      labels,
+      datasets: [{
+        data: [data.identifiedPercentage, data.generalPercentage],
+        backgroundColor: ['#6366F1', '#94A3B8'],
+        hoverBackgroundColor: ['#4F46E5', '#78909C']
+      }]
+    };
+
+    this.identifiedVsGeneralChartData.set(chartData);
+    this.identifiedVsGeneralChartOptions.set(this.doughnutOptions());
+  }
+
   private generateColors(count: number): string[] {
     const palette = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
     return Array.from({ length: count }, (_, i) => palette[i % palette.length]);
@@ -356,8 +419,42 @@ export class DashboardComponent implements OnInit {
     const performance = this.campanasPerformance();
     const cupones = this.cuponesStats();
     const ventas = this.ventasResumen();
+    const repeatRate = this.repeatPurchaseRate();
+    const idVsGen = this.identifiedVsGeneral();
 
-    // Insight 1: Campaña con mejor rendimiento
+    // Insight 1: Tasa de Recompra (Valor de Negocio)
+    if (repeatRate && repeatRate.totalCustomers > 0) {
+      if (repeatRate.repeatRate < 30) {
+        insights.push({
+          type: 'warn',
+          icon: 'pi-exclamation-triangle',
+          message: `Tu tasa de recompra es ${repeatRate.repeatRate.toFixed(1)}%. Sugerencia: Activa campañas de retención.`
+        });
+      } else if (repeatRate.repeatRate >= 30 && repeatRate.repeatRate < 50) {
+        insights.push({
+          type: 'info',
+          icon: 'pi-info-circle',
+          message: `Tu tasa de recompra es ${repeatRate.repeatRate.toFixed(1)}%. Está en el promedio esperado.`
+        });
+      } else {
+        insights.push({
+          type: 'success',
+          icon: 'pi-chart-line',
+          message: `¡Excelente! Tu tasa de recompra es ${repeatRate.repeatRate.toFixed(1)}%, por encima del promedio.`
+        });
+      }
+    }
+
+    // Insight 2: Ventas Identificadas vs Generales (Valor de Negocio)
+    if (idVsGen && idVsGen.generalPercentage > 50) {
+      insights.push({
+        type: 'warn',
+        icon: 'pi-exclamation-triangle',
+        message: `${idVsGen.generalPercentage.toFixed(1)}% de ventas son generales. Sugerencia: Capacita al personal en registro de clientes.`
+      });
+    }
+
+    // Insight 3: Campaña con mejor rendimiento
     if (performance.length > 0) {
       const bestCampaign = performance.reduce((prev, current) =>
         (current.redemptionRatePct > prev.redemptionRatePct) ? current : prev
@@ -378,7 +475,7 @@ export class DashboardComponent implements OnInit {
       }
     }
 
-    // Insight 2: Ticket promedio
+    // Insight 4: Ticket promedio
     if (ventas && ventas.avgTicket > 0) {
       const avgTicketFormatted = ventas.avgTicket.toFixed(2);
       insights.push({
@@ -388,7 +485,7 @@ export class DashboardComponent implements OnInit {
       });
     }
 
-    // Insight 3: Cupones sin redimir
+    // Insight 5: Cupones sin redimir
     if (cupones.length > 0) {
       const totalCreated = cupones.reduce((sum, c) => sum + c.couponsCreated, 0);
       const totalRedeemed = cupones.reduce((sum, c) => sum + c.couponsRedeemed, 0);
@@ -401,16 +498,10 @@ export class DashboardComponent implements OnInit {
           icon: 'pi-exclamation-triangle',
           message: `Hay ${unredeemed} cupones activos sin redimir (${unredeemedPct.toFixed(0)}% del total). Considera estrategias de activación.`
         });
-      } else if (unredeemed > 0) {
-        insights.push({
-          type: 'info',
-          icon: 'pi-ticket',
-          message: `${unredeemed} cupones aún no han sido redimidos. Tasa de redención global: ${(100 - unredeemedPct).toFixed(0)}%.`
-        });
       }
     }
 
-    // Insight 4: Crecimiento de clientes
+    // Insight 6: Crecimiento de clientes
     const nuevos = this.clientesNuevos();
     if (nuevos.length >= 2) {
       const lastWeek = nuevos[nuevos.length - 1]?.count || 0;
@@ -423,16 +514,10 @@ export class DashboardComponent implements OnInit {
           icon: 'pi-arrow-up',
           message: `¡Excelente! Tuviste un crecimiento del ${growth.toFixed(0)}% en clientes nuevos esta semana.`
         });
-      } else if (lastWeek < previousWeek && previousWeek > 0) {
-        insights.push({
-          type: 'warn',
-          icon: 'pi-arrow-down',
-          message: `Los clientes nuevos disminuyeron esta semana. Considera activar más campañas.`
-        });
       }
     }
 
-    // Insight 5: Campañas con bajo rendimiento
+    // Insight 7: Campañas con bajo rendimiento
     if (performance.length > 0) {
       const lowPerformers = performance.filter(p => p.redemptionRatePct < 10 && p.couponsIssued > 10);
       if (lowPerformers.length > 0) {
@@ -445,6 +530,46 @@ export class DashboardComponent implements OnInit {
     }
 
     this.insights.set(insights.slice(0, 4)); // Máximo 4 insights
+  }
+
+  // Métodos auxiliares para UI
+  getRepeatRateTooltip(): string {
+    const rate = this.repeatPurchaseRate();
+    if (!rate) return '';
+    if (rate.repeatRate < 30) {
+      return '🎯 Sugerencia: Activa campañas de retención para aumentar clientes recurrentes.';
+    }
+    return `Tu tasa de recompra es saludable: ${rate.repeatRate.toFixed(1)}%`;
+  }
+
+  getIdentifiedPercentageTooltip(): string {
+    const data = this.identifiedVsGeneral();
+    if (!data) return '';
+    if (data.generalPercentage > 50) {
+      return '⚠️ Sugerencia: Capacita al personal en registro de clientes para aumentar ventas identificadas.';
+    }
+    const percentage = data.identifiedPercentage ?? 0;
+    return `${percentage.toFixed(1)}% de tus ventas están identificadas.`;
+  }
+
+  hasEmptyMetrics(): boolean {
+    return !this.repeatPurchaseRate() && !this.identifiedVsGeneral();
+  }
+
+  getRepeatRateBadgeSeverity(): 'success' | 'warn' | 'danger' {
+    const rate = this.repeatPurchaseRate();
+    if (!rate) return 'danger';
+    if (rate.repeatRate > 50) return 'success';
+    if (rate.repeatRate >= 30) return 'warn';
+    return 'danger';
+  }
+
+  getIdentifiedSeverity(): 'success' | 'warn' | 'danger' {
+    const data = this.identifiedVsGeneral();
+    if (!data) return 'danger';
+    if (data.identifiedPercentage > 70) return 'success';
+    if (data.identifiedPercentage >= 50) return 'warn';
+    return 'danger';
   }
 }
 

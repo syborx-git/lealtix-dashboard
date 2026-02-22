@@ -90,6 +90,8 @@ export class CampaignTemplatesListComponent implements OnInit {
           this.tenantId = tenant?.id ?? 0;
           if (this.tenantId > 0) {
             this.checkBannerConditions();
+            // Reload templates using tenant-specific endpoint
+            this.loadTemplates();
           }
         },
         error: (err) => {
@@ -104,7 +106,7 @@ export class CampaignTemplatesListComponent implements OnInit {
   private loadTemplates(): void {
     this.loading.set(true);
 
-    this.campaignTemplateService.getAll()
+    this.campaignTemplateService.getAll(this.tenantId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (templates) => {

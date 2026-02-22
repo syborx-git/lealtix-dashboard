@@ -66,6 +66,48 @@
         </ng-container>
       </p-card>
 
+      <!-- Tasa de Recompra KPI -->
+      <p-card class="kpi-card" [pTooltip]="getRepeatRateTooltip()" tooltipPosition="bottom">
+        <ng-container *ngIf="!loading(); else kpiSkeleton">
+          <div class="kpi-content">
+            <div class="kpi-icon-wrapper indigo">
+              <i class="pi pi-sync"></i>
+            </div>
+            <div class="kpi-details">
+              <span class="kpi-label">Tasa de Recompra</span>
+              <span class="kpi-value">{{ repeatPurchaseRate()?.repeatRate | number:'1.1-1' }}%</span>
+              <p-badge
+                *ngIf="repeatPurchaseRate()"
+                [value]="(repeatPurchaseRate()!.repeatCustomers || 0) | number"
+                [severity]="getRepeatRateBadgeSeverity()"
+                styleClass="mt-2">
+              </p-badge>
+            </div>
+          </div>
+        </ng-container>
+      </p-card>
+
+      <!-- Ventas Identificadas KPI -->
+      <p-card class="kpi-card" [pTooltip]="getIdentifiedPercentageTooltip()" tooltipPosition="bottom">
+        <ng-container *ngIf="!loading(); else kpiSkeleton">
+          <div class="kpi-content">
+            <div class="kpi-icon-wrapper slate">
+              <i class="pi pi-user-check"></i>
+            </div>
+            <div class="kpi-details">
+              <span class="kpi-label">% Ventas Identificadas</span>
+              <span class="kpi-value">{{ identifiedVsGeneral()?.identifiedPercentage | number:'1.1-1' }}%</span>
+              <p-badge
+                *ngIf="identifiedVsGeneral()"
+                [value]="(identifiedVsGeneral()!.identifiedOrdersCount || 0) | number"
+                [severity]="getIdentifiedSeverity()"
+                styleClass="mt-2">
+              </p-badge>
+            </div>
+          </div>
+        </ng-container>
+      </p-card>
+
     </div>
   </div>
 
@@ -78,6 +120,194 @@
       </div>
     </div>
   </ng-template>
+
+  <!-- Sección de Lealtad y Métricas Nuevas -->
+  <div class="loyalty-section" *ngIf="!loading()">
+
+    <!-- Gráfico Identificadas vs Generales -->
+    <p-card class="chart-card" *ngIf="identifiedVsGeneral()">
+      <ng-template pTemplate="header">
+        <div class="card-header">
+          <i class="pi pi-chart-doughnut"></i>
+          <span>Ventas Identificadas vs Generales</span>
+        </div>
+      </ng-template>
+      <div class="chart-wrapper doughnut">
+        <p-chart type="doughnut" [data]="identifiedVsGeneralChartData()" [options]="identifiedVsGeneralChartOptions()"></p-chart>
+      </div>
+    </p-card>
+
+    <!-- Grid de 2 columnas: LTV y Conversión de Cupones -->
+    <div class="loyalty-grid">
+
+      <!-- Top Clientes por LTV -->
+      <p-card class="loyalty-card">
+        <ng-template pTemplate="header">
+          <div class="card-header">
+            <i class="pi pi-crown"></i>
+            <span>Top Clientes (LTV)</span>
+          </div>
+        </ng-template>
+        <ng-container *ngIf="customerLTV().length > 0; else emptyLTV">
+          <div class="loyalty-list">
+            <div class="loyalty-item" *ngFor="let customer of customerLTV() | slice:0:5; let i = index">
+              <div class="item-header">
+                <span class="rank-badge">{{ i + 1 }}</span>
+                <span class="customer-name">{{ customer.customerName }}</span>
+              </div>
+              <div class="item-metrics">
+                <div class="metric">
+                  <span class="label">LTV</span>
+                  <span class="value">{{ customer.lifetimeValue | currency:'USD':'symbol':'1.0-0' }}</span>
+                </div>
+                <div class="metric">
+                  <span class="label">Órdenes</span>
+                  <span class="value">{{ customer.totalOrders }}</span>
+                </div>
+                <div class="metric">
+                  <span class="label">Ticket Prom.</span>
+                  <span class="value">{{ customer.averageOrderValue | currency:'USD':'symbol':'1.0-0' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+        <ng-template #emptyLTV>
+          <div class="empty-state">
+            <i class="pi pi-inbox"></i>
+            <p>No hay datos de clientes disponibles</p>
+          </div>
+        </ng-template>
+      </p-card>
+
+      <!-- Conversión de Cupones por Campaña -->
+      <p-card class="loyalty-card">
+        <ng-template pTemplate="header">
+          <div class="card-header">
+            <i class="pi pi-ticket"></i>
+            <span>Conversión de Cupones</span>
+          </div>
+        </ng-template>
+        <ng-container *ngIf="couponConversion().length > 0; else emptyCoupon">
+          <div class="loyalty-list">
+            <div class="loyalty-item" *ngFor="let coupon of couponConversion() | slice:0:5">
+              <div class="item-header">
+                <strong class="campaign-name">{{ coupon.campaignName }}</strong>
+              </div>
+              <div class="item-metrics">
+                <div class="metric">
+                  <span class="label">Conversión</span>
+                  <p-badge
+                    [value]="(coupon.conversionRate | number:'1.1-1') + '%'"
+                    [severity]="coupon.conversionRate > 20 ? 'success' : (coupon.conversionRate > 10 ? 'warn' : 'danger')"
+                    size="small">
+                  </p-badge>
+                </div>
+                <div class="metric">
+                  <span class="label">Redención</span>
+                  <span class="value">{{ coupon.totalCouponsRedeemed }}/{{ coupon.totalCouponsIssued }}</span>
+                </div>
+                <div class="metric">
+                  <span class="label">Ingresos</span>
+                  <span class="value">{{ coupon.revenueFromCoupons | currency:'USD':'symbol':'1.0-0' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+        <ng-template #emptyCoupon>
+          <div class="empty-state">
+            <i class="pi pi-inbox"></i>
+            <p>No hay datos de cupones disponibles</p>
+          </div>
+        </ng-template>
+      </p-card>
+
+    </div>
+
+    <!-- Grid de 2 columnas: Personalización y ROI -->
+    <div class="loyalty-grid">
+
+      <!-- Análisis de Personalización -->
+      <p-card class="loyalty-card">
+        <ng-template pTemplate="header">
+          <div class="card-header">
+            <i class="pi pi-comments"></i>
+            <span>Personalización Más Frecuente</span>
+          </div>
+        </ng-template>
+        <ng-container *ngIf="customizationAnalysis().length > 0; else emptyCustom">
+          <div class="loyalty-list">
+            <div class="loyalty-item" *ngFor="let custom of customizationAnalysis() | slice:0:5">
+              <div class="item-header">
+                <strong class="keyword">{{ custom.keyword }}</strong>
+              </div>
+              <div class="item-metrics">
+                <div class="metric full-width">
+                  <span class="label">Frecuencia</span>
+                  <div class="progress-bar">
+                    <div class="progress-fill" [style.width.%]="custom.percentage"></div>
+                  </div>
+                  <span class="value">{{ custom.frequency }} veces ({{ custom.percentage | number:'1.1-1' }}%)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+        <ng-template #emptyCustom>
+          <div class="empty-state">
+            <i class="pi pi-inbox"></i>
+            <p>No hay datos de personalización</p>
+          </div>
+        </ng-template>
+      </p-card>
+
+      <!-- ROI por Campaña -->
+      <p-card class="loyalty-card">
+        <ng-template pTemplate="header">
+          <div class="card-header">
+            <i class="pi pi-trending-up"></i>
+            <span>ROI por Campaña</span>
+          </div>
+        </ng-template>
+        <ng-container *ngIf="campaignROI().length > 0; else emptyROI">
+          <div class="loyalty-list">
+            <div class="loyalty-item" *ngFor="let roi of campaignROI() | slice:0:5">
+              <div class="item-header">
+                <strong class="campaign-name">Campaña {{ roi.campaignId }}</strong>
+              </div>
+              <div class="item-metrics">
+                <div class="metric">
+                  <span class="label">ROI</span>
+                  <p-badge
+                    [value]="(roi.roi | number:'1.1-1') + '%'"
+                    [severity]="roi.roi > 100 ? 'success' : (roi.roi > 0 ? 'warn' : 'danger')"
+                    size="small">
+                  </p-badge>
+                </div>
+                <div class="metric">
+                  <span class="label">Ganancia</span>
+                  <span class="value">{{ roi.profit | currency:'USD':'symbol':'1.0-0' }}</span>
+                </div>
+                <div class="metric">
+                  <span class="label">Ingresos</span>
+                  <span class="value">{{ roi.revenueGenerated | currency:'USD':'symbol':'1.0-0' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+        <ng-template #emptyROI>
+          <div class="empty-state">
+            <i class="pi pi-inbox"></i>
+            <p>No hay datos de ROI disponibles</p>
+          </div>
+        </ng-template>
+      </p-card>
+
+    </div>
+
+  </div>
 
   <!-- Sección de Insights -->
   <div class="insights-section" *ngIf="!loading() && insights().length > 0">
