@@ -74,6 +74,8 @@ import { REWARD_TYPE_OPTIONS } from '../../constants/reward-types';
 })
 export class CreateCampaignComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
+  // Expose enum to template
+  public RewardType = RewardType;
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
@@ -271,6 +273,21 @@ export class CreateCampaignComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (reward) => {
+          if (!reward) {
+            this.currentReward.set(null);
+            const campaign = this.campaignToEdit();
+            if (campaign?.promoType === 'NONE') {
+              this.campaignForm.patchValue({
+                rewardType: RewardType.NONE,
+                rewardDescription: campaign.description || ''
+              }, { emitEvent: false });
+              this.updateRewardValidators(RewardType.NONE);
+              this.campaignForm.get('rewardType')?.updateValueAndValidity({ emitEvent: true });
+            }
+            this.loadingReward.set(false);
+            return;
+          }
+
           this.currentReward.set(reward);
 
           console.log('[loadCampaignReward] Cargando reward:', reward);
@@ -287,6 +304,15 @@ export class CreateCampaignComponent implements OnInit {
             minPurchaseAmount: reward.minPurchaseAmount,
             usageLimit: reward.usageLimit
           }, { emitEvent: false });
+
+          // Ensure validators and UI reflect the loaded reward type
+          try {
+            this.updateRewardValidators(reward.rewardType as RewardType);
+            this.campaignForm.get('rewardType')?.updateValueAndValidity({ emitEvent: true });
+            this.campaignForm.get('rewardDescription')?.enable({ emitEvent: false });
+          } catch (e) {
+            console.warn('Failed to sync reward validators after loading reward', e);
+          }
 
           // Si hay productId, asegurar que el árbol esté cargado y luego seleccionar el nodo
           if (reward.productId) {
@@ -314,8 +340,10 @@ export class CreateCampaignComponent implements OnInit {
 
   private populateFormWithCampaign(campaign: any): void {
     // Parse dates if they exist
+    debugger;
     const startDate = campaign.startDate ? new Date(campaign.startDate) : null;
     const endDate = campaign.endDate ? new Date(campaign.endDate) : null;
+    const isPromoNone = campaign.promoType === 'NONE';
 
     // Ensure segmentation is an array and validate values
     let segmentationValues: string[] = [];
@@ -345,7 +373,9 @@ export class CreateCampaignComponent implements OnInit {
       channels: campaign.channels || ['email'],
       segmentation: segmentationValues,
       status: campaign.status || 'DRAFT',
-      isAutomatic: campaign.isAutomatic || false
+      isAutomatic: campaign.isAutomatic || false,
+      promoType: campaign.promoType || '',
+      ...(isPromoNone ? { rewardType: RewardType.NONE, rewardDescription: campaign.description || '' } : {})
     });
 
     // Set uploaded image URL if exists
@@ -427,6 +457,7 @@ export class CreateCampaignComponent implements OnInit {
   }
 
   private applyTemplate(template: CampaignTemplate): void {
+    debugger;
     this.campaignForm.patchValue({
       title: template.defaultTitle || '',
       subtitle: template.defaultSubtitle || '',
@@ -587,6 +618,7 @@ export class CreateCampaignComponent implements OnInit {
   }
 
   private updateCampaignWithReward(): void {
+    debugger;
     const campaignId = this.campaignId();
 
     if (!campaignId) {
@@ -1092,6 +1124,13 @@ export class CreateCampaignComponent implements OnInit {
   }
 
   getRewardSummary(): string {
+    // If the selected reward type is NONE, show explicit message
+    if (this.selectedRewardType === RewardType.NONE) {
+      // Prefer any existing description; otherwise a default message
+      const desc = this.campaignForm.get('rewardDescription')?.value;
+      return desc ? desc : 'Sin beneficio (Solo promoción)';
+    }
+
     const reward = this.currentReward();
     if (!reward) return 'No configurado';
 
@@ -1106,6 +1145,9 @@ export class CreateCampaignComponent implements OnInit {
         return `Compra ${reward.buyQuantity} lleva ${reward.freeQuantity} gratis`;
       case 'CUSTOM':
         return reward.description || 'Beneficio personalizado';
+      case 'NONE':
+        // If backend returned a NONE reward, show its description or default
+        return reward.description || 'Sin beneficio (Solo promoción)';
       default:
         return 'Beneficio configurado';
     }
@@ -1225,10 +1267,10 @@ export class CreateCampaignComponent implements OnInit {
         }
       });
 
-      // If NONE, clear description as well
+      // If NONE, keep the description editable and required so promotional-only campaigns can provide a message
       if (rewardType === RewardType.NONE) {
-        this.campaignForm.get('rewardDescription')?.clearValidators();
-        this.campaignForm.get('rewardDescription')?.setValue('Sin beneficio - Solo promoción', { emitEvent: false });
+        this.campaignForm.get('rewardDescription')?.setValidators([Validators.required, Validators.maxLength(500)]);
+        this.campaignForm.get('rewardDescription')?.enable({ emitEvent: false });
       } else {
         // Apply validators based on reward type
         switch (rewardType) {
@@ -1257,7 +1299,8 @@ export class CreateCampaignComponent implements OnInit {
         }
       }
 
-      // Update validation state without emitting events
+      // Ensure rewardDescription is enabled and update validation state without emitting events
+      this.campaignForm.get('rewardDescription')?.enable({ emitEvent: false });
       rewardFields.forEach(field => {
         this.campaignForm.get(field)?.updateValueAndValidity({ emitEvent: false });
       });
@@ -1440,7 +1483,7 @@ export class CreateCampaignComponent implements OnInit {
     const updateRequest: any = {
       title: formValue.title,
       subtitle: formValue.subtitle,
-      description: formValue.description,
+      description: promoType === 'NONE' ? formValue.rewardDescription : formValue.description,
       imageUrl: this.uploadedImageUrl() || formValue.imageUrl,
       promoType: promoType,
       promoValue: formValue.promoValue,

@@ -56,6 +56,8 @@ import { REWARD_TYPE_OPTIONS } from '../../constants/reward-types';
   styleUrls: ['./campaign-form.component.scss']
 })
 export class CampaignFormComponent implements OnInit {
+  // Make enum available to template
+  public RewardType = RewardType;
   private destroyRef = inject(DestroyRef);
 
   campaignForm: FormGroup;
@@ -199,6 +201,15 @@ export class CampaignFormComponent implements OnInit {
         next: (campaign) => {
           this.populateFormWithCampaign(campaign);
 
+          // IMPORTANTE: Precargar rewardDescription desde campaign.description ANTES de cargar el reward
+          // Esto es crítico para los casos donde promoType === NONE (sin promotion_reward en BD)
+          if (campaign.description) {
+            this.campaignForm.patchValue({
+              rewardDescription: campaign.description
+            }, { emitEvent: false });
+            console.log('📝 Preloaded rewardDescription from campaign.description:', campaign.description);
+          }
+
           // Cargar también el reward para obtener la descripción
           this.campaignService.getRewardByCampaign(campaignId)
             .pipe(takeUntilDestroyed())
@@ -221,6 +232,16 @@ export class CampaignFormComponent implements OnInit {
                   usageLimit: reward.usageLimit
                 }, { emitEvent: false });
 
+                // Ensure validators and control enablement reflect the loaded reward type
+                try {
+                  this.updateRewardValidators(reward.rewardType as RewardType);
+                  // Ensure the form control value is recognized by the UI
+                  this.campaignForm.get('rewardType')?.updateValueAndValidity({ emitEvent: true });
+                  this.campaignForm.get('rewardDescription')?.enable({ emitEvent: false });
+                } catch (e) {
+                  console.warn('Failed to apply reward validators after loading reward', e);
+                }
+
                 // Si hay productId, asegurar que el árbol esté cargado y luego seleccionar el nodo
                 if (reward.productId) {
                   // Si el árbol ya está cargado, seleccionar inmediatamente
@@ -233,7 +254,28 @@ export class CampaignFormComponent implements OnInit {
                 }
               },
               error: (error) => {
-                console.log('ℹ️ No se encontró reward para la campaña');
+                console.log('ℹ️ No se encontró reward para la campaña. Aplicando fallback a RewardType.NONE');
+                // Si no hay reward asociado, considerar que es "NONE"
+                // La descripción ya se precargó desde campaign.description arriba
+                try {
+                  const currentRewardDesc = this.campaignForm.get('rewardDescription')?.value;
+                  console.log('📝 Current rewardDescription before setting NONE:', currentRewardDesc);
+
+                  this.campaignForm.patchValue({
+                    rewardType: RewardType.NONE
+                  }, { emitEvent: false });
+
+                  this.existingReward = null;
+                  this.updateRewardValidators(RewardType.NONE);
+                  this.campaignForm.get('rewardType')?.updateValueAndValidity({ emitEvent: true });
+                  this.campaignForm.get('rewardDescription')?.updateValueAndValidity({ emitEvent: false });
+
+                  // Log para debug
+                  console.log('✅ Fallback NONE applied. rewardDescription value:', this.campaignForm.get('rewardDescription')?.value);
+                  console.log('✅ rewardDescription status:', 'disabled=' + this.campaignForm.get('rewardDescription')?.disabled + ', errors=' + JSON.stringify(this.campaignForm.get('rewardDescription')?.errors));
+                } catch (e) {
+                  console.warn('Error applying NONE reward fallback', e);
+                }
               }
             });
         },
@@ -249,10 +291,14 @@ export class CampaignFormComponent implements OnInit {
   }
 
   private populateFormWithCampaign(campaign: CampaignResponse): void {
+    console.log('📥 Loading campaign:', campaign.id, '| promoType:', campaign.promoType, '| description:', campaign.description);
+
+    const isPromoNone = campaign.promoType === 'NONE';
+
     this.campaignForm.patchValue({
       title: campaign.title,
       subtitle: campaign.subtitle,
-      description: '', // La descripción se cargará desde el reward
+      description: campaign.description || '', // La descripción se cargará desde el reward o como fallback desde campaign
       promoType: campaign.promoType,
       promoValue: campaign.promoValue,
       callToAction: campaign.callToAction,
@@ -262,7 +308,8 @@ export class CampaignFormComponent implements OnInit {
       segmentation: campaign.segmentation,
       imageUrl: campaign.imageUrl,
       status: campaign.status,
-      isAutomatic: campaign.isAutomatic
+      isAutomatic: campaign.isAutomatic,
+      ...(isPromoNone ? { rewardType: RewardType.NONE } : {})
     });
     // Aplicar validadores dependientes del promoType tras cargar
     this.onPromoTypeChange();
@@ -306,8 +353,8 @@ export class CampaignFormComponent implements OnInit {
       promoValueControl?.clearValidators();
     }
 
-    // Si es 'Solo Promoción' (CUSTOM) entonces la descripción del reward es requerida
-    if (promoType === PromoType.CUSTOM) {
+    // Si es 'Solo Promoción' (CUSTOM) o promoType NONE entonces la descripción es requerida
+    if (promoType === PromoType.CUSTOM || promoType === 'NONE') {
       descriptionControl?.setValidators([Validators.required, Validators.minLength(3)]);
     } else {
       descriptionControl?.clearValidators();
@@ -323,7 +370,8 @@ export class CampaignFormComponent implements OnInit {
   }
 
   isPromoTypeCustom(): boolean {
-    return this.campaignForm.get('promoType')?.value === PromoType.CUSTOM;
+    const promoType = this.campaignForm.get('promoType')?.value;
+    return promoType === PromoType.CUSTOM || promoType === 'NONE';
   }
 
   getPromoValueLabel(): string {
@@ -406,8 +454,12 @@ export class CampaignFormComponent implements OnInit {
       return;
     }
 
-    console.log('📝 FORM VALUE ON SUBMIT:', this.campaignForm.value);
-    console.log('📝 DESCRIPTION VALUE:', this.campaignForm.get('description')?.value);
+    const formValue = this.campaignForm.value;
+    console.log('📝 FORM VALUE ON SUBMIT:', formValue);
+    console.log('📝 REWARD TYPE:', formValue.rewardType);
+    console.log('📝 REWARD DESCRIPTION:', formValue.rewardDescription);
+    console.log('📝 DESCRIPTION:', formValue.description);
+    console.log('📝 FINAL DESCRIPTION TO SEND:', formValue.rewardDescription || formValue.description);
 
     this.saving.set(true);
 
@@ -426,7 +478,8 @@ export class CampaignFormComponent implements OnInit {
       businessId: 1, // TODO: Get from auth service
       title: formValue.title,
       subtitle: formValue.subtitle,
-      // description se guarda en promotion_reward, no aquí
+      // If NONE, use rewardDescription; otherwise use description
+      description: formValue.rewardType === RewardType.NONE ? formValue.rewardDescription : formValue.description,
       promoType: formValue.promoType,
       promoValue: formValue.promoValue,
       callToAction: formValue.callToAction,
@@ -501,6 +554,8 @@ export class CampaignFormComponent implements OnInit {
     const request: UpdateCampaignRequest = {
       title: formValue.title,
       subtitle: formValue.subtitle,
+      // If NONE, use rewardDescription; otherwise use description
+      description: formValue.rewardType === RewardType.NONE ? formValue.rewardDescription : formValue.description,
       promoType: formValue.promoType,
       promoValue: formValue.promoValue,
       callToAction: formValue.callToAction,
@@ -641,10 +696,12 @@ export class CampaignFormComponent implements OnInit {
         }
       });
 
-      // If NONE, clear description as well
+      // If NONE, keep a description field available (required) so promotional-only campaigns can have a message
       if (rewardType === RewardType.NONE) {
-        this.campaignForm.get('rewardDescription')?.clearValidators();
-        this.campaignForm.get('rewardDescription')?.setValue('Sin beneficio - Solo promoción', { emitEvent: false });
+        const descCtrl = this.campaignForm.get('rewardDescription');
+        descCtrl?.setValidators([Validators.required, Validators.maxLength(500)]);
+        descCtrl?.enable({ emitEvent: false });
+        console.log('🔧 Updated NONE validators. rewardDescription value:', descCtrl?.value, 'enabled:', !descCtrl?.disabled);
       } else {
         // Apply validators based on reward type
         switch (rewardType) {
@@ -673,7 +730,8 @@ export class CampaignFormComponent implements OnInit {
         }
       }
 
-      // Update validation state without emitting events
+      // Ensure rewardDescription is enabled and update validation state without emitting events
+      this.campaignForm.get('rewardDescription')?.enable({ emitEvent: false });
       rewardFields.forEach(field => {
         this.campaignForm.get(field)?.updateValueAndValidity({ emitEvent: false });
       });
@@ -837,8 +895,7 @@ export class CampaignFormComponent implements OnInit {
 
   private buildRewardRequest(): CreateRewardRequest | null {
     const formValue = this.campaignForm.value;
-
-    // If reward type is NONE, no reward data
+    // If reward type is NONE: do not create a promotion_reward entry. Description will be stored on campaign.
     if (formValue.rewardType === RewardType.NONE) {
       return null;
     }

@@ -392,8 +392,8 @@
         </div>
       </div>
 
-      <!-- Descripción del Reward (requerida solo si NO es NONE) -->
-      <div class="col-12" *ngIf="selectedRewardType && selectedRewardType !== 'NONE'">
+      <!-- Descripción del Reward (visible para cualquier tipo seleccionado, incluyendo NONE) -->
+      <div class="col-12" *ngIf="selectedRewardType">
         <div class="field">
           <div class="flex justify-content-between align-items-center mb-2">
             <label for="rewardDescription" class="font-semibold">
@@ -429,7 +429,7 @@
       </div>
 
       <!-- Mensaje informativo cuando se selecciona NONE -->
-      <div class="col-12" *ngIf="selectedRewardType === 'NONE'">
+      <div class="col-12" *ngIf="selectedRewardType === RewardType.NONE">
         <div class="p-3 border-round bg-blue-50 border-1 border-blue-200">
           <div class="flex align-items-start gap-2">
             <i class="pi pi-info-circle text-blue-600 mt-1"></i>
@@ -445,7 +445,7 @@
       </div>
 
       <!-- Campos opcionales del reward (solo si NO es NONE) -->
-      <div class="col-12 md:col-6" *ngIf="selectedRewardType && selectedRewardType !== 'NONE'">
+      <div class="col-12 md:col-6" *ngIf="selectedRewardType !== RewardType.NONE">
         <div class="field">
           <label for="minPurchaseAmount" class="font-semibold">
             Monto mínimo de compra (opcional)
@@ -467,7 +467,7 @@
         </div>
       </div>
 
-      <div class="col-12 md:col-6" *ngIf="selectedRewardType && selectedRewardType !== 'NONE'">
+      <div class="col-12 md:col-6" *ngIf="selectedRewardType !== RewardType.NONE">
         <div class="field">
           <label for="usageLimit" class="font-semibold">
             Límite de uso (opcional)
