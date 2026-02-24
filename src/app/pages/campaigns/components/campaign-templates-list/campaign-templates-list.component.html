@@ -57,7 +57,7 @@
   <!-- Templates grid -->
   <div class="grid w-full justify-content-start align-items-stretch" style="padding-left:0; margin-left:0;" *ngIf="!loading()">
     <div class="col-12 md:col-6 lg:col-4" *ngFor="let template of templates()">
-      <p-card class="h-full w-full template-card">
+      <p-card class="h-full w-full template-card" [class.in-use-card]="template.inUse">
         <!-- Horizontal layout: Image on left, content on right -->
         <div class="flex flex-row gap-3 h-full">
           <!-- Image preview -->
@@ -98,6 +98,7 @@
                   [label]="getPromoTypeLabel(template.defaultPromoType)"
                   [style]="{'background-color': getPromoTypeColor(template.defaultPromoType), 'color': '#ffffff'}">
                 </p-chip>
+                <p-chip *ngIf="template.inUse" label="En uso" styleClass="p-chip-outlined text-xs ml-2" size="small"></p-chip>
               </div>
             </div>
 
@@ -108,7 +109,8 @@
                 icon="pi pi-arrow-right"
                 size="small"
                 (onClick)="useTemplate(template)"
-                aria-label="Usar esta plantilla para crear una campaña">
+                aria-label="Usar esta plantilla para crear una campaña"
+                [disabled]="template.inUse">
               </p-button>
 
             </div>

@@ -13,8 +13,8 @@ import { environment } from '@/pages/commons/environment';
 export class CampaignTemplateService {
   private readonly baseUrl = `${environment.apiUrl}/campaign-templates`;
 
-  // Cache para las plantillas
-  private templatesCache$?: Observable<CampaignTemplate[]>;
+  // Cache para las plantillas por tenant
+  private templatesCache: Map<number, Observable<CampaignTemplate[]>> = new Map();
 
   constructor(
     private http: HttpClient,
@@ -24,20 +24,42 @@ export class CampaignTemplateService {
   /**
    * Obtiene todas las plantillas de campañas (con cache)
    */
-  getAll(): Observable<CampaignTemplate[]> {
-    if (!this.templatesCache$) {
-      this.templatesCache$ = this.http.get<GenericResponse<CampaignTemplate[]>>(this.baseUrl)
+  /**
+   * Obtiene todas las plantillas de campañas para un tenant (con cache por tenant)
+   */
+  getAll(tenantId?: number): Observable<CampaignTemplate[]> {
+    // Si no viene tenantId, solicitar al endpoint base
+    if (!tenantId) {
+      return this.http.get<GenericResponse<CampaignTemplate[]>>(this.baseUrl)
         .pipe(
           map(response => {
             const mappedResponse = this.mapper.mapGenericResponse(response);
             return (mappedResponse.object || []).map(template =>
               this.mapper.mapCampaignTemplate(template)
             );
-          }),
-          shareReplay(1)
+          })
         );
     }
-    return this.templatesCache$;
+
+    // Use cache por tenant
+    const cache = this.templatesCache.get(tenantId);
+    if (cache) {
+      return cache;
+    }
+
+    const request$ = this.http.get<GenericResponse<CampaignTemplate[]>>(`${this.baseUrl}/tenant/${tenantId}`)
+      .pipe(
+        map(response => {
+          const mappedResponse = this.mapper.mapGenericResponse(response);
+          return (mappedResponse.object || []).map(template =>
+            this.mapper.mapCampaignTemplate(template)
+          );
+        }),
+        shareReplay(1)
+      );
+
+    this.templatesCache.set(tenantId, request$);
+    return request$;
   }
 
   /**
@@ -100,15 +122,19 @@ export class CampaignTemplateService {
   /**
    * Limpia el cache de plantillas
    */
-  private clearCache(): void {
-    this.templatesCache$ = undefined;
+  private clearCache(tenantId?: number): void {
+    if (tenantId) {
+      this.templatesCache.delete(tenantId);
+    } else {
+      this.templatesCache.clear();
+    }
   }
 
   /**
    * Refresca el cache manualmente
    */
-  refreshCache(): Observable<CampaignTemplate[]> {
-    this.clearCache();
-    return this.getAll();
+  refreshCache(tenantId?: number): Observable<CampaignTemplate[]> {
+    this.clearCache(tenantId);
+    return this.getAll(tenantId);
   }
 }

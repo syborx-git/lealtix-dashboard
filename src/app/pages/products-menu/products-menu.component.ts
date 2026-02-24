@@ -26,6 +26,7 @@ import { IconFieldModule } from 'primeng/iconfield';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Product } from '../model/product.component';
 import { ProductService } from './service/product.service';
+import { CrossSellingService, CrossSellingConfig, CrossSellingDraft } from './service/cross-selling.service';
 import { ImageService } from '../service/image.service';
 import { ProductDialogComponent } from './product-dialog.component';
 import { forkJoin } from 'rxjs';
@@ -34,6 +35,8 @@ import { ConfettiService } from '@/confetti/confetti.service';
 import { ConfettiComponent } from '@/confetti/confetti.component';
 import { environment } from '../commons/environment.dev';
 import { CampaignService } from '@/pages/campaigns/services/campaign.service';
+import { CatalogService, CatalogCategory } from '@/pages/campaigns/services/catalog.service';
+import { TreeNode } from 'primeng/api';
 import Papa from 'papaparse';
 
 interface Column {
@@ -122,6 +125,13 @@ export class ProductMenuComponent implements OnInit {
 
     products = signal<Product[]>([]);
 
+    crossSellingItems: CrossSellingConfig[] = [];
+    crossSellingCatalog: CatalogCategory[] = [];
+    crossSellingCatalogOptions: TreeNode[] = [];
+    crossSellingLoading: boolean = false;
+    crossSellingSaving: boolean = false;
+    crossSellingMax: number = 3;
+
     newCategory: { name?: string; description?: string; tenantId?: string; active: boolean } = {
         name: '',
         description: '',
@@ -137,6 +147,8 @@ export class ProductMenuComponent implements OnInit {
 
     constructor(
         private productService: ProductService,
+        private crossSellingService: CrossSellingService,
+        private catalogService: CatalogService,
         private messageService: MessageService,
         private confirmationService: ConfirmationService,
         private fb: FormBuilder,
@@ -185,6 +197,7 @@ export class ProductMenuComponent implements OnInit {
                             this.tenantSlug = tenant?.slug ?? null;
                             this.loadCategories();
                             this.loadProducts();
+                            this.loadCrossSellingCatalog();
                             this.checkBannerConditions();
                             this.checkCampaignSetupPrompt();
 
@@ -209,6 +222,91 @@ export class ProductMenuComponent implements OnInit {
             }
         }
 
+    }
+
+    private getCurrentProductId(): number | null {
+        const rawId = (this.product && (this.product as any).id) || this.productForm?.get('id')?.value;
+        if (rawId === null || rawId === undefined) return null;
+        const idNum = typeof rawId === 'number' ? rawId : Number(rawId);
+        return Number.isNaN(idNum) ? null : idNum;
+    }
+
+    private buildCrossSellingOptions(): TreeNode[] {
+        const currentProductId = this.getCurrentProductId();
+        const formatter = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
+
+        return (this.crossSellingCatalog || [])
+            .map((category) => {
+                const children = (category.products || [])
+                    .filter((product) => (currentProductId ? product.id !== currentProductId : true))
+                    .map((product) => ({
+                        key: String(product.id),
+                        label: product.price != null
+                            ? `${product.name} · ${formatter.format(product.price)}`
+                            : product.name,
+                        selectable: true
+                    }));
+
+                if (!children.length) return null;
+
+                return {
+                    key: `cat-${category.id}`,
+                    label: category.name,
+                    selectable: false,
+                    children
+                } as TreeNode;
+            })
+            .filter(Boolean) as TreeNode[];
+    }
+
+    private refreshCrossSellingOptions(): void {
+        this.crossSellingCatalogOptions = this.buildCrossSellingOptions();
+    }
+
+    private resetCrossSellingState(): void {
+        this.crossSellingItems = [];
+        this.crossSellingLoading = false;
+        this.crossSellingSaving = false;
+        this.refreshCrossSellingOptions();
+    }
+
+    private loadCrossSellingCatalog(): void {
+        if (!this.tenantId) return;
+        this.catalogService.getCategoriesWithProducts(this.tenantId).subscribe({
+            next: (categories) => {
+                this.crossSellingCatalog = categories || [];
+                this.refreshCrossSellingOptions();
+            },
+            error: (err) => {
+                console.error('Error loading cross-selling catalog', err);
+                this.crossSellingCatalog = [];
+                this.refreshCrossSellingOptions();
+            }
+        });
+    }
+
+    private loadCrossSellingForProduct(productId: number | null): void {
+        if (!productId || !this.tenantId) {
+            this.crossSellingItems = [];
+            this.refreshCrossSellingOptions();
+            return;
+        }
+
+        this.crossSellingLoading = true;
+        this.crossSellingService.getByProduct(productId, this.tenantId).subscribe({
+            next: (items) => {
+                this.crossSellingItems = items || [];
+                this.refreshCrossSellingOptions();
+            },
+            error: (err) => {
+                console.error('Error loading cross-selling items', err);
+                this.crossSellingItems = [];
+                this.refreshCrossSellingOptions();
+            },
+            complete: () => {
+                this.crossSellingLoading = false;
+            }
+        });
     }
 
     openNewCategory() {
@@ -740,6 +838,7 @@ export class ProductMenuComponent implements OnInit {
         // ensure preview and internal file reference are cleared when creating new
         this.productImagePreview = null;
         this.productForm.get('productImage')?.setValue(null);
+        this.resetCrossSellingState();
         this.productDialog = true;
     }
 
@@ -761,6 +860,7 @@ export class ProductMenuComponent implements OnInit {
         // ensure preview and internal file reference are cleared when creating new
         this.productImagePreview = null;
         this.productForm.get('productImage')?.setValue(null);
+        this.resetCrossSellingState();
         this.productDialog = true;
     }
 
@@ -778,6 +878,8 @@ export class ProductMenuComponent implements OnInit {
         });
         this.productForm.get('productImage')?.setValue(null);
         this.productImagePreview = product.imageUrl ?? null;
+        const productId = this.getCurrentProductId();
+        this.loadCrossSellingForProduct(productId);
         this.productDialog = true;
     }
 
@@ -838,6 +940,7 @@ export class ProductMenuComponent implements OnInit {
             this.productForm.get('productImage')?.setValue(null);
             this.productForm.get('img_url')?.setValue('');
         }
+        this.resetCrossSellingState();
     }
 
     deleteProduct(product: Product) {
@@ -1019,6 +1122,110 @@ export class ProductMenuComponent implements OnInit {
         }
     }
 
+    onCreateCrossSelling(draft: CrossSellingDraft) {
+        const productId = this.getCurrentProductId();
+        if (!productId) {
+            this.messageService.add({ severity: 'warn', summary: 'Validacion', detail: 'Guarda el producto primero', life: 3000 });
+            return;
+        }
+
+        if (!draft?.suggestedProductId) {
+            this.messageService.add({ severity: 'warn', summary: 'Validacion', detail: 'Selecciona un producto sugerido', life: 3000 });
+            return;
+        }
+
+        if ((this.crossSellingItems?.length || 0) >= this.crossSellingMax) {
+            this.messageService.add({ severity: 'warn', summary: 'Limite', detail: 'Solo puedes agregar hasta 3 productos sugeridos', life: 3000 });
+            return;
+        }
+
+        this.crossSellingSaving = true;
+        const payload = {
+            productId,
+            suggestedProductId: draft.suggestedProductId,
+            tenantId: this.tenantId,
+            displayOrder: draft.displayOrder,
+            isActive: draft.isActive
+        };
+
+        this.crossSellingService.create(payload).subscribe({
+            next: () => {
+                this.messageService.add({ severity: 'success', summary: 'Venta cruzada', detail: 'Configuracion creada', life: 3000 });
+                this.loadCrossSellingForProduct(productId);
+            },
+            error: (err) => {
+                console.error('Error creating cross-selling', err);
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo crear', life: 3000 });
+            },
+            complete: () => {
+                this.crossSellingSaving = false;
+            }
+        });
+    }
+
+    onUpdateCrossSelling(draft: CrossSellingDraft) {
+        const productId = this.getCurrentProductId();
+        const crossSellingId = draft?.id ?? null;
+        if (!productId || !crossSellingId) {
+            return;
+        }
+
+        if (!draft?.suggestedProductId) {
+            this.messageService.add({ severity: 'warn', summary: 'Validacion', detail: 'Selecciona un producto sugerido', life: 3000 });
+            return;
+        }
+
+        this.crossSellingSaving = true;
+        const payload = {
+            productId,
+            suggestedProductId: draft.suggestedProductId,
+            tenantId: this.tenantId,
+            displayOrder: draft.displayOrder,
+            isActive: draft.isActive
+        };
+
+        this.crossSellingService.update(crossSellingId, payload).subscribe({
+            next: () => {
+                this.messageService.add({ severity: 'success', summary: 'Venta cruzada', detail: 'Configuracion actualizada', life: 3000 });
+                this.loadCrossSellingForProduct(productId);
+            },
+            error: (err) => {
+                console.error('Error updating cross-selling', err);
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo actualizar', life: 3000 });
+            },
+            complete: () => {
+                this.crossSellingSaving = false;
+            }
+        });
+    }
+
+    confirmDeleteCrossSelling(item: CrossSellingConfig) {
+        if (!item?.id) return;
+        const name = item.suggestedProductName || 'Producto';
+
+        this.confirmationService.confirm({
+            message: `Eliminar venta cruzada para ${name}?`,
+            header: 'Confirmar',
+            icon: 'pi pi-exclamation-triangle',
+            accept: () => {
+                this.crossSellingSaving = true;
+                this.crossSellingService.delete(item.id, this.tenantId).subscribe({
+                    next: () => {
+                        this.messageService.add({ severity: 'success', summary: 'Venta cruzada', detail: 'Configuracion eliminada', life: 3000 });
+                        this.loadCrossSellingForProduct(this.getCurrentProductId());
+                    },
+                    error: (err) => {
+                        console.error('Error deleting cross-selling', err);
+                        this.messageService.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo eliminar', life: 3000 });
+                    },
+                    complete: () => {
+                        this.crossSellingSaving = false;
+                    }
+                });
+            }
+        });
+    }
+
     // Create a new category and add it to the categories list
     createCategory() {
         this.categoryForm.markAllAsTouched();
@@ -1173,65 +1380,41 @@ export class ProductMenuComponent implements OnInit {
 
         forkJoin({
             products: this.productService.getProductsByTenantId(this.tenantId),
-            welcomeStatus: this.campaignService.getWelcomeCampaignStatus(this.tenantId)
+            campaigns: this.campaignService.getByBusiness(this.tenantId)
         }).subscribe({
-            next: ({ products, welcomeStatus }) => {
+            next: ({ products, campaigns }) => {
                 const productCount = Array.isArray(products) ? products.length : (products?.object?.length ?? 0);
                 const hasProducts = productCount > 0;
-                const campaignExists = welcomeStatus?.exists ?? false;
-                const campaignStatus = welcomeStatus?.status;
+                const welcomeCampaigns = (campaigns || []).filter(c => c.template?.id === 1);
+                const active = welcomeCampaigns.some(c => c.status === 'ACTIVE');
+                const draft = !active && welcomeCampaigns.some(c => c.status === 'DRAFT');
 
-                console.debug('[Banner][products-menu] tenantId=', this.tenantId, 'productCount=', productCount, 'welcomeStatus=', welcomeStatus);
-
-                if (!hasProducts || (campaignExists && campaignStatus === 'ACTIVE')) {
+                if (!hasProducts || active) {
                     this.showWelcomeBanner.set(false);
                     return;
                 }
 
-                if (!campaignExists) {
+                if (welcomeCampaigns.length === 0) {
                     this.showWelcomeBanner.set(true);
                     this.bannerMessage.set({
                         title: 'Tu negocio ya está listo.',
                         description: 'Ahora configura tu campaña de bienvenida para empezar a recibir clientes.',
                         buttonText: 'Configurar campaña de bienvenida'
                     });
-                } else if (campaignStatus === 'DRAFT') {
+                } else if (draft) {
                     this.showWelcomeBanner.set(true);
                     this.bannerMessage.set({
                         title: '¡Ya casi está todo listo!',
                         description: 'Tienes una campaña de bienvenida guardada como borrador. Actívala para comenzar a recibir clientes.',
                         buttonText: 'Activar campaña de bienvenida'
                     });
+                } else {
+                    this.showWelcomeBanner.set(false);
                 }
             },
             error: (err) => {
-                console.warn('[Banner][products-menu] welcome-status failed, falling back to campaigns list', err);
-                this.productService.getProductsByTenantId(this.tenantId).subscribe({
-                    next: (productsResp) => {
-                        const productCount = Array.isArray(productsResp) ? productsResp.length : (productsResp?.object?.length ?? 0);
-                        const hasProducts = productCount > 0;
-
-                        this.campaignService.getByBusiness(this.tenantId).subscribe({
-                            next: (campaigns) => {
-                                const welcomeCampaigns = (campaigns || []).filter(c => c.template?.id === 1);
-                                const active = welcomeCampaigns.some(c => c.status === 'ACTIVE');
-                                const draft = !active && welcomeCampaigns.some(c => c.status === 'DRAFT');
-
-                                if (!hasProducts || active) { this.showWelcomeBanner.set(false); return; }
-
-                                if (welcomeCampaigns.length === 0) {
-                                    this.showWelcomeBanner.set(true);
-                                    this.bannerMessage.set({ title: 'Tu negocio ya está listo.', description: 'Ahora configura tu campaña de bienvenida para empezar a recibir clientes.', buttonText: 'Configurar campaña de bienvenida' });
-                                } else if (draft) {
-                                    this.showWelcomeBanner.set(true);
-                                    this.bannerMessage.set({ title: '¡Ya casi está todo listo!', description: 'Tienes una campaña de bienvenida guardada como borrador. Actívala para comenzar a recibir clientes.', buttonText: 'Activar campaña de bienvenida' });
-                                }
-                            },
-                            error: (e2) => { console.error('[Banner][products-menu] fallback getByBusiness failed', e2); this.showWelcomeBanner.set(false); }
-                        });
-                    },
-                    error: (e3) => { console.error('[Banner][products-menu] fallback getProducts failed', e3); this.showWelcomeBanner.set(false); }
-                });
+                console.error('[Banner][products-menu] campaigns check failed', err);
+                this.showWelcomeBanner.set(false);
             }
         });
     }

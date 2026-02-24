@@ -55,7 +55,20 @@
       border-color: var(--lealtix-slate-200) !important;
       padding: 1rem !important;
     }
+
+    &.in-use-row,
+    &.in-use-row > td {
+      opacity: 0.55 !important;
+      color: var(--lealtix-slate-500) !important;
+    }
   }
+}
+
+/* Indica visualmente que la plantilla está en uso */
+.in-use-row .p-chip {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  color: #6b7280;
+  border-color: #d1d5db;
 }
 
 /* === VALIDATION BADGES === */
