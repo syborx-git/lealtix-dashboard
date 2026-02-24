@@ -207,6 +207,12 @@
     [productImagePreview]="productImagePreview"
     [categoriesArrayValue]="categoriesArray.value"
     [submitted]="submitted"
+    [crossSellingEnabled]="!!(product && product.id)"
+    [crossSellingItems]="crossSellingItems"
+    [crossSellingCatalogOptions]="crossSellingCatalogOptions"
+    [crossSellingLoading]="crossSellingLoading"
+    [crossSellingSaving]="crossSellingSaving"
+    [crossSellingMax]="crossSellingMax"
     (save)="saveProduct()"
     (hide)="hideDialog()"
     (openNewCategory)="openNewCategory()"
@@ -215,6 +221,9 @@
     (onProductFileSelect)="onProductFileSelect($event)"
     (categoryDialogChange)="categoryDialog = $event"
     (categoryChange)="onCategorySelect($event)"
+    (createCrossSelling)="onCreateCrossSelling($event)"
+    (updateCrossSelling)="onUpdateCrossSelling($event)"
+    (deleteCrossSelling)="confirmDeleteCrossSelling($event)"
 ></app-product-dialog>
 
 <p-confirmdialog [style]="{ width: '450px' }" />

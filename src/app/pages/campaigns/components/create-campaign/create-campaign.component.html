@@ -164,8 +164,8 @@
                     <i class="pi pi-gift text-3xl text-primary"></i>
                     <div>
                       <p class="font-semibold m-0 mb-1">Beneficio Actual</p>
-                      <p class="text-500 m-0" *ngIf="!loadingReward()">{{ getRewardSummary() }}</p>
-                      <p class="text-500 m-0" *ngIf="loadingReward()">
+                      <p class="text-500 m-0" *ngIf="!loadingReward() || selectedRewardType === RewardType.NONE">{{ getRewardSummary() }}</p>
+                      <p class="text-500 m-0" *ngIf="loadingReward() && selectedRewardType !== RewardType.NONE">
                         <i class="pi pi-spin pi-spinner"></i> Cargando...
                       </p>
                     </div>
@@ -293,8 +293,8 @@
                 </small>
               </div>
 
-              <!-- Descripción del Reward (requerida solo si NO es NONE) -->
-              <div class="field" *ngIf="selectedRewardType && selectedRewardType !== 'NONE'">
+              <!-- Descripción del Reward (visible para cualquier tipo seleccionado, incluyendo NONE) -->
+              <div class="field" *ngIf="selectedRewardType">
                 <label for="rewardDescription" class="font-semibold">
                   Descripción del beneficio <span class="text-red-500">*</span>
                 </label>
@@ -315,7 +315,7 @@
               </div>
 
               <!-- Mensaje informativo cuando se selecciona NONE -->
-              <div class="field" *ngIf="selectedRewardType === 'NONE'">
+              <div class="field" *ngIf="selectedRewardType === RewardType.NONE">
                 <div class="p-3 border-round bg-blue-50 border-1 border-blue-200">
                   <div class="flex align-items-start gap-2">
                     <i class="pi pi-info-circle text-blue-600 mt-1"></i>
@@ -330,7 +330,7 @@
               </div>
 
               <!-- Campos opcionales (solo si NO es NONE) -->
-              <div class="field" *ngIf="selectedRewardType && selectedRewardType !== 'NONE'">
+              <div class="field" *ngIf="selectedRewardType !== RewardType.NONE">
                 <label for="minPurchaseAmount" class="font-semibold">
                   Monto mínimo de compra (opcional)
                 </label>
@@ -344,7 +344,7 @@
                 ></p-inputnumber>
               </div>
 
-              <div class="field" *ngIf="selectedRewardType && selectedRewardType !== 'NONE'">
+              <div class="field" *ngIf="selectedRewardType !== RewardType.NONE">
                 <label for="usageLimit" class="font-semibold">
                   Límite de uso (opcional)
                 </label>
