@@ -13,7 +13,7 @@
   </p-dialog>
 
   <!-- ==================== HEADER ==================== -->
-  <div class="comandix-header mb-4">
+  <div class="comandix-header mb-3">
     <div class="flex align-items-center justify-content-between gap-3 mb-3">
       <div class="flex align-items-center gap-3">
         <div class="comandix-icon">
@@ -23,20 +23,20 @@
       </div>
       <div class="flex align-items-center gap-2 header-tags">
         <p-tag
-          *ngIf="selectedCliente"
+          *ngIf="selectedCliente && activeView() === 'pos'"
           [value]="selectedCliente.nombreCompleto"
           icon="pi pi-user"
           styleClass="p-tag-info"
         ></p-tag>
         <p-tag
-          *ngIf="!selectedCliente"
+          *ngIf="!selectedCliente && activeView() === 'pos'"
           value="Venta General"
           icon="pi pi-shopping-bag"
           styleClass="p-tag-secondary"
         ></p-tag>
         <!-- Botón carrito mobile -->
         <button
-          *ngIf="cart().length > 0"
+          *ngIf="cart().length > 0 && activeView() === 'pos'"
           class="cart-button-mobile"
           (click)="sidebarCarrito = true"
           type="button"
@@ -47,18 +47,64 @@
         </button>
       </div>
     </div>
+
+    <!-- ==================== TOGGLE DE VISTA ==================== -->
+    <div class="view-toggle">
+      <button
+        class="view-toggle-btn"
+        [class.active]="activeView() === 'pos'"
+        (click)="switchView('pos')"
+        type="button"
+      >
+        <i class="pi pi-plus-circle mr-2"></i>
+        Nueva Venta
+      </button>
+      <button
+        class="view-toggle-btn"
+        [class.active]="activeView() === 'orders'"
+        (click)="switchView('orders')"
+        type="button"
+      >
+        <i class="pi pi-list mr-2"></i>
+        Órdenes Pendientes
+        <span *ngIf="pendingOrdersCount() > 0" class="orders-badge">
+          {{ pendingOrdersCount() }}
+        </span>
+      </button>
+    </div>
   </div>
 
   <!-- ==================== LOADING STATE ==================== -->
-  <div *ngIf="loading()" class="loading-container">
+  <div *ngIf="loading() && activeView() === 'pos'" class="loading-container">
     <p-progressSpinner></p-progressSpinner>
     <p class="text-center text-color-secondary mt-3">Cargando catálogo...</p>
   </div>
 
-  <!-- ==================== MAIN CONTENT ==================== -->
-  <div *ngIf="!loading()" class="comandix-main-content">
+  <!-- ==================== VISTA: NUEVA VENTA (POS) ==================== -->
+  <div *ngIf="!loading() && activeView() === 'pos'" class="comandix-main-content">
 
-    <!-- ==================== COLUMNA IZQUIERDA: CLIENTE + CATÁLOGO ==================== -->
+    <div *ngIf="editingPendingOrder() as order" class="col-12 mb-3">
+      <div class="p-3" style="background: linear-gradient(135deg, #fff7ed 0%, #fffbf2 100%); border: 1px solid #f0d7b8; border-radius: 16px;">
+        <div class="flex flex-column md:flex-row md:align-items-center md:justify-content-between gap-3">
+          <div>
+            <div class="text-xs font-semibold uppercase mb-1" style="color: #b8997d; letter-spacing: 0.08em;">Editando orden pendiente</div>
+            <div class="font-semibold" style="color: #33211D;">
+              #{{ order.id.slice(0, 8).toUpperCase() }} · {{ getClientLabel(order) }}
+            </div>
+            <div class="text-sm mt-1" style="color: #7a5c51;">Los cambios que hagas en esta comanda actualizarán la orden existente.</div>
+          </div>
+          <p-button
+            icon="pi pi-arrow-left"
+            label="Cancelar edición"
+            severity="secondary"
+            [outlined]="true"
+            (onClick)="cancelPendingOrderEdition()"
+          ></p-button>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUMNA IZQUIERDA: CLIENTE + CATÁLOGO -->
     <div class="comandix-left-column">
 
       <!-- PASO 1: Identificación del Cliente -->
@@ -112,14 +158,12 @@
           </div>
         </ng-template>
 
-        <!-- Mensaje de catálogo vacío -->
         <div *ngIf="categories().length === 0" class="empty-catalog">
           <i class="pi pi-inbox text-5xl text-surface-300 mb-3"></i>
           <p class="text-lg font-semibold text-color-secondary">Sin productos</p>
           <p class="text-sm text-color-secondary">Agrega productos al catálogo</p>
         </div>
 
-        <!-- Tabs de categorías -->
         <div *ngIf="categories().length > 0" class="catalog-content">
           <p-tabs>
             <p-tablist>
@@ -138,10 +182,7 @@
             <p-tabpanels>
               <p-tabpanel *ngFor="let category of categories()" [value]="category.id">
                 <div class="products-grid">
-                  <div
-                    *ngFor="let product of category.products"
-                    class="product-item"
-                  >
+                  <div *ngFor="let product of category.products" class="product-item">
                     <p-card
                       styleClass="product-card h-full cursor-pointer"
                       [class.no-image]="!product.imageUrl || !product.imageUrl.trim()"
@@ -184,10 +225,109 @@
       </p-card>
     </div>
 
-    <!-- ==================== COLUMNA DERECHA: CARRITO DESKTOP ==================== -->
+    <!-- COLUMNA DERECHA: CARRITO DESKTOP -->
     <div class="comandix-right-column">
       <div class="cart-sticky-container">
         <ng-container *ngTemplateOutlet="carritoTemplate"></ng-container>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== VISTA: ÓRDENES PENDIENTES ==================== -->
+  <div *ngIf="activeView() === 'orders'" class="orders-dashboard">
+
+    <!-- Header del dashboard -->
+    <div class="orders-dashboard-header mb-4">
+      <div class="flex align-items-center justify-content-between flex-wrap gap-3">
+        <div>
+          <h2 class="text-2xl font-bold m-0" style="color: #33211D;">
+            <i class="pi pi-clock mr-2" style="color: #DA9F5B;"></i>
+            Órdenes Pendientes
+          </h2>
+          <p class="text-sm m-0 mt-1" style="color: #7a5c51;">
+            Actualización automática cada 30 segundos
+            <span *ngIf="pendingOrdersCount() > 0" class="font-semibold" style="color: #DA9F5B;">
+              — {{ pendingOrdersCount() }} orden{{ pendingOrdersCount() === 1 ? '' : 'es' }} en espera
+            </span>
+          </p>
+        </div>
+        <p-button
+          icon="pi pi-refresh"
+          label="Actualizar"
+          severity="secondary"
+          [outlined]="true"
+          size="small"
+          (onClick)="pollOrders()"
+          styleClass="orders-refresh-btn"
+        ></p-button>
+      </div>
+    </div>
+
+    <!-- Estado vacío -->
+    <div *ngIf="pendingOrders().length === 0" class="orders-empty-state">
+      <div class="orders-empty-icon">
+        <i class="pi pi-check-circle"></i>
+      </div>
+      <h3 class="text-xl font-semibold mb-2" style="color: #33211D;">Todo al día</h3>
+      <p class="text-sm" style="color: #7a5c51;">No hay órdenes pendientes en este momento.</p>
+      <p class="text-xs mt-1" style="color: #b8997d;">El sistema revisa automáticamente cada 30 segundos.</p>
+    </div>
+
+    <!-- Grid de órdenes -->
+    <div *ngIf="pendingOrders().length > 0" class="orders-grid">
+      <div
+        *ngFor="let order of pendingOrders(); trackBy: trackByOrderId"
+        class="order-card"
+        (click)="openOrderDetail(order)"
+      >
+        <!-- Badge "Nueva Orden" -->
+        <div *ngIf="isNewOrder(order)" class="order-new-badge">
+          <i class="pi pi-star-fill mr-1"></i> Nueva Orden
+        </div>
+
+        <!-- Cabecera de la tarjeta -->
+        <div class="order-card-header">
+          <div class="order-card-icon">
+            <i class="pi pi-shopping-bag"></i>
+          </div>
+          <div class="order-card-id">
+            <span class="text-xs font-semibold" style="color: #b8997d;">ORDEN</span>
+            <span class="font-bold text-sm" style="color: #33211D;">#{{ order.id.slice(0, 8).toUpperCase() }}</span>
+          </div>
+        </div>
+
+        <!-- Cliente -->
+        <div class="order-card-client">
+          <i class="pi pi-user mr-2" style="color: #DA9F5B;"></i>
+          <span class="font-semibold" style="color: #33211D;">{{ getClientLabel(order) }}</span>
+        </div>
+
+        <!-- Items count -->
+        <div *ngIf="order.items && order.items.length > 0" class="order-card-items-count">
+          <i class="pi pi-list mr-2" style="color: #b8997d;"></i>
+          <span class="text-sm" style="color: #7a5c51;">
+            {{ order.items.length }} producto{{ order.items.length === 1 ? '' : 's' }}
+          </span>
+        </div>
+
+        <!-- Cupón aplicado -->
+        <div *ngIf="order.couponCode || order.coupon_id" class="order-card-coupon">
+          <i class="pi pi-ticket mr-1" style="color: #DA9F5B;"></i>
+          <span class="text-xs" style="color: #DA9F5B;">Cupón aplicado</span>
+        </div>
+
+        <!-- Total -->
+        <div class="order-card-total">
+          <span class="text-xs" style="color: #7a5c51;">Total</span>
+          <span class="order-card-price">
+            ${{ (order.totalFinal ?? order.subtotal ?? 0) | number:'1.2-2' }}
+          </span>
+        </div>
+
+        <!-- CTA -->
+        <div class="order-card-cta">
+          <i class="pi pi-eye mr-1"></i> Ver detalle
+        </div>
       </div>
     </div>
   </div>
@@ -217,13 +357,12 @@
 
       <!-- Lista de Productos en Carrito -->
       <div *ngIf="cart().length > 0" class="cart-content">
-        <!-- Items del carrito -->
         <div class="cart-items">
           <div *ngFor="let item of cart(); let i = index; trackBy: trackByProductId" class="cart-item">
             <div class="cart-item-header">
               <div class="item-info">
                 <h4 class="item-name">{{ item.product.name }}</h4>
-                <span class="item-unit-price">${{ item.product.price | number:'1.2-2' }} c/u</span>
+                <span class="item-unit-price">${{ getCartItemUnitPrice(item) | number:'1.2-2' }} c/u</span>
               </div>
               <p-button
                 icon="pi pi-trash"
@@ -235,36 +374,17 @@
               ></p-button>
             </div>
 
-            <!-- Control de Cantidad -->
             <div class="quantity-control">
               <div class="quantity-buttons">
-                <p-button
-                  icon="pi pi-minus"
-                  [rounded]="true"
-                  severity="secondary"
-                  size="small"
-                  (onClick)="updateQuantity(item, item.cantidad - 1)"
-                ></p-button>
+                <p-button icon="pi pi-minus" [rounded]="true" severity="secondary" size="small" (onClick)="updateQuantity(item, item.cantidad - 1)"></p-button>
                 <span class="quantity-value">{{ item.cantidad }}</span>
-                <p-button
-                  icon="pi pi-plus"
-                  [rounded]="true"
-                  severity="secondary"
-                  size="small"
-                  (onClick)="updateQuantity(item, item.cantidad + 1)"
-                ></p-button>
+                <p-button icon="pi pi-plus" [rounded]="true" severity="secondary" size="small" (onClick)="updateQuantity(item, item.cantidad + 1)"></p-button>
               </div>
-              <span class="item-total">${{ (item.product.price * item.cantidad) | number:'1.2-2' }}</span>
+              <span class="item-total">${{ (getCartItemUnitPrice(item) * item.cantidad) | number:'1.2-2' }}</span>
             </div>
 
-            <!-- Notas de Personalización -->
             <div class="item-notes">
-              <input
-                pInputText
-                [(ngModel)]="item.comentarios"
-                placeholder="Sin cebolla, extra salsa..."
-                class="w-full"
-              />
+              <input pInputText [(ngModel)]="item.comentarios" placeholder="Sin cebolla, extra salsa..." class="w-full" />
             </div>
           </div>
         </div>
@@ -274,24 +394,11 @@
         <!-- Cupón de Descuento -->
         <div *ngIf="selectedCliente" class="coupon-section">
           <label class="section-label">
-            <i class="pi pi-ticket mr-2"></i>
-            Cupón
+            <i class="pi pi-ticket mr-2"></i>Cupón
           </label>
           <div class="flex gap-2">
-            <input
-              pInputText
-              [(ngModel)]="codigoCupon"
-              placeholder="Código"
-              class="flex-1"
-              [disabled]="validatingCoupon()"
-            />
-            <p-button
-              icon="pi pi-check"
-              [loading]="validatingCoupon()"
-              [disabled]="!codigoCupon.trim() || validatingCoupon()"
-              size="small"
-              (onClick)="validarCupon()"
-            ></p-button>
+            <input pInputText [(ngModel)]="codigoCupon" placeholder="Código" class="flex-1" [disabled]="validatingCoupon()" />
+            <p-button icon="pi pi-check" [loading]="validatingCoupon()" [disabled]="!codigoCupon.trim() || validatingCoupon()" size="small" (onClick)="validarCupon()"></p-button>
           </div>
         </div>
 
@@ -304,10 +411,7 @@
             <span class="total-value">${{ subtotal() | number:'1.2-2' }}</span>
           </div>
           <div *ngIf="descuentoAplicado() > 0" class="total-row discount-row">
-            <span class="total-label">
-              <i class="pi pi-tag mr-1"></i>
-              Descuento:
-            </span>
+            <span class="total-label"><i class="pi pi-tag mr-1"></i>Descuento:</span>
             <span class="total-value">-${{ descuentoAplicado() | number:'1.2-2' }}</span>
           </div>
           <p-divider></p-divider>
@@ -319,30 +423,255 @@
 
         <p-divider></p-divider>
 
-        <!-- Botones de Acción -->
         <div class="action-buttons">
-          <p-button
-            icon="pi pi-check-circle"
-            label="Finalizar Venta"
-            severity="success"
-            [loading]="processingOrder()"
-            [disabled]="processingOrder()"
-            styleClass="w-full"
-            (onClick)="finalizarVenta()"
-          ></p-button>
-          <p-button
-            icon="pi pi-times"
-            label="Limpiar"
-            severity="secondary"
-            [outlined]="true"
-            styleClass="w-full"
-            [disabled]="processingOrder()"
-            (onClick)="limpiarCarrito()"
-          ></p-button>
+          <p-button icon="pi pi-check-circle" [label]="editingPendingOrder() ? 'Guardar Cambios' : 'Finalizar Venta'" severity="success" [loading]="processingOrder()" [disabled]="processingOrder()" styleClass="w-full" (onClick)="finalizarVenta()"></p-button>
+          <p-button icon="pi pi-times" [label]="editingPendingOrder() ? 'Cancelar edición' : 'Limpiar'" severity="secondary" [outlined]="true" styleClass="w-full" [disabled]="processingOrder()" (onClick)="editingPendingOrder() ? cancelPendingOrderEdition() : limpiarCarrito()"></p-button>
         </div>
       </div>
     </p-card>
   </ng-template>
+
+  <!-- ==================== DIALOG DETALLE DE ORDEN ==================== -->
+  <p-dialog
+    [visible]="showOrderDetail()"
+    (visibleChange)="showOrderDetail.set($event)"
+    [header]="'Detalle de Orden'"
+    [modal]="true"
+    [closable]="!processingOrderAction()"
+    [style]="{ width: '100%', 'max-width': '560px' }"
+    styleClass="order-detail-dialog"
+    (onHide)="closeOrderDetail()"
+  >
+    <ng-container *ngIf="selectedOrder() as order">
+
+      <!-- ID y cliente -->
+      <div class="order-detail-top">
+        <div class="order-detail-id-block">
+          <span class="text-xs font-semibold" style="color: #b8997d;">ORDEN</span>
+          <span class="font-bold text-lg" style="color: #33211D;">
+            #{{ order.id.slice(0, 8).toUpperCase() }}
+          </span>
+          <span *ngIf="isNewOrder(order)" class="order-detail-new-badge ml-2">
+            <i class="pi pi-star-fill mr-1"></i>Nueva
+          </span>
+        </div>
+        <div class="order-detail-client-block">
+          <i class="pi pi-user mr-2" style="color: #DA9F5B;"></i>
+          <span class="font-semibold" style="color: #33211D;">{{ getClientLabel(order) }}</span>
+        </div>
+        <div *ngIf="order.fechaCreacion" class="order-detail-time">
+          <i class="pi pi-clock mr-2" style="color: #b8997d;"></i>
+          <span class="text-sm" style="color: #7a5c51;">{{ order.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+      </div>
+
+      <p-divider></p-divider>
+
+      <!-- Lista de productos -->
+      <div class="order-detail-items">
+        <h4 class="order-detail-section-title">
+          <i class="pi pi-list mr-2" style="color: #DA9F5B;"></i>Productos
+        </h4>
+
+        <div *ngIf="order.items && order.items.length > 0">
+          <div *ngFor="let item of order.items" class="order-detail-item">
+            <div class="order-detail-item-info">
+              <span class="order-detail-item-name">{{ getProductLabel(item) }}</span>
+              <span class="order-detail-item-qty">x{{ item.cantidad }}</span>
+            </div>
+            <span class="order-detail-item-price">
+              ${{ (getItemPrice(item) * item.cantidad) | number:'1.2-2' }}
+            </span>
+          </div>
+        </div>
+
+        <div *ngIf="!order.items || order.items.length === 0" class="text-sm text-center py-3" style="color: #b8997d;">
+          <i class="pi pi-info-circle mr-1"></i>Detalle de productos no disponible
+        </div>
+      </div>
+
+      <p-divider></p-divider>
+
+      <!-- Cupón -->
+      <div *ngIf="order.couponCode || order.coupon_id" class="order-detail-coupon">
+        <i class="pi pi-ticket mr-2" style="color: #DA9F5B;"></i>
+        <span class="font-semibold text-sm" style="color: #33211D;">Cupón:</span>
+        <span class="order-detail-coupon-code ml-2">{{ order.couponCode ?? order.coupon_id }}</span>
+        <span class="order-detail-coupon-badge ml-2">Se redimirá al confirmar</span>
+      </div>
+      <div *ngIf="order.couponCode || order.coupon_id"><p-divider></p-divider></div>
+
+      <!-- Totales -->
+      <div class="order-detail-totals">
+        <div *ngIf="order.subtotal" class="order-detail-total-row">
+          <span style="color: #7a5c51;">Subtotal</span>
+          <span style="color: #33211D;">${{ order.subtotal | number:'1.2-2' }}</span>
+        </div>
+        <div *ngIf="order.descuento && order.descuento > 0" class="order-detail-total-row">
+          <span style="color: #7a5c51;"><i class="pi pi-tag mr-1"></i>Descuento</span>
+          <span style="color: #22c55e;">-${{ order.descuento | number:'1.2-2' }}</span>
+        </div>
+        <div class="order-detail-total-final">
+          <span class="font-bold" style="color: #33211D;">Total Final</span>
+          <span class="menu-price-img-custom">
+            ${{ (order.totalFinal ?? order.subtotal ?? 0) | number:'1.2-2' }}
+          </span>
+        </div>
+      </div>
+
+    </ng-container>
+
+    <!-- Footer con botones de acción -->
+    <ng-template #footer>
+      <ng-container *ngIf="selectedOrder() as order">
+        <div class="order-detail-actions">
+          <p-button
+            icon="pi pi-pencil"
+            label="Editar en Comanda"
+            severity="secondary"
+            [outlined]="true"
+            [disabled]="processingOrderAction()"
+            styleClass="order-action-btn"
+            (onClick)="editPendingOrderInPos(order)"
+          ></p-button>
+
+          <p-button
+            icon="pi pi-times-circle"
+            label="Rechazar"
+            severity="danger"
+            [loading]="processingOrderAction()"
+            [disabled]="processingOrderAction()"
+            styleClass="order-action-btn order-reject-btn"
+            (onClick)="rechazarOrden(order)"
+          ></p-button>
+          <p-button
+            icon="pi pi-check-circle"
+            label="Confirmar Pedido"
+            severity="success"
+            [loading]="processingOrderAction()"
+            [disabled]="processingOrderAction()"
+            styleClass="order-action-btn order-confirm-btn"
+            (onClick)="confirmarOrden(order)"
+          ></p-button>
+        </div>
+      </ng-container>
+    </ng-template>
+  </p-dialog>
+
+  <!-- ==================== DIALOG DETALLE DE ORDEN SSE (CHATBOT) ==================== -->
+  <p-dialog
+    [visible]="showSseOrderDetail()"
+    (visibleChange)="showSseOrderDetail.set($event)"
+    [header]="'Tu Orden ha sido Registrada'"
+    [modal]="true"
+    [closable]="true"
+    [style]="{ width: '100%', 'max-width': '500px' }"
+    styleClass="sse-order-detail-dialog"
+    (onHide)="closeSseOrderDetail()"
+  >
+    <ng-container *ngIf="selectedSseOrder() as order">
+
+      <!-- Número de orden -->
+      <div class="sse-order-header">
+        <div class="sse-order-number">
+          <span class="text-xs font-semibold" style="color: #b8997d;">ORDEN #</span>
+          <span class="font-bold text-lg" style="color: #33211D;">
+            {{ order.id.slice(0, 8).toUpperCase() }}
+          </span>
+        </div>
+      </div>
+
+      <p-divider></p-divider>
+
+      <!-- Detalles de la orden -->
+      <div class="sse-order-details">
+        <!-- Cliente -->
+        <div class="sse-detail-row">
+          <span style="color: #7a5c51;">👤 Cliente:</span>
+          <span class="font-semibold" style="color: #33211D;">{{ order.clientLabel }}</span>
+        </div>
+
+        <!-- Items de la orden -->
+        <div *ngIf="order.items && order.items.length > 0" class="sse-detail-row">
+          <span style="color: #7a5c51;">📦 Items: ({{ order.items.length }})</span>
+        </div>
+        <div *ngIf="order.items && order.items.length > 0" class="sse-items-list">
+          <div *ngFor="let item of order.items" class="sse-item">
+            <div class="sse-item-name">
+              {{ item.productName ?? item.prod ?? 'Producto' }}
+              <span class="sse-item-qty"> x{{ item.cantidad }}</span>
+            </div>
+            <span class="sse-item-price">
+              ${{ ((item.precioUnitario ?? item.precio ?? 0) * item.cantidad) | number:'1.2-2' }}
+            </span>
+          </div>
+        </div>
+
+        <p-divider *ngIf="order.items && order.items.length > 0"></p-divider>
+
+        <!-- Totales -->
+        <div class="sse-totals">
+          <!-- Subtotal -->
+          <div class="sse-total-row">
+            <span style="color: #7a5c51;">💰 Subtotal:</span>
+            <span style="color: #33211D; font-weight: 600;">
+              ${{ (order.subtotal ?? order.total) | number:'1.2-2' }}
+            </span>
+          </div>
+
+          <!-- Descuento -->
+          <div *ngIf="order.descuento && order.descuento > 0" class="sse-total-row discount-row">
+            <span style="color: #7a5c51;">🎉 Descuento:</span>
+            <span style="color: #22c55e; font-weight: 600;">
+              -${{ order.descuento | number:'1.2-2' }}
+            </span>
+          </div>
+
+          <!-- Cupón aplicado -->
+          <div *ngIf="order.couponCode || order.couponId" class="sse-coupon-info">
+            <i class="pi pi-ticket" style="color: #DA9F5B;"></i>
+            <span style="color: #33211D; font-weight: 600;">Cupón aplicado:</span>
+            <span class="sse-coupon-code">{{ order.couponCode ?? order.couponId }}</span>
+          </div>
+
+          <p-divider class="my-2"></p-divider>
+
+          <!-- Total final -->
+          <div class="sse-total-row final-total">
+            <span class="font-bold" style="color: #33211D;">📦 Total Final:</span>
+            <span class="sse-final-amount">
+              ${{ order.total | number:'1.2-2' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <p-divider></p-divider>
+
+      <!-- Mensaje de espera de confirmación -->
+      <div class="sse-waiting-message">
+        <div class="sse-waiting-icon">⏳</div>
+        <p class="sse-waiting-text">
+          Tu pedido está esperando confirmación del comercio.
+        </p>
+        <p class="sse-waiting-subtext">
+          Te notificaremos pronto cuando sea procesado.
+        </p>
+      </div>
+
+    </ng-container>
+
+    <!-- Footer -->
+    <ng-template #footer>
+      <p-button
+        icon="pi pi-check"
+        label="Entendido"
+        severity="secondary"
+        styleClass="w-full"
+        (onClick)="closeSseOrderDetail()"
+      ></p-button>
+    </ng-template>
+  </p-dialog>
 
   <!-- Diálogo de Nuevo Cliente -->
   <app-cliente-dialog

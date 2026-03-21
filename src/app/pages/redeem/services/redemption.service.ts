@@ -102,6 +102,30 @@ export class RedemptionService {
   }
 
   /**
+   * Redime un cupón por ID
+   */
+  redeemCouponById(
+    couponId: number | string,
+    request: RedemptionRequest,
+    tenantId: number
+  ): Observable<RedemptionResponse> {
+
+    const enrichedRequest = {
+      ...request,
+      ipAddress: request.ipAddress || this.getClientIp(),
+      userAgent: request.userAgent || navigator.userAgent
+    };
+
+    return this.http.post<RedemptionResponse>(
+      `${this.apiUrl}/redeem/id/${couponId}`,
+      enrichedRequest,
+      { params: { tenantId: tenantId.toString() } }
+    ).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
    * Intenta obtener la IP del cliente
    */
   private getClientIp(): string {
