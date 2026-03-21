@@ -26,7 +26,7 @@ import { ClienteListComponent } from '@/pages/clientes/components/cliente-list/c
 import { ComandixComponent } from '@/pages/comandix/comandix.component';
 
 // User Management component
-import { UserManagementComponent } from '@/pages/user-management/user-management.component';
+import { UserManagementComponent } from '@/pages/user-management/components/user-list/user-management.component';
 
 export const appRoutes: Routes = [
     // Everything under /dashboard/**

@@ -52,6 +52,7 @@ export class UserService {
     const searchTerm = params?.searchTerm ?? '';
 
     let httpParams = new HttpParams()
+      .set('tenantId', tenantId.toString())
       .set('page', page.toString())
       .set('pageSize', pageSize.toString());
 
@@ -83,8 +84,10 @@ export class UserService {
   /**
    * Obtiene un usuario específico por ID
    */
-  getUsuarioById(id: number): Observable<UserDTO> {
-    return this.http.get<GenericResponse<UserDTO>>(`${this.baseUrl}/${id}`)
+  getUsuarioById(id: number, tenantId: number): Observable<UserDTO> {
+    let httpParams = new HttpParams().set('tenantId', tenantId.toString());
+
+    return this.http.get<GenericResponse<UserDTO>>(`${this.baseUrl}/${id}`, { params: httpParams })
       .pipe(
         map(response => response.object || response as any),
         catchError(error => {
@@ -122,8 +125,10 @@ export class UserService {
   /**
    * Actualiza un usuario existente
    */
-  updateUsuario(id: number, request: UpdateUserRequest): Observable<UserDTO> {
-    return this.http.put<GenericResponse<UserDTO>>(`${this.baseUrl}/${id}`, request)
+  updateUsuario(id: number, tenantId: number, request: UpdateUserRequest): Observable<UserDTO> {
+    let httpParams = new HttpParams().set('tenantId', tenantId.toString());
+
+    return this.http.put<GenericResponse<UserDTO>>(`${this.baseUrl}/${id}`, request, { params: httpParams })
       .pipe(
         map(response => response.object || response as any),
         tap(updatedUser => {
@@ -147,8 +152,10 @@ export class UserService {
   /**
    * Elimina un usuario
    */
-  deleteUsuario(id: number): Observable<any> {
-    return this.http.delete<GenericResponse<any>>(`${this.baseUrl}/${id}`)
+  deleteUsuario(id: number, tenantId: number): Observable<any> {
+    let httpParams = new HttpParams().set('tenantId', tenantId.toString());
+
+    return this.http.delete<GenericResponse<any>>(`${this.baseUrl}/${id}`, { params: httpParams })
       .pipe(
         tap(() => {
           // Eliminar de lista mock

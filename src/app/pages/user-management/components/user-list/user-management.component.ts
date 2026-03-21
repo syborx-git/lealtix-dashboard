@@ -21,13 +21,13 @@ import { RippleModule } from 'primeng/ripple';
 import { PaginatorModule } from 'primeng/paginator';
 
 // Services
-import { UserService } from './services/user.service';
+import { UserService } from '../../services/user.service';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { AuthService } from '@/auth/auth.service';
 import { TenantService } from '@/pages/admin-page/service/tenant.service';
 
 // Components
-import { UserDialogComponent } from './components/user-dialog/user-dialog.component';
+import { UserDialogComponent } from '../user-dialog/user-dialog.component';
 
 // Models
 import { UserDTO, UserRole, UserListResponse, ROLE_COLORS, ROLE_PERMISSIONS } from '@/models/user.model';
