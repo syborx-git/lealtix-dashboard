@@ -56,6 +56,7 @@ export class AppMenu implements OnInit {
                     { label: 'Plantillas', icon: 'pi pi-fw pi-file', routerLink: ['/dashboard/campaign-templates'] },
                     { label: 'Redención', icon: 'pi pi-fw pi-ticket', routerLink: ['/dashboard/manual-redemption'] },
                     { label: 'Gestión de Clientes', icon: 'pi pi-fw pi-users', routerLink: ['/dashboard/clientes'] },
+                    { label: 'Gestión de Equipo', icon: 'pi pi-fw pi-id-card', routerLink: ['/dashboard/users'] },
                     {
                         label: 'Mi Página',
                         icon: 'pi pi-fw pi-qrcode',
@@ -69,7 +70,6 @@ export class AppMenu implements OnInit {
                         visible: false // Will be updated based on products check
                     },
                     { label: 'Reportes', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/dashboard/uikit/charts'], visible: false },
-                    { label: 'Usuarios', icon: 'pi pi-fw pi-id-card', routerLink: ['/dashboard/uikit/formlayout'], visible: false },
                     { label: 'Utils', icon: 'pi pi-fw pi-table', routerLink: ['/dashboard/uikit/table'], visible: false }
                 ]
             }

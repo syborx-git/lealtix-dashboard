@@ -1,0 +1,247 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
+
+<div class="flex flex-column gap-4 p-6">
+  <!-- Header -->
+  <div class="flex justify-between align-items-center mb-4">
+    <div>
+      <h1 class="text-3xl font-bold text-900 mb-2">Gestión de Equipo</h1>
+      <p class="text-surface-600">Administra los miembros de tu equipo y sus roles</p>
+    </div>
+    <button
+      p-button
+      pRipple
+      type="button"
+      icon="pi pi-plus"
+      label="Nuevo Miembro"
+      class="p-button-rounded p-button-lg"
+      (click)="abrirDialogoNuevo()"
+      [disabled]="loading()"></button>
+  </div>
+
+  <!-- Tabla de Usuarios -->
+  <div class="surface-card p-6 border-round-xl shadow-1">
+    <p-table
+      [value]="usuarios()"
+      [rows]="rows"
+      [paginator]="true"
+      [globalFilterFields]="['nombre', 'email', 'rol']"
+      [loading]="loading()"
+      [totalRecords]="totalRecords()"
+      [rowsPerPageOptions]="[5, 10, 20]"
+      [(first)]="currentPage"
+      (onLazyLoad)="cargarUsuarios()"
+      class="w-full"
+      styleClass="p-datatable-striped"
+      responsiveLayout="scroll">
+
+      <!-- Columna: Nombre -->
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="nombre" class="font-bold">
+            Nombre <p-sortIcon field="nombre"></p-sortIcon>
+          </th>
+          <th pSortableColumn="email" class="font-bold">
+            Email <p-sortIcon field="email"></p-sortIcon>
+          </th>
+          <th pSortableColumn="rol" class="font-bold">
+            Rol <p-sortIcon field="rol"></p-sortIcon>
+          </th>
+          <th class="font-bold">Acciones</th>
+        </tr>
+      </ng-template>
+
+      <!-- Body: Nombre -->
+      <ng-template pTemplate="body" let-usuario>
+        <tr>
+          <td class="font-semibold">{{ usuario.nombre }}</td>
+          <td class="text-surface-600">{{ usuario.email }}</td>
+          <td>
+            <p-tag
+              [value]="formatRoleName(usuario.rol)"
+              [severity]="getColorForRole(usuario.rol)"
+              class="border-round-lg"></p-tag>
+          </td>
+          <td>
+            <div class="flex gap-2">
+              <button
+                p-button
+                pRipple
+                type="button"
+                icon="pi pi-pencil"
+                class="p-button-rounded p-button-text p-button-sm"
+                pTooltip="Editar"
+                tooltipPosition="bottom"
+                (click)="abrirDialogoEditar(usuario)"></button>
+              <button
+                p-button
+                pRipple
+                type="button"
+                icon="pi pi-trash"
+                class="p-button-rounded p-button-text p-button-danger p-button-sm"
+                pTooltip="Eliminar"
+                tooltipPosition="bottom"
+                (click)="eliminarUsuario(usuario)"></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <!-- Empty State -->
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="4" class="text-center py-6">
+            <div class="flex flex-column align-items-center gap-3">
+              <i class="pi pi-inbox text-4xl text-surface-400"></i>
+              <span class="text-surface-600">No hay usuarios disponibles</span>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Dialog: Crear/Editar Usuario -->
+<p-dialog
+  [visible]="dialogVisible()"
+  (visibleChange)="dialogVisible.set($event)"
+  [header]="isEditMode() ? 'Editar Miembro' : 'Nuevo Miembro'"
+  [modal]="true"
+  [closable]="true"
+  [style]="{ width: '100%', maxWidth: '500px' }"
+  [blockScroll]="true"
+  (onHide)="cerrarDialogo()">
+
+  <form [formGroup]="usuarioForm" class="flex flex-column gap-4 p-4">
+
+    <!-- Nombre Completo -->
+    <div class="field">
+      <label htmlFor="nombre" class="font-semibold block mb-2">
+        Nombre Completo <span class="text-red-500">*</span>
+      </label>
+      <input
+        pInputText
+        id="nombre"
+        type="text"
+        formControlName="nombre"
+        placeholder="Juan Pérez"
+        class="w-full"
+        [class.ng-invalid]="usuarioForm.get('nombre')?.invalid && usuarioForm.get('nombre')?.touched" />
+      <small class="text-red-500 block mt-1" *ngIf="usuarioForm.get('nombre')?.invalid && usuarioForm.get('nombre')?.touched">
+        <span *ngIf="usuarioForm.get('nombre')?.errors?.['required']">El nombre es requerido</span>
+        <span *ngIf="usuarioForm.get('nombre')?.errors?.['minlength']">Mínimo 2 caracteres</span>
+      </small>
+    </div>
+
+    <!-- Email -->
+    <div class="field">
+      <label htmlFor="email" class="font-semibold block mb-2">
+        Email <span class="text-red-500">*</span>
+      </label>
+      <input
+        pInputText
+        id="email"
+        type="email"
+        formControlName="email"
+        placeholder="juan@example.com"
+        class="w-full"
+        [class.ng-invalid]="usuarioForm.get('email')?.invalid && usuarioForm.get('email')?.touched" />
+      <small class="text-red-500 block mt-1" *ngIf="usuarioForm.get('email')?.invalid && usuarioForm.get('email')?.touched">
+        <span *ngIf="usuarioForm.get('email')?.errors?.['required']">El email es requerido</span>
+        <span *ngIf="usuarioForm.get('email')?.errors?.['email']">Email inválido</span>
+      </small>
+    </div>
+
+    <!-- Contraseña (solo en creación) -->
+    <div class="field" *ngIf="!isEditMode()">
+      <label htmlFor="contrasena" class="font-semibold block mb-2">
+        Contraseña <span class="text-red-500">*</span>
+      </label>
+      <p-password
+        id="contrasena"
+        formControlName="contrasena"
+        placeholder="••••••••"
+        styleClass="w-full"
+        [feedback]="false"
+        [toggleMask]="true"></p-password>
+      <small class="text-red-500 block mt-1" *ngIf="usuarioForm.get('contrasena')?.invalid && usuarioForm.get('contrasena')?.touched">
+        <span *ngIf="usuarioForm.get('contrasena')?.errors?.['required']">La contraseña es requerida</span>
+        <span *ngIf="usuarioForm.get('contrasena')?.errors?.['minlength']">Mínimo 6 caracteres</span>
+      </small>
+    </div>
+
+    <!-- Contraseña (opcional en edición) -->
+    <div class="field" *ngIf="isEditMode()">
+      <label htmlFor="contrasena" class="font-semibold block mb-2">
+        Nueva Contraseña <span class="text-surface-500">(Opcional)</span>
+      </label>
+      <p-password
+        id="contrasena"
+        formControlName="contrasena"
+        placeholder="Dejar vacío para mantener la actual"
+        styleClass="w-full"
+        [feedback]="false"
+        [toggleMask]="true"></p-password>
+    </div>
+
+    <!-- Rol -->
+    <div class="field">
+      <label htmlFor="rol" class="font-semibold block mb-2">
+        Rol <span class="text-red-500">*</span>
+      </label>
+      <p-select
+        id="rol"
+        [options]="availableRoles()"
+        formControlName="rol"
+        optionValue="$event"
+        [optionLabel]="'$event'"
+        placeholder="Selecciona un rol"
+        styleClass="w-full"
+        (onChange)="usuarioForm.get('rol')?.markAsTouched()">
+        <ng-template pTemplate="item" let-option>
+          <span>{{ formatRoleName(option) }}</span>
+        </ng-template>
+        <ng-template pTemplate="selectedItem" let-option>
+          <span *ngIf="option">{{ formatRoleName(option) }}</span>
+        </ng-template>
+      </p-select>
+      <small class="text-red-500 block mt-1" *ngIf="usuarioForm.get('rol')?.invalid && usuarioForm.get('rol')?.touched">
+        El rol es requerido
+      </small>
+    </div>
+
+    <!-- Permisos (informativo) -->
+    <div class="field" *ngIf="usuarioForm.get('rol')?.value">
+      <label class="font-semibold block mb-2">Permisos asignados</label>
+      <div class="flex flex-wrap gap-2">
+        <p-tag
+          *ngFor="let permission of getPermissionsForRole(usuarioForm.get('rol')?.value)"
+          [value]="permission"
+          class="border-round-lg"
+          severity="info"></p-tag>
+      </div>
+    </div>
+
+  </form>
+
+  <!-- Footer -->
+  <ng-template pTemplate="footer">
+    <div class="flex gap-2 justify-content-end">
+      <p-button
+        type="button"
+        label="Cancelar"
+        icon="pi pi-times"
+        severity="secondary"
+        (click)="cerrarDialogo()"
+        [disabled]="loading()"></p-button>
+      <p-button
+        type="button"
+        [label]="isEditMode() ? 'Actualizar' : 'Crear'"
+        icon="pi pi-check"
+        (click)="guardarUsuario()"
+        [disabled]="!isFormValid() || loading()"
+        [loading]="loading()"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
