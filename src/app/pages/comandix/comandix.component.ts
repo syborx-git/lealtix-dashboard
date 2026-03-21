@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Subject, firstValueFrom } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import confetti from 'canvas-confetti';
 
 // PrimeNG
 import { CardModule } from 'primeng/card';
@@ -18,10 +19,14 @@ import { DialogModule } from 'primeng/dialog';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageModule } from 'primeng/message';
 import { TagModule } from 'primeng/tag';
+import { BadgeModule } from 'primeng/badge';
+import { DataViewModule } from 'primeng/dataview';
+import { SkeletonModule } from 'primeng/skeleton';
 
 // Servicios
 import { MenuService } from './services/menu.service';
 import { OrderService } from './services/order.service';
+import { OrderSseService, SseNewOrderEvent } from './services/order-sse.service';
 import { ClienteService } from '@/pages/clientes/services/cliente.service';
 import { RedemptionService } from '@/pages/redeem/services/redemption.service';
 import { TenantService } from '@/pages/admin-page/service/tenant.service';
@@ -33,13 +38,15 @@ import { ClienteDialogComponent } from '@/pages/clientes/components/cliente-dial
 
 // Modelos
 import { MenuCategory, Product } from './models/menu.model';
-import { OrderItem, TenantClientOrderCreateRequest } from './models/order.model';
+import { OrderItem, TenantClientOrderCreateRequest, TenantClientOrderUpdateRequest, PendingOrder, PendingOrderItem } from './models/order.model';
 import { Cliente, GENERO_OPTIONS, CreateClienteRequest } from '@/models/cliente.model';
+import { RedemptionRequest, RedemptionChannel } from '@/pages/redeem/models/redemption-request.model';
 
 interface CartItem {
   product: Product;
   cantidad: number;
   comentarios: string;
+  precioUnitario?: number;
 }
 
 @Component({
@@ -61,6 +68,9 @@ interface CartItem {
     ProgressSpinnerModule,
     MessageModule,
     TagModule,
+    BadgeModule,
+    DataViewModule,
+    SkeletonModule,
     ClienteDialogComponent
   ],
   providers: [MessageService],
@@ -68,7 +78,7 @@ interface CartItem {
   styleUrls: ['./comandix.component.scss']
 })
 export class ComandixComponent implements OnInit, OnDestroy {
-  // Signals
+  // ==================== SIGNALS POS (existente) ====================
   categories = signal<MenuCategory[]>([]);
   clientes = signal<Cliente[]>([]);
   cart = signal<CartItem[]>([]);
@@ -94,20 +104,41 @@ export class ComandixComponent implements OnInit, OnDestroy {
   // Tenant ID
   tenantId: number = 0;
 
-  // Computed values
+  // Computed POS
   subtotal = computed(() => {
-    return this.cart().reduce((sum, item) => sum + (item.product.price * item.cantidad), 0);
+    return this.cart().reduce((sum, item) => sum + (this.getCartItemUnitPrice(item) * item.cantidad), 0);
   });
 
   totalFinal = computed(() => {
     return Math.max(0, this.subtotal() - this.descuentoAplicado());
   });
 
+  // ==================== SIGNALS DASHBOARD DE ÓRDENES (nuevo) ====================
+  activeView = signal<'pos' | 'orders'>('pos');
+  pendingOrders = signal<PendingOrder[]>([]);
+  loadingOrders = signal<boolean>(false);
+  selectedOrder = signal<PendingOrder | null>(null);
+  showOrderDetail = signal<boolean>(false);
+  processingOrderAction = signal<boolean>(false);
+  editingPendingOrder = signal<PendingOrder | null>(null);
+
+  // NUEVO: Dialog de detalle para órdenes SSE
+  showSseOrderDetail = signal<boolean>(false);
+  selectedSseOrder = signal<any>(null);
+
+  pendingOrdersCount = computed(() => this.pendingOrders().length);
+
+  private pollingInterval: ReturnType<typeof setInterval> | null = null;
+  private knownOrderIds = new Set<string>();
+  private readonly POLLING_INTERVAL_MS = 30_000;
+  private readonly NOTIFICATION_SOUND = 'assets/sounds/dragon-studio-correct-472358.mp3';
+
   private destroy$ = new Subject<void>();
 
   constructor(
     private menuService: MenuService,
     private orderService: OrderService,
+    private orderSseService: OrderSseService,
     private clienteService: ClienteService,
     private redemptionService: RedemptionService,
     private tenantService: TenantService,
@@ -124,17 +155,490 @@ export class ComandixComponent implements OnInit, OnDestroy {
     if (this.tenantId > 0) {
       this.loadCatalog();
       this.loadClientes();
+      this.startPolling();
+      this.startSseConnection();
+      this.subscribeToSseEvents();
     }
   }
 
   ngOnDestroy(): void {
+    this.stopPolling();
+    this.orderSseService.disconnect();
     this.destroy$.next();
     this.destroy$.complete();
   }
 
+  // ==================== VISTA ACTIVA ====================
+
+  switchView(view: 'pos' | 'orders'): void {
+    this.activeView.set(view);
+  }
+
+  // ==================== POLLING DE ÓRDENES PENDIENTES ====================
+
+  private startPolling(): void {
+    this.pollOrders();
+    this.pollingInterval = setInterval(() => this.pollOrders(), this.POLLING_INTERVAL_MS);
+  }
+
+  private stopPolling(): void {
+    if (this.pollingInterval !== null) {
+      clearInterval(this.pollingInterval);
+      this.pollingInterval = null;
+    }
+  }
+
+  async pollOrders(): Promise<void> {
+    if (this.tenantId <= 0) return;
+    try {
+      console.log('[Comandix] 🔄 Consultando órdenes pendientes...');
+      const response = await firstValueFrom(
+        this.orderService.getOrdersByTenant(this.tenantId, 'PENDIENTE')
+      );
+      const rawOrders = response?.object?.content ?? [];
+      console.log('[Comandix] 📦 Órdenes recibidas del BE:', rawOrders.length, rawOrders);
+
+      const isFirstPoll = this.knownOrderIds.size === 0;
+
+      // Mapear los datos del backend al modelo PendingOrder
+      const mappedOrders: PendingOrder[] = rawOrders.map((order: any) => ({
+        id: order.id,
+        tenantId: order.tenantId,
+        estado: order.estado,
+        customerId: order.customerId ?? null,
+        customerName: order.customerName ?? null,
+        nombre: order.customerName ?? null,
+        items: order.items ?? [],
+        subtotal: order.subtotal ?? 0,
+        descuento: order.descuento ?? 0,
+        totalFinal: order.total ?? 0,  // BE devuelve 'total', modelo espera 'totalFinal'
+        couponCode: order.couponCode ?? null,
+        coupon_id: order.couponId ?? null,
+        fechaCreacion: order.fecha ?? order.createdAt  // BE devuelve 'fecha', modelo espera 'fechaCreacion'
+      }));
+
+      // Reproducir sonido en cada polling cuando existan pendientes
+      if (mappedOrders.length > 0) {
+        this.playNotificationSound();
+      }
+
+      // Detectar nuevas órdenes y disparar alerta
+      const newOrders = mappedOrders.filter(order => !this.knownOrderIds.has(order.id));
+      if (!isFirstPoll && newOrders.length > 0) {
+        console.log('[Comandix] 🆕 Nuevas órdenes detectadas:', newOrders.length);
+        newOrders.forEach(order => {
+          this.triggerNewOrderAlert(order);
+        });
+      }
+
+      // Registrar todas las órdenes conocidas
+      mappedOrders.forEach(order => {
+        this.knownOrderIds.add(order.id);
+      });
+
+      // ==================== FUSIONAR ÓRDENES ====================
+      // Combinar órdenes del polling con las existentes (mantener órdenes SSE)
+      this.pendingOrders.update(existingOrders => {
+        const polledOrderMap = new Map(mappedOrders.map(o => [o.id, o]));
+        const existingOrderMap = new Map(existingOrders.map(o => [o.id, o]));
+
+        // Crear nueva lista fusionada
+        const mergedOrders: PendingOrder[] = [];
+
+        // 1. Agregar/actualizar todas las órdenes del polling
+        mappedOrders.forEach(order => {
+          mergedOrders.push(order);
+        });
+
+        // 2. Agregar órdenes SSE que no están en el polling
+        existingOrders.forEach(existing => {
+          if (!polledOrderMap.has(existing.id)) {
+            mergedOrders.push(existing);
+          }
+        });
+
+        console.log('[Comandix] ✅ Órdenes pendientes actualizadas:', mergedOrders.length);
+        return mergedOrders;
+      });
+
+      // Mostrar alerta en primera carga si hay órdenes
+      if (isFirstPoll && mappedOrders.length > 0) {
+        console.log('[Comandix] 📊 Primera carga:', mappedOrders.length, 'órdenes pendientes');
+        this.messageService.add({
+          severity: 'info',
+          summary: 'Órdenes Pendientes',
+          detail: `Tienes ${mappedOrders.length} orden${mappedOrders.length === 1 ? '' : 'es'} pendiente${mappedOrders.length === 1 ? '' : 's'}`,
+          life: 5000,
+          icon: 'pi pi-info-circle'
+        });
+      }
+    } catch (error) {
+      console.error('Error al consultar órdenes pendientes:', error);
+    }
+  }
+
+  // ==================== SSE (SERVER-SENT EVENTS) ====================
+
   /**
-   * Inicializa el tenant ID del usuario actual
+   * Inicia la conexión SSE con el backend
+   * SSE es más eficiente que polling para notificaciones push del servidor
    */
+  private startSseConnection(): void {
+    console.log('[Comandix] Iniciando conexión SSE con tenantId:', this.tenantId);
+    this.orderSseService.connect(this.tenantId);
+  }
+
+  /**
+   * Se suscribe a los eventos SSE de nuevas órdenes
+   */
+  private subscribeToSseEvents(): void {
+    // Escuchar nuevas órdenes del SSE (provenientes del CHATBOT)
+    this.orderSseService.newOrder$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (sseEvent: SseNewOrderEvent) => {
+          // Validar que la orden sea para este tenant
+          if (sseEvent.tenantId !== this.tenantId) {
+            console.debug('[Comandix] Evento SSE de otro tenant, ignorando:', sseEvent.tenantId);
+            return;
+          }
+
+          const order = sseEvent.order;
+
+          // Evitar duplicados: si ya existe la orden, no la añadimos
+          if (this.knownOrderIds.has(order.id)) {
+            console.debug('[Comandix] Orden del SSE ya existe, ignorando duplicado:', order.id);
+            return;
+          }
+
+          console.log('[Comandix] Nueva orden SSE recibida del CHATBOT:', {
+            orderId: order.id,
+            cliente: order.customerId,
+            total: order.total,
+            estado: order.estado
+          });
+
+          this.knownOrderIds.add(order.id);
+
+          // Agregar la nueva orden a la lista
+          // Mapear estructura SSE a PendingOrder compatible
+          const pendingOrder: PendingOrder = {
+            id: order.id,
+            tenantId: order.tenantId,
+            estado: order.estado,
+            customerId: order.customerId ?? null,
+            customerName: order.customerName ?? null,
+            nombre: order.customerName ?? null,
+            items: order.items ?? [],
+            subtotal: order.subtotal ?? order.total,
+            descuento: order.descuento ?? 0,
+            totalFinal: order.total,
+            couponCode: order.couponCode ?? null,
+            coupon_id: order.couponId ?? null,
+            fechaCreacion: order.fecha
+          };
+
+          // Actualizar lista de órdenes
+          this.pendingOrders.update(orders => {
+            const exists = orders.some(o => o.id === order.id);
+            if (exists) return orders;
+            return [pendingOrder, ...orders]; // Agregar al inicio para que sea visible
+          });
+
+          // Dispara la alerta (sonido DOBLE + confetti + DIALOG DETALLADO)
+          // Muestra los datos completos de la orden
+          this.triggerNewOrderAlertWithDetailsAndDialog(order);
+        },
+        error: (error) => {
+          console.error('[Comandix] Error en SSE newOrder$:', error);
+        }
+      });
+
+    // Escuchar cambios en el estado de la conexión SSE
+    this.orderSseService.connectionStatus$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (status) => {
+          console.log('[Comandix] Estado SSE:', status);
+          if (status === 'connected') {
+            console.log('[Comandix] ✓ Conectado a notificaciones del CHATBOT en tiempo real');
+          } else if (status === 'disconnected') {
+            console.warn('[Comandix] ✗ Desconectado de SSE');
+          } else if (status === 'error') {
+            console.warn('[Comandix] ✗ Error en SSE');
+          }
+        }
+      });
+
+    // Escuchar mensajes de error del SSE
+    this.orderSseService.errorMessage$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (errorMessage) => {
+          console.warn('[Comandix] Mensaje de error SSE:', errorMessage);
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Conexión en vivo',
+            detail: errorMessage,
+            life: 4000
+          });
+        }
+      });
+  }
+
+  /**
+   * Dispara la alerta con detalles específicos de la orden SSE
+   * Sonido DOBLE + Confetti + Dialog detallado
+   */
+  private triggerNewOrderAlertWithDetailsAndDialog(order: any): void {
+    // 1) SONIDO DOS VECES
+    this.playNotificationSound(2, 500);
+
+    // 2) Confetti con paleta Lealtix
+    confetti({
+      particleCount: 90,
+      spread: 75,
+      origin: { y: 0.35 },
+      colors: ['#DA9F5B', '#33211D', '#FFFBF2', '#c8882a', '#f0c080']
+    });
+
+    // 3) Mostrar DIALOG detallado con toda la información
+    this.selectedSseOrder.set({
+      ...order,
+      clientLabel: order.customerName ?? (order.customerId ? `Cliente #${order.customerId}` : 'Cliente General')
+    });
+    this.showSseOrderDetail.set(true);
+
+    // 4) Toast breve notificando que llegó la orden
+    this.messageService.add({
+      severity: 'success',
+      summary: '¡Nueva Orden del CHATBOT!',
+      detail: `Orden #${order.id.slice(0, 8).toUpperCase()}... — Ver detalles en el dialog`,
+      life: 4000,
+      icon: 'pi pi-shopping-bag'
+    });
+  }
+
+  /**
+   * Cierra el dialog de detalles de orden SSE
+   */
+  closeSseOrderDetail(): void {
+    this.showSseOrderDetail.set(false);
+    this.selectedSseOrder.set(null);
+  }
+
+  // ==================== ALERTA DE NUEVA ORDEN ====================
+
+  triggerNewOrderAlert(order: PendingOrder): void {
+    // 1) Sonido
+    this.playNotificationSound();
+
+    // 2) Confetti con paleta Lealtix
+    confetti({
+      particleCount: 90,
+      spread: 75,
+      origin: { y: 0.35 },
+      colors: ['#DA9F5B', '#33211D', '#FFFBF2', '#c8882a', '#f0c080']
+    });
+
+    // 3) Toast con resumen del pedido
+    const clientName = order.customerName ?? order.nombre ?? 'Cliente General';
+    const total = order.totalFinal ?? order.subtotal ?? 0;
+    this.messageService.add({
+      severity: 'success',
+      summary: '¡Nueva Orden!',
+      detail: `${clientName} — Total: $${total.toFixed(2)}`,
+      life: 6000,
+      icon: 'pi pi-shopping-bag'
+    });
+  }
+
+  // ==================== DETALLE DE ORDEN ====================
+
+  openOrderDetail(order: PendingOrder): void {
+    this.selectedOrder.set(order);
+    this.showOrderDetail.set(true);
+  }
+
+  closeOrderDetail(): void {
+    this.showOrderDetail.set(false);
+    this.selectedOrder.set(null);
+  }
+
+  editPendingOrderInPos(order: PendingOrder): void {
+    const latestOrder = this.pendingOrders().find((existingOrder) => existingOrder.id === order.id) ?? order;
+
+    this.selectedCliente = this.resolveClienteFromOrder(latestOrder);
+    this.codigoCupon = latestOrder.couponCode ?? '';
+    this.descuentoAplicado.set(Number(latestOrder.descuento ?? 0));
+    this.cart.set(this.buildCartFromPendingOrder(latestOrder));
+    this.editingPendingOrder.set(latestOrder);
+    this.closeOrderDetail();
+    this.switchView('pos');
+
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Editando orden',
+      detail: `La orden #${latestOrder.id.slice(0, 8)} fue cargada en la comanda`,
+      life: 3000
+    });
+  }
+
+  cancelPendingOrderEdition(): void {
+    const currentOrder = this.editingPendingOrder();
+    this.resetForm();
+    this.switchView('orders');
+
+    if (currentOrder) {
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Edición cancelada',
+        detail: `La orden #${currentOrder.id.slice(0, 8)} sigue pendiente`,
+        life: 3000
+      });
+    }
+  }
+
+  private playNotificationSound(times = 1, delayMs = 500): void {
+    for (let index = 0; index < times; index++) {
+      setTimeout(() => {
+        try {
+          const audio = new Audio(this.NOTIFICATION_SOUND);
+          audio.play().catch(() => {});
+        } catch {
+          // silent: archivo puede no existir en dev
+        }
+      }, index * delayMs);
+    }
+  }
+
+  /** Devuelve true si la orden tiene menos de 2 minutos */
+  isNewOrder(order: PendingOrder): boolean {
+    if (!order.fechaCreacion) return false;
+    const diffMs = Date.now() - new Date(order.fechaCreacion).getTime();
+    return diffMs < 2 * 60 * 1000;
+  }
+
+  /** Nombre legible del cliente para mostrar en la tarjeta */
+  getClientLabel(order: PendingOrder): string {
+    return order.customerName ?? order.nombre ?? 'Cliente General';
+  }
+
+  /** Nombre del producto del item (con fallback a productId) */
+  getProductLabel(item: any): string {
+    return item.productName ?? item.prod ?? `Producto #${item.productId}`;
+  }
+
+  /** Precio unitario del item (normaliza campo) */
+  getItemPrice(item: any): number {
+    return item.precioUnitario ?? item.precio ?? 0;
+  }
+
+  // ==================== ACCIONES DEL MESERO ====================
+
+  async confirmarOrden(order: PendingOrder): Promise<void> {
+    if (this.processingOrderAction()) return;
+    this.processingOrderAction.set(true);
+    try {
+      await firstValueFrom(this.orderService.updateOrderStatus(order.id, 'CONFIRMED'));
+
+      // Si la orden tiene cupón aplicado, redimirlo
+      const couponCode = order.couponCode;
+      const couponId = order.coupon_id != null && order.coupon_id !== ''
+        ? Number(order.coupon_id)
+        : null;
+
+      if (couponCode || couponId !== null) {
+        try {
+          const redemptionReq: RedemptionRequest = {
+            redeemedBy: order.customerId?.toString() ?? 'COMANDIX',
+            channel: RedemptionChannel.QR_ADMIN,
+            originalAmount: order.subtotal,
+            metadata: `Orden confirmada #${order.id}`
+          };
+
+          if (couponCode) {
+            await firstValueFrom(
+              this.redemptionService.redeemCouponByCode(couponCode, redemptionReq, this.tenantId)
+            );
+          } else if (couponId !== null && !Number.isNaN(couponId)) {
+            await firstValueFrom(
+              this.redemptionService.redeemCouponById(couponId, redemptionReq, this.tenantId)
+            );
+          }
+
+          this.messageService.add({
+            severity: 'info',
+            summary: 'Cupón redimido',
+            detail: `Cupón ${couponCode ?? couponId} aplicado exitosamente`,
+            life: 3000
+          });
+        } catch (couponError) {
+          console.warn('Advertencia al redimir cupón:', couponError);
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Cupón',
+            detail: 'La orden se confirmó pero el cupón no pudo redimirse',
+            life: 4000
+          });
+        }
+      }
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Orden confirmada',
+        detail: `Orden #${order.id.slice(0, 8)}… confirmada exitosamente`,
+        life: 3000
+      });
+
+      this.removeOrderFromList(order.id);
+      this.closeOrderDetail();
+    } catch (error: any) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error al confirmar',
+        detail: error.message ?? 'No se pudo confirmar la orden',
+        life: 3000
+      });
+    } finally {
+      this.processingOrderAction.set(false);
+    }
+  }
+
+  async rechazarOrden(order: PendingOrder): Promise<void> {
+    if (this.processingOrderAction()) return;
+    this.processingOrderAction.set(true);
+    try {
+      await firstValueFrom(this.orderService.updateOrderStatus(order.id, 'RECHAZADO'));
+
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Orden rechazada',
+        detail: `Orden #${order.id.slice(0, 8)}… rechazada`,
+        life: 3000
+      });
+
+      this.removeOrderFromList(order.id);
+      this.closeOrderDetail();
+    } catch (error: any) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error al rechazar',
+        detail: error.message ?? 'No se pudo rechazar la orden',
+        life: 3000
+      });
+    } finally {
+      this.processingOrderAction.set(false);
+    }
+  }
+
+  private removeOrderFromList(orderId: string): void {
+    this.knownOrderIds.delete(orderId);
+    this.pendingOrders.update(orders => orders.filter(o => o.id !== orderId));
+  }
+
+  // ==================== TENANT ====================
+
   private async initializeTenant(): Promise<void> {
     try {
       const currentUserWithTenant = await firstValueFrom(this.authService.getCurrentUserWithTenant());
@@ -156,18 +660,13 @@ export class ComandixComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Carga el catálogo de productos
-   */
+  // ==================== CATÁLOGO (existente) ====================
+
   private loadCatalog(): void {
     this.loading.set(true);
-    // Usar ProductService como principal ya que trae todos los campos (imageUrl, description, etc.)
     this.loadCatalogFromProducts();
   }
 
-  /**
-   * Fallback: construye catálogo a partir de productos del tenant
-   */
   private loadCatalogFromProducts(): void {
     this.productService
       .getProductsByTenantId(this.tenantId)
@@ -192,13 +691,8 @@ export class ComandixComponent implements OnInit, OnDestroy {
       });
   }
 
-  /**
-   * Mapea productos del backend a categorías del catálogo
-   */
   private mapProductsToCategories(products: any[]): MenuCategory[] {
-    if (!products || products.length === 0) {
-      return [];
-    }
+    if (!products || products.length === 0) return [];
 
     const activeProducts = products.filter((p) => p?.isActive !== false);
     const categoriesMap = new Map<string, MenuCategory>();
@@ -217,12 +711,10 @@ export class ComandixComponent implements OnInit, OnDestroy {
         });
       }
 
-      // Obtener la URL de imagen con validación - priorizar imageUrl
       const imageUrl: string | null = product.imageUrl && typeof product.imageUrl === 'string'
         ? product.imageUrl.trim() || null
         : (product.img_url?.trim() || null) || (product.image?.trim() || null) || null;
 
-      // Obtener descripción
       const description: string = (product.description && typeof product.description === 'string'
         ? product.description.trim()
         : '') || '';
@@ -241,26 +733,18 @@ export class ComandixComponent implements OnInit, OnDestroy {
     return Array.from(categoriesMap.values());
   }
 
-  /**
-   * Carga la lista de clientes
-   */
+  // ==================== CLIENTES (existente) ====================
+
   private loadClientes(): void {
     this.clienteService
       .getClientes({ tenantId: this.tenantId, page: 0, pageSize: 1000 })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => {
-          this.clientes.set(response.content);
-        },
-        error: (error) => {
-          console.error('Error cargando clientes:', error);
-        }
+        next: (response) => { this.clientes.set(response.content); },
+        error: (error) => { console.error('Error cargando clientes:', error); }
       });
   }
 
-  /**
-   * Filtra clientes para el autocomplete
-   */
   filterClientes(event: any): void {
     const query = event.query.toLowerCase();
     this.filteredClientes = this.clientes().filter((cliente) =>
@@ -269,18 +753,12 @@ export class ComandixComponent implements OnInit, OnDestroy {
     );
   }
 
-  /**
-   * Abre el diálogo para crear un nuevo cliente
-   */
   openDialogNuevoCliente(): void {
     this.submittedCliente = false;
     this.initializeClienteForm();
     this.mostrarDialogoNuevoCliente = true;
   }
 
-  /**
-   * Inicializa el formulario de nuevo cliente
-   */
   private initializeClienteForm(): void {
     this.formNuevoCliente = this.fb.group({
       nombreCompleto: ['', [Validators.required]],
@@ -291,9 +769,6 @@ export class ComandixComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Guarda el nuevo cliente
-   */
   async guardarNuevoCliente(): Promise<void> {
     this.submittedCliente = true;
 
@@ -340,18 +815,12 @@ export class ComandixComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Cierra el diálogo de nuevo cliente
-   */
   hideDialogoNuevoCliente(): void {
     this.mostrarDialogoNuevoCliente = false;
     this.submittedCliente = false;
     this.initializeClienteForm();
   }
 
-  /**
-   * Maneja la creación exitosa de un nuevo cliente
-   */
   onClienteCreated(cliente: Cliente): void {
     this.loadClientes();
     this.selectedCliente = cliente;
@@ -363,9 +832,8 @@ export class ComandixComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Añade un producto al carrito
-   */
+  // ==================== CARRITO (existente) ====================
+
   addToCart(product: Product): void {
     const existingItem = this.cart().find((item) => item.product.id === product.id);
 
@@ -386,15 +854,11 @@ export class ComandixComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Actualiza la cantidad de un ítem en el carrito
-   */
   updateQuantity(item: CartItem, newQuantity: number): void {
     if (newQuantity <= 0) {
       this.removeFromCart(item);
       return;
     }
-
     this.cart.update((items) =>
       items.map((i) =>
         i.product.id === item.product.id ? { ...i, cantidad: newQuantity } : i
@@ -402,14 +866,10 @@ export class ComandixComponent implements OnInit, OnDestroy {
     );
   }
 
-  /**
-   * Elimina un ítem del carrito
-   */
   removeFromCart(item: CartItem): void {
     this.cart.update((items) =>
       items.filter((i) => i.product.id !== item.product.id)
     );
-
     this.messageService.add({
       severity: 'info',
       summary: 'Producto eliminado',
@@ -418,30 +878,27 @@ export class ComandixComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * TrackBy function para el carrito - previene re-renderizado innecesario
-   */
+  getCartItemUnitPrice(item: CartItem): number {
+    return Number(item.precioUnitario ?? item.product.price ?? 0);
+  }
+
   trackByProductId(index: number, item: CartItem): number {
     return item.product.id;
   }
 
-  /**
-   * Maneja el error de carga de imagen
-   */
+  trackByOrderId(index: number, order: PendingOrder): string {
+    return order.id;
+  }
+
   onImageError(event: Event): void {
     const imgElement = event.target as HTMLImageElement;
     if (imgElement) {
       imgElement.style.display = 'none';
       const placeholder = imgElement.nextElementSibling as HTMLElement;
-      if (placeholder) {
-        placeholder.style.display = 'flex';
-      }
+      if (placeholder) placeholder.style.display = 'flex';
     }
   }
 
-  /**
-   * Valida y aplica un cupón de descuento
-   */
   async validarCupon(): Promise<void> {
     if (!this.codigoCupon.trim()) {
       this.messageService.add({
@@ -454,20 +911,17 @@ export class ComandixComponent implements OnInit, OnDestroy {
     }
 
     this.validatingCoupon.set(true);
-
     try {
       const validationResponse = await firstValueFrom(
         this.redemptionService.validateCouponByCode(this.codigoCupon, this.tenantId)
       );
 
       if (validationResponse.valid) {
-        // Calcular descuento según tipo de reward
         const descuento = this.calcularDescuento(
           validationResponse.rewardType || '',
           validationResponse.numericValue || 0,
           this.subtotal()
         );
-
         this.descuentoAplicado.set(descuento);
         this.messageService.add({
           severity: 'success',
@@ -495,29 +949,15 @@ export class ComandixComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Calcula el descuento según el tipo de reward
-   */
-  private calcularDescuento(
-    rewardType: string,
-    numericValue: number,
-    subtotal: number
-  ): number {
+  private calcularDescuento(rewardType: string, numericValue: number, subtotal: number): number {
     switch (rewardType) {
-      case 'PERCENT_DISCOUNT':
-        return (subtotal * numericValue) / 100;
-      case 'FIXED_AMOUNT':
-        return Math.min(numericValue, subtotal);
-      default:
-        return 0;
+      case 'PERCENT_DISCOUNT': return (subtotal * numericValue) / 100;
+      case 'FIXED_AMOUNT':     return Math.min(numericValue, subtotal);
+      default:                 return 0;
     }
   }
 
-  /**
-   * Finaliza y registra la venta
-   */
   async finalizarVenta(): Promise<void> {
-    debugger;
     if (this.cart().length === 0) {
       this.messageService.add({
         severity: 'warn',
@@ -528,15 +968,71 @@ export class ComandixComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.processingOrder.set(true);
+    const hasInvalidItem = this.cart().some((item) => item.product.id <= 0 || item.cantidad <= 0 || this.getCartItemUnitPrice(item) < 0);
+    if (hasInvalidItem) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Productos inválidos',
+        detail: 'Revisa los productos cargados en la comanda antes de continuar',
+        life: 3000
+      });
+      return;
+    }
 
+    this.processingOrder.set(true);
     try {
       const orderItems: OrderItem[] = this.cart().map((item) => ({
         productId: item.product.id,
         cantidad: item.cantidad,
-        precioUnitario: item.product.price,
+        precioUnitario: this.getCartItemUnitPrice(item),
         comentarios: item.comentarios || undefined
       }));
+
+      const editingOrder = this.editingPendingOrder();
+
+      if (editingOrder) {
+        const updateRequest: TenantClientOrderUpdateRequest = {
+          customerId: this.selectedCliente?.id ?? editingOrder.customerId ?? null,
+          tenantId: editingOrder.tenantId,
+          items: orderItems,
+          subtotal: this.subtotal(),
+          descuento: this.descuentoAplicado(),
+          totalFinal: this.totalFinal(),
+          couponCode: this.codigoCupon.trim() || null
+        };
+
+        await firstValueFrom(this.orderService.updateOrder(editingOrder.id, updateRequest));
+
+        const updatedOrder: PendingOrder = {
+          ...editingOrder,
+          customerId: this.selectedCliente?.id ?? editingOrder.customerId ?? null,
+          customerName: this.selectedCliente?.nombreCompleto ?? editingOrder.customerName ?? editingOrder.nombre ?? null,
+          nombre: this.selectedCliente?.nombreCompleto ?? editingOrder.nombre ?? editingOrder.customerName ?? null,
+          items: this.cart().map((item) => ({
+            productId: item.product.id,
+            productName: item.product.name,
+            cantidad: item.cantidad,
+            precioUnitario: this.getCartItemUnitPrice(item),
+            comentarios: item.comentarios || undefined
+          })),
+          subtotal: this.subtotal(),
+          descuento: this.descuentoAplicado(),
+          totalFinal: this.totalFinal(),
+          couponCode: this.codigoCupon.trim() || null
+        };
+
+        this.pendingOrders.update((orders) => orders.map((order) => order.id === editingOrder.id ? updatedOrder : order));
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Orden actualizada',
+          detail: `Orden #${editingOrder.id.slice(0, 8)} actualizada exitosamente`,
+          life: 4000
+        });
+
+        this.resetForm();
+        this.switchView('orders');
+        return;
+      }
 
       const orderRequest: TenantClientOrderCreateRequest = {
         customerId: this.selectedCliente?.id ?? null,
@@ -548,12 +1044,9 @@ export class ComandixComponent implements OnInit, OnDestroy {
         couponCode: this.codigoCupon.trim() || null,
         redeemedBy: this.selectedCliente?.id ?? null,
         redemptionChannel: 'COMANDIX'
-
       };
 
-      const response = await firstValueFrom(
-        this.orderService.createOrder(orderRequest)
-      );
+      const response = await firstValueFrom(this.orderService.createOrder(orderRequest));
 
       this.messageService.add({
         severity: 'success',
@@ -562,7 +1055,6 @@ export class ComandixComponent implements OnInit, OnDestroy {
         life: 4000
       });
 
-      // Limpiar formulario
       this.resetForm();
     } catch (error: any) {
       this.messageService.add({
@@ -576,22 +1068,68 @@ export class ComandixComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Reinicia el formulario después de una venta exitosa
-   */
   private resetForm(): void {
     this.cart.set([]);
     this.selectedCliente = null;
     this.codigoCupon = '';
     this.descuentoAplicado.set(0);
+    this.editingPendingOrder.set(null);
   }
 
-  /**
-   * Limpia el carrito
-   */
   limpiarCarrito(): void {
     this.cart.set([]);
     this.descuentoAplicado.set(0);
     this.codigoCupon = '';
+  }
+
+  private resolveClienteFromOrder(order: PendingOrder): Cliente | null {
+    if (order.customerId) {
+      const customerById = this.clientes().find((cliente) => cliente.id === order.customerId);
+      if (customerById) {
+        return customerById;
+      }
+    }
+
+    const customerName = (order.customerName ?? order.nombre ?? '').trim().toLowerCase();
+    if (!customerName) {
+      return null;
+    }
+
+    return this.clientes().find((cliente) => cliente.nombreCompleto.trim().toLowerCase() === customerName) ?? null;
+  }
+
+  private buildCartFromPendingOrder(order: PendingOrder): CartItem[] {
+    return (order.items ?? [])
+      .map((item, index) => this.mapPendingOrderItemToCartItem(item, index))
+      .filter((item): item is CartItem => item !== null);
+  }
+
+  private mapPendingOrderItemToCartItem(item: PendingOrderItem, index: number): CartItem | null {
+    const productId = Number(item.productId ?? 0);
+    if (productId <= 0) {
+      return null;
+    }
+
+    const catalogProduct = this.findProductInCatalog(productId);
+    const precioUnitario = Number(item.precioUnitario ?? item.precio ?? catalogProduct?.price ?? 0);
+
+    return {
+      product: catalogProduct ?? {
+        id: productId,
+        name: item.productName ?? item.prod ?? `Producto #${index + 1}`,
+        price: precioUnitario,
+        imageUrl: null,
+        description: ''
+      },
+      cantidad: Number(item.cantidad ?? 1),
+      comentarios: item.comentarios ?? '',
+      precioUnitario
+    };
+  }
+
+  private findProductInCatalog(productId: number): Product | undefined {
+    return this.categories()
+      .flatMap((category) => category.products ?? [])
+      .find((product) => product.id === productId);
   }
 }

@@ -388,6 +388,9 @@ export class ProductMenuComponent implements OnInit {
     exportColumns!: ExportColumn[];
 
     cols!: Column[];
+    tableFirst: number = 0;
+    private editedProductIdToKeepPosition: number | null = null;
+    private editedProductIndexToKeepPosition: number | null = null;
 
     get categoriesArray(): FormArray {
         return this.categoryForm.get('categories') as FormArray;
@@ -786,13 +789,22 @@ export class ProductMenuComponent implements OnInit {
         this.productService.getProductsByTenantId(this.tenantId).subscribe({
             next: (data) => {
                 // Preserve original image URLs (do not modify Cloudinary URLs here)
-                this.products.set(data.object || []);
+                const reOrderedProducts = this.keepEditedProductPosition((data.object || []) as Product[]);
+                this.products.set(reOrderedProducts);
+
+                const rows = this.dt?.rows || 10;
+                const maxFirst = reOrderedProducts.length > 0 ? Math.floor((reOrderedProducts.length - 1) / rows) * rows : 0;
+                if (this.tableFirst > maxFirst) {
+                    this.tableFirst = maxFirst;
+                }
+
                 // Check if we should show the product setup prompt
                 this.checkProductSetupPrompt();
             },
             error: (err) => {
                 console.error('Failed to load products', err);
                 this.products.set([]);
+                this.clearEditedProductPositionCache();
             },
             complete: () => {
                 this.stopLoading();
@@ -802,6 +814,53 @@ export class ProductMenuComponent implements OnInit {
 
     onGlobalFilter(table: Table, event: Event) {
         table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
+    }
+
+    onTablePage(event: any) {
+        this.tableFirst = event?.first ?? 0;
+    }
+
+    private normalizeProductId(id: unknown): number | null {
+        if (id === null || id === undefined) return null;
+        const parsed = typeof id === 'number' ? id : Number(id);
+        return Number.isNaN(parsed) ? null : parsed;
+    }
+
+    private captureEditedProductPosition(productId: number): void {
+        const currentProducts = this.products() || [];
+        const index = currentProducts.findIndex((item) => this.normalizeProductId((item as any)?.id) === productId);
+        if (index >= 0) {
+            this.editedProductIdToKeepPosition = productId;
+            this.editedProductIndexToKeepPosition = index;
+            return;
+        }
+        this.clearEditedProductPositionCache();
+    }
+
+    private clearEditedProductPositionCache(): void {
+        this.editedProductIdToKeepPosition = null;
+        this.editedProductIndexToKeepPosition = null;
+    }
+
+    private keepEditedProductPosition(items: Product[]): Product[] {
+        if (this.editedProductIdToKeepPosition === null || this.editedProductIndexToKeepPosition === null) {
+            return items;
+        }
+
+        const productId = this.editedProductIdToKeepPosition;
+        const originalIndex = this.editedProductIndexToKeepPosition;
+        this.clearEditedProductPositionCache();
+
+        const editedIndex = items.findIndex((item) => this.normalizeProductId((item as any)?.id) === productId);
+        if (editedIndex < 0) {
+            return items;
+        }
+
+        const editedProduct = items[editedIndex];
+        const withoutEdited = items.filter((_, index) => index !== editedIndex);
+        const safeIndex = Math.max(0, Math.min(originalIndex, withoutEdited.length));
+        withoutEdited.splice(safeIndex, 0, editedProduct);
+        return withoutEdited;
     }
 
     getOptimizedImage(url: string): string {
@@ -1050,6 +1109,16 @@ export class ProductMenuComponent implements OnInit {
         const selectedCategoryId = (this.product as any).categoryId;
 
         const isNewProduct = !prod.id;
+        if (!isNewProduct) {
+            const editId = this.normalizeProductId(prod.id);
+            if (editId !== null) {
+                this.captureEditedProductPosition(editId);
+            } else {
+                this.clearEditedProductPositionCache();
+            }
+        } else {
+            this.clearEditedProductPositionCache();
+        }
 
         const createProductAndClose = (imageUrl?: string) => {
             const newProduct: Product = {
@@ -1067,11 +1136,11 @@ export class ProductMenuComponent implements OnInit {
                 next: (resp) => {
                     this.messageService.add({ severity: 'success', summary: 'Producto creado', detail: `${newProduct.name} creado`, life: 3000 });
 
-                    // Trigger event for menu update
-                    window.dispatchEvent(new Event('productsUpdated'));
-
                     // Check if this is the first product created
                     if (isNewProduct) {
+                        // Trigger event for menu update only when a new product is created
+                        window.dispatchEvent(new Event('productsUpdated'));
+
                         this.productService.getProductsByTenantId(this.tenantId).subscribe({
                             next: (data) => {
                                 this.loadProducts();
@@ -1092,6 +1161,7 @@ export class ProductMenuComponent implements OnInit {
                 },
                 error: (err) => {
                     console.error('Error creating product:', err);
+                    this.clearEditedProductPositionCache();
                     this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear el producto', life: 3000 });
                 },
                 complete: () => {
