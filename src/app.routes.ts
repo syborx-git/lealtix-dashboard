@@ -6,6 +6,7 @@ import { ProductMenuComponent } from '@/pages/products-menu/products-menu.compon
 import { LoginComponent } from '@/auth/login/login.component';
 import { Error } from '@/auth/error/error';
 import { AuthGuard } from './app/auth/auth.guard';
+import { PermissionGuard } from './app/auth/permission.guard';
 import { CategoriesMenuComponent } from '@/pages/categories-menu/categories-menu.component';
 
 // Campaign components
@@ -27,6 +28,9 @@ import { ComandixComponent } from '@/pages/comandix/comandix.component';
 
 // User Management component
 import { UserManagementComponent } from '@/pages/user-management/components/user-list/user-management.component';
+
+// Admin Roles & Permissions
+import { AdminRolesPermissionsComponent } from '@/pages/admin-roles-permissions/admin-roles-permissions.component';
 
 export const appRoutes: Routes = [
     // Everything under /dashboard/**
@@ -50,16 +54,18 @@ export const appRoutes: Routes = [
                     { path: 'categoriesMenu', component: CategoriesMenuComponent },
                     { path: 'adminMenu', component: ProductMenuComponent },
                     // Campaign routes
-                    { path: 'campaigns', component: CampaignListComponent, title: 'Gestión de Campañas' },
-                    { path: 'campaigns/create', component: CreateCampaignComponent, title: 'Crear Campaña' },
-                    { path: 'campaigns/new', component: CampaignFormComponent, title: 'Nueva Campaña' },
-                    { path: 'campaigns/:id', component: CampaignDetailsComponent, title: 'Detalles de Campaña' },
-                    { path: 'campaign-templates', component: CampaignTemplatesListComponent, title: 'Plantillas de Campañas' },
-                    { path: 'manual-redemption', component: ManualRedemptionComponent, title: 'Redención Manual' },
-                    { path: 'mi-pagina', component: MiPaginaComponent, title: 'Mi Página' },
-                    { path: 'clientes', component: ClienteListComponent, title: 'Gestión de Clientes' },
-                    { path: 'users', component: UserManagementComponent, title: 'Gestión de Equipo' },
-                    { path: 'comandix', component: ComandixComponent, title: 'Comandix - Comanda Inteligente' },
+                    { path: 'campaigns', component: CampaignListComponent, title: 'Gestión de Campañas', canActivate: [PermissionGuard], data: { permission: 'manage_campaigns' } },
+                    { path: 'campaigns/create', component: CreateCampaignComponent, title: 'Crear Campaña', canActivate: [PermissionGuard], data: { permission: 'manage_campaigns' } },
+                    { path: 'campaigns/new', component: CampaignFormComponent, title: 'Nueva Campaña', canActivate: [PermissionGuard], data: { permission: 'manage_campaigns' } },
+                    { path: 'campaigns/:id', component: CampaignDetailsComponent, title: 'Detalles de Campaña', canActivate: [PermissionGuard], data: { permission: 'manage_campaigns' } },
+                    { path: 'campaign-templates', component: CampaignTemplatesListComponent, title: 'Plantillas de Campañas', canActivate: [PermissionGuard], data: { permission: 'view_campaign_templates' } },
+                    { path: 'manual-redemption', component: ManualRedemptionComponent, canActivate: [PermissionGuard], data: { permission: 'process_redemption' } },
+                    { path: 'mi-pagina', component: MiPaginaComponent, title: 'Mi Página', canActivate: [PermissionGuard], data: { permission: 'manage_landing_page' } },
+                    { path: 'clientes', component: ClienteListComponent, title: 'Gestión de Clientes', canActivate: [PermissionGuard], data: { permission: 'view_customers' } },
+                    { path: 'users', component: UserManagementComponent, title: 'Gestión de Equipo', canActivate: [PermissionGuard], data: { permission: 'view_users' } },
+                    // Admin Roles & Permissions
+                    { path: 'admin/roles-permissions', component: AdminRolesPermissionsComponent, title: 'Administración de Roles y Permisos', canActivate: [PermissionGuard], data: { permission: 'manage_roles' } },
+                    { path: 'comandix', component: ComandixComponent, title: 'Comandix - Comanda Inteligente', canActivate: [PermissionGuard], data: { permission: 'create_order' } },
                     // Ruta eliminada: menu-print
                     { path: 'menu-classic-print', component: MenuClassicPrintComponent, title: 'Imprimir Menú Clásico' }
                 ]

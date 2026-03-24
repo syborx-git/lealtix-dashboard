@@ -82,12 +82,13 @@ export class ManualRedemptionComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.authService.getCurrentUserWithTenant().subscribe(currentUser => {
+    const currentUser = this.authService.getCurrentUser();
+    if (currentUser) {
       this.tenantId = currentUser?.tenantId || 1;
       if (this.tenantId > 0) {
         this.checkBannerConditions(this.tenantId);
       }
-    });
+    }
   }
 
   /**
@@ -209,7 +210,7 @@ export class ManualRedemptionComponent implements OnInit {
 
     const currentUser = this.authService.getCurrentUser();
     const request: RedemptionRequest = {
-      redeemedBy: currentUser?.userEmail || 'staff',
+      redeemedBy: currentUser?.email || 'staff',
       channel: RedemptionChannel.MANUAL,
       originalAmount: this.originalAmount,
       location: 'Dashboard Admin',
