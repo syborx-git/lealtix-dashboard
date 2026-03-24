@@ -289,11 +289,11 @@ export class CreateCampaignComponent implements OnInit {
           }
 
           this.currentReward.set(reward);
-
+          debugger;
           console.log('[loadCampaignReward] Cargando reward:', reward);
 
           // Poblar el formulario con los datos del reward
-          // Usamos emitEvent: false para evitar que los listeners limpien los valores
+          // Usamos emitEvent: true para que la UI se actualice correctamente
           this.campaignForm.patchValue({
             rewardType: reward.rewardType,
             numericValue: reward.numericValue,
@@ -303,12 +303,15 @@ export class CreateCampaignComponent implements OnInit {
             rewardDescription: reward.description,
             minPurchaseAmount: reward.minPurchaseAmount,
             usageLimit: reward.usageLimit
-          }, { emitEvent: false });
+          }, { emitEvent: true });
 
           // Ensure validators and UI reflect the loaded reward type
           try {
             this.updateRewardValidators(reward.rewardType as RewardType);
-            this.campaignForm.get('rewardType')?.updateValueAndValidity({ emitEvent: true });
+            this.campaignForm.get('rewardType')?.updateValueAndValidity({ emitEvent: false });
+            this.campaignForm.get('numericValue')?.updateValueAndValidity({ emitEvent: false });
+            this.campaignForm.get('minPurchaseAmount')?.updateValueAndValidity({ emitEvent: false });
+            this.campaignForm.get('usageLimit')?.updateValueAndValidity({ emitEvent: false });
             this.campaignForm.get('rewardDescription')?.enable({ emitEvent: false });
           } catch (e) {
             console.warn('Failed to sync reward validators after loading reward', e);
@@ -1268,6 +1271,7 @@ export class CreateCampaignComponent implements OnInit {
       });
 
       // If NONE, keep the description editable and required so promotional-only campaigns can provide a message
+      debugger;
       if (rewardType === RewardType.NONE) {
         this.campaignForm.get('rewardDescription')?.setValidators([Validators.required, Validators.maxLength(500)]);
         this.campaignForm.get('rewardDescription')?.enable({ emitEvent: false });
@@ -1475,7 +1479,7 @@ export class CreateCampaignComponent implements OnInit {
   private buildUpdateRequest(formValue: any): any {
     // Determinar promoType basado en el rewardType seleccionado
     let promoType = formValue.promoType;
-
+    debugger; // Punto de interrupción para inspeccionar formValue y promoType
     if (this.selectedRewardType === RewardType.NONE) {
       promoType = 'NONE';
     }

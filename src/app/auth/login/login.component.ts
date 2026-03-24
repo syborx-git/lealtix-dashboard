@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -6,6 +6,8 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { RippleModule } from 'primeng/ripple';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 import { AppFloatingConfigurator } from "@/layout/component/app.floatingconfigurator";
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../auth.service';
@@ -15,23 +17,35 @@ import { finalize } from 'rxjs/operators';
 @Component({
     selector: 'app-login',
     standalone: true,
-    imports: [ButtonModule, CheckboxModule, InputTextModule, PasswordModule, FormsModule, RouterModule, RippleModule, AppFloatingConfigurator, CommonModule],
+    imports: [
+        ButtonModule,
+        CheckboxModule,
+        InputTextModule,
+        PasswordModule,
+        FormsModule,
+        RouterModule,
+        RippleModule,
+        AppFloatingConfigurator,
+        CommonModule,
+        ToastModule
+    ],
+    providers: [MessageService],
     templateUrl: './login.component.html',
 })
 export class LoginComponent {
+    private authService = inject(AuthService);
+    private router = inject(Router);
+    private route = inject(ActivatedRoute);
+    private messageService = inject(MessageService);
+
     email: string = '';
-
     password: string = '';
-
     checked: boolean = false;
-
     loading: boolean = false;
-
     errorMessage: string | null = null;
-
     private returnUrl: string | null = null;
 
-    constructor(private authService: AuthService, private router: Router, private route: ActivatedRoute) {
+    constructor() {
         this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
     }
 
@@ -42,68 +56,117 @@ export class LoginComponent {
         const password = (this.password || '').trim();
 
         if (!email || !password) {
-            this.errorMessage = !email && !password
-                ? 'Email y Password son requeridos.'
-                : !email
-                    ? 'Email es requerido.'
-                    : 'Password es requerido.';
-            this.loading = false;
+            this.errorMessage = !email
+                ? 'Email es requerido.'
+                : 'Contraseña es requerida.';
             return;
         }
 
         this.loading = true;
+
+        // Enviar password en claro
         this.authService.loginAndStore({ email, password })
             .pipe(finalize(() => (this.loading = false)))
             .subscribe({
                 next: (res: any) => {
                     if (!res) {
-                        this.handleErrorResponse('Respuesta inválida del servidor');
+                        this.handleError('Respuesta inválida del servidor');
                         return;
                     }
 
-                    if (res.code === 200) {
-                        this.saveLoginObject(res.object);
-                        // Redirect to returnUrl if present, otherwise to dashboard/kpis
-                        if (this.returnUrl) {
-                            this.router.navigateByUrl(this.returnUrl);
-                        } else {
-                            this.router.navigate(['/dashboard/adminPage']);
+                    // Nueva estructura: { code, message, object: { accessToken, userEmail, userId, permissions } }
+                    if (res.code === 200 && res.object) {
+                        try {
+                            // Mostrar mensaje de éxito
+                            this.messageService.add({
+                                severity: 'success',
+                                summary: 'Login Exitoso',
+                                detail: `Bienvenido ${res.object.userEmail}`,
+                                life: 3000
+                            });
+
+                            // Redirigir
+                            setTimeout(() => {
+                                if (this.returnUrl) {
+                                    this.router.navigateByUrl(this.returnUrl);
+                                } else {
+                                    this.router.navigate(['/dashboard/kpis']);
+                                }
+                            }, 500);
+                        } catch (e) {
+                            console.error('Error procesando login:', e);
+                            this.handleError('Error al procesar el login');
                         }
                         return;
-                    } else if (res.code === 401) {
-                        this.errorMessage = res.message || 'Credenciales inválidas';
+                    }
+
+                    // Estructura antigua: { code, message, data: { user, permissions, token } }
+                    if (res.code === 200 && res.data) {
+                        try {
+                            // Mostrar mensaje de éxito
+                            this.messageService.add({
+                                severity: 'success',
+                                summary: 'Login Exitoso',
+                                detail: `Bienvenido ${res.data.user?.nombre || res.data.user?.email}`,
+                                life: 3000
+                            });
+
+                            // Redirigir
+                            setTimeout(() => {
+                                if (this.returnUrl) {
+                                    this.router.navigateByUrl(this.returnUrl);
+                                } else {
+                                    this.router.navigate(['/dashboard/kpis']);
+                                }
+                            }, 500);
+                        } catch (e) {
+                            console.error('Error procesando login:', e);
+                            this.handleError('Error al procesar el login');
+                        }
                         return;
                     }
 
-                    this.handleErrorResponse(res?.message || 'Error en login');
+                    // Error de credenciales
+                    if (res.code === 401) {
+                        this.errorMessage = res.message || 'Credenciales inválidas';
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Login Fallido',
+                            detail: this.errorMessage || undefined,
+                            life: 5000
+                        });
+                        return;
+                    }
+
+                    this.handleError(res?.message || 'Error desconocido en login');
                 },
                 error: (err: any) => {
+                    console.error('Login error:', err);
+
                     if (err?.error?.code === 401) {
                         this.errorMessage = err.error.message || 'Credenciales inválidas';
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Login Fallido',
+                            detail: this.errorMessage || undefined,
+                            life: 5000
+                        });
                         return;
                     }
 
-                    this.handleErrorResponse(err?.error?.message || 'Error de red o servidor');
+                    const errorMsg = err?.error?.message || err?.message || 'Error de red o servidor';
+                    this.handleError(errorMsg);
                 }
             });
     }
 
-    private saveLoginObject(obj: any): void {
-        try {
-            const serialized = JSON.stringify(obj);
-            if (this.checked) {
-                localStorage.setItem('usuario', serialized);
-            } else {
-                sessionStorage.setItem('usuario', serialized);
-            }
-        } catch (e) {
-            console.warn('No se pudo guardar el objeto de login', e);
-            this.router.navigate(['/dashboard/auth/error']);
-        }
-    }
-
-    private handleErrorResponse(message: string): void {
+    private handleError(message: string): void {
         this.errorMessage = message;
-        this.router.navigate(['/dashboard/auth/error']);
+        this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: message,
+            life: 5000
+        });
     }
 }

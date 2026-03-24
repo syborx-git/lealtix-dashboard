@@ -1,0 +1,195 @@
+<div class="admin-roles-permissions">
+	<p-toast></p-toast>
+	<p-confirmDialog></p-confirmDialog>
+
+	<!-- Header -->
+	<div class="header-section">
+		<div class="header-content">
+			<h1>
+				<i class="pi pi-lock"></i> Administración de Roles y Permisos
+			</h1>
+			<p class="subtitle">Configura y gestiona los permisos de cada rol</p>
+		</div>
+		<div class="header-stats">
+			<div class="stat">
+				<span class="stat-value">{{ totalPermissions }}</span>
+				<span class="stat-label">Permisos Total</span>
+			</div>
+			<div class="stat">
+				<span class="stat-value">{{ assignedPermissions }}</span>
+				<span class="stat-label">Asignados</span>
+			</div>
+		</div>
+	</div>
+
+	<!-- Role Selection -->
+	<div class="role-selection">
+		<div class="role-card" *ngFor="let role of roles">
+			<button
+				pButton
+				[class.active]="selectedRole === role"
+				[class.admin-role]="role === 'ADMIN'"
+				(click)="selectRole(role)"
+				[disabled]="loading"
+				class="role-button"
+			>
+				<div class="role-icon">
+					<i
+						[class]="
+							role === 'ADMIN'
+								? 'pi pi-shield'
+								: role === 'MESERO'
+									? 'pi pi-user'
+									: 'pi pi-fire'
+						"
+					></i>
+				</div>
+				<div class="role-info">
+					<h3>{{ getRoleLabel(role) }}</h3>
+					<p>{{ getRoleDescription(role) }}</p>
+				</div>
+				<i
+					class="pi pi-check-circle"
+					[style.display]="selectedRole === role ? 'block' : 'none'"
+				></i>
+			</button>
+		</div>
+	</div>
+
+	<p-card class="permissions-card" *ngIf="!loading">
+		<ng-template pTemplate="header">
+			<div class="permissions-header">
+				<h2>Permisos - {{ getRoleLabel(selectedRole) }}</h2>
+				<span class="role-badge" [class]="selectedRole.toLowerCase()">
+					{{ selectedRole }}
+				</span>
+			</div>
+		</ng-template>
+
+		<!-- Info si es ADMIN -->
+		<div *ngIf="selectedRole === 'ADMIN'" class="admin-info">
+			<i class="pi pi-info-circle"></i>
+			<p>
+				El rol <strong>ADMIN</strong> tiene acceso a todos los permisos del sistema
+				automáticamente. No se pueden remover permisos a este rol.
+			</p>
+		</div>
+
+		<!-- Permisos por Recurso -->
+		<div *ngIf="selectedRole !== 'ADMIN'" class="permissions-by-resource">
+			<div *ngFor="let resource of resources" class="resource-section">
+				<div class="resource-header">
+					<div class="resource-title">
+						<button
+							type="button"
+							pButton
+							pRipple
+							[icon]="
+								getResourceSelectedCount(resource) ===
+								getResourcePermissions(resource).length
+									? 'pi pi-check-square-fill'
+									: getResourceSelectedCount(resource) > 0
+										? 'pi pi-minus-square'
+										: 'pi pi-square'
+							"
+							class="p-button-rounded p-button-text toggle-all-btn"
+							(click)="toggleResourcePermissions(resource)"
+							[disabled]="loading"
+						></button>
+						<h3>{{ resource | titlecase }}</h3>
+					</div>
+					<span class="permission-count">
+						{{ getResourceSelectedCount(resource) }} /
+						{{ getResourcePermissions(resource).length }}
+					</span>
+				</div>
+
+				<!-- Lista de Permisos del Recurso -->
+				<div class="permission-items">
+					<div *ngFor="let permission of getResourcePermissions(resource)" class="permission-item">
+						<p-checkbox
+							[(ngModel)]="selectedPermissions[permission.id]"
+							[binary]="true"
+							[disabled]="loading || isAdminRole()"
+							(onChange)="togglePermission(permission.id)"
+						></p-checkbox>
+
+						<div class="permission-details">
+							<div class="permission-name">
+								<code>{{ permission.code }}</code>
+								<span class="permission-title">{{ permission.name }}</span>
+							</div>
+							<p class="permission-description" *ngIf="permission.description">
+								{{ permission.description }}
+							</p>
+						</div>
+
+						<span class="permission-action">{{ permission.action }}</span>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Admin Permissions List (Read Only) -->
+		<div *ngIf="selectedRole === 'ADMIN'" class="admin-permissions-list">
+			<div class="resource-section" *ngFor="let resource of resources">
+				<div class="resource-header">
+					<h3>{{ resource | titlecase }}</h3>
+					<span class="permission-count">
+						{{ getResourcePermissions(resource).length }}
+					</span>
+				</div>
+
+				<div class="permission-items">
+					<div *ngFor="let permission of getResourcePermissions(resource)" class="permission-item">
+						<i class="pi pi-check-circle permission-check"></i>
+						<div class="permission-details">
+							<div class="permission-name">
+								<code>{{ permission.code }}</code>
+								<span class="permission-title">{{ permission.name }}</span>
+							</div>
+							<p class="permission-description" *ngIf="permission.description">
+								{{ permission.description }}
+							</p>
+						</div>
+
+						<span class="permission-action">{{ permission.action }}</span>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Action Buttons -->
+		<ng-template pTemplate="footer">
+			<div class="card-footer">
+				<button
+					pButton
+					type="button"
+					label="Descartar Cambios"
+					icon="pi pi-undo"
+					class="p-button-outlined"
+					(click)="resetPermissions()"
+					[disabled]="!hasChanges() || loading || selectedRole === 'ADMIN'"
+				></button>
+
+				<button
+					pButton
+					type="button"
+					label="Guardar Permisos"
+					icon="pi pi-save"
+					class="p-button-success"
+					(click)="saveRolePermissions()"
+					[disabled]="!hasChanges() || loading || selectedRole === 'ADMIN'"
+					[loading]="savingRole[selectedRole]"
+				></button>
+			</div>
+		</ng-template>
+	</p-card>
+
+	<!-- Loading State -->
+	<div *ngIf="loading" class="loading-state">
+		<p-skeleton></p-skeleton>
+		<p-skeleton></p-skeleton>
+		<p-skeleton></p-skeleton>
+	</div>
+</div>

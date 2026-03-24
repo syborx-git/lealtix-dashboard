@@ -441,7 +441,7 @@ export class RedeemPageComponent implements OnInit, OnDestroy {
     const currentUser = this.authService.getCurrentUser();
 
     const request: RedemptionRequest = {
-      redeemedBy: currentUser?.email || currentUser?.userEmail || 'unknown',
+      redeemedBy: currentUser?.email || 'unknown',
       channel: RedemptionChannel.QR_WEB,
       originalAmount: this.originalAmount ?? undefined,
       location: 'Web Dashboard',
@@ -449,7 +449,7 @@ export class RedeemPageComponent implements OnInit, OnDestroy {
         device: this.getDeviceType(),
         browser: this.getBrowserName(),
         timestamp: new Date().toISOString(),
-        userId: currentUser?.userId || null
+        userId: currentUser?.id || null
       })
     };
 

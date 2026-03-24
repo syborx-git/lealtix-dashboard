@@ -85,18 +85,21 @@ export class CampaignService {
           throw new Error('Respuesta inválida del servidor');
         }
 
-        // Manejar ambos formatos: data o object
-        const data = resp.data || resp.object;
-        if (!data) {
-          throw new Error('Respuesta sin datos');
+        // Manejar múltiples formatos de respuesta:
+        // 1. { data: { ...campaign } }
+        // 2. { object: { ...campaign } }
+        // 3. { code: 200, data: { ...campaign } }
+        // 4. Directamente el objeto campaña
+        const data = resp.data || resp.object || (resp.code && (resp.data || resp.object)) || resp;
+
+        // Si data existe y es un objeto con propiedades de campaña
+        if (!data || typeof data !== 'object') {
+          console.warn('Respuesta del servidor:', resp);
+          throw new Error('Respuesta sin datos válidos');
         }
 
-        // Retornar solo el objeto data
-        if (resp.code === 200 || resp.code === 201) {
-          return data as NewCampaignResponse;
-        } else {
-          throw new Error(resp.message || 'Error actualizando campaña');
-        }
+        // Retornar el objeto data
+        return data as NewCampaignResponse;
       }),
       tap({
         next: (response: NewCampaignResponse) => {

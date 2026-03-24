@@ -115,7 +115,7 @@ export class LandingEditorComponent implements OnInit {
         }
 
         this.email = currentUser.email;
-        this.userId = currentUser.userId;
+        this.userId = currentUser.id;
 
         this.loadTenantInformation();
     }

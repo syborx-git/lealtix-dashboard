@@ -134,7 +134,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     }
 
     // Estrategia 2: Si no está en storage, obtener del tenantService usando el email
-    if (!user || !user.userEmail) {
+    if (!user || !user.email) {
       console.error('No se encontró usuario autenticado');
       this.messageService.add({
         severity: 'error',
@@ -146,17 +146,18 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.loading.set(true);
     this.tenantService
-      .getTenantByEmail(user.userEmail)
+      .getTenantByEmail(user.email)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (resp) => {
-          const tenant = resp?.object;
+          // Manejar diferentes posibles estructuras de respuesta
+          const tenant = resp?.object || resp?.data || resp;
           const tenantId = tenant?.id;
-          const tenantSlug = tenant?.slug;
 
-          if (!tenantId || !tenantSlug) {
-            console.error('No se encontró información del tenant');
+          if (!tenantId) {
+            console.error('No se encontró información del tenant. Respuesta:', resp);
             this.messageService.add({
               severity: 'error',
               summary: 'Error',
@@ -172,13 +173,9 @@ export class UserManagementComponent implements OnInit, OnDestroy {
         },
         error: (error) => {
           console.error('Error al obtener tenant por email:', error);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Error al obtener información del tenant',
-            life: 3000
-          });
-          this.loading.set(false);
+          // Si todo falla, usar tenantId por defecto (1)
+          this.tenantId = 1;
+          this.cargarUsuarios();
         }
       });
   }

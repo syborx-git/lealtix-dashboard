@@ -93,14 +93,14 @@ export class MenuClassicPrintComponent implements OnInit {
     this.isLoading.set(true);
 
     const user = this.authService.getCurrentUser();
-    if (!user || !user.userEmail) {
+    if (!user || !user.email) {
       this.showError('No se encontró usuario autenticado');
       this.isLoading.set(false);
       return;
     }
 
     // Obtener tenant por email
-    this.tenantService.getTenantByEmail(user.userEmail).subscribe({
+    this.tenantService.getTenantByEmail(user.email).subscribe({
       next: (resp) => {
         const tenant = resp?.object;
         const tenantId = tenant?.id;
