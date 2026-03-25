@@ -72,6 +72,8 @@ export class CampaignFormComponent implements OnInit {
   campaignId?: number;
   // Reward associated to the campaign (when editing)
   existingReward?: RewardResponse | null = null;
+  // Campaign being edited
+  currentCampaign?: CampaignResponse | null = null;
 
   // Reward-related properties
   productTree: TreeNode[] = [];
@@ -199,6 +201,7 @@ export class CampaignFormComponent implements OnInit {
       .pipe(takeUntilDestroyed())
       .subscribe({
         next: (campaign) => {
+          this.currentCampaign = campaign;
           this.populateFormWithCampaign(campaign);
 
           // IMPORTANTE: Precargar rewardDescription desde campaign.description ANTES de cargar el reward
@@ -216,65 +219,26 @@ export class CampaignFormComponent implements OnInit {
             .subscribe({
               next: (reward) => {
                 console.log('🔍 REWARD LOADED:', reward);
-                // Guardar reward para incluirlo en el payload al actualizar
-                this.existingReward = reward;
-                // Actualizar el formulario con los datos del reward
-                // Usamos emitEvent: false para evitar que los listeners limpien los valores
-                this.campaignForm.patchValue({
-                  description: reward.description,
-                  rewardType: reward.rewardType,
+                console.log('📊 REWARD VALUES TO PATCH:', {
                   numericValue: reward.numericValue,
-                  productId: reward.productId,
-                  buyQuantity: reward.buyQuantity,
-                  freeQuantity: reward.freeQuantity,
-                  rewardDescription: reward.description,
                   minPurchaseAmount: reward.minPurchaseAmount,
-                  usageLimit: reward.usageLimit
-                }, { emitEvent: false });
+                  usageLimit: reward.usageLimit,
+                  rewardType: reward.rewardType
+                });
 
-                // Ensure validators and control enablement reflect the loaded reward type
-                try {
-                  this.updateRewardValidators(reward.rewardType as RewardType);
-                  // Ensure the form control value is recognized by the UI
-                  this.campaignForm.get('rewardType')?.updateValueAndValidity({ emitEvent: true });
-                  this.campaignForm.get('rewardDescription')?.enable({ emitEvent: false });
-                } catch (e) {
-                  console.warn('Failed to apply reward validators after loading reward', e);
-                }
-
-                // Si hay productId, asegurar que el árbol esté cargado y luego seleccionar el nodo
-                if (reward.productId) {
-                  // Si el árbol ya está cargado, seleccionar inmediatamente
-                  if (this.productTree.length > 0) {
-                    this.setSelectedProductNode(reward.productId);
-                  } else {
-                    // Si no está cargado, cargarlo primero (la selección se hará automáticamente después)
-                    this.loadProductTree(this.tenantId);
-                  }
-                }
+                this.populateRewardForm(reward);
               },
               error: (error) => {
-                console.log('ℹ️ No se encontró reward para la campaña. Aplicando fallback a RewardType.NONE');
-                // Si no hay reward asociado, considerar que es "NONE"
-                // La descripción ya se precargó desde campaign.description arriba
-                try {
-                  const currentRewardDesc = this.campaignForm.get('rewardDescription')?.value;
-                  console.log('📝 Current rewardDescription before setting NONE:', currentRewardDesc);
+                console.log('ℹ️ API call to getRewardByCampaign failed. Checking if reward is embedded in campaign object...');
 
-                  this.campaignForm.patchValue({
-                    rewardType: RewardType.NONE
-                  }, { emitEvent: false });
-
-                  this.existingReward = null;
-                  this.updateRewardValidators(RewardType.NONE);
-                  this.campaignForm.get('rewardType')?.updateValueAndValidity({ emitEvent: true });
-                  this.campaignForm.get('rewardDescription')?.updateValueAndValidity({ emitEvent: false });
-
-                  // Log para debug
-                  console.log('✅ Fallback NONE applied. rewardDescription value:', this.campaignForm.get('rewardDescription')?.value);
-                  console.log('✅ rewardDescription status:', 'disabled=' + this.campaignForm.get('rewardDescription')?.disabled + ', errors=' + JSON.stringify(this.campaignForm.get('rewardDescription')?.errors));
-                } catch (e) {
-                  console.warn('Error applying NONE reward fallback', e);
+                // Si la llamada al API falla, intentar usar el reward que ya puede estar en el objeto campaña
+                const campaign = this.campaign;
+                if (campaign && campaign.promotionReward) {
+                  console.log('✅ Found promotionReward embedded in campaign:', campaign.promotionReward);
+                  this.populateRewardForm(campaign.promotionReward);
+                } else {
+                  console.log('ℹ️ No promotionReward found in campaign. Aplicando fallback a RewardType.NONE');
+                  this.populateRewardFormAsNone();
                 }
               }
             });
@@ -642,7 +606,20 @@ export class CampaignFormComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe((type: RewardType) => {
+        console.log('🎯 rewardType valueChanges triggered. New type:', type);
+        console.log('📊 Form values BEFORE updateRewardValidators:', {
+          numericValue: this.campaignForm.get('numericValue')?.value,
+          minPurchaseAmount: this.campaignForm.get('minPurchaseAmount')?.value,
+          usageLimit: this.campaignForm.get('usageLimit')?.value
+        });
+
         this.updateRewardValidators(type);
+
+        console.log('📊 Form values AFTER updateRewardValidators:', {
+          numericValue: this.campaignForm.get('numericValue')?.value,
+          minPurchaseAmount: this.campaignForm.get('minPurchaseAmount')?.value,
+          usageLimit: this.campaignForm.get('usageLimit')?.value
+        });
 
         // When FREE_PRODUCT or BUY_X_GET_Y (2x1) is selected, load the product tree
         if (type === RewardType.FREE_PRODUCT || type === RewardType.BUY_X_GET_Y) {
@@ -687,12 +664,12 @@ export class CampaignFormComponent implements OnInit {
     this.isUpdatingValidators = true;
 
     try {
-      // Clear all reward field validators
+      // Clear validators for all reward fields (but DON'T clear their values - they may have been loaded from DB)
       const rewardFields = ['numericValue', 'productId', 'buyQuantity', 'freeQuantity', 'rewardDescription', 'minPurchaseAmount', 'usageLimit'];
       rewardFields.forEach(field => {
         if (field !== 'rewardDescription') {
           this.campaignForm.get(field)?.clearValidators();
-          this.campaignForm.get(field)?.setValue(null, { emitEvent: false });
+          // DON'T set value to null here - preserve loaded values from reward data
         }
       });
 
@@ -850,6 +827,10 @@ export class CampaignFormComponent implements OnInit {
     return this.campaignForm.get('rewardType')?.value;
   }
 
+  get campaign(): CampaignResponse | null | undefined {
+    return this.currentCampaign;
+  }
+
   get showNumericValue(): boolean {
     return this.selectedRewardType === RewardType.PERCENT_DISCOUNT ||
            this.selectedRewardType === RewardType.FIXED_AMOUNT;
@@ -946,5 +927,99 @@ export class CampaignFormComponent implements OnInit {
     }
 
     return request;
+  }
+
+  /**
+   * Carga un reward en el formulario (compatible con RewardResponse y PromotionRewardResponse)
+   */
+  private populateRewardForm(reward: any): void {
+    console.log('🔍 populateRewardForm called with reward:', reward);
+
+    // Guardar reward para incluirlo en el payload al actualizar
+    this.existingReward = reward;
+
+    // Actualizar el formulario con los datos del reward
+    // Usamos emitEvent: true para que la UI se actualice correctamente
+    this.campaignForm.patchValue({
+      description: reward.description,
+      rewardType: reward.rewardType,
+      numericValue: reward.numericValue,
+      productId: reward.productId,
+      buyQuantity: reward.buyQuantity,
+      freeQuantity: reward.freeQuantity,
+      rewardDescription: reward.description,
+      minPurchaseAmount: reward.minPurchaseAmount,
+      usageLimit: reward.usageLimit
+    }, { emitEvent: true });
+
+    // Log después del patchValue
+    console.log('✅ AFTER PATCHVALUE - Form values:', {
+      numericValue: this.campaignForm.get('numericValue')?.value,
+      minPurchaseAmount: this.campaignForm.get('minPurchaseAmount')?.value,
+      usageLimit: this.campaignForm.get('usageLimit')?.value,
+      rewardType: this.campaignForm.get('rewardType')?.value,
+      selectedRewardType: this.selectedRewardType
+    });
+
+    // Ensure validators and control enablement reflect the loaded reward type
+    try {
+      this.updateRewardValidators(reward.rewardType as RewardType);
+
+      // Update validity and enablement for all reward controls
+      this.campaignForm.get('rewardType')?.updateValueAndValidity({ emitEvent: false });
+      this.campaignForm.get('numericValue')?.updateValueAndValidity({ emitEvent: false });
+      this.campaignForm.get('minPurchaseAmount')?.updateValueAndValidity({ emitEvent: false });
+      this.campaignForm.get('usageLimit')?.updateValueAndValidity({ emitEvent: false });
+      this.campaignForm.get('rewardDescription')?.enable({ emitEvent: false });
+      this.campaignForm.get('rewardDescription')?.updateValueAndValidity({ emitEvent: false });
+
+      console.log('✅ AFTER updateValueAndValidity - Form values:', {
+        numericValue: this.campaignForm.get('numericValue')?.value,
+        minPurchaseAmount: this.campaignForm.get('minPurchaseAmount')?.value,
+        usageLimit: this.campaignForm.get('usageLimit')?.value,
+        rewardType: this.campaignForm.get('rewardType')?.value,
+        selectedRewardType: this.selectedRewardType
+      });
+    } catch (e) {
+      console.warn('Failed to apply reward validators after loading reward', e);
+    }
+
+    // Si hay productId, asegurar que el árbol esté cargado y luego seleccionar el nodo
+    if (reward.productId) {
+      // Si el árbol ya está cargado, seleccionar inmediatamente
+      if (this.productTree.length > 0) {
+        this.setSelectedProductNode(reward.productId);
+      } else {
+        // Si no está cargado, cargarlo primero (la selección se hará automáticamente después)
+        this.loadProductTree(this.tenantId);
+      }
+    }
+  }
+
+  /**
+   * Establece el reward como NONE (sin beneficio económico)
+   */
+  private populateRewardFormAsNone(): void {
+    console.log('ℹ️ populateRewardFormAsNone called');
+
+    try {
+      const currentRewardDesc = this.campaignForm.get('rewardDescription')?.value;
+      console.log('📝 Current rewardDescription before setting NONE:', currentRewardDesc);
+
+      this.campaignForm.patchValue({
+        rewardType: RewardType.NONE
+      }, { emitEvent: false });
+
+      this.existingReward = null;
+      this.updateRewardValidators(RewardType.NONE);
+      this.campaignForm.get('rewardType')?.updateValueAndValidity({ emitEvent: true });
+      this.campaignForm.get('rewardDescription')?.updateValueAndValidity({ emitEvent: false });
+
+      // Log para debug
+      console.log('✅ Fallback NONE applied. rewardDescription value:', this.campaignForm.get('rewardDescription')?.value);
+      console.log('✅ rewardDescription status:', 'disabled=' + this.campaignForm.get('rewardDescription')?.disabled + ', errors=' + JSON.stringify(this.campaignForm.get('rewardDescription')?.errors));
+    } catch (e) {
+      console.warn('Error applying NONE reward fallback', e);
+    }
   }
 }

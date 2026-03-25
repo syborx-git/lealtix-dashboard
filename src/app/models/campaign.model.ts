@@ -72,6 +72,7 @@ export interface CampaignResponse {
   isDraft?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
+  promotionReward?: any; // PromotionRewardResponse embedded in campaign
 }
 
 export interface CampaignValidationResult {

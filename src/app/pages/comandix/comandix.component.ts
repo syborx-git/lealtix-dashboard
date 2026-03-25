@@ -641,8 +641,8 @@ export class ComandixComponent implements OnInit, OnDestroy {
 
   private async initializeTenant(): Promise<void> {
     try {
-      const currentUserWithTenant = await firstValueFrom(this.authService.getCurrentUserWithTenant());
-      const email = currentUserWithTenant?.email || currentUserWithTenant?.userEmail;
+      const currentUserWithTenant = this.authService.getCurrentUser();
+      const email = currentUserWithTenant?.email;
       this.tenantId = currentUserWithTenant?.tenantId ?? 0;
 
       if (!this.tenantId && email) {

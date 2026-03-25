@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { startWith } from 'rxjs/operators';
+import { min, startWith } from 'rxjs/operators';
 
 // PrimeNG imports
 import { ButtonModule } from 'primeng/button';
@@ -277,50 +277,44 @@ export class CreateCampaignComponent implements OnInit {
             this.currentReward.set(null);
             const campaign = this.campaignToEdit();
             if (campaign?.promoType === 'NONE') {
+              this.updateRewardValidators(RewardType.NONE);
               this.campaignForm.patchValue({
                 rewardType: RewardType.NONE,
                 rewardDescription: campaign.description || ''
               }, { emitEvent: false });
-              this.updateRewardValidators(RewardType.NONE);
-              this.campaignForm.get('rewardType')?.updateValueAndValidity({ emitEvent: true });
+              this.formTrigger.update(n => n + 1);
             }
             this.loadingReward.set(false);
             return;
           }
 
           this.currentReward.set(reward);
-
           console.log('[loadCampaignReward] Cargando reward:', reward);
 
-          // Poblar el formulario con los datos del reward
-          // Usamos emitEvent: false para evitar que los listeners limpien los valores
+          // 1. Set validators FIRST (without touching values)
+          this.updateRewardValidators(reward.rewardType as RewardType);
+
+          // 2. Populate all reward values silently (emitEvent:false prevents
+          //    setupRewardFormListeners from firing and clearing the values we just set)
           this.campaignForm.patchValue({
-            rewardType: reward.rewardType,
-            numericValue: reward.numericValue,
-            productId: reward.productId,
-            buyQuantity: reward.buyQuantity,
-            freeQuantity: reward.freeQuantity,
-            rewardDescription: reward.description,
-            minPurchaseAmount: reward.minPurchaseAmount,
-            usageLimit: reward.usageLimit
+            rewardType:          reward.rewardType,
+            numericValue:        reward.numericValue        ?? null,
+            productId:           reward.productId           ?? null,
+            buyQuantity:         reward.buyQuantity         ?? null,
+            freeQuantity:        reward.freeQuantity        ?? null,
+            rewardDescription:   reward.description        ?? '',
+            minPurchaseAmount:   reward.minPurchaseAmount   ?? null,
+            usageLimit:          reward.usageLimit          ?? null
           }, { emitEvent: false });
 
-          // Ensure validators and UI reflect the loaded reward type
-          try {
-            this.updateRewardValidators(reward.rewardType as RewardType);
-            this.campaignForm.get('rewardType')?.updateValueAndValidity({ emitEvent: true });
-            this.campaignForm.get('rewardDescription')?.enable({ emitEvent: false });
-          } catch (e) {
-            console.warn('Failed to sync reward validators after loading reward', e);
-          }
+          // 3. Manually trigger preview recalculation
+          this.formTrigger.update(n => n + 1);
 
-          // Si hay productId, asegurar que el árbol esté cargado y luego seleccionar el nodo
-          if (reward.productId) {
-            // Si el árbol ya está cargado, seleccionar inmediatamente
+          // 4. Handle product selection for product-based reward types
+          if (reward.productId && (reward.rewardType === RewardType.FREE_PRODUCT || reward.rewardType === RewardType.BUY_X_GET_Y)) {
             if (this.productTree.length > 0) {
               this.setSelectedProductNode(reward.productId);
             } else {
-              // Si no está cargado, cargarlo primero (la selección se hará automáticamente después)
               this.loadProductTree(this.tenantId ?? undefined);
             }
           }
@@ -328,7 +322,6 @@ export class CreateCampaignComponent implements OnInit {
           this.loadingReward.set(false);
         },
         error: (error) => {
-          // No mostrar error si simplemente no existe el reward
           if (error.status !== 404) {
             console.error('Error loading campaign reward:', error);
           }
@@ -339,56 +332,52 @@ export class CreateCampaignComponent implements OnInit {
   }
 
   private populateFormWithCampaign(campaign: any): void {
-    // Parse dates if they exist
-    debugger;
     const startDate = campaign.startDate ? new Date(campaign.startDate) : null;
-    const endDate = campaign.endDate ? new Date(campaign.endDate) : null;
+    const endDate   = campaign.endDate   ? new Date(campaign.endDate)   : null;
     const isPromoNone = campaign.promoType === 'NONE';
 
-    // Ensure segmentation is an array and validate values
+    // Normalize segmentation to an array of valid values
     let segmentationValues: string[] = [];
-    if (campaign.segmentation) {
-      if (Array.isArray(campaign.segmentation)) {
-        // Filter to only include valid values that exist in our options
-        segmentationValues = campaign.segmentation.filter((value: string) =>
-          this.segmentationOptions.some(option => option.value === value)
-        );
-      } else if (typeof campaign.segmentation === 'string') {
-        // If it's a single string, convert to array
-        const value = campaign.segmentation;
-        if (this.segmentationOptions.some(option => option.value === value)) {
-          segmentationValues = [value];
-        }
+    if (Array.isArray(campaign.segmentation)) {
+      segmentationValues = campaign.segmentation.filter((v: string) =>
+        this.segmentationOptions.some(o => o.value === v)
+      );
+    } else if (typeof campaign.segmentation === 'string') {
+      if (this.segmentationOptions.some(o => o.value === campaign.segmentation)) {
+        segmentationValues = [campaign.segmentation];
       }
     }
 
+    // Populate campaign-level fields only.
+    // Reward fields (numericValue, productId, minPurchaseAmount, usageLimit, etc.)
+    // are populated by loadCampaignReward() after the reward endpoint responds.
     this.campaignForm.patchValue({
-      title: campaign.title || '',
-      subtitle: campaign.subtitle || '',
-      description: campaign.description || '',
-      imageUrl: campaign.imageUrl || '',
-      startDate: startDate,
-      endDate: endDate,
-      callToAction: campaign.callToAction || '', // URL opcional
-      channels: campaign.channels || ['email'],
+      title:        campaign.title        || '',
+      subtitle:     campaign.subtitle     || '',
+      description:  campaign.description  || '',
+      imageUrl:     campaign.imageUrl     || '',
+      startDate,
+      endDate,
+      callToAction: campaign.callToAction || '',
+      channels:     campaign.channels     || ['email'],
       segmentation: segmentationValues,
-      status: campaign.status || 'DRAFT',
-      isAutomatic: campaign.isAutomatic || false,
-      promoType: campaign.promoType || '',
+      status:       campaign.status       || 'DRAFT',
+      isAutomatic:  campaign.isAutomatic  || false,
+      promoType:    campaign.promoType    || '',
+      // Pre-set NONE reward type so the form shows the description field immediately;
+      // loadCampaignReward() will overwrite if the backend returns a real reward.
       ...(isPromoNone ? { rewardType: RewardType.NONE, rewardDescription: campaign.description || '' } : {})
     });
 
-    // Set uploaded image URL if exists
     if (campaign.imageUrl) {
       this.uploadedImageUrl.set(campaign.imageUrl);
     }
 
-    // Update channels text
-    if (campaign.channels && campaign.channels.length > 0) {
+    if (campaign.channels?.length > 0) {
       this.campaignForm.patchValue({ channelsText: campaign.channels.join(', ') });
     }
 
-    // Force update segmentation after a small delay to ensure the multiselect is properly initialized
+    // Delay segmentation setValue to ensure MultiSelect is initialized
     setTimeout(() => {
       this.campaignForm.get('segmentation')?.setValue(segmentationValues, { emitEvent: true });
     }, 100);
@@ -457,7 +446,6 @@ export class CreateCampaignComponent implements OnInit {
   }
 
   private applyTemplate(template: CampaignTemplate): void {
-    debugger;
     this.campaignForm.patchValue({
       title: template.defaultTitle || '',
       subtitle: template.defaultSubtitle || '',
@@ -618,7 +606,6 @@ export class CreateCampaignComponent implements OnInit {
   }
 
   private updateCampaignWithReward(): void {
-    debugger;
     const campaignId = this.campaignId();
 
     if (!campaignId) {
@@ -1206,104 +1193,104 @@ export class CreateCampaignComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe((type: RewardType) => {
+        // Clear values from fields that no longer apply to the new type.
+        // This runs only for user-driven changes; programmatic loads use emitEvent:false.
+        this.clearRewardFieldValues(type);
         this.updateRewardValidators(type);
 
-        // When FREE_PRODUCT or BUY_X_GET_Y (2x1) is selected, load the product tree
+        // Load product tree when a product-based reward type is selected
         if (type === RewardType.FREE_PRODUCT || type === RewardType.BUY_X_GET_Y) {
-          // Ensure productTree is loaded - if empty, load it regardless of lastLoadedTenantId
           if (this.productTree.length === 0) {
-            this.lastLoadedTenantId = null; // Reset to force reload
+            this.lastLoadedTenantId = null;
           }
           this.loadProductTree(this.tenantId ?? undefined);
         }
 
-        // For 2x1 promotion: set default quantities if not already set
+        // Default quantities for 2x1 if not yet set
         if (type === RewardType.BUY_X_GET_Y) {
-          const buyQty = this.campaignForm.get('buyQuantity')?.value;
-          const freeQty = this.campaignForm.get('freeQuantity')?.value;
-
-          if (!buyQty || buyQty === null) {
+          if (!this.campaignForm.get('buyQuantity')?.value) {
             this.campaignForm.patchValue({ buyQuantity: 1 }, { emitEvent: false });
           }
-          if (!freeQty || freeQty === null) {
+          if (!this.campaignForm.get('freeQuantity')?.value) {
             this.campaignForm.patchValue({ freeQuantity: 1 }, { emitEvent: false });
-          }
-
-          // Solo limpiar el productId si no estamos en modo edición o si no hay un producto ya seleccionado
-          const currentProductId = this.campaignForm.get('productId')?.value;
-          if (!this.isEditMode() && !currentProductId) {
-            this.selectedProductNode = null;
-            this.campaignForm.patchValue({ productId: null }, { emitEvent: false });
-          }
-        } else {
-          // For other reward types that don't use product selection, clear the product selection
-          // Solo si no es FREE_PRODUCT (que sí usa productos)
-          if (type !== RewardType.FREE_PRODUCT) {
-            const currentProductId = this.campaignForm.get('productId')?.value;
-            // Solo limpiar si no estamos en modo edición o si no hay producto seleccionado
-            if (!this.isEditMode() && !currentProductId) {
-              this.selectedProductNode = null;
-              this.campaignForm.patchValue({ productId: null }, { emitEvent: false });
-            }
           }
         }
       });
   }
 
-  private updateRewardValidators(rewardType: RewardType): void {
-    if (this.isUpdatingValidators) {
-      return;
+  /**
+   * Clears reward field values that do not apply to the newly selected reward type.
+   * Only called for user-driven type changes (not during programmatic form population).
+   */
+  private clearRewardFieldValues(newType: RewardType): void {
+    const patch: Partial<Record<string, null>> = {};
+
+    if (newType !== RewardType.PERCENT_DISCOUNT && newType !== RewardType.FIXED_AMOUNT) {
+      patch['numericValue'] = null;
     }
 
+    if (newType !== RewardType.FREE_PRODUCT && newType !== RewardType.BUY_X_GET_Y) {
+      patch['productId'] = null;
+      this.selectedProductNode = null;
+    }
+
+    if (newType !== RewardType.BUY_X_GET_Y) {
+      patch['buyQuantity'] = null;
+      patch['freeQuantity'] = null;
+    }
+
+    if (Object.keys(patch).length > 0) {
+      this.campaignForm.patchValue(patch, { emitEvent: false });
+    }
+  }
+
+  /**
+   * Updates form validators based on the selected reward type.
+   * Does NOT modify field values — use clearRewardFieldValues() for that.
+   */
+  private updateRewardValidators(rewardType: RewardType): void {
+    if (this.isUpdatingValidators) return;
     this.isUpdatingValidators = true;
 
     try {
-      // Clear all reward field validators
       const rewardFields = ['numericValue', 'productId', 'buyQuantity', 'freeQuantity', 'rewardDescription', 'minPurchaseAmount', 'usageLimit'];
-      rewardFields.forEach(field => {
-        if (field !== 'rewardDescription') {
-          this.campaignForm.get(field)?.clearValidators();
-          this.campaignForm.get(field)?.setValue(null, { emitEvent: false });
-        }
-      });
+      rewardFields.forEach(field => this.campaignForm.get(field)?.clearValidators());
 
-      // If NONE, keep the description editable and required so promotional-only campaigns can provide a message
-      if (rewardType === RewardType.NONE) {
-        this.campaignForm.get('rewardDescription')?.setValidators([Validators.required, Validators.maxLength(500)]);
-        this.campaignForm.get('rewardDescription')?.enable({ emitEvent: false });
-      } else {
-        // Apply validators based on reward type
-        switch (rewardType) {
-          case RewardType.PERCENT_DISCOUNT:
-            this.campaignForm.get('numericValue')?.setValidators([Validators.required, Validators.min(0), Validators.max(100)]);
-            this.campaignForm.get('rewardDescription')?.setValidators([Validators.required, Validators.maxLength(500)]);
-            break;
-          case RewardType.FIXED_AMOUNT:
-            this.campaignForm.get('numericValue')?.setValidators([Validators.required, Validators.min(0)]);
-            this.campaignForm.get('rewardDescription')?.setValidators([Validators.required, Validators.maxLength(500)]);
-            break;
-          case RewardType.FREE_PRODUCT:
-            this.campaignForm.get('productId')?.setValidators([Validators.required]);
-            this.campaignForm.get('rewardDescription')?.setValidators([Validators.required, Validators.maxLength(500)]);
-            break;
-          case RewardType.BUY_X_GET_Y:
-            // For 2x1 promotion: require productId, buyQuantity, freeQuantity, and description
-            this.campaignForm.get('productId')?.setValidators([Validators.required]);
-            this.campaignForm.get('buyQuantity')?.setValidators([Validators.required, Validators.min(1)]);
-            this.campaignForm.get('freeQuantity')?.setValidators([Validators.required, Validators.min(1)]);
-            this.campaignForm.get('rewardDescription')?.setValidators([Validators.required, Validators.maxLength(500)]);
-            break;
-          case RewardType.CUSTOM:
-            this.campaignForm.get('rewardDescription')?.setValidators([Validators.required, Validators.maxLength(500)]);
-            break;
-        }
+      switch (rewardType) {
+        case RewardType.NONE:
+          // Description is required so promotional-only campaigns have a message
+          this.campaignForm.get('rewardDescription')?.setValidators([Validators.required, Validators.maxLength(500)]);
+          break;
+
+        case RewardType.PERCENT_DISCOUNT:
+          this.campaignForm.get('numericValue')?.setValidators([Validators.required, Validators.min(0.01), Validators.max(100)]);
+          this.campaignForm.get('rewardDescription')?.setValidators([Validators.required, Validators.maxLength(500)]);
+          break;
+
+        case RewardType.FIXED_AMOUNT:
+          this.campaignForm.get('numericValue')?.setValidators([Validators.required, Validators.min(0.01)]);
+          this.campaignForm.get('rewardDescription')?.setValidators([Validators.required, Validators.maxLength(500)]);
+          break;
+
+        case RewardType.FREE_PRODUCT:
+          this.campaignForm.get('productId')?.setValidators([Validators.required]);
+          this.campaignForm.get('rewardDescription')?.setValidators([Validators.required, Validators.maxLength(500)]);
+          break;
+
+        case RewardType.BUY_X_GET_Y:
+          this.campaignForm.get('productId')?.setValidators([Validators.required]);
+          this.campaignForm.get('buyQuantity')?.setValidators([Validators.required, Validators.min(1)]);
+          this.campaignForm.get('freeQuantity')?.setValidators([Validators.required, Validators.min(1)]);
+          this.campaignForm.get('rewardDescription')?.setValidators([Validators.required, Validators.maxLength(500)]);
+          break;
+
+        case RewardType.CUSTOM:
+          this.campaignForm.get('rewardDescription')?.setValidators([Validators.required, Validators.maxLength(500)]);
+          break;
       }
 
-      // Ensure rewardDescription is enabled and update validation state without emitting events
       this.campaignForm.get('rewardDescription')?.enable({ emitEvent: false });
-      rewardFields.forEach(field => {
-        this.campaignForm.get(field)?.updateValueAndValidity({ emitEvent: false });
-      });
+      rewardFields.forEach(field => this.campaignForm.get(field)?.updateValueAndValidity({ emitEvent: false }));
     } finally {
       this.isUpdatingValidators = false;
     }
@@ -1475,7 +1462,6 @@ export class CreateCampaignComponent implements OnInit {
   private buildUpdateRequest(formValue: any): any {
     // Determinar promoType basado en el rewardType seleccionado
     let promoType = formValue.promoType;
-
     if (this.selectedRewardType === RewardType.NONE) {
       promoType = 'NONE';
     }

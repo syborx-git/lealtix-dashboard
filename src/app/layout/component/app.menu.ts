@@ -6,6 +6,7 @@ import { AppMenuitem } from './app.menuitem';
 import { CategoryService } from '../../pages/categories-menu/service/category.service';
 import { TenantService } from '../../pages/admin-page/service/tenant.service';
 import { ProductService } from '../../pages/products-menu/service/product.service';
+import { AuthService } from '../../auth/auth.service';
 
 @Component({
     selector: 'app-menu',
@@ -20,11 +21,13 @@ import { ProductService } from '../../pages/products-menu/service/product.servic
 })
 export class AppMenu implements OnInit {
     model: MenuItem[] = [];
+    private userPermissions: string[] = [];
 
     constructor(
         private categoryService: CategoryService,
         private tenantService: TenantService,
-        private productService: ProductService
+        private productService: ProductService,
+        private authService: AuthService
     ) {
         // Listen for category updates
         window.addEventListener('categoriesUpdated', () => {
@@ -38,40 +41,56 @@ export class AppMenu implements OnInit {
     }
 
     ngOnInit() {
+        // Obtener permisos del usuario
+        this.authService.getPermissions$().subscribe(permissions => {
+            this.userPermissions = permissions || [];
+            this.buildMenu();
+        });
+    }
+
+    private buildMenu() {
+        const allMenuItems: MenuItem[] = [
+            { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/dashboard/kpis'], requiredPermissions: ['view_dashboard'] },
+            { label: 'Admin Page', icon: 'pi pi-fw pi-globe', routerLink: ['/dashboard/adminPage'], requiredPermissions: ['manage_admin_page'] },
+            { label: 'Categorías', icon: 'pi pi-fw pi-tags', routerLink: ['/dashboard/categoriesMenu'], requiredPermissions: ['manage_categories'] },
+            {
+                label: 'Productos',
+                icon: 'pi pi-fw pi-bars',
+                routerLink: ['/dashboard/adminMenu'],
+                disabled: true,
+                title: 'Primero crea al menos una categoría',
+                requiredPermissions: ['create_product', 'edit_product']
+            },
+            { label: 'Campañas', icon: 'pi pi-fw pi-id-card', routerLink: ['/dashboard/campaigns'], requiredPermissions: ['manage_campaigns'] },
+            { label: 'Plantillas', icon: 'pi pi-fw pi-file', routerLink: ['/dashboard/campaign-templates'], requiredPermissions: ['manage_campaign_templates'] },
+            { label: 'Redención', icon: 'pi pi-fw pi-ticket', routerLink: ['/dashboard/manual-redemption'], requiredPermissions: ['process_redemption'] },
+            { label: 'Gestión de Clientes', icon: 'pi pi-fw pi-users', routerLink: ['/dashboard/clientes'], requiredPermissions: ['view_customers'] },
+            { label: 'Gestión de Equipo', icon: 'pi pi-fw pi-id-card', routerLink: ['/dashboard/users'], requiredPermissions: ['view_users', 'manage_user_roles'] },
+            {
+                label: 'Mi Página',
+                icon: 'pi pi-fw pi-qrcode',
+                routerLink: ['/dashboard/mi-pagina'],
+                visible: false,
+                requiredPermissions: ['view_products']
+            },
+            {
+                label: 'Mi Comanda',
+                icon: 'pi pi-fw pi-shopping-cart',
+                routerLink: ['/dashboard/comandix'],
+                visible: false,
+                requiredPermissions: ['create_order']
+            },
+            { label: 'Reportes', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/dashboard/uikit/charts'], visible: false, requiredPermissions: ['view_reports', 'admin_access'] },
+            { label: 'Utils', icon: 'pi pi-fw pi-table', routerLink: ['/dashboard/uikit/table'], visible: false, requiredPermissions: ['admin_access'] }
+        ];
+
+        // Filtrar items según permisos
+        const filteredItems = allMenuItems.filter(item => this.hasRequiredPermissions(item));
+
         this.model = [
             {
                 label: 'Home',
-                items: [
-                    { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/dashboard/kpis'] },
-                    { label: 'Admin Page', icon: 'pi pi-fw pi-globe', routerLink: ['/dashboard/adminPage'] },
-                    { label: 'Categorías', icon: 'pi pi-fw pi-tags', routerLink: ['/dashboard/categoriesMenu'] },
-                    {
-                        label: 'Productos',
-                        icon: 'pi pi-fw pi-bars',
-                        routerLink: ['/dashboard/adminMenu'],
-                        disabled: true, // Will be updated based on categories check
-                        title: 'Primero crea al menos una categoría'
-                    },
-                    { label: 'Campañas', icon: 'pi pi-fw pi-id-card', routerLink: ['/dashboard/campaigns'] },
-                    { label: 'Plantillas', icon: 'pi pi-fw pi-file', routerLink: ['/dashboard/campaign-templates'] },
-                    { label: 'Redención', icon: 'pi pi-fw pi-ticket', routerLink: ['/dashboard/manual-redemption'] },
-                    { label: 'Gestión de Clientes', icon: 'pi pi-fw pi-users', routerLink: ['/dashboard/clientes'] },
-                    {
-                        label: 'Mi Página',
-                        icon: 'pi pi-fw pi-qrcode',
-                        routerLink: ['/dashboard/mi-pagina'],
-                        visible: false // Will be updated based on products check
-                    },
-                    {
-                        label: 'Mi Comanda',
-                        icon: 'pi pi-fw pi-shopping-cart',
-                        routerLink: ['/dashboard/comandix'],
-                        visible: false // Will be updated based on products check
-                    },
-                    { label: 'Reportes', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/dashboard/uikit/charts'], visible: false },
-                    { label: 'Usuarios', icon: 'pi pi-fw pi-id-card', routerLink: ['/dashboard/uikit/formlayout'], visible: false },
-                    { label: 'Utils', icon: 'pi pi-fw pi-table', routerLink: ['/dashboard/uikit/table'], visible: false }
-                ]
+                items: filteredItems
             }
         ];
 
@@ -80,6 +99,14 @@ export class AppMenu implements OnInit {
 
         // Check if products exist and show/hide Mi Página menu item
         this.checkAndUpdateMiPaginaMenu();
+    }
+
+    private hasRequiredPermissions(item: any): boolean {
+        if (!item.requiredPermissions || item.requiredPermissions.length === 0) {
+            return true;
+        }
+        // El usuario debe tener AL MENOS UNO de los permisos requeridos
+        return item.requiredPermissions.some((permission: string) => this.userPermissions.includes(permission));
     }
 
     private checkAndUpdateProductsMenu() {

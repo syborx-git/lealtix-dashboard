@@ -1,4 +1,6 @@
 <app-floating-configurator></app-floating-configurator>
+<p-toast></p-toast>
+
 <div
     class="bg-surface-50 dark:bg-surface-950 flex items-center justify-center min-h-screen min-w-screen overflow-hidden">
     <div class="flex flex-col items-center justify-center">
@@ -8,32 +10,60 @@
                 <div class="text-center mb-8">
                     <img src="../../../assets/layout/images/lealtix_logo_transp.png" alt="Logo" class="mb-4 w-32 sm:w-40 md:w-48 lg:w-56 max-w-full mx-auto" />
 
-                    <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">Bienvenido a Lealtix!
-                    </div>
+                    <div class="text-surface-900 dark:text-surface-0 text-3xl font-medium mb-4">Bienvenido a Lealtix</div>
                     <span class="text-muted-color font-medium">Inicia sesión para continuar</span>
                 </div>
 
                 <div>
+                    <!-- Email Input -->
                     <label for="email1"
                         class="block text-surface-900 dark:text-surface-0 text-xl font-medium mb-2">Email</label>
-                        <input pInputText id="email1" type="text" placeholder="Email address" class="w-full md:w-120 mb-8"
-                            [(ngModel)]="email" [disabled]="loading" />
+                    <input pInputText
+                        id="email1"
+                        type="email"
+                        placeholder="correo@example.com"
+                        class="w-full md:w-120 mb-8"
+                        [(ngModel)]="email"
+                        [disabled]="loading" />
 
+                    <!-- Password Input -->
                     <label for="password1"
-                        class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Password</label>
-                    <p-password id="password1" [(ngModel)]="password" placeholder="Password" [toggleMask]="true"
-                        styleClass="mb-4" [fluid]="true" [feedback]="false"></p-password>
+                        class="block text-surface-900 dark:text-surface-0 font-medium text-xl mb-2">Contraseña</label>
+                    <p-password
+                        id="password1"
+                        [(ngModel)]="password"
+                        placeholder="Ingresa tu contraseña"
+                        [toggleMask]="true"
+                        styleClass="mb-4"
+                        [fluid]="true"
+                        [feedback]="false"
+                        [disabled]="loading"></p-password>
 
                     <div class="flex items-center justify-between mt-2 mb-8 gap-8">
                         <div class="flex items-center">
                             <p-checkbox [(ngModel)]="checked" id="rememberme1" binary class="mr-2"></p-checkbox>
-                            <label for="rememberme1">Remember me</label>
+                            <label for="rememberme1">Recuérdame</label>
                         </div>
-                        <span class="font-medium no-underline ml-2 text-right cursor-pointer text-primary">Forgot
-                            password?</span>
+                        <span class="font-medium no-underline ml-2 text-right cursor-pointer text-primary">¿Olvidé mi contraseña?</span>
                     </div>
-                        <div *ngIf="errorMessage" class="mb-4 text-red-500">{{ errorMessage }}</div>
-                        <p-button label="Sign In" styleClass="w-full" [loading]="loading" (onClick)="submit()"></p-button>
+
+                    <!-- Error Message Display -->
+                    <div *ngIf="errorMessage" class="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-600">
+                        <i class="pi pi-exclamation-circle mr-2"></i>
+                        {{ errorMessage }}
+                    </div>
+
+                    <!-- Submit Button -->
+                    <p-button
+                        label="Iniciar Sesión"
+                        styleClass="w-full"
+                        [loading]="loading"
+                        (onClick)="submit()"></p-button>
+
+                    <!-- Help Text -->
+                    <div class="text-center mt-6 text-sm text-muted-color">
+                        <p>Solicita tus credenciales al administrador si no los tienes</p>
+                    </div>
                 </div>
             </div>
         </div>
