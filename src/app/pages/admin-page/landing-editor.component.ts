@@ -12,6 +12,7 @@ import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputGroupModule } from 'primeng/inputgroup';
 import { TextareaModule } from 'primeng/textarea';
+import { ToggleSwitch } from 'primeng/toggleswitch';
 import { StepperModule } from 'primeng/stepper';
 import { MessageModule } from 'primeng/message';
 import { Tenant } from '../model/tenat.component';
@@ -29,7 +30,7 @@ import { TouchTooltipDirective } from '@/shared/directives/touch-tooltip.directi
 @Component({
     selector: 'app-landing-editor',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, FileUploadModule, InputTextModule, TextareaModule, EditorModule, CardModule, ButtonModule, InputGroupModule, StepperModule, MessageModule, DialogModule, TooltipModule, PanelModule, ConfettiComponent, TouchTooltipDirective ],
+    imports: [CommonModule, ReactiveFormsModule, FileUploadModule, InputTextModule, TextareaModule, EditorModule, CardModule, ButtonModule, InputGroupModule, ToggleSwitch, StepperModule, MessageModule, DialogModule, TooltipModule, PanelModule, ConfettiComponent, TouchTooltipDirective ],
     templateUrl: './landing-editor.component.html',
     styleUrls: ['./landing-editor.component.scss']
 })
@@ -83,6 +84,7 @@ export class LandingEditorComponent implements OnInit {
             phone: ['', Validators.required],
             email: ['', [Validators.email]],
             schedule: ['', Validators.required],
+            kitchenModuleEnabled: [false],
             facebook: [''],
             instagram: [''],
             tiktok: [''],
@@ -164,6 +166,7 @@ export class LandingEditorComponent implements OnInit {
             phone: tenantData.telefono,
             email: tenantData.bussinessEmail,
             schedule: tenantData.schedules,
+            kitchenModuleEnabled: this.resolveKitchenModuleValue(tenantData),
             facebook: tenantData.facebook,
             instagram: tenantData.instagram,
             tiktok: tenantData.tiktok,
@@ -303,6 +306,7 @@ export class LandingEditorComponent implements OnInit {
             telefono: form.phone,
             bussinessEmail: form.email,
             schedules: form.schedule,
+            kitchenModuleEnabled: !!form.kitchenModuleEnabled,
             facebook: form.facebook,
             instagram: form.instagram,
             tiktok: form.tiktok,
@@ -388,6 +392,7 @@ export class LandingEditorComponent implements OnInit {
         this.tenantService.createTenant(tenantData).subscribe({
             next: (response) => {
                 console.log('Tenant created successfully:', response);
+                this.tenantService.invalidateTenantByEmailCache(this.email);
                 // If backend returns created/updated tenant id, keep it for future updates
                 try {
                     const created = response?.object || response;
@@ -412,6 +417,29 @@ export class LandingEditorComponent implements OnInit {
                 console.error('Error creating tenant:', error);
             }
         });
+    }
+
+    private resolveKitchenModuleValue(tenantData: any): boolean {
+        const candidate =
+            tenantData?.kitchenModuleEnabled ??
+            tenantData?.has_kitchen_module ??
+            tenantData?.hasKitchenModule ??
+            tenantData?.kitchenEnabled;
+
+        if (typeof candidate === 'boolean') {
+            return candidate;
+        }
+
+        if (typeof candidate === 'number') {
+            return candidate === 1;
+        }
+
+        if (typeof candidate === 'string') {
+            const normalized = candidate.trim().toLowerCase();
+            return normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'si';
+        }
+
+        return false;
     }
 
     onFileSelect(event: any) {

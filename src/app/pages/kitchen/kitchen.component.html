@@ -1,0 +1,100 @@
+<p-toast></p-toast>
+
+<section class="kitchen-shell">
+    <header class="kitchen-header">
+        <div>
+            <h2>Cocina</h2>
+            <p class="kitchen-subtitle">Tablero operativo en tiempo real por tenant</p>
+        </div>
+        <div class="kitchen-status-group">
+            <p-tag [value]="connectionStatus" [severity]="connectionStatus === 'connected' ? 'success' : 'warn'"></p-tag>
+            <p-tag *ngIf="usingMock" value="Mock BE" severity="info"></p-tag>
+        </div>
+    </header>
+
+    <div *ngIf="loading" class="kitchen-loading">
+        <p-progressSpinner strokeWidth="4" ariaLabel="loading"></p-progressSpinner>
+    </div>
+
+    <div *ngIf="!loading" class="kitchen-grid">
+        <section class="kitchen-column">
+            <h3>Pendiente ({{ getPendingOrders().length }})</h3>
+            <article *ngFor="let order of getPendingOrders()" class="order-card" [ngClass]="freshnessClass(order)">
+                <p-card>
+                    <ng-template pTemplate="title">
+                        <div class="order-head">
+                            <span>#{{ shortId(order.id) }}</span>
+                            <span class="order-timer">{{ elapsedMinutes(order) }} min</span>
+                        </div>
+                    </ng-template>
+                    <div class="order-customer">{{ order.customerName || 'Cliente General' }}</div>
+
+                    <ul class="order-items">
+                        <li *ngFor="let item of order.items">
+                            <span class="item-main">{{ item.quantity }}x {{ item.productName }}</span>
+                            <span *ngIf="item.comments" class="item-comments">{{ item.comments }}</span>
+                        </li>
+                    </ul>
+
+                    <button
+                        pButton
+                        type="button"
+                        label="Empezar"
+                        icon="pi pi-play"
+                        class="p-button-warning p-button-lg action-btn"
+                        [loading]="isProcessing(order.id)"
+                        (click)="startOrder(order)"
+                    ></button>
+                </p-card>
+            </article>
+        </section>
+
+        <section class="kitchen-column">
+            <h3>En Preparacion ({{ getInProgressOrders().length }})</h3>
+            <article *ngFor="let order of getInProgressOrders()" class="order-card" [ngClass]="freshnessClass(order)">
+                <p-card>
+                    <ng-template pTemplate="title">
+                        <div class="order-head">
+                            <span>#{{ shortId(order.id) }}</span>
+                            <span class="order-timer">{{ elapsedMinutes(order) }} min</span>
+                        </div>
+                    </ng-template>
+                    <div class="order-customer">{{ order.customerName || 'Cliente General' }}</div>
+
+                    <ul class="order-items">
+                        <li *ngFor="let item of order.items">
+                            <span class="item-main">{{ item.quantity }}x {{ item.productName }}</span>
+                            <span *ngIf="item.comments" class="item-comments">{{ item.comments }}</span>
+                        </li>
+                    </ul>
+
+                    <button
+                        pButton
+                        type="button"
+                        label="Terminar"
+                        icon="pi pi-check"
+                        class="p-button-success p-button-lg action-btn"
+                        [loading]="isProcessing(order.id)"
+                        (click)="finishOrder(order)"
+                    ></button>
+                </p-card>
+            </article>
+        </section>
+
+        <section class="kitchen-column">
+            <h3>Listo / Despachado ({{ getReadyOrders().length }})</h3>
+            <article *ngFor="let order of getReadyOrders()" class="order-card ready-card">
+                <p-card>
+                    <ng-template pTemplate="title">
+                        <div class="order-head">
+                            <span>#{{ shortId(order.id) }}</span>
+                            <span class="order-timer">{{ elapsedMinutes(order) }} min</span>
+                        </div>
+                    </ng-template>
+                    <div class="order-customer">{{ order.customerName || 'Cliente General' }}</div>
+                    <p class="ready-note">Orden lista para despacho</p>
+                </p-card>
+            </article>
+        </section>
+    </div>
+</section>
