@@ -1,0 +1,184 @@
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { firstValueFrom, Subject, takeUntil } from 'rxjs';
+import { CardModule } from 'primeng/card';
+import { ButtonModule } from 'primeng/button';
+import { TagModule } from 'primeng/tag';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
+import { AuthService } from '@/auth/auth.service';
+import { TenantService } from '@/pages/admin-page/service/tenant.service';
+import { KitchenOrder } from './models/kitchen-order.model';
+import { KitchenOrderFacadeService } from './services/kitchen-order-facade.service';
+
+@Component({
+    selector: 'app-kitchen',
+    standalone: true,
+    imports: [CommonModule, CardModule, ButtonModule, TagModule, ProgressSpinnerModule, ToastModule],
+    providers: [MessageService],
+    templateUrl: './kitchen.component.html',
+    styleUrl: './kitchen.component.scss'
+})
+export class KitchenComponent implements OnInit, OnDestroy {
+    orders: KitchenOrder[] = [];
+    loading = false;
+    usingMock = false;
+    connectionStatus: 'connected' | 'disconnected' | 'error' = 'disconnected';
+    currentTime = Date.now();
+
+    private readonly destroy$ = new Subject<void>();
+    private timerRef: ReturnType<typeof setInterval> | null = null;
+    private processingOrderIds = new Set<string>();
+
+    constructor(
+        private authService: AuthService,
+        private tenantService: TenantService,
+        private kitchenOrderFacadeService: KitchenOrderFacadeService,
+        private messageService: MessageService
+    ) {}
+
+    async ngOnInit(): Promise<void> {
+        const tenantId = await this.resolveTenantId();
+        if (tenantId <= 0) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Cocina no disponible',
+                detail: 'No se pudo resolver el tenant actual.',
+                life: 3500
+            });
+            return;
+        }
+
+        this.kitchenOrderFacadeService.init(tenantId);
+
+        this.kitchenOrderFacadeService.orders$.pipe(takeUntil(this.destroy$)).subscribe((orders) => {
+            this.orders = orders;
+        });
+
+        this.kitchenOrderFacadeService.loading$.pipe(takeUntil(this.destroy$)).subscribe((loading) => {
+            this.loading = loading;
+        });
+
+        this.kitchenOrderFacadeService.usingMock$.pipe(takeUntil(this.destroy$)).subscribe((usingMock) => {
+            this.usingMock = usingMock;
+        });
+
+        this.kitchenOrderFacadeService.connectionStatus$.pipe(takeUntil(this.destroy$)).subscribe((status) => {
+            this.connectionStatus = status;
+        });
+
+        this.timerRef = setInterval(() => {
+            this.currentTime = Date.now();
+        }, 1000);
+    }
+
+    ngOnDestroy(): void {
+        this.kitchenOrderFacadeService.teardown();
+        this.destroy$.next();
+        this.destroy$.complete();
+
+        if (this.timerRef !== null) {
+            clearInterval(this.timerRef);
+            this.timerRef = null;
+        }
+    }
+
+    getPendingOrders(): KitchenOrder[] {
+        return this.orders.filter((order) => order.status === 'PENDIENTE');
+    }
+
+    getInProgressOrders(): KitchenOrder[] {
+        return this.orders.filter((order) => order.status === 'EN_PREPARACION');
+    }
+
+    getReadyOrders(): KitchenOrder[] {
+        return this.orders.filter((order) => order.status === 'LISTO_DESPACHADO');
+    }
+
+    async startOrder(order: KitchenOrder): Promise<void> {
+        if (this.isProcessing(order.id)) {
+            return;
+        }
+
+        this.processingOrderIds.add(order.id);
+        try {
+            await this.kitchenOrderFacadeService.startOrder(order.id);
+        } catch {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'No se pudo iniciar',
+                detail: `La orden ${this.shortId(order.id)} no pudo pasar a preparación.`,
+                life: 3000
+            });
+        } finally {
+            this.processingOrderIds.delete(order.id);
+        }
+    }
+
+    async finishOrder(order: KitchenOrder): Promise<void> {
+        if (this.isProcessing(order.id)) {
+            return;
+        }
+
+        this.processingOrderIds.add(order.id);
+        try {
+            await this.kitchenOrderFacadeService.finishOrder(order.id);
+        } catch {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'No se pudo terminar',
+                detail: `La orden ${this.shortId(order.id)} no pudo marcarse como lista.`,
+                life: 3000
+            });
+        } finally {
+            this.processingOrderIds.delete(order.id);
+        }
+    }
+
+    isProcessing(orderId: string): boolean {
+        return this.processingOrderIds.has(orderId);
+    }
+
+    shortId(orderId: string): string {
+        return orderId.slice(0, 8).toUpperCase();
+    }
+
+    elapsedMinutes(order: KitchenOrder): number {
+        const createdAt = new Date(order.createdAt).getTime();
+        if (Number.isNaN(createdAt)) {
+            return 0;
+        }
+        return Math.max(0, Math.floor((this.currentTime - createdAt) / 60000));
+    }
+
+    freshnessClass(order: KitchenOrder): string {
+        const minutes = this.elapsedMinutes(order);
+        if (minutes >= 10) {
+            return 'freshness-critical';
+        }
+        if (minutes >= 5) {
+            return 'freshness-warning';
+        }
+        return 'freshness-ok';
+    }
+
+    private async resolveTenantId(): Promise<number> {
+        const currentUser = this.authService.getCurrentUser();
+        if (currentUser?.tenantId && currentUser.tenantId > 0) {
+            return currentUser.tenantId;
+        }
+
+        const email = currentUser?.email;
+        if (!email) {
+            return 0;
+        }
+
+        try {
+            const response = await firstValueFrom(this.tenantService.getTenantByEmail(email));
+            return Number(response?.object?.id ?? 0);
+        } catch {
+            return 0;
+        }
+    }
+}

@@ -33,6 +33,29 @@
   }
 }
 
+.kitchen-toggle-block {
+  background: linear-gradient(135deg, var(--lealtix-slate-50) 0%, var(--lealtix-primary-50) 100%);
+  border: 1px solid var(--lealtix-slate-200);
+  border-radius: var(--lealtix-radius-lg);
+  padding: 0.9rem;
+}
+
+.kitchen-toggle-row {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.kitchen-toggle-state {
+  color: var(--lealtix-slate-600);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.kitchen-toggle-state.enabled {
+  color: var(--lealtix-success-dark, #15803d);
+}
+
 /* === PREVIEW DEL LOGO === */
 .logo-preview {
   display: flex;
