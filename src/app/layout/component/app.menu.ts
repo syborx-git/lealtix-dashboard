@@ -86,7 +86,6 @@ export class AppMenu implements OnInit {
                 label: 'Cocina',
                 icon: 'pi pi-fw pi-box',
                 routerLink: ['/dashboard/cocina'],
-                visible: false,
                 requiredPermissions: ['view_kitchen_orders', 'update_order_status']
             },
             { label: 'Reportes', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/dashboard/uikit/charts'], visible: false, requiredPermissions: ['view_reports', 'admin_access'] },
@@ -206,18 +205,23 @@ export class AppMenu implements OnInit {
     }
 
     private checkAndUpdateKitchenMenu() {
+        // La visibilidad se controla primordialmente por permisos del usuario.
+        // Esta función verifica el feature flag del tenant co mo validación adicional.
+        // Si el usuario tiene permisos pero el módulo está deshabilitado, se muestra un estado deshabilitado.
         this.kitchenFeatureService.isKitchenEnabledForCurrentTenant$().subscribe({
             next: (enabled) => {
                 const kitchenItem = this.model[0]?.items?.find(item => item.label === 'Cocina');
                 if (kitchenItem) {
-                    kitchenItem.visible = enabled;
+                    if (!enabled) {
+                        // Si el módulo está deshabilitado, ocultarlo
+                        kitchenItem.visible = false;
+                    }
+                    // Si está habilitado, dejar que los permisos controlen la visibilidad
                 }
             },
             error: () => {
-                const kitchenItem = this.model[0]?.items?.find(item => item.label === 'Cocina');
-                if (kitchenItem) {
-                    kitchenItem.visible = false;
-                }
+                // En caso de error, permitir visualización si el usuario tiene permisos (no es control nuestro)
+                // No ocultamos el item aquí
             }
         });
     }
