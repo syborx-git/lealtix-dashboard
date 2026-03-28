@@ -25,12 +25,14 @@ import { ClienteListComponent } from '@/pages/clientes/components/cliente-list/c
 
 // Comandix component
 import { ComandixComponent } from '@/pages/comandix/comandix.component';
+import { KitchenComponent } from '@/pages/kitchen/kitchen.component';
 
 // User Management component
 import { UserManagementComponent } from '@/pages/user-management/components/user-list/user-management.component';
 
 // Admin Roles & Permissions
 import { AdminRolesPermissionsComponent } from '@/pages/admin-roles-permissions/admin-roles-permissions.component';
+import { KitchenFeatureGuard } from '@/pages/kitchen/guards/kitchen-feature.guard';
 
 export const appRoutes: Routes = [
     // Everything under /dashboard/**
@@ -66,6 +68,7 @@ export const appRoutes: Routes = [
                     // Admin Roles & Permissions
                     { path: 'admin/roles-permissions', component: AdminRolesPermissionsComponent, title: 'Administración de Roles y Permisos', canActivate: [PermissionGuard], data: { permission: 'manage_roles' } },
                     { path: 'comandix', component: ComandixComponent, title: 'Comandix - Comanda Inteligente', canActivate: [PermissionGuard], data: { permission: 'create_order' } },
+                    { path: 'cocina', component: KitchenComponent, title: 'Kitchndix - Cocina', canActivate: [KitchenFeatureGuard, PermissionGuard], data: { permission: 'view_kitchen_orders' } },
                     // Ruta eliminada: menu-print
                     { path: 'menu-classic-print', component: MenuClassicPrintComponent, title: 'Imprimir Menú Clásico' }
                 ]

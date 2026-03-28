@@ -43,4 +43,17 @@ export class TenantService {
   getTenantById(tenantId: number): Observable<Tenant> {
     return this.http.get<Tenant>(`${this.apiUrl}/${tenantId}`);
   }
+
+  updateTenant(tenantId: number, tenant: Tenant): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/${tenantId}`, tenant);
+  }
+
+  invalidateTenantByEmailCache(email: string): void {
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    if (!normalizedEmail) {
+      return;
+    }
+
+    this.tenantByEmailCache.delete(normalizedEmail);
+  }
 }

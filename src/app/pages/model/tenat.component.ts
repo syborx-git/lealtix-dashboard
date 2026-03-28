@@ -21,4 +21,6 @@ export interface Tenant {
     tiktok?: string;
     linkedin?: string;
     x?: string;
+    has_kitchen_module?: boolean;
+    kitchenModuleEnabled?: boolean;
 }

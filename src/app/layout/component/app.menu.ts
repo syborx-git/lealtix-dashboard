@@ -7,6 +7,7 @@ import { CategoryService } from '../../pages/categories-menu/service/category.se
 import { TenantService } from '../../pages/admin-page/service/tenant.service';
 import { ProductService } from '../../pages/products-menu/service/product.service';
 import { AuthService } from '../../auth/auth.service';
+import { KitchenFeatureService } from '@/pages/kitchen/services/kitchen-feature.service';
 
 @Component({
     selector: 'app-menu',
@@ -27,7 +28,8 @@ export class AppMenu implements OnInit {
         private categoryService: CategoryService,
         private tenantService: TenantService,
         private productService: ProductService,
-        private authService: AuthService
+        private authService: AuthService,
+        private kitchenFeatureService: KitchenFeatureService
     ) {
         // Listen for category updates
         window.addEventListener('categoriesUpdated', () => {
@@ -80,6 +82,12 @@ export class AppMenu implements OnInit {
                 visible: false,
                 requiredPermissions: ['create_order']
             },
+            {
+                label: 'Cocina',
+                icon: 'pi pi-fw pi-box',
+                routerLink: ['/dashboard/cocina'],
+                requiredPermissions: ['view_kitchen_orders', 'update_order_status']
+            },
             { label: 'Reportes', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/dashboard/uikit/charts'], visible: false, requiredPermissions: ['view_reports', 'admin_access'] },
             { label: 'Utils', icon: 'pi pi-fw pi-table', routerLink: ['/dashboard/uikit/table'], visible: false, requiredPermissions: ['admin_access'] }
         ];
@@ -99,9 +107,19 @@ export class AppMenu implements OnInit {
 
         // Check if products exist and show/hide Mi Página menu item
         this.checkAndUpdateMiPaginaMenu();
+
+        // Check kitchen module feature toggle before showing Cocina
+        this.checkAndUpdateKitchenMenu();
     }
 
     private hasRequiredPermissions(item: any): boolean {
+        const isAdminByRole = this.authService.getCurrentUser()?.rol === 'ADMIN';
+        const isAdminByPermission = this.userPermissions.includes('admin_access');
+
+        if (isAdminByRole || isAdminByPermission) {
+            return true;
+        }
+
         if (!item.requiredPermissions || item.requiredPermissions.length === 0) {
             return true;
         }
@@ -184,5 +202,27 @@ export class AppMenu implements OnInit {
                 console.warn('Failed to parse stored usuario:', e);
             }
         }
+    }
+
+    private checkAndUpdateKitchenMenu() {
+        // La visibilidad se controla primordialmente por permisos del usuario.
+        // Esta función verifica el feature flag del tenant co mo validación adicional.
+        // Si el usuario tiene permisos pero el módulo está deshabilitado, se muestra un estado deshabilitado.
+        this.kitchenFeatureService.isKitchenEnabledForCurrentTenant$().subscribe({
+            next: (enabled) => {
+                const kitchenItem = this.model[0]?.items?.find(item => item.label === 'Cocina');
+                if (kitchenItem) {
+                    if (!enabled) {
+                        // Si el módulo está deshabilitado, ocultarlo
+                        kitchenItem.visible = false;
+                    }
+                    // Si está habilitado, dejar que los permisos controlen la visibilidad
+                }
+            },
+            error: () => {
+                // En caso de error, permitir visualización si el usuario tiene permisos (no es control nuestro)
+                // No ocultamos el item aquí
+            }
+        });
     }
 }
