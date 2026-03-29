@@ -13,31 +13,17 @@ export class KitchenFeatureService {
     ) {}
 
     isKitchenEnabledForCurrentTenant$(): Observable<boolean> {
-        const email = this.authService.getCurrentUser()?.email ?? this.getStoredEmail();
-        if (!email) {
+        const tenantId = this.authService.getCurrentUser()?.tenantId;
+        if (!tenantId) {
             return of(false);
         }
 
-        return this.tenantService.getTenantByEmail(email).pipe(
-            map((response) => {
-                const tenant = response?.object ?? response?.data ?? response;
+        return this.tenantService.getTenantById(tenantId).pipe(
+            map((tenant) => {
                 return this.resolveKitchenFlag(tenant);
             }),
             catchError(() => of(false))
         );
-    }
-
-    private getStoredEmail(): string | null {
-        try {
-            const userStr = sessionStorage.getItem('usuario') ?? localStorage.getItem('usuario');
-            if (!userStr) {
-                return null;
-            }
-            const userObj = JSON.parse(userStr) as { userEmail?: string };
-            return userObj.userEmail ?? null;
-        } catch {
-            return null;
-        }
     }
 
     private resolveKitchenFlag(tenant: any): boolean {

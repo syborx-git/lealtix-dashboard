@@ -38,6 +38,7 @@ import { CampaignTemplateService } from '../../services/campaign-template.servic
 import { CatalogService } from '../../services/catalog.service';
 import { CampaignPreviewDialogComponent } from './campaign-dialog/campaign-preview-dialog.component';
 import { TenantService } from '@/pages/admin-page/service/tenant.service';
+import { AuthService } from '@/auth/auth.service';
 import { ImageService } from '@/pages/service/image.service';
 import { REWARD_TYPE_OPTIONS } from '../../constants/reward-types';
 
@@ -83,6 +84,7 @@ export class CreateCampaignComponent implements OnInit {
   private templateService = inject(CampaignTemplateService);
   private messageService = inject(MessageService);
   private tenantService = inject(TenantService);
+  private authService = inject(AuthService);
   private imageService = inject(ImageService);
   private catalogService = inject(CatalogService);
 
@@ -462,27 +464,20 @@ export class CreateCampaignComponent implements OnInit {
   }
 
   private loadTenantData(): void {
-    const userStr = sessionStorage.getItem('usuario') ?? localStorage.getItem('usuario');
-    if (userStr) {
-      try {
-        const userObj = JSON.parse(userStr);
-        if (userObj && userObj.userEmail) {
-          this.tenantService.getTenantByEmail(String(userObj.userEmail || '').trim()).subscribe({
-            next: (resp) => {
-              const tenant = resp?.object;
-              this.tenantId = tenant?.id ?? 0;
-              this.clientName.set(tenant.nombreNegocio || 'Negocio');
-              this.clientLogo.set(tenant.logoUrl || null);
-              this.clientSlug.set(tenant.slug || null);
-            },
-            error: (err) => {
-              console.error('Error fetching tenant:', err);
-            }
-          });
+    const currentUser = this.authService.getCurrentUser();
+    const tenantId = currentUser?.tenantId;
+    if (tenantId) {
+      this.tenantService.getTenantById(tenantId).subscribe({
+        next: (tenant) => {
+          this.tenantId = tenant?.id ?? 0;
+          this.clientName.set(tenant.nombreNegocio || 'Negocio');
+          this.clientLogo.set(tenant.logoUrl || null);
+          this.clientSlug.set(tenant.slug || null);
+        },
+        error: (err) => {
+          console.error('Error fetching tenant:', err);
         }
-      } catch (e) {
-        console.warn('Failed to parse stored usuario:', e);
-      }
+      });
     }
   }
 

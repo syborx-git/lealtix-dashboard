@@ -122,10 +122,9 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Obtiene el tenant ID del storage o desde el authService + tenantService
+   * Obtiene el tenant ID del usuario autenticado
    */
   private obtenerTenantId() {
-    // Estrategia 1: Intentar obtener del usuario autenticado (storage)
     const user = this.authService.getCurrentUser();
     if (user && user.tenantId) {
       this.tenantId = user.tenantId;
@@ -133,43 +132,15 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Estrategia 2: Si no está en storage, obtener del tenantService usando el email
-    if (!user || !user.userEmail) {
-      console.error('No se encontró usuario autenticado');
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'No se encontró usuario autenticado',
-        life: 3000
-      });
-      this.loading.set(false);
-      return;
-    }
-
-    this.tenantService
-      .getTenantByEmail(user.userEmail)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (resp) => {
-          const tenant = resp?.object;
-          const tenantId = tenant?.id;
-          const tenantSlug = tenant?.slug;
-
-          if (!tenantId || !tenantSlug) {
-            console.error('No se encontró información del tenant');
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: 'No se encontró información del tenant',
-              life: 3000
-            });
-            this.loading.set(false);
-            return;
-          }
-
-          this.tenantId = tenantId;
-          this.cargarUsuarios();
-        },
+    console.error('No se encontró usuario autenticado o tenant');
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'No se encontró usuario autenticado',
+      life: 3000
+    });
+    this.loading.set(false);
+  }
         error: (error) => {
           console.error('Error al obtener tenant por email:', error);
           this.messageService.add({

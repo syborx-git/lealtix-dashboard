@@ -641,14 +641,8 @@ export class ComandixComponent implements OnInit, OnDestroy {
 
   private async initializeTenant(): Promise<void> {
     try {
-      const currentUserWithTenant = this.authService.getCurrentUser();
-      const email = currentUserWithTenant?.email;
-      this.tenantId = currentUserWithTenant?.tenantId ?? 0;
-
-      if (!this.tenantId && email) {
-        const tenant = await firstValueFrom(this.tenantService.getTenantByEmail(email));
-        this.tenantId = tenant?.object?.id ?? 0;
-      }
+      const currentUser = this.authService.getCurrentUser();
+      this.tenantId = currentUser?.tenantId ?? 0;
     } catch (error) {
       console.error('Error obteniendo tenant:', error);
       this.messageService.add({
@@ -958,6 +952,8 @@ export class ComandixComponent implements OnInit, OnDestroy {
   }
 
   async finalizarVenta(): Promise<void> {
+
+    debugger;
     if (this.cart().length === 0) {
       this.messageService.add({
         severity: 'warn',
@@ -989,7 +985,7 @@ export class ComandixComponent implements OnInit, OnDestroy {
       }));
 
       const editingOrder = this.editingPendingOrder();
-
+      debugger;
       if (editingOrder) {
         const updateRequest: TenantClientOrderUpdateRequest = {
           customerId: this.selectedCliente?.id ?? editingOrder.customerId ?? null,

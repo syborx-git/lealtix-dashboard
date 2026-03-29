@@ -22,6 +22,7 @@ import { CampaignResponse, CreateCampaignRequest, UpdateCampaignRequest, Campaig
 import { CampaignStatus } from '@/models/enums';
 import { CampaignService } from '../../services/campaign.service';
 import { TenantService } from '@/pages/admin-page/service/tenant.service';
+import { AuthService } from '@/auth/auth.service';
 import { CampaignDialogComponent } from '../campaign-dialog/campaign-dialog.component';
 import { ProductService } from '@/pages/products-menu/service/product.service';
 import { CampaignFormatters } from '../../utils/formatters';
@@ -142,38 +143,35 @@ export class CampaignListComponent implements OnInit {
         private messageService: MessageService,
         private router: Router,
         private tenantService: TenantService,
+        private authService: AuthService,
         private productService: ProductService,
         private confettiService: ConfettiService
     ) {}
 
     ngOnInit(): void {
-        const userStr = sessionStorage.getItem('usuario') ?? localStorage.getItem('usuario');
-        if (userStr) {
-            try {
-                const userObj = JSON.parse(userStr);
-                if (userObj && userObj.userEmail) {
-                    this.email = String(userObj.userEmail || '').trim();
-                    this.userId = userObj.userId;
-                }
-            } catch (e) {
-                console.warn('Failed to parse stored usuario:', e);
-            }
+        const currentUser = this.authService.getCurrentUser();
+        if (currentUser) {
+            this.email = currentUser.email;
+            this.userId = currentUser.id;
         }
-        this.tenantService.getTenantByEmail(this.email).subscribe({
-            next: (tenant: any) => {
-                if (tenant) {
-                    this.tenantId = tenant.object.id ?? 0;
-                    this.businessId = this.tenantId;
+        const tenantId = currentUser?.tenantId;
+        if (tenantId) {
+            this.tenantService.getTenantById(tenantId).subscribe({
+                next: (tenant: any) => {
+                    if (tenant) {
+                        this.tenantId = tenant.id ?? 0;
+                        this.businessId = this.tenantId;
+                    }
+                    this.loadCampaigns();
+                    this.checkBannerConditions();
+                    // Check if we should show welcome confetti after data loads
+                    setTimeout(() => this.checkForWelcomeConfetti(), 500);
+                },
+                error: (error) => {
+                    console.error('No tenant found:');
                 }
-                this.loadCampaigns();
-                this.checkBannerConditions();
-                // Check if we should show welcome confetti after data loads
-                setTimeout(() => this.checkForWelcomeConfetti(), 500);
-            },
-            error: (error) => {
-                console.error('No tenant found:');
-            }
-        });
+            });
+        }
     }
 
     private loadCampaigns(): void {

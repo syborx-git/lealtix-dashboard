@@ -11,6 +11,7 @@ import { CampaignTemplateService } from '../../services/campaign-template.servic
 import { ProductService } from '@/pages/products-menu/service/product.service';
 import { CampaignService } from '../../services/campaign.service';
 import { TenantService } from '@/pages/admin-page/service/tenant.service';
+import { AuthService } from '@/auth/auth.service';
 import { forkJoin } from 'rxjs';
 
 @Component({
@@ -41,7 +42,8 @@ export class CampaignTemplatesListComponent implements OnInit {
     private router: Router,
     private productService: ProductService,
     private campaignService: CampaignService,
-    private tenantService: TenantService
+    private tenantService: TenantService,
+    private authService: AuthService
   ) {}
 
   // Fallback handler for template images
@@ -77,29 +79,12 @@ export class CampaignTemplatesListComponent implements OnInit {
   }
 
   private loadTenantAndBanner(): void {
-    const userStr = sessionStorage.getItem('usuario') ?? localStorage.getItem('usuario');
-    if (!userStr) return;
-
-    try {
-      const userObj = JSON.parse(userStr);
-      if (!userObj?.userEmail) return;
-
-      this.tenantService.getTenantByEmail(String(userObj.userEmail).trim()).subscribe({
-        next: (resp) => {
-          const tenant = resp?.object;
-          this.tenantId = tenant?.id ?? 0;
-          if (this.tenantId > 0) {
-            this.checkBannerConditions();
-            // Reload templates using tenant-specific endpoint
-            this.loadTemplates();
-          }
-        },
-        error: (err) => {
-          console.error('Error fetching tenant:', err);
-        }
-      });
-    } catch (e) {
-      console.warn('Failed to parse stored usuario:', e);
+    const currentUser = this.authService.getCurrentUser();
+    this.tenantId = currentUser?.tenantId ?? 0;
+    if (this.tenantId > 0) {
+      this.checkBannerConditions();
+      // Reload templates using tenant-specific endpoint
+      this.loadTemplates();
     }
   }
 

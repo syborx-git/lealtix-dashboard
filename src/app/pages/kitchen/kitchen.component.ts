@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom, Subject, takeUntil } from 'rxjs';
 import { CardModule } from 'primeng/card';
@@ -7,6 +7,8 @@ import { TagModule } from 'primeng/tag';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
+import { DialogModule } from 'primeng/dialog';
+import { DividerModule } from 'primeng/divider';
 import { AuthService } from '@/auth/auth.service';
 import { TenantService } from '@/pages/admin-page/service/tenant.service';
 import { KitchenOrder } from './models/kitchen-order.model';
@@ -15,7 +17,7 @@ import { KitchenOrderFacadeService } from './services/kitchen-order-facade.servi
 @Component({
     selector: 'app-kitchen',
     standalone: true,
-    imports: [CommonModule, CardModule, ButtonModule, TagModule, ProgressSpinnerModule, ToastModule],
+    imports: [CommonModule, CardModule, ButtonModule, TagModule, ProgressSpinnerModule, ToastModule, DialogModule, DividerModule],
     providers: [MessageService],
     templateUrl: './kitchen.component.html',
     styleUrl: './kitchen.component.scss'
@@ -23,9 +25,16 @@ import { KitchenOrderFacadeService } from './services/kitchen-order-facade.servi
 export class KitchenComponent implements OnInit, OnDestroy {
     orders: KitchenOrder[] = [];
     loading = false;
-    usingMock = false;
     connectionStatus: 'connected' | 'disconnected' | 'error' = 'disconnected';
     currentTime = Date.now();
+
+    // Control de paginación para órdenes listas
+    showAllReadyOrders = false;
+    readonly READY_ORDERS_LIMIT = 10;
+
+    // Signals para modal de detalle
+    selectedOrderForDetail = signal<KitchenOrder | null>(null);
+    showOrderDetailDialog = signal<boolean>(false);
 
     private readonly destroy$ = new Subject<void>();
     private timerRef: ReturnType<typeof setInterval> | null = null;
@@ -60,10 +69,6 @@ export class KitchenComponent implements OnInit, OnDestroy {
             this.loading = loading;
         });
 
-        this.kitchenOrderFacadeService.usingMock$.pipe(takeUntil(this.destroy$)).subscribe((usingMock) => {
-            this.usingMock = usingMock;
-        });
-
         this.kitchenOrderFacadeService.connectionStatus$.pipe(takeUntil(this.destroy$)).subscribe((status) => {
             this.connectionStatus = status;
         });
@@ -85,7 +90,7 @@ export class KitchenComponent implements OnInit, OnDestroy {
     }
 
     getPendingOrders(): KitchenOrder[] {
-        return this.orders.filter((order) => order.status === 'PENDIENTE');
+        return this.orders.filter((order) => order.status === 'CONFIRMADA');
     }
 
     getInProgressOrders(): KitchenOrder[] {
@@ -93,7 +98,21 @@ export class KitchenComponent implements OnInit, OnDestroy {
     }
 
     getReadyOrders(): KitchenOrder[] {
-        return this.orders.filter((order) => order.status === 'LISTO_DESPACHADO');
+        const readyOrders = this.orders
+            .filter((order) => order.status === 'LISTO')
+            .reverse();  // Invertir para que las más nuevas estén arriba
+
+        return this.showAllReadyOrders
+            ? readyOrders
+            : readyOrders.slice(0, this.READY_ORDERS_LIMIT);
+    }
+
+    getReadyOrdersCount(): { total: number; shown: number } {
+        const total = this.orders.filter((o) => o.status === 'LISTO').length;
+        return {
+            total,
+            shown: this.showAllReadyOrders ? total : Math.min(total, this.READY_ORDERS_LIMIT)
+        };
     }
 
     async startOrder(order: KitchenOrder): Promise<void> {
@@ -163,22 +182,18 @@ export class KitchenComponent implements OnInit, OnDestroy {
         return 'freshness-ok';
     }
 
+    openOrderDetail(order: KitchenOrder): void {
+        this.selectedOrderForDetail.set(order);
+        this.showOrderDetailDialog.set(true);
+    }
+
+    closeOrderDetail(): void {
+        this.showOrderDetailDialog.set(false);
+        this.selectedOrderForDetail.set(null);
+    }
+
     private async resolveTenantId(): Promise<number> {
         const currentUser = this.authService.getCurrentUser();
-        if (currentUser?.tenantId && currentUser.tenantId > 0) {
-            return currentUser.tenantId;
-        }
-
-        const email = currentUser?.email;
-        if (!email) {
-            return 0;
-        }
-
-        try {
-            const response = await firstValueFrom(this.tenantService.getTenantByEmail(email));
-            return Number(response?.object?.id ?? 0);
-        } catch {
-            return 0;
-        }
+        return currentUser?.tenantId ?? 0;
     }
 }

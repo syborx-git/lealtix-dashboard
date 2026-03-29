@@ -25,6 +25,7 @@ import { Category } from '../model/category.component';
 import { CategoryService } from './service/category.service';
 import { forkJoin } from 'rxjs';
 import { TenantService } from '../admin-page/service/tenant.service';
+import { AuthService } from '@/auth/auth.service';
 import { CategoryDialogComponent } from './category-dialog.component';
 import { ConfettiService } from '@/confetti/confetti.service';
 import { ConfettiComponent } from '@/confetti/confetti.component';
@@ -109,6 +110,7 @@ export class CategoriesMenuComponent implements OnInit {
         private confirmationService: ConfirmationService,
         private fb: FormBuilder,
         private tenantService: TenantService,
+        private authService: AuthService,
         private confettiService: ConfettiService,
         private router: Router,
         private productService: ProductService,
@@ -125,27 +127,12 @@ export class CategoriesMenuComponent implements OnInit {
     }
 
     ngOnInit() {
-        const userStr = sessionStorage.getItem('usuario') ?? localStorage.getItem('usuario');
-        if (userStr) {
-            try {
-                const userObj = JSON.parse(userStr);
-                if (userObj && userObj.userEmail) {
-                    this.tenantService.getTenantByEmail(String(userObj.userEmail || '').trim()).subscribe({
-                        next: (resp) => {
-                            const tenant = resp?.object;
-                            this.tenantId = tenant?.id ?? 0;
-                            this.categoryForm.patchValue({ tenantId: this.tenantId });
-                            this.loadCategories();
-                            this.checkBannerConditions();
-                        },
-                        error: (err) => {
-                            console.error('Error fetching tenant:', err);
-                        }
-                    });
-                }
-            } catch (e) {
-                console.warn('Failed to parse stored usuario:', e);
-            }
+        const currentUser = this.authService.getCurrentUser();
+        this.tenantId = currentUser?.tenantId ?? 0;
+        if (this.tenantId > 0) {
+            this.categoryForm.patchValue({ tenantId: this.tenantId });
+            this.loadCategories();
+            this.checkBannerConditions();
         }
     }
 

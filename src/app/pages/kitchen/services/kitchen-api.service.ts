@@ -24,52 +24,44 @@ export interface KitchenListResponse {
     providedIn: 'root'
 })
 export class KitchenApiService {
-    private readonly kitchenBaseUrl = `${environment.apiUrl}/kitchen-orders`;
-    private readonly legacyBaseUrl = `${environment.apiUrl}/tenant-client-orders`;
+    private readonly kitchenBaseUrl = `${environment.apiUrl}/tenant-client-orders`;
 
     constructor(private http: HttpClient) {}
 
     listOrders(tenantId: number, page = 0, size = 100): Observable<any[]> {
-        const params = new HttpParams().set('tenantId', tenantId).set('page', page).set('size', size);
+        const params = new HttpParams()
+            .set('tenantId', tenantId)
+            .set('page', page)
+            .set('size', size);
 
         return this.http.get<KitchenListResponse>(this.kitchenBaseUrl, { params }).pipe(
-            map((response) => this.extractContent(response)),
-            catchError(() => {
-                return this.http.get<KitchenListResponse>(this.legacyBaseUrl, { params }).pipe(
-                    map((response) => this.extractContent(response))
-                );
-            })
+            map((response) => this.extractContent(response))
+        );
+    }
+
+    listOrdersByStatus(tenantId: number, status: string, page = 0, size = 100): Observable<any[]> {
+        const params = new HttpParams()
+            .set('tenantId', tenantId)
+            .set('status', status)
+            .set('page', page)
+            .set('size', size);
+
+        return this.http.get<KitchenListResponse>(this.kitchenBaseUrl, { params }).pipe(
+            map((response) => this.extractContent(response))
         );
     }
 
     updateStatus(orderId: string, action: KitchenTransitionAction): Observable<any> {
-        const candidateStatuses = action === 'start' ? ['EN_PREPARACION', 'IN_PROGRESS'] : ['DESPACHADO', 'LISTO', 'CONFIRMADO'];
+        const estadoMap: { [key in KitchenTransitionAction]: string } = {
+            'start': 'EN_PREPARACION',
+            'finish': 'LISTO'
+        };
 
-        return this.tryStatusCandidates(this.kitchenBaseUrl, orderId, candidateStatuses).pipe(
-            catchError(() => this.tryStatusCandidates(this.legacyBaseUrl, orderId, candidateStatuses))
-        );
-    }
+        const estado = estadoMap[action];
+        const url = `${this.kitchenBaseUrl}/${orderId}/status`;
+        const body = { estado };
 
-    private tryStatusCandidates(baseUrl: string, orderId: string, statuses: string[]): Observable<any> {
-        const [first, ...rest] = statuses;
-        if (!first) {
-            return throwError(() => new Error('No status candidates available'));
-        }
-
-        return this.patchStatus(baseUrl, orderId, first).pipe(
-            catchError((error) => {
-                if (rest.length === 0) {
-                    return throwError(() => error);
-                }
-
-                return this.tryStatusCandidates(baseUrl, orderId, rest);
-            })
-        );
-    }
-
-    private patchStatus(baseUrl: string, orderId: string, status: string): Observable<any> {
-        const params = new HttpParams().set('orderId', orderId).set('status', status);
-        return this.http.patch(`${baseUrl}/status`, null, { params });
+        return this.http.patch(url, body);
     }
 
     private extractContent(response: KitchenListResponse | null | undefined): any[] {

@@ -2,9 +2,7 @@ import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Subject, firstValueFrom } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { OrderSseService, SseNewOrderEvent } from '@/pages/comandix/services/order-sse.service';
-import { environment } from '@/pages/commons/environment';
 import { KitchenOrder, KitchenOrderItem, KitchenOrderStatus } from '../models/kitchen-order.model';
-import { KitchenMockBackendService } from './kitchen-mock-backend.service';
 import { KitchenNotificationService } from './kitchen-notification.service';
 import { KitchenApiService } from './kitchen-api.service';
 
@@ -15,7 +13,6 @@ export class KitchenOrderFacadeService implements OnDestroy {
     private readonly ordersSubject = new BehaviorSubject<KitchenOrder[]>([]);
     private readonly loadingSubject = new BehaviorSubject<boolean>(false);
     private readonly connectionSubject = new BehaviorSubject<'connected' | 'disconnected' | 'error'>('disconnected');
-    private readonly usingMockSubject = new BehaviorSubject<boolean>(false);
 
     private readonly destroy$ = new Subject<void>();
     private pollingTimer: ReturnType<typeof setInterval> | null = null;
@@ -27,12 +24,10 @@ export class KitchenOrderFacadeService implements OnDestroy {
     readonly orders$ = this.ordersSubject.asObservable();
     readonly loading$ = this.loadingSubject.asObservable();
     readonly connectionStatus$ = this.connectionSubject.asObservable();
-    readonly usingMock$ = this.usingMockSubject.asObservable();
 
     constructor(
         private kitchenApiService: KitchenApiService,
         private orderSseService: OrderSseService,
-        private kitchenMockBackendService: KitchenMockBackendService,
         private kitchenNotificationService: KitchenNotificationService
     ) {}
 
@@ -43,11 +38,6 @@ export class KitchenOrderFacadeService implements OnDestroy {
 
         this.teardown();
         this.tenantId = tenantId;
-
-        if (environment.kitchenMockEnabled === true) {
-            this.startMockMode();
-            return;
-        }
 
         this.loadOrders();
         this.startPolling();
@@ -64,48 +54,27 @@ export class KitchenOrderFacadeService implements OnDestroy {
             this.pollingTimer = null;
         }
         this.orderSseService.disconnect();
-        this.kitchenMockBackendService.stop();
         this.clearAllReadyTimers();
         this.destroy$.next();
     }
 
     async startOrder(orderId: string): Promise<void> {
-        if (this.usingMockSubject.value) {
-            await firstValueFrom(this.kitchenMockBackendService.updateStatus(orderId, 'EN_PREPARACION'));
-            this.patchLocalStatus(orderId, 'EN_PREPARACION');
-            return;
-        }
-
         await firstValueFrom(this.kitchenApiService.updateStatus(orderId, 'start'));
         this.patchLocalStatus(orderId, 'EN_PREPARACION');
         this.cancelReadyCleanup(orderId);
     }
 
+    async startOrderFromConfirmed(orderId: string): Promise<void> {
+        await firstValueFrom(this.kitchenApiService.updateStatus(orderId, 'start'));
+        this.patchLocalStatus(orderId, 'EN_PREPARACION');
+    }
+
     async finishOrder(orderId: string): Promise<void> {
-        if (this.usingMockSubject.value) {
-            await firstValueFrom(this.kitchenMockBackendService.updateStatus(orderId, 'LISTO_DESPACHADO'));
-            this.patchLocalStatus(orderId, 'LISTO_DESPACHADO');
-            this.scheduleReadyCleanup(orderId);
-            return;
-        }
-
         await firstValueFrom(this.kitchenApiService.updateStatus(orderId, 'finish'));
-        this.patchLocalStatus(orderId, 'LISTO_DESPACHADO');
-        this.scheduleReadyCleanup(orderId);
+        this.patchLocalStatus(orderId, 'LISTO');
     }
 
-    private startMockMode(): void {
-        this.usingMockSubject.next(true);
-        this.connectionSubject.next('connected');
-        this.kitchenMockBackendService.start(this.tenantId);
 
-        this.kitchenMockBackendService
-            .getOrders$()
-            .pipe(takeUntil(this.destroy$))
-            .subscribe((orders) => {
-                this.ordersSubject.next(orders);
-            });
-    }
 
     private startPolling(): void {
         this.pollingTimer = setInterval(() => this.loadOrders(), 30_000);
@@ -126,15 +95,26 @@ export class KitchenOrderFacadeService implements OnDestroy {
     private async loadOrders(): Promise<void> {
         this.loadingSubject.next(true);
         try {
-            const allOrders = await firstValueFrom(this.kitchenApiService.listOrders(this.tenantId, 0, 100));
-            const kitchenOrders = allOrders.map((order) => this.mapBackendOrderToKitchen(order));
+            // Cargar órdenes de cada status independientemente
+            const confirmedOrders = await firstValueFrom(
+                this.kitchenApiService.listOrdersByStatus(this.tenantId, 'CONFIRMADA', 0, 100)
+            );
+            const inProgressOrders = await firstValueFrom(
+                this.kitchenApiService.listOrdersByStatus(this.tenantId, 'EN_PREPARACION', 0, 100)
+            );
+            const readyOrders = await firstValueFrom(
+                this.kitchenApiService.listOrdersByStatus(this.tenantId, 'LISTO', 0, 100)
+            );
+
+            const allBackendOrders = [...confirmedOrders, ...inProgressOrders, ...readyOrders];
+            const kitchenOrders = allBackendOrders.map((order) => this.mapBackendOrderToKitchen(order));
 
             this.knownOrderIds = new Set(kitchenOrders.map((order) => order.id));
             this.ordersSubject.next(kitchenOrders);
-            this.reconcileReadyCleanup(kitchenOrders);
-        } catch {
-            // Si no hay BE listo para cocina, degradamos a mock sin afectar la app.
-            this.startMockMode();
+        } catch (error) {
+            console.error('Error al cargar órdenes de cocina:', error);
+            // No hay fallback a mock, simplemente mostrar error
+            this.ordersSubject.next([]);
         } finally {
             this.loadingSubject.next(false);
         }
@@ -151,7 +131,10 @@ export class KitchenOrderFacadeService implements OnDestroy {
         }
 
         this.knownOrderIds.add(mappedOrder.id);
-        this.ordersSubject.next([mappedOrder, ...this.ordersSubject.value]);
+        // Agregar la nueva orden al final (FIFO) para mantener orden de llegada
+        this.ordersSubject.next([...this.ordersSubject.value, mappedOrder]);
+
+        // Reproducir campana para cualquier orden nueva que llega
         this.kitchenNotificationService.playNewOrderSound(2, 400);
     }
 
@@ -199,7 +182,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
     }
 
     private reconcileReadyCleanup(orders: KitchenOrder[]): void {
-        const readyOrderIds = new Set(orders.filter((order) => order.status === 'LISTO_DESPACHADO').map((order) => order.id));
+        const readyOrderIds = new Set(orders.filter((order) => order.status === 'LISTO').map((order) => order.id));
 
         readyOrderIds.forEach((orderId) => this.scheduleReadyCleanup(orderId));
 
@@ -259,14 +242,23 @@ export class KitchenOrderFacadeService implements OnDestroy {
     private normalizeStatus(rawStatus: unknown): KitchenOrderStatus {
         const status = String(rawStatus ?? '').toUpperCase();
 
+        if (status === 'PENDIENTE') {
+            return 'PENDIENTE';
+        }
+
+        if (status === 'CONFIRMADA' || status === 'CONFIRMED') {
+            return 'CONFIRMADA';
+        }
+
         if (status === 'EN_PREPARACION' || status === 'IN_PROGRESS') {
             return 'EN_PREPARACION';
         }
 
-        if (status === 'LISTO' || status === 'DESPACHADO' || status === 'CONFIRMADO') {
-            return 'LISTO_DESPACHADO';
+        if (status === 'LISTO' || status === 'DESPACHADO') {
+            return 'LISTO';
         }
 
+        // Default a PENDIENTE para órdenes nuevas del CHATBOT
         return 'PENDIENTE';
     }
 }

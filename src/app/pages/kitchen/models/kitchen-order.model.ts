@@ -1,4 +1,4 @@
-export type KitchenOrderStatus = 'PENDIENTE' | 'EN_PREPARACION' | 'LISTO_DESPACHADO';
+export type KitchenOrderStatus = 'PENDIENTE' | 'CONFIRMADA' | 'EN_PREPARACION' | 'LISTO';
 
 export interface KitchenOrderItem {
     productId?: number;

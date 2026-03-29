@@ -119,19 +119,18 @@ export class LandingEditorComponent implements OnInit {
         this.email = currentUser.email;
         this.userId = currentUser.id;
 
-        this.loadTenantInformation();
+        this.loadTenantInformation(currentUser.tenantId);
     }
 
-    private loadTenantInformation(): void {
-        if (!this.email) {
+    private loadTenantInformation(tenantId?: number): void {
+        if (!tenantId) {
             this.openSetupPrompt();
             return;
         }
 
-        this.tenantService.getTenantByEmail(this.email).subscribe({
-            next: (response: any) => {
-                const tenant = response?.object;
-                const notFound = response?.code === 404 || !tenant;
+        this.tenantService.getTenantById(tenantId).subscribe({
+            next: (tenant: any) => {
+                const notFound = !tenant;
 
                 if (notFound) {
                     this.openSetupPrompt();
