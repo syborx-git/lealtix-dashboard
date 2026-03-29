@@ -4,7 +4,6 @@ import { RouterModule } from '@angular/router';
 import { MenuItem } from 'primeng/api';
 import { AppMenuitem } from './app.menuitem';
 import { CategoryService } from '../../pages/categories-menu/service/category.service';
-import { TenantService } from '../../pages/admin-page/service/tenant.service';
 import { ProductService } from '../../pages/products-menu/service/product.service';
 import { AuthService } from '../../auth/auth.service';
 import { KitchenFeatureService } from '@/pages/kitchen/services/kitchen-feature.service';
@@ -26,7 +25,6 @@ export class AppMenu implements OnInit {
 
     constructor(
         private categoryService: CategoryService,
-        private tenantService: TenantService,
         private productService: ProductService,
         private authService: AuthService,
         private kitchenFeatureService: KitchenFeatureService
@@ -113,7 +111,9 @@ export class AppMenu implements OnInit {
     }
 
     private hasRequiredPermissions(item: any): boolean {
-        const isAdminByRole = this.authService.getCurrentUser()?.rol === 'ADMIN';
+        const user = this.authService.getCurrentUser();
+        const userRole = user?.role || user?.rol;
+        const isAdminByRole = userRole === 'ADMIN';
         const isAdminByPermission = this.userPermissions.includes('admin_access');
 
         if (isAdminByRole || isAdminByPermission) {
@@ -128,101 +128,74 @@ export class AppMenu implements OnInit {
     }
 
     private checkAndUpdateProductsMenu() {
-        const userStr = sessionStorage.getItem('usuario') ?? localStorage.getItem('usuario');
-        if (userStr) {
-            try {
-                const userObj = JSON.parse(userStr);
-                if (userObj && userObj.userEmail) {
-                    this.tenantService.getTenantByEmail(String(userObj.userEmail || '').trim()).subscribe({
-                        next: (resp) => {
-                            const tenant = resp?.object;
-                            const tenantId = tenant?.id ?? 0;
-                            if (tenantId > 0) {
-                                this.categoryService.checkCategoriesExist(tenantId).subscribe({
-                                    next: (hasCategories) => {
-                                        const productsItem = this.model[0]?.items?.find(item => item.label === 'Productos');
-                                        if (productsItem) {
-                                            productsItem.disabled = !hasCategories;
-                                            productsItem.title = hasCategories ? undefined : 'Primero crea al menos una categoría';
-                                        }
-                                    },
-                                    error: (err) => {
-                                        console.error('Error checking categories:', err);
-                                    }
-                                });
-                            }
-                        },
-                        error: (err) => {
-                            console.error('Error fetching tenant:', err);
-                        }
-                    });
+        const currentUser = this.authService.getCurrentUser();
+        const tenantId = currentUser?.tenantId;
+
+        if (tenantId) {
+            this.categoryService.checkCategoriesExist(tenantId).subscribe({
+                next: (hasCategories) => {
+                    const productsItem = this.model[0]?.items?.find(item => item.label === 'Productos');
+                    if (productsItem) {
+                        productsItem.disabled = !hasCategories;
+                        productsItem.title = hasCategories ? undefined : 'Primero crea al menos una categoría';
+                    }
+                },
+                error: (err) => {
+                    console.error('Error checking categories:', err);
                 }
-            } catch (e) {
-                console.warn('Failed to parse stored usuario:', e);
-            }
+            });
         }
     }
 
     private checkAndUpdateMiPaginaMenu() {
-        const userStr = sessionStorage.getItem('usuario') ?? localStorage.getItem('usuario');
-        if (userStr) {
-            try {
-                const userObj = JSON.parse(userStr);
-                if (userObj && userObj.userEmail) {
-                    this.tenantService.getTenantByEmail(String(userObj.userEmail || '').trim()).subscribe({
-                        next: (resp) => {
-                            const tenant = resp?.object;
-                            const tenantId = tenant?.id ?? 0;
-                            if (tenantId > 0) {
-                                this.productService.getProductsByTenantId(tenantId).subscribe({
-                                    next: (productResp) => {
-                                        const products = productResp?.object || [];
-                                        const hasProducts = products.length > 0;
-                                        const miPaginaItem = this.model[0]?.items?.find(item => item.label === 'Mi Página');
-                                        if (miPaginaItem) {
-                                            miPaginaItem.visible = hasProducts;
-                                        }
-                                        const comandixItem = this.model[0]?.items?.find(item => item.label === 'Mi Comanda');
-                                        if (comandixItem) {
-                                            comandixItem.visible = hasProducts;
-                                        }
-                                    },
-                                    error: (err) => {
-                                        console.error('Error checking products:', err);
-                                    }
-                                });
-                            }
-                        },
-                        error: (err) => {
-                            console.error('Error fetching tenant:', err);
-                        }
-                    });
-                }
-            } catch (e) {
-                console.warn('Failed to parse stored usuario:', e);
+        const currentUser = this.authService.getCurrentUser();
+        const userRole = currentUser?.role || currentUser?.rol;
+        const tenantId = currentUser?.tenantId;
+
+        // "Mi Página" y "Mi Comanda" no son para COCINA
+        if (userRole === 'COCINA') {
+            const miPaginaItem = this.model[0]?.items?.find(item => item.label === 'Mi Página');
+            if (miPaginaItem) {
+                miPaginaItem.visible = false;
             }
+            const comandixItem = this.model[0]?.items?.find(item => item.label === 'Mi Comanda');
+            if (comandixItem) {
+                comandixItem.visible = false;
+            }
+            return;
+        }
+
+        if (tenantId) {
+            this.productService.getProductsByTenantId(tenantId).subscribe({
+                next: (productResp) => {
+                    const products = productResp?.object || [];
+                    const hasProducts = products.length > 0;
+                    const miPaginaItem = this.model[0]?.items?.find(item => item.label === 'Mi Página');
+                    if (miPaginaItem) {
+                        miPaginaItem.visible = hasProducts;
+                    }
+                    const comandixItem = this.model[0]?.items?.find(item => item.label === 'Mi Comanda');
+                    if (comandixItem) {
+                        comandixItem.visible = hasProducts;
+                    }
+                },
+                error: (err) => {
+                    console.error('Error checking products:', err);
+                }
+            });
         }
     }
 
     private checkAndUpdateKitchenMenu() {
-        // La visibilidad se controla primordialmente por permisos del usuario.
-        // Esta función verifica el feature flag del tenant co mo validación adicional.
-        // Si el usuario tiene permisos pero el módulo está deshabilitado, se muestra un estado deshabilitado.
-        this.kitchenFeatureService.isKitchenEnabledForCurrentTenant$().subscribe({
-            next: (enabled) => {
-                const kitchenItem = this.model[0]?.items?.find(item => item.label === 'Cocina');
-                if (kitchenItem) {
-                    if (!enabled) {
-                        // Si el módulo está deshabilitado, ocultarlo
-                        kitchenItem.visible = false;
-                    }
-                    // Si está habilitado, dejar que los permisos controlen la visibilidad
-                }
-            },
-            error: () => {
-                // En caso de error, permitir visualización si el usuario tiene permisos (no es control nuestro)
-                // No ocultamos el item aquí
-            }
-        });
+        // Si el usuario tiene los permisos de cocina, mostrar la opción
+        // Los permisos ya se validaron en buildMenu(), así que solo necesitamos
+        // verificar que existe el item
+        const kitchenItem = this.model[0]?.items?.find(item => item.label === 'Cocina');
+
+        if (kitchenItem) {
+            // Asegurar que esté visible si el usuario logró pasar el filtro de permisos
+            kitchenItem.visible = true;
+            kitchenItem.disabled = false;
+        }
     }
 }

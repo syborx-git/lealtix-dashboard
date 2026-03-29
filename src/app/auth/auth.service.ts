@@ -21,8 +21,10 @@ export interface User {
 	id: number;
 	nombre?: string;
 	nombre_usuario?: string;
+	userName?: string;
 	email: string;
 	rol?: 'ADMIN' | 'MESERO' | 'COCINA';
+	role?: 'ADMIN' | 'MESERO' | 'COCINA';
 	tenantId?: number;  // Opcional - puede venir del JWT o de otro endpoint
 }
 
@@ -34,6 +36,7 @@ export interface LoginResponse {
 		userEmail: string;
 		userId: number;
 		permissions: string[];
+        tenantId: number;
 	};
 	data?: {
 		user: User;
@@ -47,6 +50,7 @@ export interface TokenPayload {
 	accessToken: string;
 	userEmail: string;
 	userId: number;
+	tenantId: number;
 }
 
 @Injectable({
@@ -119,9 +123,9 @@ export class AuthService {
 	loginAndStore(credentials: LoginCredentials): Observable<LoginResponse> {
 		return this.login(credentials).pipe(
 			tap((res) => {
-				// Nueva estructura: { code, message, object: { accessToken, userEmail, userId, permissions } }
+				// Nueva estructura: { code, message, object: { accessToken, userEmail, userId, permissions, userName, role } }
 				if (res?.object) {
-					const { accessToken, userEmail, userId, permissions } = res.object;
+					const { accessToken, userEmail, userId, permissions, tenantId, userName, role } = res.object as any;
 					try {
 						// Guardar token
 						localStorage.setItem('accessToken', accessToken || '');
@@ -130,7 +134,11 @@ export class AuthService {
 						// Guardar usuario (creando objeto User)
 						const user: User = {
 							id: userId,
-							email: userEmail
+							email: userEmail,
+							userName: userName,
+							rol: role,
+							role: role,
+							tenantId: tenantId
 						};
 						localStorage.setItem('currentUser', JSON.stringify(user));
 						this.currentUser$.next(user);
@@ -139,11 +147,6 @@ export class AuthService {
 						localStorage.setItem('permissions', JSON.stringify(permissions || []));
 						this.permissions$.next(permissions || []);
 
-						// Compatible con código antiguo
-						localStorage.setItem('usuario', JSON.stringify({
-							userEmail: userEmail,
-							userId: userId
-						}));
 					} catch (e) {
 						console.warn('No se pudo guardar en localStorage', e);
 					}
@@ -164,13 +167,6 @@ export class AuthService {
 						localStorage.setItem('permissions', JSON.stringify(permissions || []));
 						this.permissions$.next(permissions || []);
 
-						// Compatible con código antiguo
-						localStorage.setItem('usuario', JSON.stringify({
-							userEmail: user.email,
-							userId: user.id,
-							tenantId: user.tenantId,
-							nombre: user.nombre || user.nombre_usuario
-						}));
 					} catch (e) {
 						console.warn('No se pudo guardar en localStorage', e);
 					}
@@ -265,7 +261,6 @@ export class AuthService {
 			localStorage.removeItem('accessToken');
 			localStorage.removeItem('currentUser');
 			localStorage.removeItem('permissions');
-			localStorage.removeItem('usuario');
 
 			this.currentUser$.next(null);
 			this.permissions$.next([]);

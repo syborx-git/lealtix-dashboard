@@ -12,6 +12,7 @@ import { forkJoin } from 'rxjs';
 import { DashboardService } from './dashboard.service';
 import { DashboardLoyaltyService } from './dashboard-loyalty.service';
 import { TenantService } from '@/pages/admin-page/service/tenant.service';
+import { AuthService } from '@/auth/auth.service';
 import {
   TimeSeriesCountDTO,
   CouponStatsDTO,
@@ -93,7 +94,8 @@ export class DashboardComponent implements OnInit {
   constructor(
     private dashboardService: DashboardService,
     private dashboardLoyaltyService: DashboardLoyaltyService,
-    private tenantService: TenantService
+    private tenantService: TenantService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -102,45 +104,33 @@ export class DashboardComponent implements OnInit {
   }
 
   private readTenantId(): void {
-    const userStr = sessionStorage.getItem('usuario') ?? localStorage.getItem('usuario');
-    if (userStr) {
-      try {
-        const userObj = JSON.parse(userStr);
-        if (userObj && userObj.userEmail) {
-          this.tenantService.getTenantByEmail(String(userObj.userEmail || '').trim()).subscribe({
-            next: (resp) => {
+    const currentUser = this.authService.getCurrentUser();
+    const tenantId = currentUser?.tenantId;
 
-              const tenant = resp?.object;
-              this.tenantId = tenant?.id ?? 0;
-              this.clientName.set(tenant?.nombreNegocio || 'Negocio');
-              this.clientLogo.set(tenant?.logoUrl || null);
-              this.clientSlug.set(tenant?.slug || null);
+    if (tenantId) {
+      this.tenantService.getTenantById(tenantId).subscribe({
+        next: (tenant) => {
+          this.tenantId = tenant?.id ?? 0;
+          this.clientName.set(tenant?.nombreNegocio || 'Negocio');
+          this.clientLogo.set(tenant?.logoUrl || null);
+          this.clientSlug.set(tenant?.slug || null);
 
-              // Cargar datos una vez obtenido el tenantId
-              if (this.tenantId > 0) {
-                this.cargarDatos();
-              } else {
-                this.error.set('No se pudo obtener el tenant');
-                this.loading.set(false);
-              }
-            },
-            error: (err) => {
-              console.error('Error fetching tenant:', err);
-              this.error.set('Error al obtener información del negocio');
-              this.loading.set(false);
-            }
-          });
-        } else {
-          this.error.set('No se encontró información de usuario');
+          // Cargar datos una vez obtenido el tenantId
+          if (this.tenantId > 0) {
+            this.cargarDatos();
+          } else {
+            this.error.set('No se pudo obtener el tenant');
+            this.loading.set(false);
+          }
+        },
+        error: (err) => {
+          console.error('Error fetching tenant:', err);
+          this.error.set('Error al obtener información del negocio');
           this.loading.set(false);
         }
-      } catch (e) {
-        console.warn('Failed to parse stored usuario:', e);
-        this.error.set('Error al procesar información de usuario');
-        this.loading.set(false);
-      }
+      });
     } else {
-      this.error.set('No hay sesión de usuario activa');
+      this.error.set('No se encontró información de usuario');
       this.loading.set(false);
     }
   }
