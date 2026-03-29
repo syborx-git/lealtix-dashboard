@@ -55,7 +55,7 @@ export class KitchenMockBackendService {
 
     private createSeedOrders(tenantId: number): KitchenOrder[] {
         return [
-            this.buildOrder(tenantId, 'Cliente General', 'PENDIENTE', [
+            this.buildOrder(tenantId, 'Cliente General', 'CONFIRMADA', [
                 { productName: 'Hamburguesa Clásica', quantity: 2, unitPrice: 14500, comments: 'Sin cebolla' },
                 { productName: 'Papas Grandes', quantity: 1, unitPrice: 7500, comments: 'Extra salsa' }
             ], -4),

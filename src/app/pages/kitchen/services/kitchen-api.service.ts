@@ -31,7 +31,18 @@ export class KitchenApiService {
     listOrders(tenantId: number, page = 0, size = 100): Observable<any[]> {
         const params = new HttpParams()
             .set('tenantId', tenantId)
-            .set('status', 'EN_PREPARACION')
+            .set('page', page)
+            .set('size', size);
+
+        return this.http.get<KitchenListResponse>(this.kitchenBaseUrl, { params }).pipe(
+            map((response) => this.extractContent(response))
+        );
+    }
+
+    listOrdersByStatus(tenantId: number, status: string, page = 0, size = 100): Observable<any[]> {
+        const params = new HttpParams()
+            .set('tenantId', tenantId)
+            .set('status', status)
             .set('page', page)
             .set('size', size);
 
