@@ -20,7 +20,7 @@ export class OrderService {
 
   private readonly statusMap: Record<string, string> = {
     PENDING: 'PENDIENTE',
-    CONFIRMED: 'CONFIRMADO',
+    CONFIRMED: 'CONFIRMADA',
     REJECTED: 'RECHAZADO'
   };
 
@@ -82,18 +82,19 @@ export class OrderService {
     );
   }
 
+
   /**
    * Actualiza el estado de una orden
-   * PATCH /api/tenant-client-orders/status?orderId=X&status=CONFIRMADO
+   * PATCH /api/tenant-client-orders/{orderId}/status
+   * Body: { "estado": "CONFIRMADA" }
    */
   updateOrderStatus(orderId: string, status: string): Observable<UpdateOrderStatusResponse> {
     const normalizedStatus = this.statusMap[status] ?? status;
-    const params = new HttpParams()
-      .set('orderId', orderId)
-      .set('status', normalizedStatus);
+    const url = `${this.baseUrl}/${orderId}/status`;
+    const body = { estado: normalizedStatus };
 
     return this.http
-      .patch<UpdateOrderStatusResponse>(`${this.baseUrl}/status`, null, { params })
+      .patch<UpdateOrderStatusResponse>(url, body)
       .pipe(
         catchError((error) => {
           console.error('Error al actualizar estado de orden:', error);

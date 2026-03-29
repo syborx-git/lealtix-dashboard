@@ -27,6 +27,7 @@ import { LazyLoadEvent, MessageService, ConfirmationService } from 'primeng/api'
 // Services
 import { ClienteService } from '../../services/cliente.service';
 import { TenantService } from '@/pages/admin-page/service/tenant.service';
+import { AuthService } from '@/auth/auth.service';
 
 // Components
 import { ClienteDialogComponent } from '../cliente-dialog/cliente-dialog.component';
@@ -109,6 +110,7 @@ export class ClienteListComponent implements OnInit {
   constructor(
     private clienteService: ClienteService,
     private tenantService: TenantService,
+    private authService: AuthService,
     private messageService: MessageService,
     private confirmationService: ConfirmationService,
     private fb: FormBuilder
@@ -131,26 +133,8 @@ export class ClienteListComponent implements OnInit {
   // ================== Lifecycle ==================
 
   private async readTenantId(): Promise<number> {
-    const userStr = sessionStorage.getItem('usuario') ?? localStorage.getItem('usuario');
-    if (!userStr) return this.tenantId;
-    try {
-      const userObj = JSON.parse(userStr);
-      if (userObj && userObj.userEmail) {
-        try {
-          const resp = await firstValueFrom(
-            this.tenantService.getTenantByEmail(String(userObj.userEmail || '').trim())
-          );
-          const tenant = resp?.object;
-          this.tenantId = tenant?.id ?? 0;
-          return this.tenantId;
-        } catch (err) {
-          console.error('Error fetching tenant:', err);
-          this.tenantId = 0;
-        }
-      }
-    } catch (e) {
-      console.warn('Failed to parse stored usuario:', e);
-    }
+    const currentUser = this.authService.getCurrentUser();
+    this.tenantId = currentUser?.tenantId ?? 0;
     return this.tenantId;
   }
 

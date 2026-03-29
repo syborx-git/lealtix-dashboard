@@ -5,7 +5,7 @@ import { AuthService } from '@/auth/auth.service';
 /**
  * Directiva estructural *hasRole para controlar la visibilidad de elementos
  * basándose en el rol del usuario autenticado
- * 
+ *
  * Uso:
  * <div *hasRole="'ADMIN'">Solo para admins</div>
  * <div *hasRole="['ADMIN', 'MESERO']">Para admin o mesero</div>
@@ -53,11 +53,8 @@ export class HasRoleDirective implements OnInit {
 
   private getUserRoleFromStorage(): UserRole | null {
     try {
-      const usuarioStr = sessionStorage.getItem('usuario') || localStorage.getItem('usuario');
-      if (usuarioStr) {
-        const usuario = JSON.parse(usuarioStr);
-        return usuario.rol || null;
-      }
+      const user = this.authService.getCurrentUser();
+      return user?.rol as UserRole || null;
     } catch (error) {
       console.error('Error al obtener rol del usuario:', error);
     }

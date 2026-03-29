@@ -165,20 +165,6 @@ export class KitchenComponent implements OnInit, OnDestroy {
 
     private async resolveTenantId(): Promise<number> {
         const currentUser = this.authService.getCurrentUser();
-        if (currentUser?.tenantId && currentUser.tenantId > 0) {
-            return currentUser.tenantId;
-        }
-
-        const email = currentUser?.email;
-        if (!email) {
-            return 0;
-        }
-
-        try {
-            const response = await firstValueFrom(this.tenantService.getTenantByEmail(email));
-            return Number(response?.object?.id ?? 0);
-        } catch {
-            return 0;
-        }
+        return currentUser?.tenantId ?? 0;
     }
 }

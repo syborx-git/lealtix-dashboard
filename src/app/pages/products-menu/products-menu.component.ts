@@ -31,6 +31,7 @@ import { ImageService } from '../service/image.service';
 import { ProductDialogComponent } from './product-dialog.component';
 import { forkJoin } from 'rxjs';
 import { TenantService } from '../admin-page/service/tenant.service';
+import { AuthService } from '@/auth/auth.service';
 import { ConfettiService } from '@/confetti/confetti.service';
 import { ConfettiComponent } from '@/confetti/confetti.component';
 import { environment } from '../commons/environment.dev';
@@ -154,6 +155,7 @@ export class ProductMenuComponent implements OnInit {
         private fb: FormBuilder,
         private imageService: ImageService,
         private tenantService: TenantService,
+        private authService: AuthService,
         private route: ActivatedRoute,
         private confettiService: ConfettiService,
         private campaignService: CampaignService,
@@ -185,41 +187,35 @@ export class ProductMenuComponent implements OnInit {
         const nav = this.router.getCurrentNavigation?.();
         this.cameFromMenu = Boolean((nav && (nav.extras as any)?.state?.fromMenu) || this.route.snapshot.queryParams['fromMenu'] === 'true');
 
-        const userStr = sessionStorage.getItem('usuario') ?? localStorage.getItem('usuario');
-        if (userStr) {
-            try {
-                const userObj = JSON.parse(userStr);
-                if (userObj && userObj.userEmail) {
-                    this.tenantService.getTenantByEmail(String(userObj.userEmail || '').trim()).subscribe({
-                        next: (resp) => {
-                            const tenant = resp?.object;
-                            this.tenantId = tenant?.id ?? 0;
-                            this.tenantSlug = tenant?.slug ?? null;
-                            this.loadCategories();
-                            this.loadProducts();
-                            this.loadCrossSellingCatalog();
-                            this.checkBannerConditions();
-                            this.checkCampaignSetupPrompt();
+        const currentUser = this.authService.getCurrentUser();
+        const tenantId = currentUser?.tenantId;
 
-                            // Check for categoryId query param to auto-open product dialog
-                            this.route.queryParams.subscribe(params => {
-                                const categoryId = params['categoryId'];
-                                if (categoryId) {
-                                    // Wait a bit for categories to load
-                                    setTimeout(() => {
-                                        this.openNewWithCategory(Number(categoryId));
-                                    }, 500);
-                                }
-                            });
-                        },
-                        error: (err) => {
-                            console.error('Error fetching tenant:', err);
+        if (tenantId) {
+            this.tenantService.getTenantById(tenantId).subscribe({
+                next: (tenant) => {
+                    this.tenantId = tenant?.id ?? 0;
+                    this.tenantSlug = tenant?.slug ?? null;
+                    this.loadCategories();
+                    this.loadProducts();
+                    this.loadCrossSellingCatalog();
+                    this.checkBannerConditions();
+                    this.checkCampaignSetupPrompt();
+
+                    // Check for categoryId query param to auto-open product dialog
+                    this.route.queryParams.subscribe(params => {
+                        const categoryId = params['categoryId'];
+                        if (categoryId) {
+                            // Wait a bit for categories to load
+                            setTimeout(() => {
+                                this.openNewWithCategory(Number(categoryId));
+                            }, 500);
                         }
                     });
+                },
+                error: (err) => {
+                    console.error('Error fetching tenant:', err);
                 }
-            } catch (e) {
-                console.warn('Failed to parse stored usuario:', e);
-            }
+            });
         }
 
     }

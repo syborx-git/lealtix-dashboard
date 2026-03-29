@@ -93,19 +93,18 @@ export class MenuClassicPrintComponent implements OnInit {
     this.isLoading.set(true);
 
     const user = this.authService.getCurrentUser();
-    if (!user || !user.email) {
-      this.showError('No se encontró usuario autenticado');
+    if (!user || !user.tenantId) {
+      this.showError('No se encontró usuario autenticado o tenant');
       this.isLoading.set(false);
       return;
     }
 
-    // Obtener tenant por email
-    this.tenantService.getTenantByEmail(user.email).subscribe({
-      next: (resp) => {
-        const tenant = resp?.object;
+    // Obtener tenant por ID
+    this.tenantService.getTenantById(user.tenantId).subscribe({
+      next: (tenant) => {
         const tenantId = tenant?.id;
         const tenantSlug = tenant?.slug;
-        const tenantName = tenant?.nombreNegocio || tenant?.businessName || 'Mi Negocio';
+        const tenantName = tenant?.nombreNegocio || 'Mi Negocio';
         const tenantLogoUrl = tenant?.logoUrl || '';
 
         // Guardar logo del tenant
@@ -114,7 +113,7 @@ export class MenuClassicPrintComponent implements OnInit {
         // Guardar contacto y horarios para footer
         const direccion = tenant?.direccion || '';
         const telefono = tenant?.telefono || '';
-        const email = tenant?.email || tenant?.userEmail || '';
+        const email = tenant?.bussinessEmail || '';
         const schedulesRaw = tenant?.schedules;
         const schedules = Array.isArray(schedulesRaw)
           ? schedulesRaw.join(' · ')

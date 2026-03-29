@@ -29,14 +29,13 @@ export class MiPaginaService {
   getTenantPageInfo(): Observable<TenantPageInfo | null> {
     const user = this.authService.getCurrentUser();
 
-    if (!user || !user.email) {
-      console.warn('No se encontró usuario autenticado');
+    if (!user || !user.tenantId) {
+      console.warn('No se encontró usuario autenticado o tenant');
       return of(null);
     }
 
-    return this.tenantService.getTenantByEmail(user.email).pipe(
-      map((resp) => {
-        const tenant = resp?.object;
+    return this.tenantService.getTenantById(user.tenantId).pipe(
+      map((tenant) => {
         const tenantId = tenant?.id;
         const tenantSlug = tenant?.slug;
 
