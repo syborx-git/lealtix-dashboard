@@ -50,6 +50,9 @@ export class AppMenu implements OnInit {
 
     private buildMenu() {
         const allMenuItems: MenuItem[] = [
+            // Waiter Dashboard - specific for mesero role
+            { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/dashboard/mesero'], requiredPermissions: ['dashboard_mesero'] },
+            // Admin/Default Dashboard
             { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/dashboard/kpis'], requiredPermissions: ['view_dashboard'] },
             { label: 'Admin Page', icon: 'pi pi-fw pi-globe', routerLink: ['/dashboard/adminPage'], requiredPermissions: ['manage_admin_page'] },
             { label: 'Categorías', icon: 'pi pi-fw pi-tags', routerLink: ['/dashboard/categoriesMenu'], requiredPermissions: ['manage_categories'] },
