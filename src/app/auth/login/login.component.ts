@@ -45,6 +45,9 @@ export class LoginComponent {
     errorMessage: string | null = null;
     private returnUrl: string | null = null;
 
+    private readonly kitchenDashboardRoute = '/dashboard/cocina-dashboard';
+    private readonly defaultDashboardRoute = '/dashboard/kpis';
+
     constructor() {
         this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
     }
@@ -90,7 +93,7 @@ export class LoginComponent {
                                 if (this.returnUrl) {
                                     this.router.navigateByUrl(this.returnUrl);
                                 } else {
-                                    this.router.navigate(['/dashboard/kpis']);
+                                    this.router.navigateByUrl(this.resolveDefaultRoute());
                                 }
                             }, 500);
                         } catch (e) {
@@ -116,7 +119,7 @@ export class LoginComponent {
                                 if (this.returnUrl) {
                                     this.router.navigateByUrl(this.returnUrl);
                                 } else {
-                                    this.router.navigate(['/dashboard/kpis']);
+                                    this.router.navigateByUrl(this.resolveDefaultRoute());
                                 }
                             }, 500);
                         } catch (e) {
@@ -168,5 +171,17 @@ export class LoginComponent {
             detail: message,
             life: 5000
         });
+    }
+
+    private resolveDefaultRoute(): string {
+        const currentUser = this.authService.getCurrentUser();
+        const userRole = currentUser?.role || currentUser?.rol;
+        const hasKitchenDashboardPermission = this.authService.hasPermission('dashboard_kitchen');
+
+        if (userRole === 'COCINA' && hasKitchenDashboardPermission) {
+            return this.kitchenDashboardRoute;
+        }
+
+        return this.defaultDashboardRoute;
     }
 }

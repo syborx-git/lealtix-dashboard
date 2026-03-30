@@ -40,11 +40,34 @@
             <!-- Items de la orden -->
             <div class="detail-section">
                 <h4>Productos</h4>
+                <div *ngIf="order.status === 'EN_PREPARACION'" class="delivery-progress">
+                    <span class="progress-label">Control de entrega:</span>
+                    <span class="progress-value">{{ getDeliveredItemsCount(order) }}/{{ order.items.length }} items marcados</span>
+                </div>
+                <div *ngIf="pendingReviewOrderId() === order.id" class="pending-guidance">
+                    Faltan items por marcar. Los pendientes están resaltados en rojo.
+                </div>
                 <div class="items-list">
-                    <div *ngFor="let item of order.items" class="item-detail">
+                    <div
+                        *ngFor="let item of order.items; let itemIndex = index"
+                        class="item-detail"
+                        [class.item-delivered]="isItemDelivered(order, itemIndex)"
+                        [class.item-pending-attention]="shouldHighlightPendingItem(order, itemIndex)"
+                        [class.item-tappable]="order.status === 'EN_PREPARACION'"
+                        (click)="onItemRowTap(order, itemIndex)"
+                    >
                         <div class="item-header">
                             <span class="item-quantity">{{ item.quantity }}x</span>
                             <span class="item-name">{{ item.productName }}</span>
+                            <label *ngIf="order.status === 'EN_PREPARACION'" class="item-check-control" (click)="$event.stopPropagation()">
+                                <input
+                                    type="checkbox"
+                                    [checked]="isItemDelivered(order, itemIndex)"
+                                    (click)="$event.stopPropagation()"
+                                    (change)="toggleItemDelivered(order, itemIndex, $any($event.target).checked)"
+                                />
+                                <span>Terminado</span>
+                            </label>
                         </div>
                         <div *ngIf="item.comments" class="item-comments-section">
                             <span class="comments-label">📝 Comentarios:</span>
@@ -91,7 +114,7 @@
                     icon="pi pi-check"
                     class="p-button-success"
                     [loading]="isProcessing(order.id)"
-                    (onClick)="finishOrder(order); closeOrderDetail()"
+                    (onClick)="finishOrderFromDetail(order)"
                 ></p-button>
                 <p-button
                     label="Cerrar"
