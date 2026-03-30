@@ -34,6 +34,9 @@ import { UserManagementComponent } from '@/pages/user-management/components/user
 // Admin Roles & Permissions
 import { AdminRolesPermissionsComponent } from '@/pages/admin-roles-permissions/admin-roles-permissions.component';
 
+// Waiter Dashboard component
+import { WaiterDashboardComponent } from '@/pages/waiter/waiter-dashboard.component';
+import { WaiterGuard } from '@/pages/waiter/guards/waiter.guard';
 
 export const appRoutes: Routes = [
     // Everything under /dashboard/**
@@ -53,6 +56,7 @@ export const appRoutes: Routes = [
                 children: [
                     { path: '', redirectTo: 'adminPage', pathMatch: 'full' },
                     { path: 'kpis', component: DashboardComponent },
+                    { path: 'mesero', component: WaiterDashboardComponent, canActivate: [WaiterGuard], title: 'Dashboard Mesero' },
                     { path: 'adminPage', component: LandingEditorComponent },
                     { path: 'categoriesMenu', component: CategoriesMenuComponent },
                     { path: 'adminMenu', component: ProductMenuComponent },
