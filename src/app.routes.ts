@@ -26,6 +26,7 @@ import { ClienteListComponent } from '@/pages/clientes/components/cliente-list/c
 // Comandix component
 import { ComandixComponent } from '@/pages/comandix/comandix.component';
 import { KitchenComponent } from '@/pages/kitchen/kitchen.component';
+import { KitchenDashboardComponent } from '@/pages/kitchen/kitchen-dashboard.component';
 
 // User Management component
 import { UserManagementComponent } from '@/pages/user-management/components/user-list/user-management.component';
@@ -68,6 +69,7 @@ export const appRoutes: Routes = [
                     // Admin Roles & Permissions
                     { path: 'admin/roles-permissions', component: AdminRolesPermissionsComponent, title: 'Administración de Roles y Permisos', canActivate: [PermissionGuard], data: { permission: 'manage_roles' } },
                     { path: 'comandix', component: ComandixComponent, title: 'Comandix - Comanda Inteligente', canActivate: [PermissionGuard], data: { permission: 'create_order' } },
+                    { path: 'cocina-dashboard', component: KitchenDashboardComponent, title: 'Kitchndix - Dashboard Cocina', canActivate: [PermissionGuard], data: { permission: 'dashboard_kitchen' } },
                     { path: 'cocina', component: KitchenComponent, title: 'Kitchndix - Cocina', canActivate: [PermissionGuard], data: { permission: 'view_kitchen_orders' } },
                     // Ruta eliminada: menu-print
                     { path: 'menu-classic-print', component: MenuClassicPrintComponent, title: 'Imprimir Menú Clásico' }

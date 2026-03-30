@@ -1,0 +1,182 @@
+<section class="kitchen-dashboard px-3 py-3 md:px-4 lg:px-5">
+    <div class="dashboard-shell">
+        <div class="hero-banner border-round-xl shadow-1 p-4 mb-4">
+            <div class="hero-top">
+                <div>
+                    <p class="hero-eyebrow mb-2">Kitchndix Operations</p>
+                    <h1 class="hero-title mb-2">Hola equipo de {{ tenantName() }}! Listos para deleitar a nuestros clientes</h1>
+                    <p class="hero-subtitle m-0">Transformar tareas en calidad: foco en ritmo, consistencia y excelencia en cada plato.</p>
+                </div>
+
+                <div class="range-panel">
+                    <p class="range-title m-0 mb-2">Rango de datos</p>
+                    <div class="range-buttons">
+                        <button
+                            pButton
+                            type="button"
+                            class="range-btn"
+                            [outlined]="selectedDays() !== 1"
+                            [severity]="selectedDays() === 1 ? 'primary' : 'secondary'"
+                            label="1 dia"
+                            (click)="applyRange(1)">
+                        </button>
+                        <button
+                            pButton
+                            type="button"
+                            class="range-btn"
+                            [outlined]="selectedDays() !== 3"
+                            [severity]="selectedDays() === 3 ? 'primary' : 'secondary'"
+                            label="3 dias"
+                            (click)="applyRange(3)">
+                        </button>
+                        <button
+                            pButton
+                            type="button"
+                            class="range-btn"
+                            [outlined]="selectedDays() !== 7"
+                            [severity]="selectedDays() === 7 ? 'primary' : 'secondary'"
+                            label="7 dias"
+                            (click)="applyRange(7)">
+                        </button>
+                    </div>
+                    <small class="range-caption">{{ rangeLabel() }}</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="kpi-grid mb-3">
+            <div class="kpi-item">
+                <p-card styleClass="border-round-xl shadow-1 h-full">
+                    <ng-template pTemplate="header">
+                        <div class="kpi-header">
+                            <i class="pi pi-star-fill"></i>
+                            <span>Platos Estrella</span>
+                        </div>
+                    </ng-template>
+
+                    <div *ngIf="!loading(); else loadingTopDishes" class="kpi-body">
+                        <div class="dish-row" *ngFor="let dish of topThreeDishes(); let i = index">
+                            <div class="dish-meta">
+                                <span class="dish-rank">#{{ dish.rank || i + 1 }}</span>
+                                <span class="dish-name">{{ dish.productName }}</span>
+                            </div>
+                            <div class="dish-values">
+                                <span class="dish-orders">{{ dish.quantity }} pedidos</span>
+                                <span class="dish-sales">Ventas {{ dish.totalSales | number:'1.0-0' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </p-card>
+            </div>
+
+            <div class="kpi-item">
+                <p-card styleClass="border-round-xl shadow-1 h-full">
+                    <ng-template pTemplate="header">
+                        <div class="kpi-header">
+                            <i class="pi pi-heart-fill"></i>
+                            <span>Fidelizacion Actual</span>
+                        </div>
+                    </ng-template>
+
+                    <div *ngIf="!loading(); else loadingFidelity" class="kpi-body">
+                        <p class="fidelity-message">{{ repeatRateText() }}</p>
+                    </div>
+                </p-card>
+            </div>
+
+            <div class="kpi-item">
+                <p-card styleClass="border-round-xl shadow-1 h-full">
+                    <ng-template pTemplate="header">
+                        <div class="kpi-header success">
+                            <i class="pi pi-check-circle"></i>
+                            <span>Ordenes Completadas</span>
+                        </div>
+                    </ng-template>
+
+                    <div *ngIf="!loading(); else loadingCompleted" class="kpi-body kpi-counter">
+                        <span class="counter-value">{{ completedOrders()?.completedOrders || 0 }}</span>
+                        <small class="counter-label">entregadas en el turno</small>
+                    </div>
+                </p-card>
+            </div>
+        </div>
+
+        <div *ngIf="vipAlert()?.active" class="vip-alert border-round-xl shadow-1 p-3 mb-4">
+            <div class="vip-content">
+                <i class="pi pi-bolt"></i>
+                <div>
+                    <p class="vip-title mb-1">Cliente VIP en cola</p>
+                    <p class="m-0">
+                        {{ vipAlert()?.note }}
+                    </p>
+                    <small *ngIf="vipAlert()?.customerName" class="vip-meta">
+                        {{ vipAlert()?.customerName }} · LTV {{ vipAlert()?.lifetimeValue | number:'1.0-0' }}
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-grid mb-4">
+            <div class="trend-col">
+                <p-card styleClass="border-round-xl shadow-1 trend-card h-full">
+                    <ng-template pTemplate="header">
+                        <div class="kpi-header">
+                            <i class="pi pi-chart-bar"></i>
+                            <span>Alertas de Tendencias</span>
+                        </div>
+                    </ng-template>
+
+                    <div class="trend-layout" *ngIf="!loading(); else loadingTrends">
+                        <div class="trend-tags">
+                            <p-tag *ngFor="let keyword of trendKeywords().slice(0, 5)" [value]="keyword.keyword + ' (' + keyword.frequency + ')'" styleClass="trend-tag" severity="contrast" />
+                        </div>
+
+                        <div class="trend-chart">
+                            <p-chart type="bar" [data]="trendChartData()" [options]="trendChartOptions()"></p-chart>
+                        </div>
+                    </div>
+                </p-card>
+            </div>
+
+            <div class="cta-col">
+                <p-card styleClass="border-round-xl shadow-1 cta-card h-full">
+                    <div class="cta-content">
+                        <h3 class="mt-0 mb-2">Inicio de Operacion</h3>
+                        <p class="m-0 mb-4">Regla de 3 toques: entra, valida, ejecuta.</p>
+                        <button pButton type="button" label="ENTRAR A COCINA" icon="pi pi-arrow-right" iconPos="right" class="p-button-lg w-full" (click)="goToKitchen()"></button>
+                    </div>
+                </p-card>
+            </div>
+        </div>
+
+        <div *ngIf="error()" class="error-block border-round-xl p-3">
+            {{ error() }}
+        </div>
+    </div>
+</section>
+
+<ng-template #loadingTopDishes>
+    <div class="kpi-body">
+        <p-skeleton height="1.25rem" styleClass="mb-2"></p-skeleton>
+        <p-skeleton height="1.25rem" styleClass="mb-2"></p-skeleton>
+        <p-skeleton height="1.25rem"></p-skeleton>
+    </div>
+</ng-template>
+
+<ng-template #loadingFidelity>
+    <div class="kpi-body">
+        <p-skeleton height="4rem"></p-skeleton>
+    </div>
+</ng-template>
+
+<ng-template #loadingCompleted>
+    <div class="kpi-body kpi-counter">
+        <p-skeleton width="7rem" height="3rem"></p-skeleton>
+    </div>
+</ng-template>
+
+<ng-template #loadingTrends>
+    <div class="kpi-body">
+        <p-skeleton height="16rem"></p-skeleton>
+    </div>
+</ng-template>

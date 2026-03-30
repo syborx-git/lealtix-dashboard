@@ -35,6 +35,8 @@ export class KitchenComponent implements OnInit, OnDestroy {
     // Signals para modal de detalle
     selectedOrderForDetail = signal<KitchenOrder | null>(null);
     showOrderDetailDialog = signal<boolean>(false);
+    private readonly deliveredItemsByOrder = new Map<string, Set<string>>();
+    pendingReviewOrderId = signal<string | null>(null);
 
     private readonly destroy$ = new Subject<void>();
     private timerRef: ReturnType<typeof setInterval> | null = null;
@@ -63,6 +65,20 @@ export class KitchenComponent implements OnInit, OnDestroy {
 
         this.kitchenOrderFacadeService.orders$.pipe(takeUntil(this.destroy$)).subscribe((orders) => {
             this.orders = orders;
+
+            const selectedOrder = this.selectedOrderForDetail();
+            if (!selectedOrder) {
+                return;
+            }
+
+            const updatedSelectedOrder = orders.find((order) => order.id === selectedOrder.id);
+            if (!updatedSelectedOrder) {
+                this.closeOrderDetail();
+                return;
+            }
+
+            this.selectedOrderForDetail.set(updatedSelectedOrder);
+            this.reconcileDeliveredItems(updatedSelectedOrder);
         });
 
         this.kitchenOrderFacadeService.loading$.pipe(takeUntil(this.destroy$)).subscribe((loading) => {
@@ -155,6 +171,22 @@ export class KitchenComponent implements OnInit, OnDestroy {
         }
     }
 
+    async finishOrderFromDetail(order: KitchenOrder): Promise<void> {
+        if (this.isProcessing(order.id)) {
+            return;
+        }
+
+        const pendingItemsCount = this.getPendingItemsCount(order);
+        if (pendingItemsCount > 0) {
+            this.pendingReviewOrderId.set(order.id);
+            return;
+        }
+
+        this.pendingReviewOrderId.set(null);
+        await this.finishOrder(order);
+        this.closeOrderDetail();
+    }
+
     isProcessing(orderId: string): boolean {
         return this.processingOrderIds.has(orderId);
     }
@@ -184,12 +216,87 @@ export class KitchenComponent implements OnInit, OnDestroy {
 
     openOrderDetail(order: KitchenOrder): void {
         this.selectedOrderForDetail.set(order);
+        this.reconcileDeliveredItems(order);
         this.showOrderDetailDialog.set(true);
     }
 
     closeOrderDetail(): void {
         this.showOrderDetailDialog.set(false);
+        this.pendingReviewOrderId.set(null);
+        const orderId = this.selectedOrderForDetail()?.id;
+        if (orderId) {
+            this.deliveredItemsByOrder.delete(orderId);
+        }
         this.selectedOrderForDetail.set(null);
+    }
+
+    isItemDelivered(order: KitchenOrder, itemIndex: number): boolean {
+        const deliveredItems = this.deliveredItemsByOrder.get(order.id);
+        if (!deliveredItems) {
+            return false;
+        }
+
+        return deliveredItems.has(this.getItemKey(itemIndex));
+    }
+
+    toggleItemDelivered(order: KitchenOrder, itemIndex: number, checked: boolean): void {
+        let deliveredItems = this.deliveredItemsByOrder.get(order.id);
+        if (!deliveredItems) {
+            deliveredItems = new Set<string>();
+            this.deliveredItemsByOrder.set(order.id, deliveredItems);
+        }
+
+        const itemKey = this.getItemKey(itemIndex);
+        if (checked) {
+            deliveredItems.add(itemKey);
+            return;
+        }
+
+        deliveredItems.delete(itemKey);
+
+        if (this.pendingReviewOrderId() === order.id && this.getPendingItemsCount(order) === 0) {
+            this.pendingReviewOrderId.set(null);
+        }
+    }
+
+    onItemRowTap(order: KitchenOrder, itemIndex: number): void {
+        if (order.status !== 'EN_PREPARACION') {
+            return;
+        }
+
+        const nextState = !this.isItemDelivered(order, itemIndex);
+        this.toggleItemDelivered(order, itemIndex, nextState);
+    }
+
+    getDeliveredItemsCount(order: KitchenOrder): number {
+        return this.deliveredItemsByOrder.get(order.id)?.size ?? 0;
+    }
+
+    getPendingItemsCount(order: KitchenOrder): number {
+        return Math.max(0, order.items.length - this.getDeliveredItemsCount(order));
+    }
+
+    areAllItemsDelivered(order: KitchenOrder): boolean {
+        return order.items.length > 0 && this.getPendingItemsCount(order) === 0;
+    }
+
+    shouldHighlightPendingItem(order: KitchenOrder, itemIndex: number): boolean {
+        return this.pendingReviewOrderId() === order.id && !this.isItemDelivered(order, itemIndex);
+    }
+
+    private reconcileDeliveredItems(order: KitchenOrder): void {
+        const deliveredItems = this.deliveredItemsByOrder.get(order.id) ?? new Set<string>();
+        const validItemKeys = new Set(order.items.map((_, index) => this.getItemKey(index)));
+
+        Array.from(deliveredItems)
+            .filter((itemKey) => !validItemKeys.has(itemKey))
+            .forEach((itemKey) => deliveredItems.delete(itemKey));
+
+        this.deliveredItemsByOrder.set(order.id, deliveredItems);
+    }
+
+    private getItemKey(itemIndex: number): string {
+        return `item-${itemIndex}`;
     }
 
     private async resolveTenantId(): Promise<number> {

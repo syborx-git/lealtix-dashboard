@@ -38,7 +38,7 @@ export class AuthInterceptor implements HttpInterceptor {
 		// agregar tenantId como query param
 		if (
 			token &&
-			!req.url.includes('tenantId=') &&
+			!req.urlWithParams.includes('tenantId=') &&
 			!req.url.includes('login') &&
 			!req.url.includes('/redeem/')
 		) {

@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { NgFor, NgIf } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MenuItem } from 'primeng/api';
 import { AppMenuitem } from './app.menuitem';
@@ -11,7 +11,7 @@ import { KitchenFeatureService } from '@/pages/kitchen/services/kitchen-feature.
 @Component({
     selector: 'app-menu',
     standalone: true,
-    imports: [CommonModule, AppMenuitem, RouterModule],
+    imports: [NgFor, NgIf, AppMenuitem, RouterModule],
     template: `<ul class="layout-menu">
         <ng-container *ngFor="let item of model; let i = index">
             <li app-menuitem *ngIf="!item.separator" [item]="item" [index]="i" [root]="true"></li>
@@ -86,6 +86,13 @@ export class AppMenu implements OnInit {
                 routerLink: ['/dashboard/cocina'],
                 requiredPermissions: ['view_kitchen_orders', 'update_order_status']
             },
+            {
+                label: 'Dashboard Cocina',
+                icon: 'pi pi-fw pi-chart-line',
+                routerLink: ['/dashboard/cocina-dashboard'],
+                requiredPermissions: ['dashboard_kitchen'],
+                requiredRole: 'COCINA'
+            },
             { label: 'Reportes', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/dashboard/uikit/charts'], visible: false, requiredPermissions: ['view_reports', 'admin_access'] },
             { label: 'Utils', icon: 'pi pi-fw pi-table', routerLink: ['/dashboard/uikit/table'], visible: false, requiredPermissions: ['admin_access'] }
         ];
@@ -113,6 +120,11 @@ export class AppMenu implements OnInit {
     private hasRequiredPermissions(item: any): boolean {
         const user = this.authService.getCurrentUser();
         const userRole = user?.role || user?.rol;
+
+        if (item.requiredRole && item.requiredRole !== userRole) {
+            return false;
+        }
+
         const isAdminByRole = userRole === 'ADMIN';
         const isAdminByPermission = this.userPermissions.includes('admin_access');
 
