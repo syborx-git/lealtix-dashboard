@@ -46,6 +46,7 @@ export class LoginComponent {
     private returnUrl: string | null = null;
 
     private readonly kitchenDashboardRoute = '/dashboard/cocina-dashboard';
+    private readonly waiterDashboardRoute = '/dashboard/mesero';
     private readonly defaultDashboardRoute = '/dashboard/kpis';
 
     constructor() {
@@ -176,7 +177,13 @@ export class LoginComponent {
     private resolveDefaultRoute(): string {
         const currentUser = this.authService.getCurrentUser();
         const userRole = currentUser?.role || currentUser?.rol;
+        const hasWaiterDashboardPermission = this.authService.hasPermission('dashboard_mesero');
         const hasKitchenDashboardPermission = this.authService.hasPermission('dashboard_kitchen');
+
+        // Waiter dashboard - redirect if user has dashboard_mesero permission
+        if (hasWaiterDashboardPermission) {
+            return this.waiterDashboardRoute;
+        }
 
         if (userRole === 'COCINA' && hasKitchenDashboardPermission) {
             return this.kitchenDashboardRoute;

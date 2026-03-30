@@ -1,0 +1,320 @@
+  <div class="waiter-dashboard">
+  <!-- Header Section -->
+  <div class="dashboard-header">
+    <div class="header-content">
+      <h1 class="dashboard-title">Dashboard Mesero</h1>
+      <p class="user-greeting">¡Hola, {{ currentUser }}!</p>
+    </div>
+    <button
+      pButton
+      type="button"
+      icon="pi pi-refresh"
+      class="p-button-rounded p-button-text"
+      (click)="refreshDashboard()"
+      title="Actualizar dashboard">
+    </button>
+  </div>
+
+  <!-- Date Range Filter (matching kitchen dashboard) -->
+  <div class="range-panel">
+    <p class="range-title m-0 mb-2">Rango de datos</p>
+    <div class="range-buttons">
+      <button
+        pButton
+        type="button"
+        class="range-btn"
+        [outlined]="selectedDays() !== 1"
+        [severity]="selectedDays() === 1 ? 'primary' : 'secondary'"
+        label="1 día"
+        (click)="applyRange(1)">
+      </button>
+      <button
+        pButton
+        type="button"
+        class="range-btn"
+        [outlined]="selectedDays() !== 3"
+        [severity]="selectedDays() === 3 ? 'primary' : 'secondary'"
+        label="3 días"
+        (click)="applyRange(3)">
+      </button>
+      <button
+        pButton
+        type="button"
+        class="range-btn"
+        [outlined]="selectedDays() !== 7"
+        [severity]="selectedDays() === 7 ? 'primary' : 'secondary'"
+        label="7 días"
+        (click)="applyRange(7)">
+      </button>
+    </div>
+    <small class="range-caption">{{ rangeLabel() }}</small>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="(error$ | async) as error" class="mb-3">
+    <p-message severity="error" [text]="error"></p-message>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="(loading$ | async)" class="loading-container">
+    <p-skeleton height="10rem" class="mb-2"></p-skeleton>
+    <p-skeleton height="10rem" class="mb-2"></p-skeleton>
+  </div>
+
+  <!-- Content (when not loading) -->
+  <div *ngIf="!(loading$ | async)" class="dashboard-content">
+    <!-- KPI Cards Grid -->
+    <div class="kpi-section">
+      <div class="kpi-grid">
+        <ng-container *ngFor="let metric of getKpiMetrics(metrics$ | async)">
+          <div class="kpi-card-wrapper">
+            <p-card class="kpi-card" [ngClass]="'card-' + metric.color">
+              <div class="kpi-content">
+                <div class="kpi-icon-wrapper" [ngClass]="metric.color">
+                  <i [ngClass]="'pi pi-fw ' + metric.icon"></i>
+                </div>
+                <div class="kpi-text">
+                  <span class="kpi-label">{{ metric.label }}</span>
+                  <span class="kpi-value"
+                    >{{ metric.value }}{{ metric.suffix }}</span
+                  >
+                </div>
+              </div>
+            </p-card>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <p-divider class="my-4"></p-divider>
+
+    <!-- Quick Actions Section -->
+    <div class="quick-actions-section">
+      <h2 class="section-title">Acciones Rápidas</h2>
+      <div class="quick-actions-grid">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-shopping-cart"
+          label="IR A COMANDIX"
+          class="p-button-lg quick-action-btn comandix-btn"
+          (click)="goToComanidx()">
+        </button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-user-plus"
+          label="NUEVO CLIENTE"
+          class="p-button-lg quick-action-btn new-client-btn"
+          (click)="openDialogNuevoCliente()">
+        </button>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <p-divider class="my-4"></p-divider>
+
+    <!-- Cross-Sell Carousel Section -->
+    <div class="cross-sell-section">
+      <div class="cross-sell-header">
+        <h2 class="section-title">Sugerencias de Venta Cruzada</h2>
+        <p class="motivational-message">
+          {{ getMotivationalMessage(metrics$ | async) }}
+        </p>
+      </div>
+
+      <ng-container *ngIf="(crossSellProducts$ | async) as products">
+        <div *ngIf="products.length > 0; else noCrossSellProducts">
+          <p-carousel
+            [value]="products"
+            [responsiveOptions]="responsiveOptions"
+            [numVisible]="3"
+            [numScroll]="1"
+            [circular]="true"
+            [showIndicators]="true"
+            [autoplayInterval]="0"
+            class="cross-sell-carousel">
+            <ng-template #item let-product>
+              <div class="cross-sell-product">
+                <div class="product-image-wrapper">
+                  <img
+                    *ngIf="product.imageUrl"
+                    [src]="product.imageUrl"
+                    [alt]="product.name"
+                    class="product-image" />
+                  <div
+                    *ngIf="!product.imageUrl"
+                    class="product-image-placeholder">
+                    <i class="pi pi-image"></i>
+                  </div>
+                </div>
+                <div class="product-info">
+                  <h4 class="product-name">{{ product.name }}</h4>
+                  <p class="product-price">${{ product.price | number: '1.2-2' }}</p>
+                  <p *ngIf="product.category" class="product-category">
+                    {{ product.category }}
+                  </p>
+                  <button
+                    pButton
+                    type="button"
+                    icon="pi pi-shopping-cart"
+                    class="p-button-sm p-button-outlined"
+                    label="Sugerir"
+                    style="width: 100%">
+                  </button>
+                </div>
+              </div>
+            </ng-template>
+          </p-carousel>
+        </div>
+
+        <ng-template #noCrossSellProducts>
+          <div class="empty-state">
+            <i class="pi pi-inbox"></i>
+            <p>No hay sugerencias disponibles en este momento</p>
+          </div>
+        </ng-template>
+      </ng-container>
+    </div>
+
+    <!-- Divider -->
+    <p-divider class="my-4"></p-divider>
+
+    <!-- VIP Clients Table Section -->
+    <div class="vip-section">
+      <h2 class="section-title">Top Clientes VIP</h2>
+      <p class="section-subtitle"
+        >Top 5 clientes por valor de vida útil (LTV) - Considéralos en tu turno</p
+      >
+
+      <ng-container *ngIf="(vipClients$ | async) as vipClients">
+        <div *ngIf="vipClients.length > 0; else noVipClients">
+          <p-table
+            [value]="vipClients"
+            [responsiveLayout]="'scroll'"
+            [paginator]="false"
+            styleClass="p-datatable-striped"
+            responsiveLayout="scroll">
+            <ng-template #header>
+              <tr>
+                <th pSortableColumn style="width: 35%">
+                  Nombre <p-sortIcon field="name"></p-sortIcon>
+                </th>
+                <th pSortableColumn style="width: 20%">
+                  LTV <p-sortIcon field="ltv"></p-sortIcon>
+                </th>
+                <th pSortableColumn style="width: 25%">
+                  Último Acceso <p-sortIcon field="lastVisitDate"></p-sortIcon>
+                </th>
+                <th style="width: 20%; text-align: center">Acción</th>
+              </tr>
+            </ng-template>
+            <ng-template #body let-vipClient>
+              <tr>
+                <td class="vip-name">
+                  <i class="pi pi-crown mr-2" style="color: #f59e0b"></i>
+                  {{ vipClient.name }}
+                </td>
+                <td>
+                  <span class="ltv-badge">${{ vipClient.ltv | number: '1.2-2' }}</span>
+                </td>
+                <td>
+                  <span class="visit-badge">
+                    {{ getDaysSinceLastVisit(vipClient.lastVisitDate) }} días
+                  </span>
+                </td>
+                <td style="text-align: center">
+                  <button
+                    pButton
+                    type="button"
+                    icon="pi pi-search"
+                    class="p-button-rounded p-button-success p-button-sm"
+                    (click)="searchVipClient(vipClient)"
+                    title="Buscar cliente">
+                  </button>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+
+        <ng-template #noVipClients>
+          <div class="empty-state">
+            <i class="pi pi-inbox"></i>
+            <p>No hay clientes VIP en este momento</p>
+          </div>
+        </ng-template>
+      </ng-container>
+    </div>
+  </div>
+</div>
+
+<!-- New Client Dialog -->
+<p-dialog
+  [visible]="showNewClientDialog()"
+  (onHide)="closeNewClientDialog()"
+  [header]="'Agregar Nuevo Cliente'"
+  [modal]="true"
+  [style]="{ width: '100%', maxWidth: '500px' }"
+  [closable]="!clientDialogLoading()"
+  [closeOnEscape]="!clientDialogLoading()"
+  [blockScroll]="true">
+
+  <div class="new-client-form">
+    <!-- Form Fields -->
+    <div class="form-group">
+      <label for="cliente-nombre">Nombre Completo <span class="required">*</span></label>
+      <input
+        pInputText
+        id="cliente-nombre"
+        [(ngModel)]="newClientForm().nombre"
+        placeholder="Ej: Juan Pérez García"
+        [disabled]="clientDialogLoading()"
+        class="w-full" />
+    </div>
+
+    <div class="form-group">
+      <label for="cliente-email">Email <span class="required">*</span></label>
+      <input
+        pInputText
+        id="cliente-email"
+        type="email"
+        [(ngModel)]="newClientForm().email"
+        placeholder="Ej: juan@example.com"
+        [disabled]="clientDialogLoading()"
+        class="w-full" />
+    </div>
+
+    <div class="form-group">
+      <label for="cliente-telefono">Teléfono <span class="required">*</span></label>
+      <input
+        pInputText
+        id="cliente-telefono"
+        [(ngModel)]="newClientForm().telefono"
+        placeholder="Ej: +34 612 345 678"
+        [disabled]="clientDialogLoading()"
+        class="w-full" />
+    </div>
+  </div>
+
+  <!-- Dialog Footer -->
+  <ng-template pTemplate="footer">
+    <button
+      pButton
+      type="button"
+      label="Cancelar"
+      class="p-button-text"
+      (click)="closeNewClientDialog()"
+      [disabled]="clientDialogLoading()">
+    </button>
+    <button
+      pButton
+      type="button"
+      label="Guardar"
+      class="p-button"
+      [loading]="clientDialogLoading()"
+      (click)="saveNewClient()">
+    </button>
+  </ng-template>
+</p-dialog>
