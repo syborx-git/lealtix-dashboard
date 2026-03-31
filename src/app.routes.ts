@@ -67,7 +67,7 @@ export const appRoutes: Routes = [
                     { path: 'campaigns/:id', component: CampaignDetailsComponent, title: 'Detalles de Campaña', canActivate: [PermissionGuard], data: { permission: 'manage_campaigns' } },
                     { path: 'campaign-templates', component: CampaignTemplatesListComponent, title: 'Plantillas de Campañas', canActivate: [PermissionGuard], data: { permission: 'view_campaign_templates' } },
                     { path: 'manual-redemption', component: ManualRedemptionComponent, canActivate: [PermissionGuard], data: { permission: 'process_redemption' } },
-                    { path: 'mi-pagina', component: MiPaginaComponent, title: 'Mi Página', canActivate: [PermissionGuard], data: { permission: 'manage_landing_page' } },
+                    { path: 'mi-pagina', component: MiPaginaComponent, title: 'Mi Página', canActivate: [PermissionGuard], data: { permission: 'view_products' } },
                     { path: 'clientes', component: ClienteListComponent, title: 'Gestión de Clientes', canActivate: [PermissionGuard], data: { permission: 'view_customers' } },
                     { path: 'users', component: UserManagementComponent, title: 'Gestión de Equipo', canActivate: [PermissionGuard], data: { permission: 'view_users' } },
                     // Admin Roles & Permissions
