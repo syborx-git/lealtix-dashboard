@@ -205,12 +205,25 @@ export class AuthService {
 
 	/**
 	 * Verifica si el usuario tiene un permiso específico
+	 * IMPORTANTE: Permisos específicos de rol (ej: dashboard_mesero) NO son bypasseados por ADMIN
 	 */
 	hasPermission(permission: string): boolean {
 		const perms = this.permissions$.value;
 		const user = this.currentUser$.value;
 
-		// ADMIN tiene todos los permisos
+		// Permisos específicos de rol - NO bypasseados por ADMIN
+		const roleSpecificPermissions = [
+			'dashboard_mesero',  // Solo MESERO (waiter role)
+			'dashboard_cocina',  // Solo COCINA (kitchen role)
+			'dashboard_caja'     // Solo CAJA (cashier role)
+		];
+
+		// Si el permiso es específico de rol, ADMIN debe tenerlo explícitamente
+		if (roleSpecificPermissions.includes(permission)) {
+			return perms.includes(permission);
+		}
+
+		// Para permisos genéricos, ADMIN tiene todos
 		if (user?.rol === 'ADMIN') {
 			return true;
 		}

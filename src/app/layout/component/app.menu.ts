@@ -124,22 +124,26 @@ export class AppMenu implements OnInit {
         const user = this.authService.getCurrentUser();
         const userRole = user?.role || user?.rol;
 
+        // Validar restricción de rol (ej: requiredRole: 'MESERO')
         if (item.requiredRole && item.requiredRole !== userRole) {
             return false;
         }
 
-        const isAdminByRole = userRole === 'ADMIN';
-        const isAdminByPermission = this.userPermissions.includes('admin_access');
-
-        if (isAdminByRole || isAdminByPermission) {
-            return true;
-        }
-
+        // Si el item NO tiene requiredPermissions, mostrar a todos (excepto restricción de rol)
         if (!item.requiredPermissions || item.requiredPermissions.length === 0) {
             return true;
         }
-        // El usuario debe tener AL MENOS UNO de los permisos requeridos
-        return item.requiredPermissions.some((permission: string) => this.userPermissions.includes(permission));
+
+        // El item TIENE requiredPermissions - verificar si usuario tiene AL MENOS UNO
+        const hasAtLeastOnePermission = item.requiredPermissions.some((permission: string) =>
+            this.authService.hasPermission(permission)
+        );
+
+        if (hasAtLeastOnePermission) {
+            return true;  // ✅ Usuario tiene el/los permisos requeridos
+        }
+
+        return false;  // ❌ No tiene permisos requeridos
     }
 
     private checkAndUpdateProductsMenu() {
