@@ -16,7 +16,7 @@ import { UserProfileComponent } from '@/shared/components/user-profile.component
             <button class="layout-menu-button layout-topbar-action" (click)="layoutService.onMenuToggle()">
                 <i class="pi pi-bars"></i>
             </button>
-            <a class="layout-topbar-logo" routerLink="/dashboard/kpis">
+            <a class="layout-topbar-logo">
                 <img src="https://res.cloudinary.com/lealtix-media/image/upload/q_auto/f_auto/v1759897289/lealtix_logo_transp_qcp5h9.png"
                      alt="Lealtix Logo"
                      class="h-[50px] w-auto"/>
