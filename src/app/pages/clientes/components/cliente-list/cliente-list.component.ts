@@ -399,11 +399,22 @@ export class ClienteListComponent implements OnInit {
   // ================== CSV/XLSX Import-Export ==================
 
   descargarPlantilla(): void {
-    this.clienteService.downloadCsvTemplate();
+    // Descargar los clientes actuales como Excel
+    if (this.clientes().length === 0) {
+      this.messageService.add({
+        severity: 'warning',
+        summary: 'Advertencia',
+        detail: 'No hay clientes para descargar',
+        life: 3000
+      });
+      return;
+    }
+
+    this.clienteService.downloadExcelWithClienteData(this.clientes());
     this.messageService.add({
-      severity: 'info',
+      severity: 'success',
       summary: 'Descargando',
-      detail: 'Plantilla CSV descargada',
+      detail: 'Archivo de clientes descargado',
       life: 2000
     });
   }

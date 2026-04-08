@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map, tap, catchError } from 'rxjs/operators';
 import { throwError } from 'rxjs';
+import * as XLSX from 'xlsx';
 import {
   Cliente,
   CreateClienteRequest,
@@ -529,6 +530,38 @@ export class ClienteService {
     }
 
     return null;
+  }
+
+  /**
+   * Descarga Excel con datos de clientes
+   */
+  downloadExcelWithClienteData(clientes: Cliente[]): void {
+    const worksheetData = clientes.map(c => ({
+      'Nombre Completo': c.nombreCompleto,
+      'Email': c.email,
+      'Fecha de Nacimiento': typeof c.fechaNacimiento === 'string'
+        ? c.fechaNacimiento
+        : new Date(c.fechaNacimiento).toISOString().split('T')[0],
+      'Género': c.genero,
+      'Teléfono': c.telefono || ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Clientes');
+
+    // Ajustar ancho de columnas
+    const columnWidths = [
+      { wch: 20 }, // Nombre Completo
+      { wch: 25 }, // Email
+      { wch: 18 }, // Fecha de Nacimiento
+      { wch: 12 }, // Género
+      { wch: 15 }  // Teléfono
+    ];
+    worksheet['!cols'] = columnWidths;
+
+    // Descargar archivo
+    XLSX.writeFile(workbook, `clientes-plantilla-${new Date().getTime()}.xlsx`);
   }
 
   /**
