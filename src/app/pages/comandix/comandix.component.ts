@@ -35,10 +35,19 @@ import { ProductService } from '@/pages/products-menu/service/product.service';
 
 // Componentes
 import { ClienteDialogComponent } from '@/pages/clientes/components/cliente-dialog/cliente-dialog.component';
+import { CloseOrderModalComponent } from './components/close-order-modal/close-order-modal.component';
 
 // Modelos
 import { MenuCategory, Product } from './models/menu.model';
-import { OrderItem, TenantClientOrderCreateRequest, TenantClientOrderUpdateRequest, PendingOrder, PendingOrderItem } from './models/order.model';
+import {
+  OrderItem,
+  TenantClientOrderCreateRequest,
+  TenantClientOrderUpdateRequest,
+  PendingOrder,
+  PendingOrderItem,
+  OrderStatus,
+  PaymentMethod
+} from './models/order.model';
 import { Cliente, GENERO_OPTIONS, CreateClienteRequest } from '@/models/cliente.model';
 import { RedemptionRequest, RedemptionChannel } from '@/pages/redeem/models/redemption-request.model';
 
@@ -71,7 +80,8 @@ interface CartItem {
     BadgeModule,
     DataViewModule,
     SkeletonModule,
-    ClienteDialogComponent
+    ClienteDialogComponent,
+    CloseOrderModalComponent
   ],
   providers: [MessageService],
   templateUrl: './comandix.component.html',
@@ -115,23 +125,55 @@ export class ComandixComponent implements OnInit, OnDestroy {
 
   // ==================== SIGNALS DASHBOARD DE ÓRDENES (nuevo) ====================
   activeView = signal<'pos' | 'orders'>('pos');
+  ordersView = signal<'active' | 'closed'>('active');
   pendingOrders = signal<PendingOrder[]>([]);
   loadingOrders = signal<boolean>(false);
   selectedOrder = signal<PendingOrder | null>(null);
   showOrderDetail = signal<boolean>(false);
   processingOrderAction = signal<boolean>(false);
   editingPendingOrder = signal<PendingOrder | null>(null);
+  showCloseOrderModal = signal<boolean>(false);
+  selectedOrderForPayment = signal<PendingOrder | null>(null);
 
   // NUEVO: Dialog de detalle para órdenes SSE
   showSseOrderDetail = signal<boolean>(false);
   selectedSseOrder = signal<any>(null);
 
-  pendingOrdersCount = computed(() => this.pendingOrders().length);
+  canCloseOrders = false;
+  currentUserEmail: string = '';
+
+  // Computed: Órdenes activas (excluyendo PAGADA y CANCELADA)
+  activeOrders = computed(() => {
+    return this.pendingOrders().filter(order => {
+      const normalized = this.normalizeOrderStatus(order.estado);
+      return normalized !== 'PAGADA' && normalized !== 'CANCELADA' && normalized !== 'RECHAZADO';
+    });
+  });
+
+  // Computed: Órdenes cerradas (PAGADA, filtradas por usuario actual)
+  closedOrders = computed(() => {
+    return this.pendingOrders()
+      .filter(order => this.normalizeOrderStatus(order.estado) === 'PAGADA')
+      .filter(order => {
+        // Filtrar por usuario actual que procesó el pago
+        const paidBy = order.payment?.paidBy ?? '';
+        return paidBy === this.currentUserEmail || paidBy === 'usuario';
+      })
+      .sort((a, b) => {
+        const dateA = a.payment?.paidAt ? new Date(a.payment.paidAt).getTime() : 0;
+        const dateB = b.payment?.paidAt ? new Date(b.payment.paidAt).getTime() : 0;
+        return dateB - dateA; // Más recientes primero
+      });
+  });
+
+  pendingOrdersCount = computed(() => this.activeOrders().length);
+  closedOrdersCount = computed(() => this.closedOrders().length);
 
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
   private knownOrderIds = new Set<string>();
   private readonly POLLING_INTERVAL_MS = 30_000;
   private readonly NOTIFICATION_SOUND = 'assets/sounds/dragon-studio-correct-472358.mp3';
+  private readonly ACTIVE_DASHBOARD_STATUSES: OrderStatus[] = ['PENDIENTE', 'CONFIRMADA', 'EN_PREPARACION', 'LISTO', 'PAGADA'];
 
   private destroy$ = new Subject<void>();
 
@@ -172,6 +214,13 @@ export class ComandixComponent implements OnInit, OnDestroy {
 
   switchView(view: 'pos' | 'orders'): void {
     this.activeView.set(view);
+    if (view === 'orders') {
+      this.ordersView.set('active');
+    }
+  }
+
+  switchOrdersView(view: 'active' | 'closed'): void {
+    this.ordersView.set(view);
   }
 
   // ==================== POLLING DE ÓRDENES PENDIENTES ====================
@@ -191,34 +240,27 @@ export class ComandixComponent implements OnInit, OnDestroy {
   async pollOrders(): Promise<void> {
     if (this.tenantId <= 0) return;
     try {
-      console.log('[Comandix] 🔄 Consultando órdenes pendientes...');
-      const response = await firstValueFrom(
-        this.orderService.getOrdersByTenant(this.tenantId, 'PENDIENTE')
+      console.log('[Comandix] 🔄 Consultando órdenes activas...');
+      const responses = await Promise.all(
+        this.ACTIVE_DASHBOARD_STATUSES.map((status) =>
+          firstValueFrom(this.orderService.getOrdersByTenant(this.tenantId, status))
+        )
       );
-      const rawOrders = response?.object?.content ?? [];
+
+      const rawOrders = responses
+        .flatMap((response) => response?.object?.content ?? [])
+        .filter((order, index, array) => index === array.findIndex((current) => current?.id === order?.id));
+
       console.log('[Comandix] 📦 Órdenes recibidas del BE:', rawOrders.length, rawOrders);
 
       const isFirstPoll = this.knownOrderIds.size === 0;
 
-      // Mapear los datos del backend al modelo PendingOrder
-      const mappedOrders: PendingOrder[] = rawOrders.map((order: any) => ({
-        id: order.id,
-        tenantId: order.tenantId,
-        estado: order.estado,
-        customerId: order.customerId ?? null,
-        customerName: order.customerName ?? null,
-        nombre: order.customerName ?? null,
-        items: order.items ?? [],
-        subtotal: order.subtotal ?? 0,
-        descuento: order.descuento ?? 0,
-        totalFinal: order.total ?? 0,  // BE devuelve 'total', modelo espera 'totalFinal'
-        couponCode: order.couponCode ?? null,
-        coupon_id: order.couponId ?? null,
-        fechaCreacion: order.fecha ?? order.createdAt  // BE devuelve 'fecha', modelo espera 'fechaCreacion'
-      }));
+      const mappedOrders: PendingOrder[] = rawOrders.map((order: any) => this.mapBackendOrder(order));
 
-      // Reproducir sonido en cada polling cuando existan pendientes
-      if (mappedOrders.length > 0) {
+      const pendingOrders = mappedOrders.filter((order) => this.normalizeOrderStatus(order.estado) === 'PENDIENTE');
+
+      // Reproducir sonido cuando existan pendientes
+      if (pendingOrders.length > 0) {
         this.playNotificationSound();
       }
 
@@ -263,18 +305,53 @@ export class ComandixComponent implements OnInit, OnDestroy {
 
       // Mostrar alerta en primera carga si hay órdenes
       if (isFirstPoll && mappedOrders.length > 0) {
-        console.log('[Comandix] 📊 Primera carga:', mappedOrders.length, 'órdenes pendientes');
+        console.log('[Comandix] 📊 Primera carga:', mappedOrders.length, 'órdenes activas');
         this.messageService.add({
           severity: 'info',
-          summary: 'Órdenes Pendientes',
-          detail: `Tienes ${mappedOrders.length} orden${mappedOrders.length === 1 ? '' : 'es'} pendiente${mappedOrders.length === 1 ? '' : 's'}`,
+          summary: 'Órdenes Activas',
+          detail: `Tienes ${mappedOrders.length} orden${mappedOrders.length === 1 ? '' : 'es'} activa${mappedOrders.length === 1 ? '' : 's'}`,
           life: 5000,
           icon: 'pi pi-info-circle'
         });
       }
     } catch (error) {
-      console.error('Error al consultar órdenes pendientes:', error);
+      console.error('Error al consultar órdenes activas:', error);
     }
+  }
+
+  private mapBackendOrder(order: any): PendingOrder {
+    return {
+      id: order.id,
+      tenantId: order.tenantId,
+      estado: this.normalizeOrderStatus(order.estado),
+      customerId: order.customerId ?? null,
+      customerName: order.customerName ?? null,
+      nombre: order.customerName ?? null,
+      items: order.items ?? [],
+      subtotal: order.subtotal ?? 0,
+      descuento: order.descuento ?? 0,
+      totalFinal: order.total ?? order.totalFinal ?? 0,
+      couponCode: order.couponCode ?? null,
+      coupon_id: order.couponId ?? null,
+      fechaCreacion: order.fecha ?? order.createdAt,
+      payment: {
+        method: order.paymentMethod,
+        reference: order.paymentReference ?? null,
+        paidAt: order.paidAt,
+        paidBy: order.paidBy
+      }
+    };
+  }
+
+  private normalizeOrderStatus(status: string | undefined): OrderStatus {
+    const normalized = (status ?? '').toUpperCase();
+    if (normalized === 'CONFIRMED') return 'CONFIRMADA';
+    if (normalized === 'IN_PROGRESS') return 'EN_PREPARACION';
+    if (normalized === 'READY' || normalized === 'DESPACHADO') return 'LISTO';
+    if (normalized === 'PAID') return 'PAGADA';
+    if (normalized === 'CANCELLED') return 'CANCELADA';
+    if (normalized === 'REJECTED') return 'RECHAZADO';
+    return (normalized as OrderStatus) || 'PENDIENTE';
   }
 
   // ==================== SSE (SERVER-SENT EVENTS) ====================
@@ -325,7 +402,7 @@ export class ComandixComponent implements OnInit, OnDestroy {
           const pendingOrder: PendingOrder = {
             id: order.id,
             tenantId: order.tenantId,
-            estado: order.estado,
+            estado: this.normalizeOrderStatus(order.estado),
             customerId: order.customerId ?? null,
             customerName: order.customerName ?? null,
             nombre: order.customerName ?? null,
@@ -465,6 +542,62 @@ export class ComandixComponent implements OnInit, OnDestroy {
     this.selectedOrder.set(null);
   }
 
+  openCloseOrderModal(order: PendingOrder): void {
+    if (!this.canCloseOrder(order) || this.processingOrderAction()) {
+      return;
+    }
+
+    this.selectedOrderForPayment.set(order);
+    this.showCloseOrderModal.set(true);
+  }
+
+  closeCloseOrderModal(): void {
+    this.showCloseOrderModal.set(false);
+    this.selectedOrderForPayment.set(null);
+  }
+
+  onCloseOrderModalVisibilityChange(visible: boolean): void {
+    this.showCloseOrderModal.set(visible);
+    if (!visible) {
+      this.selectedOrderForPayment.set(null);
+    }
+  }
+
+  onPaymentRecorded(event: { orderId: string; method: PaymentMethod; reference?: string | null; paidAt: string }): void {
+    const existing = this.pendingOrders().find((order) => order.id === event.orderId);
+    if (!existing) {
+      return;
+    }
+
+    const updatedOrder: PendingOrder = {
+      ...existing,
+      estado: 'PAGADA',
+      payment: {
+        method: event.method,
+        reference: event.reference ?? null,
+        paidAt: event.paidAt,
+        paidBy: this.currentUserEmail
+      }
+    };
+
+    this.pendingOrders.update((orders) =>
+      orders.map((order) => (order.id === event.orderId ? updatedOrder : order))
+    );
+
+    if (this.selectedOrder()?.id === event.orderId) {
+      this.selectedOrder.set(updatedOrder);
+    }
+
+    this.closeCloseOrderModal();
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Pago registrado',
+      detail: `La orden #${event.orderId.slice(0, 8)} quedó en estado PAGADA`,
+      life: 4000
+    });
+  }
+
   editPendingOrderInPos(order: PendingOrder): void {
     const latestOrder = this.pendingOrders().find((existingOrder) => existingOrder.id === order.id) ?? order;
 
@@ -534,6 +667,24 @@ export class ComandixComponent implements OnInit, OnDestroy {
     return item.precioUnitario ?? item.precio ?? 0;
   }
 
+  canCloseOrder(order: PendingOrder): boolean {
+    if (!this.canCloseOrders) {
+      return false;
+    }
+    return order.estado === 'CONFIRMADA' || order.estado === 'LISTO';
+  }
+
+  getStatusClass(estado: string | undefined): string {
+    const normalized = this.normalizeOrderStatus(estado);
+    if (normalized === 'PENDIENTE') return 'status-comanda';
+    if (normalized === 'CONFIRMADA') return 'status-confirmada';
+    if (normalized === 'EN_PREPARACION') return 'status-en_preparacion';
+    if (normalized === 'LISTO') return 'status-listo';
+    if (normalized === 'PAGADA') return 'status-pagada';
+    if (normalized === 'CANCELADA') return 'status-cancelada';
+    return 'status-comanda';
+  }
+
   // ==================== ACCIONES DEL MESERO ====================
 
   async confirmarOrden(order: PendingOrder): Promise<void> {
@@ -591,7 +742,7 @@ export class ComandixComponent implements OnInit, OnDestroy {
         life: 3000
       });
 
-      this.removeOrderFromList(order.id);
+      this.patchOrderStatus(order.id, 'CONFIRMADA');
       this.closeOrderDetail();
     } catch (error: any) {
       this.messageService.add({
@@ -637,12 +788,20 @@ export class ComandixComponent implements OnInit, OnDestroy {
     this.pendingOrders.update(orders => orders.filter(o => o.id !== orderId));
   }
 
+  private patchOrderStatus(orderId: string, estado: OrderStatus): void {
+    this.pendingOrders.update((orders) =>
+      orders.map((order) => (order.id === orderId ? { ...order, estado } : order))
+    );
+  }
+
   // ==================== TENANT ====================
 
   private async initializeTenant(): Promise<void> {
     try {
       const currentUser = this.authService.getCurrentUser();
       this.tenantId = currentUser?.tenantId ?? 0;
+      this.currentUserEmail = currentUser?.email ?? 'usuario';
+      this.canCloseOrders = this.authService.hasAnyPermission(['process_payment', 'create_order']);
     } catch (error) {
       console.error('Error obteniendo tenant:', error);
       this.messageService.add({
