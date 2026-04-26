@@ -9,6 +9,45 @@ export interface OrderItem {
   comentarios?: string;
 }
 
+export type OrderStatus =
+  | 'PENDIENTE'
+  | 'CONFIRMADA'
+  | 'EN_PREPARACION'
+  | 'LISTO'
+  | 'PAGADA'
+  | 'RECHAZADO'
+  | 'CANCELADA';
+
+export type PaymentMethod = 'CASH' | 'CARD' | 'TRANSFER' | 'MIXED';
+
+export interface PaymentInfo {
+  method: PaymentMethod;
+  reference?: string | null;
+  paidAt?: string;
+  paidBy?: string | number;
+  amount?: number;
+}
+
+export interface RecordPaymentRequest {
+  orderId?: string;
+  method: PaymentMethod;
+  reference?: string | null;
+  userEmail?: string;  // Email del usuario que aplica el pago
+}
+
+export interface RecordPaymentResponse {
+  code?: number;
+  message?: string;
+  object?: {
+    id?: string;
+    estado?: OrderStatus;
+    paymentMethod?: PaymentMethod;
+    paymentReference?: string | null;
+    paidAt?: string;
+    paidBy?: string | number;
+  };
+}
+
 export interface TenantClientOrderCreateRequest {
   customerId?: number | null;
     tenantId: number;
@@ -58,7 +97,7 @@ export interface PendingOrderItem {
 export interface PendingOrder {
   id: string;
   tenantId: number;
-  estado: string;
+  estado: OrderStatus | string;
   customerId?: number | null;
   customerName?: string | null;
   nombre?: string | null;
@@ -69,6 +108,7 @@ export interface PendingOrder {
   couponCode?: string | null;
   coupon_id?: string | null;
   fechaCreacion?: string;
+  payment?: PaymentInfo;
 }
 
 export interface OrderListData {
