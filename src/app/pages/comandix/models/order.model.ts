@@ -134,3 +134,9 @@ export interface UpdateOrderStatusResponse {
     estado: string;
   } | null;
 }
+
+export interface UpdateOrderStatusRequest {
+  estado: OrderStatus | string;
+  userEmail?: string;
+  reason?: string;
+}
