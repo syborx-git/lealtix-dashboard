@@ -8,7 +8,10 @@ import {
   TenantClientOrderUpdateRequest,
   TenantClientOrderResponse,
   OrderListResponse,
-  UpdateOrderStatusResponse
+  UpdateOrderStatusResponse,
+  UpdateOrderStatusRequest,
+  RecordPaymentRequest,
+  RecordPaymentResponse
 } from '../models/order.model';
 import { environment } from '@/pages/commons/environment';
 
@@ -21,7 +24,8 @@ export class OrderService {
   private readonly statusMap: Record<string, string> = {
     PENDING: 'PENDIENTE',
     CONFIRMED: 'CONFIRMADA',
-    REJECTED: 'RECHAZADO'
+    REJECTED: 'RECHAZADO',
+    PAID: 'PAGADA'
   };
 
   constructor(private http: HttpClient) {}
@@ -86,12 +90,21 @@ export class OrderService {
   /**
    * Actualiza el estado de una orden
    * PATCH /api/tenant-client-orders/{orderId}/status
-   * Body: { "estado": "CONFIRMADA" }
+   * Body: { "estado": "CONFIRMADA", "userEmail": "user@email.com", "reason": "optional" }
    */
-  updateOrderStatus(orderId: string, status: string): Observable<UpdateOrderStatusResponse> {
+  updateOrderStatus(
+    orderId: string,
+    status: string,
+    userEmail?: string,
+    reason?: string
+  ): Observable<UpdateOrderStatusResponse> {
     const normalizedStatus = this.statusMap[status] ?? status;
     const url = `${this.baseUrl}/${orderId}/status`;
-    const body = { estado: normalizedStatus };
+    const body: UpdateOrderStatusRequest = {
+      estado: normalizedStatus,
+      ...(userEmail && { userEmail }),
+      ...(reason && { reason })
+    };
 
     return this.http
       .patch<UpdateOrderStatusResponse>(url, body)
@@ -101,5 +114,26 @@ export class OrderService {
           return throwError(() => error);
         })
       );
+  }
+
+  /**
+   * Registra pago/cierre de cuenta para una orden.
+   * Intenta endpoint con orderId en path y si no existe hace fallback a endpoint genérico.
+   */
+  recordPayment(orderId: string, payload: RecordPaymentRequest): Observable<RecordPaymentResponse> {
+    const pathUrl = `${this.baseUrl}/${orderId}/record-payment`;
+    const genericUrl = `${this.baseUrl}/record-payment`;
+    const bodyWithOrder = { ...payload, orderId };
+
+    return this.http.patch<RecordPaymentResponse>(pathUrl, payload).pipe(
+      catchError((pathError) => {
+        console.warn('Endpoint /{orderId}/record-payment no disponible, intentando fallback /record-payment:', pathError);
+        return this.http.patch<RecordPaymentResponse>(genericUrl, bodyWithOrder);
+      }),
+      catchError((error) => {
+        console.error('Error al registrar pago de orden:', error);
+        return throwError(() => error);
+      })
+    );
   }
 }

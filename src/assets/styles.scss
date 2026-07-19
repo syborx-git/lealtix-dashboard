@@ -785,3 +785,11 @@ i.pi-whatsapp { color: #25D366 !important; }
     }
   }
 }
+
+/* Chips de estatus de orden (Comandix / cierre de cuenta) */
+.status-comanda { background: #e3f2fd !important; color: #1f3b5c !important; border: 1px solid #bcdff9; }
+.status-confirmada { background: #f3e5f5 !important; color: #5a2b66 !important; border: 1px solid #dfc6e9; }
+.status-en_preparacion { background: #fff3e0 !important; color: #7a4c00 !important; border: 1px solid #ffd8a8; }
+.status-listo { background: #e8f5e9 !important; color: #1f5130 !important; border: 1px solid #c6e6cb; }
+.status-pagada { background: #c8e6c9 !important; color: #10481b !important; border: 1px solid #9fd5a3; }
+.status-cancelada { background: #ffebee !important; color: #7c1d1d !important; border: 1px solid #f9c8cf; }

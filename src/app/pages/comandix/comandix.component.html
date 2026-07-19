@@ -56,20 +56,53 @@
         (click)="switchView('pos')"
         type="button"
       >
-        <i class="pi pi-plus-circle mr-2"></i>
-        Nueva Venta
+        <i class="pi pi-plus-circle"></i>
+        <span class="view-btn-label">Nueva Venta</span>
       </button>
+
+      <div class="view-toggle-divider"></div>
+
       <button
         class="view-toggle-btn"
-        [class.active]="activeView() === 'orders'"
-        (click)="switchView('orders')"
+        [class.active]="activeView() === 'orders' && ordersView() === 'active'"
+        (click)="switchOrdersView('active')"
         type="button"
       >
-        <i class="pi pi-list mr-2"></i>
-        Órdenes Pendientes
-        <span *ngIf="pendingOrdersCount() > 0" class="orders-badge">
-          {{ pendingOrdersCount() }}
-        </span>
+        <i class="pi pi-hourglass"></i>
+        <span class="view-btn-label">Activas</span>
+        <span *ngIf="pendingOrdersCount() > 0" class="orders-badge">{{ pendingOrdersCount() }}</span>
+      </button>
+
+      <button
+        class="view-toggle-btn"
+        [class.active]="activeView() === 'orders' && ordersView() === 'closed'"
+        (click)="switchOrdersView('closed')"
+        type="button"
+      >
+        <i class="pi pi-check-circle"></i>
+        <span class="view-btn-label">Cerradas</span>
+        <span *ngIf="closedOrdersCount() > 0" class="orders-badge">{{ closedOrdersCount() }}</span>
+      </button>
+
+      <button
+        class="view-toggle-btn"
+        [class.active]="activeView() === 'orders' && ordersView() === 'cancelled'"
+        (click)="switchOrdersView('cancelled')"
+        type="button"
+      >
+        <i class="pi pi-times-circle"></i>
+        <span class="view-btn-label">Canceladas</span>
+        <span *ngIf="cancelledOrdersCount() > 0" class="orders-badge">{{ cancelledOrdersCount() }}</span>
+      </button>
+
+      <button
+        *ngIf="activeView() === 'orders' && ordersView() === 'active'"
+        class="view-toggle-refresh"
+        (click)="pollOrders()"
+        type="button"
+        title="Actualizar órdenes"
+      >
+        <i class="pi pi-refresh"></i>
       </button>
     </div>
   </div>
@@ -233,50 +266,40 @@
     </div>
   </div>
 
-  <!-- ==================== VISTA: ÓRDENES PENDIENTES ==================== -->
+  <!-- ==================== VISTA: ÓRDENES ==================== -->
   <div *ngIf="activeView() === 'orders'" class="orders-dashboard">
 
-    <!-- Header del dashboard -->
-    <div class="orders-dashboard-header mb-4">
-      <div class="flex align-items-center justify-content-between flex-wrap gap-3">
-        <div>
-          <h2 class="text-2xl font-bold m-0" style="color: #33211D;">
-            <i class="pi pi-clock mr-2" style="color: #DA9F5B;"></i>
-            Órdenes Pendientes
-          </h2>
-          <p class="text-sm m-0 mt-1" style="color: #7a5c51;">
-            Actualización automática cada 30 segundos
-            <span *ngIf="pendingOrdersCount() > 0" class="font-semibold" style="color: #DA9F5B;">
-              — {{ pendingOrdersCount() }} orden{{ pendingOrdersCount() === 1 ? '' : 'es' }} en espera
-            </span>
-          </p>
-        </div>
-        <p-button
-          icon="pi pi-refresh"
-          label="Actualizar"
-          severity="secondary"
-          [outlined]="true"
-          size="small"
-          (onClick)="pollOrders()"
-          styleClass="orders-refresh-btn"
-        ></p-button>
-      </div>
-    </div>
-
-    <!-- Estado vacío -->
-    <div *ngIf="pendingOrders().length === 0" class="orders-empty-state">
+    <!-- Estado vacío - Órdenes Activas -->
+    <div *ngIf="ordersView() === 'active' && activeOrders().length === 0" class="orders-empty-state">
       <div class="orders-empty-icon">
         <i class="pi pi-check-circle"></i>
       </div>
       <h3 class="text-xl font-semibold mb-2" style="color: #33211D;">Todo al día</h3>
       <p class="text-sm" style="color: #7a5c51;">No hay órdenes pendientes en este momento.</p>
-      <p class="text-xs mt-1" style="color: #b8997d;">El sistema revisa automáticamente cada 30 segundos.</p>
     </div>
 
-    <!-- Grid de órdenes -->
-    <div *ngIf="pendingOrders().length > 0" class="orders-grid">
+    <!-- Estado vacío - Órdenes Cerradas -->
+    <div *ngIf="ordersView() === 'closed' && closedOrders().length === 0" class="orders-empty-state">
+      <div class="orders-empty-icon">
+        <i class="pi pi-inbox"></i>
+      </div>
+      <h3 class="text-xl font-semibold mb-2" style="color: #33211D;">Sin órdenes cerradas</h3>
+      <p class="text-sm" style="color: #7a5c51;">No hay órdenes pagadas hoy.</p>
+    </div>
+
+    <!-- Estado vacío - Órdenes Canceladas -->
+    <div *ngIf="ordersView() === 'cancelled' && cancelledOrders().length === 0" class="orders-empty-state">
+      <div class="orders-empty-icon">
+        <i class="pi pi-trash"></i>
+      </div>
+      <h3 class="text-xl font-semibold mb-2" style="color: #33211D;">Sin cancelaciones</h3>
+      <p class="text-sm" style="color: #7a5c51;">No hay órdenes canceladas.</p>
+    </div>
+
+    <!-- Grid de órdenes activas -->
+    <div *ngIf="ordersView() === 'active' && activeOrders().length > 0" class="orders-grid">
       <div
-        *ngFor="let order of pendingOrders(); trackBy: trackByOrderId"
+        *ngFor="let order of activeOrders(); trackBy: trackByOrderId"
         class="order-card"
         (click)="openOrderDetail(order)"
       >
@@ -294,6 +317,7 @@
             <span class="text-xs font-semibold" style="color: #b8997d;">ORDEN</span>
             <span class="font-bold text-sm" style="color: #33211D;">#{{ order.id.slice(0, 8).toUpperCase() }}</span>
           </div>
+          <p-tag [value]="order.estado" [styleClass]="getStatusClass(order.estado)"></p-tag>
         </div>
 
         <!-- Cliente -->
@@ -322,6 +346,126 @@
           <span class="order-card-price">
             ${{ (order.totalFinal ?? order.subtotal ?? 0) | number:'1.2-2' }}
           </span>
+        </div>
+
+        <!-- CTA -->
+        <div class="order-card-cta">
+          <i class="pi pi-eye mr-1"></i> Ver detalle
+        </div>
+      </div>
+    </div>
+
+    <!-- Grid de órdenes cerradas -->
+    <div *ngIf="ordersView() === 'closed' && closedOrders().length > 0" class="orders-grid">
+      <div
+        *ngFor="let order of closedOrders(); trackBy: trackByOrderId"
+        class="order-card closed-order-card"
+        (click)="openOrderDetail(order)"
+        style="opacity: 0.85;"
+      >
+        <!-- Badge "Pagada" -->
+        <div class="order-new-badge" style="background: #22c55e; border-color: #16a34a;">
+          <i class="pi pi-check-circle mr-1"></i> Pagada
+        </div>
+
+        <!-- Cabecera de la tarjeta -->
+        <div class="order-card-header">
+          <div class="order-card-icon" style="color: #22c55e;">
+            <i class="pi pi-shopping-bag"></i>
+          </div>
+          <div class="order-card-id">
+            <span class="text-xs font-semibold" style="color: #b8997d;">ORDEN</span>
+            <span class="font-bold text-sm" style="color: #33211D;">#{{ order.id.slice(0, 8).toUpperCase() }}</span>
+          </div>
+          <p-tag value="PAGADA" styleClass="status-pagada"></p-tag>
+        </div>
+
+        <!-- Cliente -->
+        <div class="order-card-client">
+          <i class="pi pi-user mr-2" style="color: #DA9F5B;"></i>
+          <span class="font-semibold" style="color: #33211D;">{{ getClientLabel(order) }}</span>
+        </div>
+
+        <!-- Items count -->
+        <div *ngIf="order.items && order.items.length > 0" class="order-card-items-count">
+          <i class="pi pi-list mr-2" style="color: #b8997d;"></i>
+          <span class="text-sm" style="color: #7a5c51;">
+            {{ order.items.length }} producto{{ order.items.length === 1 ? '' : 's' }}
+          </span>
+        </div>
+
+        <!-- Método de pago -->
+        <div *ngIf="order.payment?.method" class="order-card-payment">
+          <i class="pi pi-wallet mr-1" style="color: #DA9F5B;"></i>
+          <span class="text-xs" style="color: #7a5c51;">{{ order.payment?.method }}</span>
+        </div>
+
+        <!-- Total -->
+        <div class="order-card-total">
+          <span class="text-xs" style="color: #7a5c51;">Total</span>
+          <span class="order-card-price" style="color: #22c55e;">
+            ${{ (order.totalFinal ?? order.subtotal ?? 0) | number:'1.2-2' }}
+          </span>
+        </div>
+
+        <!-- CTA -->
+        <div class="order-card-cta">
+          <i class="pi pi-eye mr-1"></i> Ver detalle
+        </div>
+      </div>
+    </div>
+
+    <!-- Grid de órdenes canceladas -->
+    <div *ngIf="ordersView() === 'cancelled' && cancelledOrders().length > 0" class="orders-grid">
+      <div
+        *ngFor="let order of cancelledOrders(); trackBy: trackByOrderId"
+        class="order-card cancelled-order-card"
+        (click)="openOrderDetail(order)"
+        style="opacity: 0.75;"
+      >
+        <!-- Badge "Cancelada" -->
+        <div class="order-new-badge" style="background: #dc3545; border-color: #bd2130;">
+          <i class="pi pi-times-circle mr-1"></i> Cancelada
+        </div>
+
+        <!-- Cabecera de la tarjeta -->
+        <div class="order-card-header">
+          <div class="order-card-icon" style="color: #dc3545;">
+            <i class="pi pi-trash"></i>
+          </div>
+          <div class="order-card-id">
+            <span class="text-xs font-semibold" style="color: #b8997d;">ORDEN</span>
+            <span class="font-bold text-sm" style="color: #33211D;">#{{ order.id.slice(0, 8).toUpperCase() }}</span>
+          </div>
+          <p-tag value="CANCELADA" styleClass="status-cancelada"></p-tag>
+        </div>
+
+        <!-- Cliente -->
+        <div class="order-card-client">
+          <i class="pi pi-user mr-2" style="color: #DC3545;"></i>
+          <span class="font-semibold" style="color: #33211D;">{{ getClientLabel(order) }}</span>
+        </div>
+
+        <!-- Items count -->
+        <div *ngIf="order.items && order.items.length > 0" class="order-card-items-count">
+          <i class="pi pi-list mr-2" style="color: #b8997d;"></i>
+          <span class="text-sm" style="color: #7a5c51;">
+            {{ order.items.length }} producto{{ order.items.length === 1 ? '' : 's' }}
+          </span>
+        </div>
+
+        <!-- Total -->
+        <div class="order-card-total">
+          <span class="text-xs" style="color: #7a5c51;">Total</span>
+          <span class="order-card-price" style="color: #dc3545;">
+            ${{ (order.totalFinal ?? order.subtotal ?? 0) | number:'1.2-2' }}
+          </span>
+        </div>
+
+        <!-- Fecha de creación -->
+        <div *ngIf="order.fechaCreacion" class="order-card-payment-date">
+          <i class="pi pi-clock mr-1" style="color: #b8997d;"></i>
+          <span class="text-xs" style="color: #7a5c51;">{{ order.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</span>
         </div>
 
         <!-- CTA -->
@@ -478,6 +622,10 @@
             <div class="order-detail-item-info">
               <span class="order-detail-item-name">{{ getProductLabel(item) }}</span>
               <span class="order-detail-item-qty">x{{ item.cantidad }}</span>
+              <!-- Comentarios del producto -->
+              <div *ngIf="item.comentarios" class="text-xs mt-1" style="color: #7a5c51; font-style: italic; margin-top: 4px;">
+                📝 {{ item.comentarios }}
+              </div>
             </div>
             <span class="order-detail-item-price">
               ${{ (getItemPrice(item) * item.cantidad) | number:'1.2-2' }}
@@ -519,9 +667,25 @@
         </div>
       </div>
 
+      <p-divider></p-divider>
+
+      <div
+        *ngIf="order.payment?.method"
+        style="background: #f8fbff; border: 1px solid #dce9f6; border-radius: 10px; padding: 0.75rem 0.875rem; margin-bottom: 0.75rem;"
+      >
+        <div class="order-detail-total-row">
+          <span style="color: #7a5c51;">Método de pago</span>
+          <span style="color: #33211D; font-weight: 600;">{{ order.payment?.method }}</span>
+        </div>
+        <div class="order-detail-total-row" *ngIf="order.payment?.reference">
+          <span style="color: #7a5c51;">Referencia</span>
+          <span style="color: #33211D; font-weight: 600;">{{ order.payment?.reference }}</span>
+        </div>
+      </div>
+
     </ng-container>
 
-    <!-- Footer con botones de acción -->
+      <!-- Footer con botones de acción -->
     <ng-template #footer>
       <ng-container *ngIf="selectedOrder() as order">
         <div class="order-detail-actions">
@@ -536,6 +700,16 @@
           ></p-button>
 
           <p-button
+            *ngIf="canCloseOrder(order)"
+            icon="pi pi-wallet"
+            label="Cerrar Comanda"
+            severity="help"
+            [disabled]="processingOrderAction()"
+            styleClass="order-action-btn"
+            (onClick)="openCloseOrderModal(order)"
+          ></p-button>
+
+          <p-button
             icon="pi pi-times-circle"
             label="Rechazar"
             severity="danger"
@@ -543,6 +717,7 @@
             [disabled]="processingOrderAction()"
             styleClass="order-action-btn order-reject-btn"
             (onClick)="rechazarOrden(order)"
+            *ngIf="order.estado === 'PENDIENTE'"
           ></p-button>
           <p-button
             icon="pi pi-check-circle"
@@ -552,124 +727,111 @@
             [disabled]="processingOrderAction()"
             styleClass="order-action-btn order-confirm-btn"
             (onClick)="confirmarOrden(order)"
+            *ngIf="order.estado === 'PENDIENTE'"
           ></p-button>
         </div>
       </ng-container>
     </ng-template>
   </p-dialog>
 
-  <!-- ==================== DIALOG DETALLE DE ORDEN SSE (CHATBOT) ==================== -->
+  <app-close-order-modal
+    [visible]="showCloseOrderModal()"
+    [order]="selectedOrderForPayment()"
+    (visibleChange)="onCloseOrderModalVisibilityChange($event)"
+    (paymentRecorded)="onPaymentRecorded($event)"
+  ></app-close-order-modal>
+
+  <!-- Diálogo de Cancelación de Orden -->
   <p-dialog
-    [visible]="showSseOrderDetail()"
-    (visibleChange)="showSseOrderDetail.set($event)"
-    [header]="'Tu Orden ha sido Registrada'"
+    [visible]="showCancelOrderDialog()"
+    (visibleChange)="showCancelOrderDialog.set($event)"
+    header="Cancelar Orden"
     [modal]="true"
-    [closable]="true"
+    [closable]="!cancellingOrder()"
     [style]="{ width: '100%', 'max-width': '500px' }"
-    styleClass="sse-order-detail-dialog"
-    (onHide)="closeSseOrderDetail()"
+    styleClass="cancel-order-dialog"
   >
-    <ng-container *ngIf="selectedSseOrder() as order">
+    <ng-container *ngIf="selectedOrderForCancellation() as order">
+      <!-- Información de la orden - Inline -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; padding: 1rem; background: #f9f7f4; border-radius: 12px; border-left: 4px solid #dc3545;">
+        <!-- Columna 1: Orden y Cliente -->
+        <div>
+          <div style="margin-bottom: 1rem;">
+            <p style="margin: 0; font-size: 0.85rem; color: #b8997d; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Orden</p>
+            <p style="margin: 0.25rem 0 0 0; font-size: 1.25rem; font-weight: 700; color: #dc3545;">
+              #{{ order.id.slice(0, 8).toUpperCase() }}
+            </p>
+          </div>
+          <div>
+            <p style="margin: 0; font-size: 0.85rem; color: #b8997d; font-weight: 600;">Cliente</p>
+            <p style="margin: 0.25rem 0 0 0; font-size: 0.95rem; color: #33211D; font-weight: 500;">{{ getClientLabel(order) }}</p>
+          </div>
+        </div>
 
-      <!-- Número de orden -->
-      <div class="sse-order-header">
-        <div class="sse-order-number">
-          <span class="text-xs font-semibold" style="color: #b8997d;">ORDEN #</span>
-          <span class="font-bold text-lg" style="color: #33211D;">
-            {{ order.id.slice(0, 8).toUpperCase() }}
-          </span>
+        <!-- Columna 2: Total -->
+        <div>
+          <p style="margin: 0; font-size: 0.85rem; color: #b8997d; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Total</p>
+          <p style="margin: 0.25rem 0 0 0; font-size: 1.5rem; font-weight: 700; color: #dc3545;">
+            ${{ (order.totalFinal ?? order.subtotal ?? 0) | number:'1.2-2' }}
+          </p>
+          <p *ngIf="order.items" style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: #7a5c51;">
+            {{ order.items.length }} producto{{ order.items.length !== 1 ? 's' : '' }}
+          </p>
         </div>
       </div>
 
-      <p-divider></p-divider>
-
-      <!-- Detalles de la orden -->
-      <div class="sse-order-details">
-        <!-- Cliente -->
-        <div class="sse-detail-row">
-          <span style="color: #7a5c51;">👤 Cliente:</span>
-          <span class="font-semibold" style="color: #33211D;">{{ order.clientLabel }}</span>
-        </div>
-
-        <!-- Items de la orden -->
-        <div *ngIf="order.items && order.items.length > 0" class="sse-detail-row">
-          <span style="color: #7a5c51;">📦 Items: ({{ order.items.length }})</span>
-        </div>
-        <div *ngIf="order.items && order.items.length > 0" class="sse-items-list">
-          <div *ngFor="let item of order.items" class="sse-item">
-            <div class="sse-item-name">
-              {{ item.productName ?? item.prod ?? 'Producto' }}
-              <span class="sse-item-qty"> x{{ item.cantidad }}</span>
-            </div>
-            <span class="sse-item-price">
-              ${{ ((item.precioUnitario ?? item.precio ?? 0) * item.cantidad) | number:'1.2-2' }}
-            </span>
-          </div>
-        </div>
-
-        <p-divider *ngIf="order.items && order.items.length > 0"></p-divider>
-
-        <!-- Totales -->
-        <div class="sse-totals">
-          <!-- Subtotal -->
-          <div class="sse-total-row">
-            <span style="color: #7a5c51;">💰 Subtotal:</span>
-            <span style="color: #33211D; font-weight: 600;">
-              ${{ (order.subtotal ?? order.total) | number:'1.2-2' }}
-            </span>
-          </div>
-
-          <!-- Descuento -->
-          <div *ngIf="order.descuento && order.descuento > 0" class="sse-total-row discount-row">
-            <span style="color: #7a5c51;">🎉 Descuento:</span>
-            <span style="color: #22c55e; font-weight: 600;">
-              -${{ order.descuento | number:'1.2-2' }}
-            </span>
-          </div>
-
-          <!-- Cupón aplicado -->
-          <div *ngIf="order.couponCode || order.couponId" class="sse-coupon-info">
-            <i class="pi pi-ticket" style="color: #DA9F5B;"></i>
-            <span style="color: #33211D; font-weight: 600;">Cupón aplicado:</span>
-            <span class="sse-coupon-code">{{ order.couponCode ?? order.couponId }}</span>
-          </div>
-
-          <p-divider class="my-2"></p-divider>
-
-          <!-- Total final -->
-          <div class="sse-total-row final-total">
-            <span class="font-bold" style="color: #33211D;">📦 Total Final:</span>
-            <span class="sse-final-amount">
-              ${{ order.total | number:'1.2-2' }}
-            </span>
-          </div>
+      <!-- Mensaje de advertencia -->
+      <div style="display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.875rem 1rem; background: rgba(220, 53, 69, 0.08); border: 1px solid rgba(220, 53, 69, 0.2); border-radius: 10px; margin-bottom: 1.5rem;">
+        <i class="pi pi-exclamation-circle" style="color: #dc3545; font-size: 1.1rem; margin-top: 0.125rem; flex-shrink: 0;"></i>
+        <div>
+          <p style="margin: 0; font-weight: 600; color: #dc3545; font-size: 0.95rem;">Esta acción es irreversible</p>
+          <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: #7a5c51;">La orden será marcada como cancelada y no podrá recuperarse.</p>
         </div>
       </div>
 
-      <p-divider></p-divider>
-
-      <!-- Mensaje de espera de confirmación -->
-      <div class="sse-waiting-message">
-        <div class="sse-waiting-icon">⏳</div>
-        <p class="sse-waiting-text">
-          Tu pedido está esperando confirmación del comercio.
-        </p>
-        <p class="sse-waiting-subtext">
-          Te notificaremos pronto cuando sea procesado.
-        </p>
+      <!-- Campo de razón - Simplificado -->
+      <div style="margin-bottom: 1.5rem;">
+        <label style="display: block; margin-bottom: 0.5rem; color: #33211D; font-weight: 600; font-size: 0.9rem;">
+          <i class="pi pi-comment mr-2" style="color: #dc3545;"></i>
+          ¿Por qué cancelas esta orden?
+        </label>
+        <textarea
+          [(ngModel)]="cancellationReason"
+          rows="3"
+          placeholder="Describe brevemente la razón..."
+          maxlength="500"
+          [disabled]="cancellingOrder()"
+          style="width: 100%; resize: none; border: 1px solid #ddd; border-radius: 8px; padding: 0.75rem; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #33211D; font-size: 0.9rem; transition: all 0.2s ease;"
+        ></textarea>
+        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #b8997d; margin-top: 0.375rem;">
+          <span>{{ cancellationReason.length }} / 500 caracteres</span>
+          <span *ngIf="cancellationReason.trim().length === 0" style="color: #dc3545;">Requerido</span>
+        </div>
       </div>
-
     </ng-container>
 
-    <!-- Footer -->
+    <!-- Footer con botones estéticos -->
     <ng-template #footer>
-      <p-button
-        icon="pi pi-check"
-        label="Entendido"
-        severity="secondary"
-        styleClass="w-full"
-        (onClick)="closeSseOrderDetail()"
-      ></p-button>
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+        <p-button
+          label="No, Mantener"
+          icon="pi pi-arrow-left"
+          severity="secondary"
+          [outlined]="true"
+          [disabled]="cancellingOrder()"
+          (onClick)="onCancelOrderDialogCancel()"
+          styleClass="p-button-sm"
+        ></p-button>
+        <p-button
+          label="Confirmar Cancelación"
+          icon="pi pi-check-circle"
+          severity="danger"
+          [loading]="cancellingOrder()"
+          [disabled]="cancellingOrder() || cancellationReason.trim().length === 0"
+          (onClick)="onCancelOrderConfirmed(cancellationReason)"
+          styleClass="p-button-sm"
+        ></p-button>
+      </div>
     </ng-template>
   </p-dialog>
 
