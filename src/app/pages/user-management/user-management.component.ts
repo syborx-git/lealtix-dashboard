@@ -141,18 +141,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     });
     this.loading.set(false);
   }
-        error: (error) => {
-          console.error('Error al obtener tenant por email:', error);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Error al obtener información del tenant',
-            life: 3000
-          });
-          this.loading.set(false);
-        }
-      });
-  }
+
 
   /**
    * Carga la lista de usuarios
