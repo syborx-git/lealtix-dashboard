@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { CustomerApiService } from '@/core/services/customer-api.service';
 
 export interface Country {
     name?: string;
@@ -9029,7 +9030,10 @@ export class CustomerService {
         ];
     }
 
-    constructor(private http: HttpClient) {}
+    constructor(
+        private http: HttpClient,
+        private customerApi: CustomerApiService
+    ) {}
 
     getCustomersMini() {
         return Promise.resolve(this.getData().slice(0, 5));
@@ -9052,6 +9056,9 @@ export class CustomerService {
     }
 
     getCustomers(params?: any) {
-        return this.http.get<any>('https://www.primefaces.org/data/customers', { params: params }).toPromise();
+        return this.customerApi.getCustomers(params).toPromise().catch(() => 
+            this.http.get<any>('https://www.primefaces.org/data/customers', { params: params }).toPromise()
+        );
     }
 }
+
