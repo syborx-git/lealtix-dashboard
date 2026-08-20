@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Subject, firstValueFrom } from 'rxjs';
@@ -125,7 +125,7 @@ export class ComandixComponent implements OnInit, OnDestroy {
 
   // ==================== SIGNALS DASHBOARD DE ÓRDENES (nuevo) ====================
   activeView = signal<'pos' | 'orders'>('pos');
-  ordersView = signal<'active' | 'closed'>('active');
+  ordersView = signal<'active' | 'closed' | 'cancelled'>('active');
   pendingOrders = signal<PendingOrder[]>([]);
   loadingOrders = signal<boolean>(false);
   selectedOrder = signal<PendingOrder | null>(null);
@@ -134,10 +134,10 @@ export class ComandixComponent implements OnInit, OnDestroy {
   editingPendingOrder = signal<PendingOrder | null>(null);
   showCloseOrderModal = signal<boolean>(false);
   selectedOrderForPayment = signal<PendingOrder | null>(null);
-
-  // NUEVO: Dialog de detalle para órdenes SSE
-  showSseOrderDetail = signal<boolean>(false);
-  selectedSseOrder = signal<any>(null);
+  showCancelOrderDialog = signal<boolean>(false);
+  selectedOrderForCancellation = signal<PendingOrder | null>(null);
+  cancellingOrder = signal<boolean>(false);
+  cancellationReason: string = '';
 
   canCloseOrders = false;
   currentUserEmail: string = '';
@@ -150,14 +150,33 @@ export class ComandixComponent implements OnInit, OnDestroy {
     });
   });
 
-  // Computed: Órdenes cerradas (PAGADA, filtradas por usuario actual)
+  // Computed: Órdenes cerradas (PAGADA del día actual, filtradas por usuario actual)
   closedOrders = computed(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
     return this.pendingOrders()
       .filter(order => this.normalizeOrderStatus(order.estado) === 'PAGADA')
       .filter(order => {
+        // Validar que la orden fue pagada hoy
+        if (!order.payment?.paidAt) {
+          return false;
+        }
+        const paidDate = new Date(order.payment.paidAt);
+        paidDate.setHours(0, 0, 0, 0);
+        return paidDate.getTime() === today.getTime();
+      })
+      .filter(order => {
         // Filtrar por usuario actual que procesó el pago
+        // Si paidBy está vacío o es 'usuario', mostrar igual (asumiendo que fue este usuario)
         const paidBy = order.payment?.paidBy ?? '';
-        return paidBy === this.currentUserEmail || paidBy === 'usuario';
+        if (!paidBy || paidBy === 'usuario') {
+          return true; // Mostrar si está vacío o es 'usuario'
+        }
+        // Si tiene email específico, verificar que sea el usuario actual
+        return paidBy === this.currentUserEmail;
       })
       .sort((a, b) => {
         const dateA = a.payment?.paidAt ? new Date(a.payment.paidAt).getTime() : 0;
@@ -166,8 +185,23 @@ export class ComandixComponent implements OnInit, OnDestroy {
       });
   });
 
+  // Órdenes canceladas por el usuario actual
+  cancelledOrders = computed(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return this.pendingOrders()
+      .filter(order => this.normalizeOrderStatus(order.estado) === 'CANCELADA')
+      .sort((a, b) => {
+        const dateA = a.fechaCreacion ? new Date(a.fechaCreacion).getTime() : 0;
+        const dateB = b.fechaCreacion ? new Date(b.fechaCreacion).getTime() : 0;
+        return dateB - dateA; // Más recientes primero
+      });
+  });
+
   pendingOrdersCount = computed(() => this.activeOrders().length);
   closedOrdersCount = computed(() => this.closedOrders().length);
+  cancelledOrdersCount = computed(() => this.cancelledOrders().length);
 
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
   private knownOrderIds = new Set<string>();
@@ -200,6 +234,25 @@ export class ComandixComponent implements OnInit, OnDestroy {
       this.startPolling();
       this.startSseConnection();
       this.subscribeToSseEvents();
+
+      // Debug: Monitorear órdenes cerradas
+      effect(() => {
+        const closed = this.closedOrders();
+        const allPaidOrders = this.pendingOrders().filter(
+          (o) => this.normalizeOrderStatus(o.estado) === 'PAGADA'
+        );
+        console.log('[Comandix] 📊 Debug Órdenes Cerradas:', {
+          totalPagadas: allPaidOrders.length,
+          mostradas: closed.length,
+          currentUserEmail: this.currentUserEmail,
+          hoy: new Date().toLocaleDateString('es-ES'),
+          detalles: closed.map((o) => ({
+            id: o.id.slice(0, 8),
+            paidAt: o.payment?.paidAt,
+            paidBy: o.payment?.paidBy
+          }))
+        });
+      });
     }
   }
 
@@ -219,7 +272,8 @@ export class ComandixComponent implements OnInit, OnDestroy {
     }
   }
 
-  switchOrdersView(view: 'active' | 'closed'): void {
+  switchOrdersView(view: 'active' | 'closed' | 'cancelled'): void {
+    this.activeView.set('orders');
     this.ordersView.set(view);
   }
 
@@ -423,8 +477,8 @@ export class ComandixComponent implements OnInit, OnDestroy {
           });
 
           // Dispara la alerta (sonido DOBLE + confetti + DIALOG DETALLADO)
-          // Muestra los datos completos de la orden
-          this.triggerNewOrderAlertWithDetailsAndDialog(order);
+          // Muestra los datos completos de la orden (con estado correctamente mapeado)
+          this.triggerNewOrderAlertWithDetailsAndDialog(pendingOrder);
         },
         error: (error) => {
           console.error('[Comandix] Error en SSE newOrder$:', error);
@@ -479,29 +533,18 @@ export class ComandixComponent implements OnInit, OnDestroy {
       colors: ['#DA9F5B', '#33211D', '#FFFBF2', '#c8882a', '#f0c080']
     });
 
-    // 3) Mostrar DIALOG detallado con toda la información
-    this.selectedSseOrder.set({
-      ...order,
-      clientLabel: order.customerName ?? (order.customerId ? `Cliente #${order.customerId}` : 'Cliente General')
-    });
-    this.showSseOrderDetail.set(true);
+    // 3) Mostrar DIALOG detallado de orden (flujo unificado)
+    // En lugar de mostrar modal intermedio, abrimos directamente el detalle
+    this.openOrderDetail(order);
 
     // 4) Toast breve notificando que llegó la orden
     this.messageService.add({
       severity: 'success',
-      summary: '¡Nueva Orden del CHATBOT!',
-      detail: `Orden #${order.id.slice(0, 8).toUpperCase()}... — Ver detalles en el dialog`,
+      summary: '¡Nueva Orden!',
+      detail: `Orden #${order.id.slice(0, 8).toUpperCase()} — Confirma o rechaza el pedido`,
       life: 4000,
       icon: 'pi pi-shopping-bag'
     });
-  }
-
-  /**
-   * Cierra el dialog de detalles de orden SSE
-   */
-  closeSseOrderDetail(): void {
-    this.showSseOrderDetail.set(false);
-    this.selectedSseOrder.set(null);
   }
 
   // ==================== ALERTA DE NUEVA ORDEN ====================
@@ -757,30 +800,51 @@ export class ComandixComponent implements OnInit, OnDestroy {
   }
 
   async rechazarOrden(order: PendingOrder): Promise<void> {
-    if (this.processingOrderAction()) return;
-    this.processingOrderAction.set(true);
+    this.selectedOrderForCancellation.set(order);
+    this.showCancelOrderDialog.set(true);
+  }
+
+  async onCancelOrderConfirmed(reason: string): Promise<void> {
+    const order = this.selectedOrderForCancellation();
+    if (!order || this.cancellingOrder()) return;
+
+    this.cancellingOrder.set(true);
     try {
-      await firstValueFrom(this.orderService.updateOrderStatus(order.id, 'RECHAZADO'));
+      await firstValueFrom(
+        this.orderService.updateOrderStatus(
+          order.id,
+          'CANCELADA',
+          this.currentUserEmail,
+          reason
+        )
+      );
 
       this.messageService.add({
-        severity: 'warn',
-        summary: 'Orden rechazada',
-        detail: `Orden #${order.id.slice(0, 8)}… rechazada`,
+        severity: 'info',
+        summary: 'Orden cancelada',
+        detail: `Orden #${order.id.slice(0, 8)}… cancelada`,
         life: 3000
       });
 
       this.removeOrderFromList(order.id);
+      this.showCancelOrderDialog.set(false);
+      this.selectedOrderForCancellation.set(null);
       this.closeOrderDetail();
     } catch (error: any) {
       this.messageService.add({
         severity: 'error',
-        summary: 'Error al rechazar',
-        detail: error.message ?? 'No se pudo rechazar la orden',
+        summary: 'Error al cancelar',
+        detail: error.message ?? 'No se pudo cancelar la orden',
         life: 3000
       });
     } finally {
-      this.processingOrderAction.set(false);
+      this.cancellingOrder.set(false);
     }
+  }
+
+  onCancelOrderDialogCancel(): void {
+    this.showCancelOrderDialog.set(false);
+    this.selectedOrderForCancellation.set(null);
   }
 
   private removeOrderFromList(orderId: string): void {

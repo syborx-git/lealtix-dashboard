@@ -9,6 +9,7 @@ import {
   TenantClientOrderResponse,
   OrderListResponse,
   UpdateOrderStatusResponse,
+  UpdateOrderStatusRequest,
   RecordPaymentRequest,
   RecordPaymentResponse
 } from '../models/order.model';
@@ -89,12 +90,21 @@ export class OrderService {
   /**
    * Actualiza el estado de una orden
    * PATCH /api/tenant-client-orders/{orderId}/status
-   * Body: { "estado": "CONFIRMADA" }
+   * Body: { "estado": "CONFIRMADA", "userEmail": "user@email.com", "reason": "optional" }
    */
-  updateOrderStatus(orderId: string, status: string): Observable<UpdateOrderStatusResponse> {
+  updateOrderStatus(
+    orderId: string,
+    status: string,
+    userEmail?: string,
+    reason?: string
+  ): Observable<UpdateOrderStatusResponse> {
     const normalizedStatus = this.statusMap[status] ?? status;
     const url = `${this.baseUrl}/${orderId}/status`;
-    const body = { estado: normalizedStatus };
+    const body: UpdateOrderStatusRequest = {
+      estado: normalizedStatus,
+      ...(userEmail && { userEmail }),
+      ...(reason && { reason })
+    };
 
     return this.http
       .patch<UpdateOrderStatusResponse>(url, body)
