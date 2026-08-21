@@ -494,3 +494,99 @@
         grid-template-columns: 1fr;
     }
 }
+
+::ng-deep {
+  :root[class*='app-dark'],
+  .app-dark {
+    .kitchen-column {
+      background: rgba(255, 255, 255, 0.03);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .expand-button-container {
+      background: rgba(255, 255, 255, 0.02);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .freshness-ok .order-timer {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+    }
+
+    .freshness-warning .order-timer {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+    }
+
+    .freshness-critical .order-timer {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+    }
+
+    .ready-note {
+      color: #6ee7b7;
+    }
+
+    .item-comments {
+      background: rgba(245, 158, 11, 0.12);
+      color: #fbbf24;
+    }
+
+    .delivery-progress {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .progress-label {
+      color: #6ee7b7;
+    }
+
+    .progress-value {
+      color: #34d399;
+    }
+
+    .pending-guidance {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+
+    .item-detail.item-tappable:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .item-detail.item-delivered {
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .item-detail.item-pending-attention {
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .item-detail.item-delivered .item-name {
+      color: #6ee7b7;
+    }
+
+    .item-detail.item-pending-attention .item-name {
+      color: #fca5a5;
+    }
+
+    .item-check-control {
+      background: rgba(16, 185, 129, 0.12);
+      color: #6ee7b7;
+    }
+
+    .item-comments-section {
+      background: rgba(245, 158, 11, 0.12);
+    }
+
+    .comments-label {
+      color: #fbbf24;
+    }
+
+    .total-item.total-final {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: #34d399;
+    }
+  }
+}

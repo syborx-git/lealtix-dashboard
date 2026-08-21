@@ -9,8 +9,8 @@
 export const environment = {
   production: false,
   /** URL Base del Backend (Spring Boot / API Service) */
-  apiUrl: 'http://localhost:8080/api',
-  landingPageBaseUrl: 'http://localhost:4200/landing-page',
+  apiUrl: 'https://chip-elegant-obtain-kids.trycloudflare.com/api',
+  landingPageBaseUrl: 'https://full-accountability-big-rug.trycloudflare.com/landing-page',
   kitchenMockEnabled: false
 };
 

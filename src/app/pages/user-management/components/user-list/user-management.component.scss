@@ -497,3 +497,200 @@
     }
   }
 }
+
+::ng-deep {
+  :root[class*='app-dark'],
+  .app-dark {
+    .p-toolbar {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.015) 100%) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+
+      .p-button.p-button-outlined {
+        background: rgba(255, 255, 255, 0.04) !important;
+        border-color: rgba(255, 255, 255, 0.2) !important;
+        color: #cbd2e0 !important;
+
+        &:hover:not(:disabled) {
+          background: rgba(255, 255, 255, 0.08) !important;
+          border-color: var(--lealtix-primary-400) !important;
+          color: var(--lealtix-primary-300) !important;
+        }
+      }
+    }
+
+    .p-datatable {
+      border-color: rgba(255, 255, 255, 0.08) !important;
+
+      .p-datatable-header {
+        .p-inputtext,
+        .p-inputicon,
+        input {
+          background: rgba(0, 0, 0, 0.2) !important;
+          color: #ffffff !important;
+          border-color: rgba(255, 255, 255, 0.2) !important;
+        }
+
+        .p-inputtext::placeholder {
+          color: rgba(255, 255, 255, 0.7) !important;
+        }
+      }
+
+      .p-datatable-thead > tr > th {
+        background: rgba(255, 255, 255, 0.03) !important;
+        color: #a8b0c0 !important;
+        border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+
+        .p-sortable-column-icon {
+          color: #9aa3b5 !important;
+        }
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.06) !important;
+        }
+      }
+
+      .p-datatable-tbody > tr {
+        &:hover {
+          background: rgba(99, 102, 241, 0.08) !important;
+        }
+
+        > td {
+          color: #cbd2e0 !important;
+          border-bottom-color: rgba(255, 255, 255, 0.05) !important;
+
+          .p-button.p-button-rounded.p-button-outlined {
+            border-color: rgba(255, 255, 255, 0.2) !important;
+
+            &:hover {
+              background: rgba(255, 255, 255, 0.06) !important;
+              border-color: var(--lealtix-primary-400) !important;
+            }
+          }
+
+          .p-button.p-button-rounded.p-button-outlined.p-button-danger {
+            color: #f87171 !important;
+            border-color: #fca5a5 !important;
+
+            &:hover {
+              background-color: rgba(239, 68, 68, 0.15) !important;
+              border-color: #f87171 !important;
+              color: #fca5a5 !important;
+            }
+          }
+        }
+      }
+
+      .p-datatable-emptymessage > td {
+        .flex-column {
+          i {
+            color: #3d4561 !important;
+          }
+
+          h3 {
+            color: #e6e8ef !important;
+          }
+
+          p {
+            color: #9aa3b5 !important;
+          }
+        }
+      }
+    }
+
+    .p-paginator {
+      background: rgba(255, 255, 255, 0.02) !important;
+      border-top-color: rgba(255, 255, 255, 0.08) !important;
+
+      .p-paginator-rpp-label,
+      .p-paginator-current {
+        color: #9aa3b5 !important;
+      }
+
+      .p-select {
+        border-color: rgba(255, 255, 255, 0.15) !important;
+
+        .p-select-label {
+          color: #cbd2e0 !important;
+        }
+      }
+
+      .p-paginator-pages .p-paginator-page {
+        color: #b6bdcc !important;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.08) !important;
+          color: #ffffff !important;
+        }
+      }
+
+      .p-paginator-first,
+      .p-paginator-prev,
+      .p-paginator-next,
+      .p-paginator-last {
+        color: #9aa3b5 !important;
+
+        &:hover:not(:disabled) {
+          background: rgba(255, 255, 255, 0.08) !important;
+          color: #ffffff !important;
+        }
+      }
+    }
+
+    .p-dialog {
+      border-color: rgba(255, 255, 255, 0.1) !important;
+
+      .p-dialog-content {
+        color: #cbd2e0 !important;
+
+        .field label {
+          color: #e6e8ef !important;
+        }
+      }
+
+      .p-dialog-footer {
+        background: rgba(255, 255, 255, 0.02) !important;
+        border-top-color: rgba(255, 255, 255, 0.08) !important;
+      }
+    }
+
+    .p-confirmdialog {
+      border-color: rgba(255, 255, 255, 0.1) !important;
+
+      .p-dialog-header {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.015) 100%) !important;
+        border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+
+        .p-dialog-title {
+          color: #e6e8ef !important;
+        }
+
+        .p-dialog-header-icon {
+          color: #9aa3b5 !important;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.08) !important;
+            color: #ffffff !important;
+          }
+        }
+      }
+
+      .p-dialog-content {
+        color: #cbd2e0 !important;
+      }
+
+      .p-dialog-footer {
+        background: rgba(255, 255, 255, 0.02) !important;
+        border-top-color: rgba(255, 255, 255, 0.08) !important;
+
+        .p-button.p-button-text {
+          color: #9aa3b5 !important;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.08) !important;
+            color: #ffffff !important;
+          }
+        }
+      }
+    }
+  }
+}

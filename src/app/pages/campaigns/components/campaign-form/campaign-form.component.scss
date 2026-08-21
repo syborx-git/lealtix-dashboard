@@ -244,4 +244,118 @@ small.text-500 {
   h3 {
     font-size: 1.125rem;
   }
+
+  .flex.justify-content-end {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+}
+
+:root[class*='app-dark'],
+.app-dark {
+  .card {
+    background: var(--surface-card) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  h2 {
+    color: #ffffff !important;
+  }
+
+  h3 {
+    color: #e6e8ef !important;
+  }
+
+  label {
+    color: #cbd2e0 !important;
+  }
+
+  ::ng-deep .border-primary {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.22) !important;
+  }
+
+  ::ng-deep .cursor-pointer:hover {
+    border-color: rgba(129, 140, 248, 0.35) !important;
+  }
+
+  ::ng-deep .p-inputtext,
+  ::ng-deep .p-inputtextarea,
+  ::ng-deep select {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    color: #e6e8ef !important;
+
+    &:focus {
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.22) !important;
+    }
+  }
+
+  ::ng-deep .p-message {
+    &.p-message-info {
+      background: rgba(99, 102, 241, 0.12) !important;
+      border-color: rgba(99, 102, 241, 0.3) !important;
+      color: var(--lealtix-primary-300) !important;
+    }
+
+    &.p-message-warn {
+      background: rgba(245, 158, 11, 0.12) !important;
+      border-color: rgba(245, 158, 11, 0.3) !important;
+      color: #fbbf24 !important;
+    }
+
+    &.p-message-error {
+      background: rgba(239, 68, 68, 0.12) !important;
+      border-color: rgba(239, 68, 68, 0.3) !important;
+      color: #fca5a5 !important;
+    }
+  }
+
+  ::ng-deep .p-inputgroup {
+    .p-inputgroup-addon {
+      background: rgba(255, 255, 255, 0.04) !important;
+      border-color: rgba(255, 255, 255, 0.1) !important;
+      color: #cbd2e0 !important;
+    }
+  }
+
+  ::ng-deep .p-button.p-button-secondary.p-button-outlined {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #cbd2e0 !important;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.05) !important;
+      border-color: rgba(255, 255, 255, 0.2) !important;
+    }
+  }
+
+  ::ng-deep .p-divider {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  ::ng-deep .p-chip {
+    background: rgba(99, 102, 241, 0.15) !important;
+    color: #a5b4fc !important;
+    border-color: rgba(99, 102, 241, 0.3) !important;
+  }
+
+  .bg-blue-50 {
+    background: rgba(99, 102, 241, 0.12) !important;
+  }
+
+  .border-blue-200 {
+    border-color: rgba(99, 102, 241, 0.3) !important;
+  }
+
+  .text-blue-600 {
+    color: var(--lealtix-primary-400) !important;
+  }
+
+  .text-blue-800,
+  .text-blue-900 {
+    color: var(--lealtix-primary-300) !important;
+  }
+
+  .border-1 {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
 }

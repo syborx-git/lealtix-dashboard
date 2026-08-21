@@ -1,7 +1,7 @@
 <div class="dashboard-container">
 
   <!-- Header con título -->
-  <div class="dashboard-header">
+  <div class="dashboard-header animate-fade-in-down">
     <h2 class="dashboard-title">Panel de Control</h2>
     <p class="dashboard-subtitle">Últimos 2 meses</p>
   </div>
@@ -10,7 +10,7 @@
   <div class="kpi-section">
     <div class="kpi-grid">
 
-      <p-card class="kpi-card">
+      <p-card class="kpi-card animate-fade-in-up animate-delay-1">
         <ng-container *ngIf="!loading(); else kpiSkeleton">
           <div class="kpi-content">
             <div class="kpi-icon-wrapper blue">
@@ -24,7 +24,7 @@
         </ng-container>
       </p-card>
 
-      <p-card class="kpi-card">
+      <p-card class="kpi-card animate-fade-in-up animate-delay-2">
         <ng-container *ngIf="!loading(); else kpiSkeleton">
           <div class="kpi-content">
             <div class="kpi-icon-wrapper green">
@@ -38,7 +38,7 @@
         </ng-container>
       </p-card>
 
-      <p-card class="kpi-card">
+      <p-card class="kpi-card animate-fade-in-up animate-delay-3">
         <ng-container *ngIf="!loading(); else kpiSkeleton">
           <div class="kpi-content">
             <div class="kpi-icon-wrapper orange">
@@ -52,7 +52,7 @@
         </ng-container>
       </p-card>
 
-      <p-card class="kpi-card">
+      <p-card class="kpi-card animate-fade-in-up animate-delay-4">
         <ng-container *ngIf="!loading(); else kpiSkeleton">
           <div class="kpi-content">
             <div class="kpi-icon-wrapper purple">
@@ -67,7 +67,7 @@
       </p-card>
 
       <!-- Tasa de Recompra KPI -->
-      <p-card class="kpi-card" [pTooltip]="getRepeatRateTooltip()" tooltipPosition="bottom">
+      <p-card class="kpi-card animate-fade-in-up animate-delay-5" [pTooltip]="getRepeatRateTooltip()" tooltipPosition="bottom">
         <ng-container *ngIf="!loading(); else kpiSkeleton">
           <div class="kpi-content">
             <div class="kpi-icon-wrapper indigo">
@@ -88,7 +88,7 @@
       </p-card>
 
       <!-- Ventas Identificadas KPI -->
-      <p-card class="kpi-card" [pTooltip]="getIdentifiedPercentageTooltip()" tooltipPosition="bottom">
+      <p-card class="kpi-card animate-fade-in-up animate-delay-6" [pTooltip]="getIdentifiedPercentageTooltip()" tooltipPosition="bottom">
         <ng-container *ngIf="!loading(); else kpiSkeleton">
           <div class="kpi-content">
             <div class="kpi-icon-wrapper slate">
@@ -125,7 +125,7 @@
   <div class="loyalty-section" *ngIf="!loading()">
 
     <!-- Gráfico Identificadas vs Generales -->
-    <p-card class="chart-card" *ngIf="identifiedVsGeneral()">
+    <p-card class="chart-card animate-fade-in-up animate-delay-2" *ngIf="identifiedVsGeneral()">
       <ng-template pTemplate="header">
         <div class="card-header">
           <i class="pi pi-chart-doughnut"></i>
@@ -138,7 +138,7 @@
     </p-card>
 
     <!-- Grid de 2 columnas: LTV y Conversión de Cupones -->
-    <div class="loyalty-grid">
+    <div class="loyalty-grid animate-fade-in-up animate-delay-3">
 
       <!-- Top Clientes por LTV -->
       <p-card class="loyalty-card">
@@ -226,7 +226,7 @@
     </div>
 
     <!-- Grid de 2 columnas: Personalización y ROI -->
-    <div class="loyalty-grid">
+    <div class="loyalty-grid animate-fade-in-up animate-delay-4">
 
       <!-- Análisis de Personalización -->
       <p-card class="loyalty-card">
@@ -310,7 +310,7 @@
   </div>
 
   <!-- Sección de Insights -->
-  <div class="insights-section" *ngIf="!loading() && insights().length > 0">
+  <div class="insights-section animate-fade-in-up animate-delay-5" *ngIf="!loading() && insights().length > 0">
     <div class="insights-header">
       <i class="pi pi-lightbulb"></i>
       <span>Insights Automáticos</span>
@@ -326,7 +326,7 @@
   </div>
 
   <!-- Sección Charts en Grid -->
-  <div class="charts-section">
+  <div class="charts-section animate-fade-in-up animate-delay-5">
 
     <!-- Clientes Nuevos -->
     <p-card class="chart-card full-width">
@@ -382,7 +382,7 @@
   </ng-template>
 
   <!-- Tabla de Performance -->
-  <p-card class="table-card">
+  <p-card class="table-card animate-fade-in-up animate-delay-6">
     <ng-template pTemplate="header">
       <div class="card-header">
         <i class="pi pi-table"></i>

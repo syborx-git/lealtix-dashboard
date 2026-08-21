@@ -855,3 +855,131 @@
     }
   }
 }
+
+:root[class*='app-dark'],
+.app-dark {
+  :host ::ng-deep {
+    .redeem-container {
+      background: var(--surface-card) !important;
+    }
+
+    .redeem-header {
+      color: #e6e8ef !important;
+    }
+
+    .coupon-card {
+      background: var(--surface-card) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+
+      .p-card-footer {
+        background: rgba(255, 255, 255, 0.03) !important;
+        border-top-color: rgba(255, 255, 255, 0.08) !important;
+      }
+    }
+
+    .loading-text {
+      color: #cbd2e0 !important;
+    }
+
+    .loading-subtext {
+      color: var(--text-color-secondary) !important;
+    }
+
+    .coupon-content .status-row .label {
+      color: #cbd2e0 !important;
+    }
+
+    .info-row.final-amount {
+      border-top-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .info-label {
+      color: var(--text-color-secondary) !important;
+    }
+
+    .info-value {
+      color: #cbd2e0 !important;
+
+      &.code {
+        background: rgba(255, 255, 255, 0.03) !important;
+      }
+    }
+
+    .help-text {
+      background: rgba(255, 255, 255, 0.03) !important;
+
+      p,
+      ul {
+        color: #cbd2e0 !important;
+      }
+    }
+
+    .secondary-button {
+      :deep(.p-button) {
+        background: rgba(255, 255, 255, 0.06) !important;
+        color: #e6e8ef !important;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.1) !important;
+        }
+      }
+    }
+
+    p-divider :deep(.p-divider) {
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .client-message {
+      border-top-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .amount-dialog-content {
+      .dialog-description {
+        color: #cbd2e0 !important;
+      }
+
+      .amount-label {
+        color: #cbd2e0 !important;
+      }
+
+      p-inputNumber :deep(.p-inputnumber) .p-inputtext {
+        border-color: rgba(255, 255, 255, 0.15) !important;
+      }
+    }
+
+    .preview-info {
+      .preview-row {
+        border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+
+        .preview-label {
+          color: var(--text-color-secondary) !important;
+        }
+
+        .preview-value {
+          color: #cbd2e0 !important;
+        }
+
+        &.final {
+          .preview-label {
+            color: #cbd2e0 !important;
+          }
+        }
+      }
+    }
+  }
+
+  .p-dialog {
+    background: var(--surface-card) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+
+    .p-dialog-footer {
+      background: rgba(255, 255, 255, 0.03) !important;
+      border-top-color: rgba(255, 255, 255, 0.08) !important;
+    }
+  }
+
+  .p-confirm-dialog {
+    background: var(--surface-card) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+}

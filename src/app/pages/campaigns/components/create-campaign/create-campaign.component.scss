@@ -823,3 +823,197 @@
     }
   }
 }
+
+:root[class*='app-dark'],
+.app-dark {
+  ::ng-deep .email-confirmation-dialog {
+    .p-dialog-content {
+      background: var(--surface-card) !important;
+    }
+
+    .p-dialog-footer {
+      background: rgba(255, 255, 255, 0.02) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+  }
+
+  ::ng-deep .email-dialog-content {
+    .email-header {
+      .icon-bg {
+        background: rgba(99, 102, 241, 0.15) !important;
+        color: var(--lealtix-primary-300) !important;
+      }
+
+      .title {
+        color: #ffffff !important;
+      }
+
+      .subtitle {
+        color: var(--text-color-secondary) !important;
+      }
+    }
+
+    .email-body {
+      .card {
+        background: var(--surface-card) !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+      }
+
+      .segmentation-card {
+        .label {
+          color: var(--text-color-secondary) !important;
+        }
+
+        .value {
+          color: #e6e8ef !important;
+        }
+      }
+
+      .warning-card {
+        background: rgba(245, 158, 11, 0.12) !important;
+        border-left-color: #f59e0b !important;
+
+        .warning-label {
+          color: #fbbf24 !important;
+        }
+
+        .warning-list {
+          color: #fcd34d !important;
+        }
+      }
+
+      .info-card {
+        background: rgba(255, 255, 255, 0.03) !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+
+        .info-text {
+          color: #e6e8ef !important;
+        }
+
+        p.text-xs {
+          color: var(--text-color-secondary) !important;
+        }
+      }
+    }
+
+    .main-message h3 {
+      color: var(--lealtix-primary-300) !important;
+    }
+
+    .info-box {
+      background: rgba(255, 255, 255, 0.03) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+
+      &.segmentation-info {
+        background: rgba(99, 102, 241, 0.12) !important;
+        border-color: rgba(99, 102, 241, 0.3) !important;
+
+        p {
+          color: var(--lealtix-primary-300) !important;
+        }
+      }
+
+      &.secondary-info {
+        background: rgba(99, 102, 241, 0.12) !important;
+        border-color: rgba(99, 102, 241, 0.3) !important;
+
+        span {
+          color: var(--lealtix-primary-300) !important;
+        }
+      }
+    }
+
+    .warning-box {
+      background: rgba(245, 158, 11, 0.1) !important;
+      border-color: rgba(245, 158, 11, 0.35) !important;
+
+      i {
+        color: #fbbf24 !important;
+      }
+
+      p {
+        color: #fcd34d !important;
+      }
+
+      ul li {
+        color: #fcd34d !important;
+
+        strong {
+          color: #fde68a !important;
+        }
+      }
+    }
+  }
+
+  .campaign-header h1 {
+    color: #e6e8ef !important;
+  }
+
+  .campaign-form {
+    .form-section {
+      .section-title {
+        color: #e6e8ef !important;
+        border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+      }
+
+      .field label {
+        color: #cbd2e0 !important;
+      }
+
+      .benefit-highlight {
+        background: rgba(99, 102, 241, 0.12) !important;
+        border-color: rgba(99, 102, 241, 0.3) !important;
+      }
+    }
+
+    .preview-image {
+      background: var(--surface-card) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+  }
+
+  .campaign-preview {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+
+    .preview-image-container {
+      background: var(--surface-card) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+
+      .preview-main-image {
+        background: var(--surface-card) !important;
+      }
+    }
+
+    .preview-content {
+      .preview-title {
+        color: #ffffff !important;
+      }
+
+      .preview-subtitle {
+        color: var(--text-color-secondary) !important;
+      }
+
+      .preview-description {
+        color: #cbd2e0 !important;
+      }
+
+      .preview-dates {
+        background: var(--surface-card) !important;
+      }
+    }
+  }
+
+  ::ng-deep .footer-actions p-button ::ng-deep .p-button.p-button-outlined {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.05) !important;
+      border-color: rgba(255, 255, 255, 0.2) !important;
+    }
+  }
+
+  ::ng-deep .p-card {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+}

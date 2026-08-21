@@ -1,12 +1,12 @@
 <!-- Banner persistente de bienvenida -->
 <div class="mb-4" *ngIf="showWelcomeBanner()">
-    <div class="border-round p-4 shadow-2" style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-left: 4px solid #F59E0B;">
+    <div class="welcome-banner">
         <div class="flex align-items-center justify-content-between flex-wrap gap-3">
             <div class="flex align-items-start gap-3 flex-1">
                 <span class="text-4xl" style="line-height: 1;">🚀</span>
                 <div>
-                    <div class="font-semibold text-xl mb-2" style="color: #92400E;">{{ bannerMessage().title }}</div>
-                    <div class="line-height-3" style="color: #78350F;">{{ bannerMessage().description }}</div>
+                    <div class="font-semibold text-xl mb-2 welcome-banner-title">{{ bannerMessage().title }}</div>
+                    <div class="line-height-3 welcome-banner-text">{{ bannerMessage().description }}</div>
                 </div>
             </div>
             <p-button
@@ -44,7 +44,7 @@
     [tableStyle]="{ 'min-width': '75rem' }"
     [(selection)]="selectedCategories"
     [rowHover]="true" dataKey="id"
-    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} categories" [showCurrentPageReport]="true"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} categorías" [showCurrentPageReport]="true"
     [rowsPerPageOptions]="[10, 30, 50]">
     <ng-template #caption>
         <div class="flex items-center justify-between">
@@ -94,7 +94,7 @@
                 <p-tableCheckbox [value]="category" />
             </td>
             <td style="width: 4rem; text-align: center; cursor: move;">
-                <i class="pi pi-bars text-gray-500"></i>
+                <i class="pi pi-bars text-500"></i>
             </td>
             <td style="width: 8rem; text-align: center;">
                 <span class="font-semibold">{{ category.displayOrder }}</span>
@@ -109,6 +109,17 @@
                     (click)="editCategory(category)" />
                 <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [outlined]="true"
                     (click)="deleteCategory(category)" />
+            </td>
+        </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+        <tr>
+            <td colspan="7" class="text-center p-8">
+                <div class="empty-state">
+                    <i class="pi pi-tags empty-state-icon"></i>
+                    <h3 class="empty-state-title">No hay categorías</h3>
+                    <p class="empty-state-description">Organiza tu menú creando tu primera categoría.</p>
+                </div>
             </td>
         </tr>
     </ng-template>

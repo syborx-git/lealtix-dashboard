@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { environment } from '../../commons/environment';
 import {
   WaiterDashboardSummaryDTO,
   VipClientDTO,
@@ -25,7 +26,7 @@ export class WaiterApiService {
    * Pattern: matches existing DashboardService implementation
    */
   private getApiBaseUrl(): string {
-    return (window as any)['APP_CONFIG']?.apiBaseUrl || 'http://localhost:8080/api';
+    return (window as any)['APP_CONFIG']?.apiBaseUrl || environment.apiUrl;
   }
 
   /**

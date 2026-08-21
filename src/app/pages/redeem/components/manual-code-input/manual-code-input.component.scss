@@ -435,3 +435,86 @@
     }
   }
 }
+
+:root[class*='app-dark'],
+.app-dark {
+  :host ::ng-deep {
+    .input-card {
+      background: var(--surface-card) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .description {
+      color: var(--text-color-secondary) !important;
+    }
+
+    .form-label {
+      color: #cbd2e0 !important;
+    }
+
+    .p-inputtext,
+    .p-inputnumber-input {
+      border-color: rgba(255, 255, 255, 0.15) !important;
+
+      &::placeholder {
+        color: var(--text-color-secondary) !important;
+      }
+
+      &:disabled {
+        background: rgba(255, 255, 255, 0.03) !important;
+      }
+    }
+
+    .reward-info {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.06) 100%) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .reward-description {
+      color: #cbd2e0 !important;
+    }
+
+    .requirement-item {
+      background: rgba(255, 255, 255, 0.03) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .requirement-label {
+      color: var(--text-color-secondary) !important;
+    }
+
+    .requirement-value {
+      color: #e6e8ef !important;
+    }
+
+    .calculation-details {
+      background: rgba(255, 255, 255, 0.03) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .detail-row:not(:last-child) {
+      border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .detail-label {
+      color: var(--text-color-secondary) !important;
+    }
+
+    .detail-value {
+      color: #cbd2e0 !important;
+    }
+
+    .total-row {
+      border-top-color: rgba(255, 255, 255, 0.15) !important;
+    }
+
+    .usage-info {
+      border-top-color: rgba(255, 255, 255, 0.08) !important;
+      color: var(--text-color-secondary) !important;
+    }
+
+    .p-divider {
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+  }
+}

@@ -220,9 +220,29 @@
 
 /* === RESPONSIVE === */
 @media (max-width: 768px) {
+  ::ng-deep .p-toolbar {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+
+    .p-toolbar-group-start,
+    .p-toolbar-group-end {
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .p-button {
+      min-height: 38px;
+    }
+  }
+
   ::ng-deep .p-datatable {
     .p-datatable-header {
       padding: 1rem !important;
+
+      > div {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
     }
 
     .p-datatable-thead > tr > th,
@@ -238,6 +258,110 @@
 
     i {
       font-size: 0.75rem;
+    }
+  }
+}
+
+:root[class*='app-dark'],
+.app-dark {
+  ::ng-deep .p-toolbar {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.015) 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  ::ng-deep .p-datatable {
+    .p-datatable-thead > tr > th {
+      background: rgba(255, 255, 255, 0.03) !important;
+      color: #a8b0c0 !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .p-datatable-tbody > tr {
+      &:hover {
+        background-color: rgba(99, 102, 241, 0.08) !important;
+      }
+
+      > td {
+        border-color: rgba(255, 255, 255, 0.05) !important;
+      }
+
+      &.in-use-row,
+      &.in-use-row > td {
+        color: var(--text-color-secondary) !important;
+      }
+    }
+  }
+
+  ::ng-deep .in-use-row .p-chip {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: #9aa3b5 !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  ::ng-deep .p-chip {
+    background: rgba(99, 102, 241, 0.15) !important;
+    color: #a5b4fc !important;
+    border: 1px solid rgba(99, 102, 241, 0.3) !important;
+
+    &.p-chip-outlined {
+      background: transparent !important;
+      border-color: rgba(255, 255, 255, 0.12) !important;
+      color: #cbd2e0 !important;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-color: rgba(255, 255, 255, 0.2) !important;
+        color: #ffffff !important;
+      }
+    }
+  }
+
+  ::ng-deep .p-button.p-button-danger.p-button-outlined {
+    &:hover {
+      background-color: rgba(239, 68, 68, 0.15) !important;
+      border-color: #f87171 !important;
+      color: #fca5a5 !important;
+    }
+  }
+
+  ::ng-deep .p-datatable-emptymessage {
+    h3 {
+      color: #e6e8ef !important;
+    }
+
+    p {
+      color: #9aa3b5 !important;
+    }
+  }
+
+  ::ng-deep .p-paginator {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border-top-color: rgba(255, 255, 255, 0.08) !important;
+
+    .p-paginator-page {
+      color: #b6bdcc !important;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.08) !important;
+        color: #fff !important;
+      }
+    }
+
+    .p-paginator-prev,
+    .p-paginator-next {
+      color: #9aa3b5 !important;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.08) !important;
+        color: #fff !important;
+      }
+    }
+  }
+
+  ::ng-deep .p-dialog {
+    h3,
+    p {
+      color: #e6e8ef !important;
     }
   }
 }

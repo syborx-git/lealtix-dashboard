@@ -1,0 +1,384 @@
+.login-page-container {
+  min-height: 100vh;
+  min-width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  background-color: var(--surface-ground);
+
+  // Background patterns and glowing blobs
+  .bg-glow-container {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 1;
+
+    &::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background-image: radial-gradient(var(--lealtix-slate-200) 1px, transparent 1px);
+      background-size: 24px 24px;
+      opacity: 0.4;
+    }
+  }
+
+  .glow-blob-1 {
+    position: absolute;
+    top: -10%;
+    left: -10%;
+    width: 50vw;
+    height: 50vw;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+    filter: blur(80px);
+    animation: lealtix-float 12s ease-in-out infinite alternate;
+  }
+
+  .glow-blob-2 {
+    position: absolute;
+    bottom: -10%;
+    right: -10%;
+    width: 60vw;
+    height: 60vw;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(67, 56, 202, 0.12) 0%, transparent 70%);
+    filter: blur(100px);
+    animation: lealtix-float 16s ease-in-out infinite alternate-reverse;
+  }
+
+  // Centered glass container
+  .login-card-wrapper {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 480px;
+    padding: 1.5rem;
+    animation: lealtix-fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .glass-card {
+    background: var(--lealtix-glass-bg);
+    backdrop-filter: var(--lealtix-glass-blur);
+    -webkit-backdrop-filter: var(--lealtix-glass-blur);
+    border: 1px solid var(--lealtix-glass-border);
+    border-radius: 28px;
+    padding: 3rem 2.25rem;
+    box-shadow:
+      0 4px 30px rgba(15, 23, 42, 0.05),
+      0 24px 64px rgba(15, 23, 42, 0.08),
+      0 0 80px rgba(99, 102, 241, 0.06),
+      inset 0 1px 1px rgba(255, 255, 255, 0.4);
+    transition: box-shadow 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+
+    &:hover {
+      box-shadow:
+        0 4px 30px rgba(15, 23, 42, 0.05),
+        0 24px 64px rgba(15, 23, 42, 0.1),
+        0 0 90px rgba(99, 102, 241, 0.1),
+        inset 0 1px 1px rgba(255, 255, 255, 0.5);
+      border-color: rgba(99, 102, 241, 0.25);
+    }
+  }
+
+  // Header styles
+  .login-logo {
+    animation: lealtix-fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.3s ease;
+
+    &:hover {
+      transform: scale(1.02);
+    }
+  }
+
+  .login-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, var(--text-color) 30%, var(--lealtix-primary-600) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .login-subtitle {
+    color: var(--text-color-secondary);
+    font-weight: 500;
+    font-size: 0.9375rem;
+  }
+
+  // Forms elements layout
+  .form-group {
+    margin-bottom: 1.5rem;
+
+    .form-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-color);
+      margin-bottom: 0.5rem;
+    }
+  }
+
+  // Premium overrides for standard prime elements inside login
+  ::ng-deep {
+    .p-inputtext,
+    .p-password input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.5) !important;
+      border: 1.5px solid var(--surface-border) !important;
+      transition: all 0.25s ease !important;
+
+      &:focus {
+        background: var(--surface-card) !important;
+        border-color: var(--lealtix-primary-400) !important;
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1) !important;
+      }
+    }
+
+    .p-password {
+      width: 100%;
+      display: block;
+      
+      input {
+        width: 100%;
+      }
+    }
+
+    .p-checkbox {
+      .p-checkbox-box {
+        border-radius: 6px !important;
+        border: 2px solid var(--lealtix-slate-300) !important;
+        transition: all 0.2s ease !important;
+
+        &.p-highlight {
+          background: var(--lealtix-primary-500) !important;
+          border-color: var(--lealtix-primary-500) !important;
+        }
+      }
+    }
+  }
+
+  .remember-me-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+    font-size: 0.875rem;
+
+    .checkbox-label {
+      font-weight: 500;
+      color: var(--text-color-secondary);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .forgot-link {
+      font-weight: 600;
+      color: var(--lealtix-primary-600);
+      cursor: pointer;
+      transition: color 0.2s ease;
+
+      &:hover {
+        color: var(--lealtix-primary-700);
+        text-decoration: underline;
+      }
+    }
+  }
+
+  .error-message {
+    padding: 0.875rem 1rem;
+    background-color: var(--lealtix-danger-light);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 12px;
+    color: var(--lealtix-danger-dark);
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    animation: lealtix-slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .submit-btn {
+    ::ng-deep .p-button {
+      padding: 0.875rem 1.5rem !important;
+      border-radius: 14px !important;
+      font-size: 1rem !important;
+      letter-spacing: 0.02em;
+    }
+  }
+
+  .help-footer {
+    text-align: center;
+    margin-top: 2rem;
+    font-size: 0.8125rem;
+    color: var(--text-color-secondary);
+    font-weight: 500;
+    line-height: 1.4;
+  }
+}
+
+// Dark theme overrides
+:root[class*='app-dark'] .login-page-container,
+.app-dark .login-page-container {
+  background-color: #09090e;
+
+  .glass-card {
+    background: rgba(13, 13, 19, 0.72);
+    border-color: rgba(255, 255, 255, 0.09);
+    box-shadow:
+      0 4px 30px rgba(0, 0, 0, 0.4),
+      0 24px 64px rgba(0, 0, 0, 0.5),
+      0 0 80px rgba(99, 102, 241, 0.07),
+      inset 0 1px 1px rgba(255, 255, 255, 0.08);
+
+    &:hover {
+      box-shadow:
+        0 4px 30px rgba(0, 0, 0, 0.4),
+        0 24px 64px rgba(0, 0, 0, 0.5),
+        0 0 90px rgba(99, 102, 241, 0.12),
+        inset 0 1px 1px rgba(255, 255, 255, 0.12);
+      border-color: rgba(129, 140, 248, 0.3);
+    }
+  }
+
+  .bg-glow-container::before {
+    background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    opacity: 0.5;
+  }
+
+  .glow-blob-1 {
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.22) 0%, transparent 70%);
+  }
+
+  .glow-blob-2 {
+    background: radial-gradient(circle, rgba(168, 85, 247, 0.16) 0%, transparent 70%);
+  }
+
+  .login-title {
+    background: linear-gradient(135deg, #ffffff 25%, var(--lealtix-primary-400) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  ::ng-deep .p-inputtext,
+  ::ng-deep .p-password input {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #e6e8ef !important;
+
+    &:focus {
+      background: rgba(99, 102, 241, 0.05) !important;
+      border-color: var(--lealtix-primary-500) !important;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2), 0 0 24px rgba(99, 102, 241, 0.12) !important;
+    }
+  }
+
+  .error-message {
+    background-color: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+  }
+}
+
+/* ============================================================================
+   LOGIN SIEMPRE EN CLARO (forzado, aunque la app esté en oscuro)
+   ============================================================================ */
+:root[class*='app-dark'] .login-page-container.light-login,
+.app-dark .login-page-container.light-login,
+.login-page-container.light-login {
+  --text-color: #0f172a;
+  --text-color-secondary: #55627a;
+  --surface-ground: #f4f5fb;
+  --surface-card: #ffffff;
+  --surface-border: rgba(15, 23, 42, 0.09);
+  --lealtix-glass-bg: rgba(255, 255, 255, 0.72);
+  --lealtix-glass-border: rgba(15, 23, 42, 0.08);
+  --lealtix-glass-blur: blur(18px) saturate(150%);
+  background-color: #f4f5fb;
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.78);
+    border-color: rgba(15, 23, 42, 0.08);
+    box-shadow:
+      0 4px 30px rgba(15, 23, 42, 0.05),
+      0 24px 64px rgba(15, 23, 42, 0.08),
+      0 0 80px rgba(99, 102, 241, 0.06),
+      inset 0 1px 1px rgba(255, 255, 255, 0.6);
+
+    &:hover {
+      box-shadow:
+        0 4px 30px rgba(15, 23, 42, 0.06),
+        0 24px 64px rgba(15, 23, 42, 0.1),
+        0 0 90px rgba(99, 102, 241, 0.1),
+        inset 0 1px 1px rgba(255, 255, 255, 0.7);
+      border-color: rgba(99, 102, 241, 0.25);
+    }
+  }
+
+  .bg-glow-container::before {
+    background-image: radial-gradient(var(--lealtix-slate-200) 1px, transparent 1px);
+    opacity: 0.4;
+  }
+
+  .glow-blob-1 {
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+  }
+
+  .glow-blob-2 {
+    background: radial-gradient(circle, rgba(67, 56, 202, 0.12) 0%, transparent 70%);
+  }
+
+  .login-title {
+    background: linear-gradient(135deg, #0f172a 25%, var(--lealtix-primary-600) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  ::ng-deep .p-inputtext,
+  ::ng-deep .p-password input {
+    background: #ffffff !important;
+    border-color: rgba(15, 23, 42, 0.12) !important;
+    color: #0f172a !important;
+
+    &:focus {
+      background: #ffffff !important;
+      border-color: var(--lealtix-primary-500) !important;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12), 0 0 24px rgba(99, 102, 241, 0.08) !important;
+    }
+  }
+
+  ::ng-deep .p-checkbox .p-checkbox-box {
+    background: #ffffff !important;
+    border-color: rgba(15, 23, 42, 0.25) !important;
+
+    &.p-highlight {
+      background: var(--lealtix-primary-500) !important;
+      border-color: var(--lealtix-primary-500) !important;
+    }
+  }
+
+  .error-message {
+    background-color: #fee2e2;
+    border-color: rgba(239, 68, 68, 0.25);
+    color: #b91c1c;
+  }
+
+  .checkbox-label,
+  .help-footer,
+  .login-subtitle {
+    color: #55627a;
+  }
+
+  .forgot-link {
+    color: var(--lealtix-primary-600);
+  }
+}
