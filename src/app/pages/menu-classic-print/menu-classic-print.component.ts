@@ -220,7 +220,7 @@ export class MenuClassicPrintComponent implements OnInit {
       return `${window.location.origin}/landing-page`;
     }
 
-    return 'https://lealtix.com.mx/landing-page';
+    return 'https://full-accountability-big-rug.trycloudflare.com/landing-page';
   }
 
   /**

@@ -489,8 +489,104 @@ export class LandingEditorComponent implements OnInit {
 
 
     save() {
-        this.confettiService.trigger({ action: 'burst' });
-        this.showCongrats = true;
+        if (this.landingForm.invalid) {
+            this.landingForm.markAllAsTouched();
+            return;
+        }
+
+        const form = this.landingForm.value;
+        const logoFile = this.landingForm.get('logo')?.value;
+
+        const tenantData: any = {
+            id: this.tenantId,
+            userId: this.userId,
+            nombreNegocio: form.businessName,
+            slogan: form.slogan,
+            history: form.history,
+            vision: form.vision,
+            direccion: form.address,
+            telefono: form.phone,
+            bussinessEmail: form.email,
+            schedules: form.schedule,
+            kitchenModuleEnabled: !!form.kitchenModuleEnabled,
+            facebook: form.facebook,
+            instagram: form.instagram,
+            tiktok: form.tiktok,
+            linkedin: form.linkedin,
+            x: form.x
+        };
+
+        if (typeof form.logo === 'string' && form.logo) {
+            tenantData.logoUrl = form.logo;
+        }
+
+        const persist = () => {
+            const request = this.tenantService.createTenant(tenantData);
+
+            request.subscribe({
+                next: (response: any) => {
+                    this.tenantService.invalidateTenantByEmailCache(this.email);
+                    try {
+                        const saved = response?.object || response;
+                        if (saved?.id) {
+                            this.tenantId = saved.id;
+                        }
+                        const returnedLogo = saved?.logoUrl || saved?.logo;
+                        if (returnedLogo) {
+                            this.landingForm.patchValue({ logo: returnedLogo });
+                            if (this.logoObjectUrl) {
+                                URL.revokeObjectURL(this.logoObjectUrl);
+                                this.logoObjectUrl = null;
+                            }
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+                    this.confettiService.trigger({ action: 'burst' });
+                    this.showCongrats = true;
+                },
+                error: (error) => {
+                    console.error('Error guardando la landing:', error);
+                }
+            });
+        };
+
+        const isFileLogo = !!logoFile && (logoFile instanceof File || logoFile instanceof Blob);
+        if (isFileLogo) {
+            this.imageService.uploadImage(logoFile as File, 'logo', this.email, form.businessName, form.slogan).subscribe({
+                next: (res: any) => {
+                    let logoUrl: string | undefined;
+                    try {
+                        if (res && typeof res === 'object') {
+                            logoUrl = res.logoUrl || res.url || (res.object && (res.object.logoUrl || res.object.url));
+                        } else if (typeof res === 'string') {
+                            if (/^https?:\/\//.test(res)) {
+                                logoUrl = res;
+                            } else {
+                                try {
+                                    const parsed = JSON.parse(res);
+                                    logoUrl = parsed.logoUrl || parsed.url;
+                                } catch (e) {
+                                    // not JSON
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+                    if (logoUrl) {
+                        tenantData.logoUrl = logoUrl;
+                    }
+                    persist();
+                },
+                error: (error) => {
+                    console.error('Error subiendo el logo:', error);
+                    persist();
+                }
+            });
+        } else {
+            persist();
+        }
     }
 
     goToMenuConfig() {

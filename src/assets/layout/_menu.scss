@@ -26,7 +26,14 @@
     box-shadow: 
       0 4px 20px rgba(0, 0, 0, 0.02),
       0 20px 40px rgba(0, 0, 0, 0.04);
-    padding: 1.25rem 1rem 0.5rem 1rem;
+    padding: 0.75rem 1rem 0.25rem 1rem;
+}
+
+.layout-sidebar > .layout-menu-wrapper {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
+    padding-right: 2px;
 }
 
 .layout-menu {
@@ -36,11 +43,11 @@
 
     .layout-root-menuitem {
         > .layout-menuitem-root-text {
-            font-size: 0.725rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
             font-weight: 800;
             color: var(--text-color-secondary);
-            margin: 1.5rem 0.75rem 0.75rem 0.75rem;
+            margin: 0.55rem 0.75rem 0.2rem 0.75rem;
             letter-spacing: 0.12em;
             display: flex;
             align-items: center;
@@ -98,16 +105,16 @@
             outline: 0 none;
             color: var(--text-color-secondary);
             cursor: pointer;
-            padding: 0.75rem 1rem;
-            margin: 0.2rem 0;
-            border-radius: 12px;
+            padding: 0.5rem 0.9rem;
+            margin: 0.08rem 0;
+            border-radius: 10px;
             font-weight: 500;
-            font-size: 0.9125rem;
+            font-size: 0.975rem;
             border-left: 3px solid transparent;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
             .layout-menuitem-icon {
-                margin-right: 0.75rem;
+                margin-right: 0.7rem;
                 font-size: 1.1rem;
                 color: var(--lealtix-slate-400);
                 transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);

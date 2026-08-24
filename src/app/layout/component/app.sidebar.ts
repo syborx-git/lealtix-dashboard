@@ -13,7 +13,7 @@ import { UserProfileComponent } from '@/shared/components/user-profile.component
         <div class="layout-menu-wrapper">
             <app-menu></app-menu>
         </div>
-        <div class="sidebar-footer" style="display: flex; flex-direction: column; gap: 14px; padding: 14px 0 0 0; border-top: 1.5px solid var(--lealtix-glass-border);">
+        <div class="sidebar-footer" style="display: flex; flex-direction: column; gap: 14px; padding: 14px 0 2rem 0; border-top: 1.5px solid var(--lealtix-glass-border);">
             <div class="sidebar-user-section w-full">
                 <app-user-profile></app-user-profile>
             </div>
