@@ -1439,3 +1439,175 @@
 }
 
 // ==================== DIALOG SSE ORDER DETAIL ====================
+
+::ng-deep {
+  :root[class*='app-dark'],
+  .app-dark {
+    .comandix-container {
+      background: var(--surface-ground);
+    }
+
+    @media (max-width: 768px) {
+      .comandix-container {
+        background: var(--surface-ground) !important;
+      }
+    }
+
+    .step-card {
+      background: rgba(255, 255, 255, 0.02);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .step-header {
+      border-bottom-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .p-autocomplete {
+      .p-autocomplete-input {
+        background: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.1);
+        color: #e6e8ef;
+      }
+
+      .p-autocomplete-item {
+        border-bottom-color: rgba(255, 255, 255, 0.08);
+      }
+    }
+
+    .product-card {
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .product-image,
+    .image-placeholder {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .image-placeholder i {
+      color: #3d4561;
+    }
+
+    .cart-card {
+      background: var(--surface-card);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .cart-header {
+      border-bottom-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .cart-item {
+      background: rgba(255, 255, 255, 0.03);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .empty-cart i {
+      color: #3d4561;
+    }
+
+    .coupon-section input {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.1);
+      color: #e6e8ef;
+    }
+
+    .cart-items::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .orders-dashboard-header {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(218, 159, 91, 0.08) 100%);
+      border-color: rgba(218, 159, 91, 0.2);
+    }
+
+    .orders-empty-state {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(218, 159, 91, 0.06) 100%);
+    }
+
+    .order-card {
+      background: rgba(255, 255, 255, 0.03);
+      border-color: rgba(218, 159, 91, 0.2);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .order-card-price {
+      color: #e6e8ef;
+    }
+
+    .order-card-total {
+      border-top-color: rgba(218, 159, 91, 0.2);
+    }
+
+    .order-detail-dialog {
+      .p-dialog-header {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(218, 159, 91, 0.08) 100%) !important;
+        border-bottom-color: rgba(218, 159, 91, 0.2);
+      }
+
+      .p-dialog-title {
+        color: #e6e8ef !important;
+      }
+
+      .p-dialog-content {
+        background: var(--surface-card) !important;
+      }
+
+      .p-dialog-footer {
+        background: rgba(255, 255, 255, 0.02) !important;
+        border-top-color: rgba(218, 159, 91, 0.15);
+      }
+    }
+
+    .cancel-order-dialog {
+      .p-dialog-header {
+        background: rgba(239, 68, 68, 0.12) !important;
+        border-bottom-color: rgba(239, 68, 68, 0.25);
+      }
+
+      .p-dialog-title {
+        color: #f87171 !important;
+      }
+
+      .p-dialog-content {
+        background: var(--surface-card) !important;
+
+        textarea {
+          background: rgba(255, 255, 255, 0.04) !important;
+          border-color: rgba(255, 255, 255, 0.12) !important;
+          color: #e6e8ef !important;
+        }
+
+        textarea:disabled {
+          background: rgba(255, 255, 255, 0.02) !important;
+        }
+      }
+
+      .p-dialog-footer {
+        background: rgba(239, 68, 68, 0.06) !important;
+      }
+    }
+
+    .order-detail-section-title {
+      color: #e6e8ef;
+    }
+
+    .order-detail-item {
+      background: rgba(255, 255, 255, 0.03);
+      border-color: rgba(218, 159, 91, 0.15);
+    }
+
+    .order-detail-item-name,
+    .order-detail-item-price {
+      color: #e6e8ef;
+    }
+
+    .order-detail-coupon-code {
+      color: #e6e8ef;
+    }
+
+    .order-detail-totals {
+      background: rgba(255, 255, 255, 0.03);
+      border-color: rgba(218, 159, 91, 0.2);
+    }
+  }
+}

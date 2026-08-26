@@ -44,7 +44,7 @@ export class CampaignPreviewDialogComponent {
   private messageService = inject(MessageService);
 
   readonly lealtixLogo = 'https://res.cloudinary.com/lealtix-media/image/upload/v1759897289/lealtix_logo_transp_qcp5h9.png';
-  readonly lealtixUrl = 'https://lealtix.com.mx/';
+  readonly lealtixUrl = 'https://full-accountability-big-rug.trycloudflare.com/';
 
   onClose(): void {
     this.visible = false;
@@ -79,7 +79,7 @@ export class CampaignPreviewDialogComponent {
   getLandingUrl(): string {
     if (!this.clientSlug) return this.lealtixUrl;
     const baseUrl = environment.production
-      ? 'https://lealtix.com.mx/landing-page'
+      ? 'https://full-accountability-big-rug.trycloudflare.com/landing-page'
       : 'http://localhost:4200/landing-page';
     return `${baseUrl}/${this.clientSlug}`;
   }

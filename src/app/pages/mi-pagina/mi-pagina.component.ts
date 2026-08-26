@@ -282,7 +282,7 @@ export class MiPaginaComponent implements OnInit {
     }
 
     // 3) Final fallback (shouldn't normally hit in browser environments).
-    return 'https://lealtix.com.mx/landing-page';
+    return 'https://full-accountability-big-rug.trycloudflare.com/landing-page';
   }
 
   /**

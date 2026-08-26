@@ -50,14 +50,17 @@ export class CampaignTemplatesListComponent implements OnInit {
   onImageError(event: Event) {
     const img = event?.target as HTMLImageElement | null;
     if (img) {
-      img.src = 'https://via.placeholder.com/600x300?text=Sin+imagen';
+      img.src = this.fallbackImage;
     }
   }
+
+  private readonly fallbackImage =
+    'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27600%27 height=%27300%27%3E%3Crect width=%27100%25%27 height=%27100%25%27 fill=%27%23f1f5f9%27/%3E%3Ctext x=%2750%25%27 y=%2750%25%27 fill=%27%2394a3b8%27 font-family=%27Inter,sans-serif%27 font-size=%2724%27 text-anchor=%27middle%27 dominant-baseline=%27middle%27%3ESin imagen%3C/text%3E%3C/svg%3E';
 
   // Optimize Cloudinary images by adding transformations
   getOptimizedImageUrl(url: string | undefined): string {
     if (!url) {
-      return 'https://via.placeholder.com/600x300?text=Sin+imagen';
+      return this.fallbackImage;
     }
 
     // If it's a Cloudinary URL, add transformation parameters

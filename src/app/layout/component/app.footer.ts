@@ -4,8 +4,7 @@ import { Component } from '@angular/core';
     standalone: true,
     selector: 'app-footer',
     template: `<div class="layout-footer">
-        Powered by
-        <a href="#" target="_blank" rel="noopener noreferrer" class="text-primary font-bold hover:underline">Lealtix</a>
+        Hecho por <a href="#" target="_blank" rel="noopener noreferrer" class="text-primary font-bold ml-1">Lealtix</a>
     </div>`
 })
 export class AppFooter {}

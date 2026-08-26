@@ -26,7 +26,7 @@ import { UserProfileComponent } from '@/shared/components/user-profile.component
 
         <div class="layout-topbar-actions">
             <div class="layout-config-menu">
-                <button type="button" class="layout-topbar-action" (click)="toggleDarkMode()">
+                <button type="button" class="layout-topbar-action theme-toggle" (click)="toggleDarkMode()">
                     <i [ngClass]="{ 'pi ': true, 'pi-moon': layoutService.isDarkTheme(), 'pi-sun': !layoutService.isDarkTheme() }"></i>
                 </button>
                 <app-configurator></app-configurator>

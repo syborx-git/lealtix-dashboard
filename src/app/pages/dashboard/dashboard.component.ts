@@ -13,6 +13,7 @@ import { DashboardService } from './dashboard.service';
 import { DashboardLoyaltyService } from './dashboard-loyalty.service';
 import { TenantService } from '@/pages/admin-page/service/tenant.service';
 import { AuthService } from '@/auth/auth.service';
+import { LayoutService } from '@/layout/service/layout.service';
 import {
   TimeSeriesCountDTO,
   CouponStatsDTO,
@@ -95,11 +96,13 @@ export class DashboardComponent implements OnInit {
     private dashboardService: DashboardService,
     private dashboardLoyaltyService: DashboardLoyaltyService,
     private tenantService: TenantService,
-    private authService: AuthService
+    private authService: AuthService,
+    private layoutService: LayoutService
   ) {}
 
   ngOnInit(): void {
     this.setupChartOptions();
+    this.layoutService.configUpdate$.subscribe(() => this.setupChartOptions());
     this.readTenantId();
   }
 
@@ -136,6 +139,11 @@ export class DashboardComponent implements OnInit {
   }
 
   private setupChartOptions(): void {
+    const dark = this.layoutService.isDarkTheme();
+    const gridColor = dark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.07)';
+    const tickColor = dark ? '#9aa3b5' : '#64748b';
+    const legendColor = dark ? '#cbd2e0' : '#334155';
+
     const baseOptions = {
       responsive: true,
       maintainAspectRatio: false,
@@ -150,11 +158,12 @@ export class DashboardComponent implements OnInit {
           labels: {
             usePointStyle: true,
             padding: 15,
-            font: { size: 12, weight: '500' }
+            font: { size: 12, weight: '500' },
+            color: legendColor
           }
         },
         tooltip: {
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          backgroundColor: dark ? 'rgba(20,20,28,0.95)' : 'rgba(15,23,42,0.9)',
           padding: 12,
           cornerRadius: 8,
           titleFont: { size: 13, weight: 'bold' },
@@ -169,12 +178,12 @@ export class DashboardComponent implements OnInit {
       scales: {
         y: {
           beginAtZero: true,
-          grid: { color: '#f1f5f9' },
-          ticks: { font: { size: 11 } }
+          grid: { color: gridColor },
+          ticks: { font: { size: 11 }, color: tickColor }
         },
         x: {
           grid: { display: false },
-          ticks: { font: { size: 11 } }
+          ticks: { font: { size: 11 }, color: tickColor }
         }
       },
       elements: {
@@ -188,12 +197,12 @@ export class DashboardComponent implements OnInit {
       scales: {
         y: {
           beginAtZero: true,
-          grid: { color: '#f1f5f9' },
-          ticks: { font: { size: 11 } }
+          grid: { color: gridColor },
+          ticks: { font: { size: 11 }, color: tickColor }
         },
         x: {
           grid: { display: false },
-          ticks: { font: { size: 11 } }
+          ticks: { font: { size: 11 }, color: tickColor }
         }
       },
       plugins: {
@@ -217,6 +226,7 @@ export class DashboardComponent implements OnInit {
             usePointStyle: true,
             padding: 15,
             font: { size: 11 },
+            color: legendColor,
             generateLabels: (chart: any) => {
               const data = chart.data;
               if (data.labels.length && data.datasets.length) {
@@ -235,7 +245,7 @@ export class DashboardComponent implements OnInit {
           }
         },
         tooltip: {
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          backgroundColor: dark ? 'rgba(20,20,28,0.95)' : 'rgba(15,23,42,0.9)',
           padding: 12,
           cornerRadius: 8,
           titleFont: { size: 13, weight: 'bold' },

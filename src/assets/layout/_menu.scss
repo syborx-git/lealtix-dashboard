@@ -1,22 +1,39 @@
 @use 'mixins' as *;
 
+@use 'mixins' as *;
+
 .layout-sidebar {
     position: fixed;
     width: 20rem;
-    height: calc(100vh - 8rem);
+    height: calc(100vh - 4.5rem); // Desde la topbar hasta abajo
     z-index: 999;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     user-select: none;
-    top: 6rem;
-    left: 2rem;
+    top: 4.5rem; // Justo debajo de la topbar
+    left: 0; // Pegado al borde izquierdo
+    border-radius: 0;
+    border-right: 1px solid var(--lealtix-glass-border);
     transition:
         transform var(--layout-section-transition-duration),
-        left var(--layout-section-transition-duration);
-    background-color: var(--surface-overlay);
-    border-radius: var(--content-border-radius);
-    padding: 0.5rem 1.5rem;
+        left var(--layout-section-transition-duration),
+        background-color 0.3s ease,
+        border-color 0.3s ease;
+    background-color: var(--lealtix-glass-bg);
+    backdrop-filter: var(--lealtix-glass-blur);
+    -webkit-backdrop-filter: var(--lealtix-glass-blur);
+    box-shadow: 
+      0 4px 20px rgba(0, 0, 0, 0.02),
+      0 20px 40px rgba(0, 0, 0, 0.04);
+    padding: 0.75rem 1rem 0.25rem 1rem;
+}
+
+.layout-sidebar > .layout-menu-wrapper {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
+    padding-right: 2px;
 }
 
 .layout-menu {
@@ -26,11 +43,24 @@
 
     .layout-root-menuitem {
         > .layout-menuitem-root-text {
-            font-size: 0.857rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
-            font-weight: 700;
-            color: var(--text-color);
-            margin: 0.75rem 0;
+            font-weight: 800;
+            color: var(--text-color-secondary);
+            margin: 0.55rem 0.75rem 0.2rem 0.75rem;
+            letter-spacing: 0.12em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            &::before {
+              content: '';
+              display: inline-block;
+              width: 5px;
+              height: 5px;
+              border-radius: 50%;
+              background-color: var(--lealtix-primary-400);
+            }
         }
 
         > a {
@@ -52,6 +82,7 @@
     .layout-menu-wrapper {
         flex: 1 1 auto;
         overflow-y: auto;
+        padding-right: 2px;
     }
 
     li.active-menuitem {
@@ -72,16 +103,21 @@
             align-items: center;
             position: relative;
             outline: 0 none;
-            color: var(--text-color);
+            color: var(--text-color-secondary);
             cursor: pointer;
-            padding: 0.75rem 1rem;
-            border-radius: var(--content-border-radius);
-            transition:
-                background-color var(--element-transition-duration),
-                box-shadow var(--element-transition-duration);
+            padding: 0.5rem 0.9rem;
+            margin: 0.08rem 0;
+            border-radius: 10px;
+            font-weight: 500;
+            font-size: 0.975rem;
+            border-left: 3px solid transparent;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
             .layout-menuitem-icon {
-                margin-right: 0.5rem;
+                margin-right: 0.7rem;
+                font-size: 1.1rem;
+                color: var(--lealtix-slate-400);
+                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             }
 
             .layout-submenu-toggler {
@@ -91,12 +127,25 @@
             }
 
             &.active-route {
-                font-weight: 700;
-                color: var(--primary-color);
+                font-weight: 600;
+                color: var(--lealtix-primary-700);
+                background-color: var(--lealtix-primary-50);
+                border-left-color: var(--lealtix-primary-500);
+
+                .layout-menuitem-icon {
+                    color: var(--lealtix-primary-600);
+                    transform: scale(1.05);
+                }
             }
 
-            &:hover {
+            &:hover:not(.active-route):not(.disabled-menuitem) {
                 background-color: var(--surface-hover);
+                color: var(--text-color);
+                transform: translateX(4px);
+
+                .layout-menuitem-icon {
+                    color: var(--lealtix-primary-400);
+                }
             }
 
             &:focus {
@@ -104,11 +153,12 @@
             }
 
             &.disabled-menuitem {
-                opacity: 0.5;
+                opacity: 0.4;
                 cursor: not-allowed;
 
                 &:hover {
                     background-color: transparent;
+                    transform: none;
                 }
             }
         }
@@ -156,6 +206,12 @@
     }
 }
 
+.menu-separator {
+    height: 1px;
+    background: linear-gradient(90deg, var(--lealtix-slate-200) 0%, transparent 100%);
+    margin: 1rem 0.75rem;
+}
+
 .layout-submenu-enter-from,
 .layout-submenu-leave-to {
     max-height: 0;
@@ -174,4 +230,54 @@
 .layout-submenu-enter-active {
     overflow: hidden;
     transition: max-height 1s ease-in-out;
+}
+
+// Dark mode overrides
+:root[class*='app-dark'] .layout-sidebar,
+.app-dark .layout-sidebar {
+  background-color: rgba(13, 13, 19, 0.78);
+  border-color: rgba(255,255,255,0.08);
+  box-shadow:
+    inset -1px 0 0 rgba(255,255,255,0.03),
+    0 0 60px rgba(99,102,241,0.04);
+
+  .layout-menu {
+    ul {
+      a {
+        color: #9aa3b5;
+
+        .layout-menuitem-icon {
+          color: #5d6472;
+        }
+
+        &.active-route {
+          color: #ffffff;
+          background: linear-gradient(90deg, rgba(99,102,241,0.22), rgba(99,102,241,0.06));
+          border-left-color: var(--lealtix-primary-500);
+          box-shadow: 0 0 20px rgba(99,102,241,0.12);
+
+          .layout-menuitem-icon {
+            color: var(--lealtix-primary-300);
+          }
+        }
+
+        &:hover:not(.active-route):not(.disabled-menuitem) {
+          background-color: rgba(255,255,255,0.05);
+          color: #e6e8ef;
+
+          .layout-menuitem-icon {
+            color: var(--lealtix-primary-400);
+          }
+        }
+      }
+    }
+
+    .layout-root-menuitem > .layout-menuitem-root-text {
+      color: #6b7280;
+    }
+  }
+
+  .menu-separator {
+    background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+  }
 }

@@ -627,3 +627,156 @@
     font-size: 1.25rem;
   }
 }
+
+:root[class*='app-dark'],
+.app-dark {
+  .page-title {
+    color: #e6e8ef !important;
+  }
+
+  .page-subtitle {
+    color: var(--text-color-secondary) !important;
+  }
+
+  ::ng-deep {
+    .input-card,
+    .loading-card,
+    .coupon-card {
+      background: var(--surface-card) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+
+      .p-card-header {
+        background: rgba(255, 255, 255, 0.03) !important;
+        border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+      }
+
+      .p-card-footer {
+        background: rgba(255, 255, 255, 0.03) !important;
+        border-top-color: rgba(255, 255, 255, 0.08) !important;
+      }
+    }
+
+    .card-header-simple h2,
+    .card-header-success h2,
+    .card-header-error h2 {
+      color: #e6e8ef !important;
+    }
+
+    .card-header-success .header-subtitle,
+    .card-header-error .header-subtitle {
+      color: var(--text-color-secondary) !important;
+    }
+  }
+
+  .input-label {
+    color: #cbd2e0 !important;
+  }
+
+  ::ng-deep .coupon-input::placeholder {
+    color: var(--text-color-secondary) !important;
+  }
+
+  .loading-text {
+    color: #cbd2e0 !important;
+  }
+
+  .loading-subtext {
+    color: var(--text-color-secondary) !important;
+  }
+
+  .status-label {
+    color: var(--text-color-secondary) !important;
+  }
+
+  .benefit-highlight {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+
+    &.success {
+      background: rgba(16, 185, 129, 0.08) !important;
+      border-color: rgba(16, 185, 129, 0.3) !important;
+    }
+
+    .benefit-label {
+      color: var(--text-color-secondary) !important;
+    }
+
+    .benefit-title {
+      color: #e6e8ef !important;
+    }
+  }
+
+  .info-item {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+
+    .info-label {
+      color: var(--text-color-secondary) !important;
+    }
+
+    .info-value {
+      color: #cbd2e0 !important;
+    }
+  }
+
+  .amount-section {
+    background: rgba(255, 255, 255, 0.03) !important;
+
+    .amount-header h3 {
+      color: #e6e8ef !important;
+    }
+
+    .amount-input-group .amount-label {
+      color: #cbd2e0 !important;
+    }
+
+    .amount-preview {
+      border-top-color: rgba(255, 255, 255, 0.08) !important;
+
+      .preview-label {
+        color: var(--text-color-secondary) !important;
+      }
+
+      .preview-value.total {
+        color: #e6e8ef !important;
+      }
+
+      .preview-row.final {
+        border-top-color: rgba(255, 255, 255, 0.08) !important;
+      }
+    }
+  }
+
+  ::ng-deep .amount-section .p-inputtext {
+    border-color: rgba(255, 255, 255, 0.15) !important;
+  }
+
+  .amount-summary {
+    .summary-row {
+      background: rgba(255, 255, 255, 0.03) !important;
+
+      .summary-label {
+        color: var(--text-color-secondary) !important;
+      }
+
+      .summary-value {
+        color: #cbd2e0 !important;
+      }
+
+      &.discount {
+        background: rgba(16, 185, 129, 0.08) !important;
+        border-color: rgba(16, 185, 129, 0.3) !important;
+      }
+
+      &.total {
+        background: rgba(16, 185, 129, 0.12) !important;
+        border-color: rgba(16, 185, 129, 0.4) !important;
+
+        .summary-label {
+          color: #e6e8ef !important;
+        }
+      }
+    }
+  }
+}

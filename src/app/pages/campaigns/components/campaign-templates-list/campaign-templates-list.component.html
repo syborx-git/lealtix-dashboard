@@ -1,13 +1,13 @@
 <div class="card">
   <!-- Banner persistente de bienvenida -->
   <div class="mb-4" *ngIf="showWelcomeBanner()">
-      <div class="border-round p-4 shadow-2" style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-left: 4px solid #F59E0B;">
+      <div class="welcome-banner">
           <div class="flex align-items-center justify-content-between flex-wrap gap-3">
               <div class="flex align-items-start gap-3 flex-1">
                   <span class="text-4xl" style="line-height: 1;">🚀</span>
                   <div>
-                      <div class="font-semibold text-xl mb-2" style="color: #92400E;">{{ bannerMessage().title }}</div>
-                      <div class="line-height-3" style="color: #78350F;">{{ bannerMessage().description }}</div>
+                      <div class="font-semibold text-xl mb-2 welcome-banner-title">{{ bannerMessage().title }}</div>
+                      <div class="line-height-3 welcome-banner-text">{{ bannerMessage().description }}</div>
                   </div>
               </div>
               <p-button

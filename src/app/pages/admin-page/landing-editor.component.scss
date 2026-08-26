@@ -440,3 +440,93 @@
   outline: 2px solid var(--lealtix-primary-500) !important;
   outline-offset: 2px !important;
 }
+
+:root[class*='app-dark'],
+.app-dark {
+  .kitchen-toggle-block {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(109, 107, 240, 0.08) 100%) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .kitchen-toggle-state {
+    color: var(--text-color-secondary) !important;
+  }
+
+  .kitchen-toggle-state.enabled {
+    color: #34d399 !important;
+  }
+
+  .logo-preview {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(109, 107, 240, 0.08) 100%) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .logo-preview__frame {
+    background: rgba(255, 255, 255, 0.03) !important;
+  }
+
+  .logo-preview ::ng-deep .p-button-danger.p-button-text {
+    color: #fca5a5 !important;
+    background-color: rgba(220, 38, 38, 0.12) !important;
+    border-color: rgba(252, 165, 165, 0.25) !important;
+
+    &:hover {
+      color: #fecaca !important;
+      background-color: rgba(220, 38, 38, 0.22) !important;
+      border-color: rgba(252, 165, 165, 0.4) !important;
+    }
+
+    &:active {
+      color: #fecaca !important;
+      background-color: rgba(220, 38, 38, 0.28) !important;
+    }
+  }
+
+  .preview-logo-container {
+    background: rgba(255, 255, 255, 0.03) !important;
+  }
+
+  .preview-field {
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .preview-label {
+    color: var(--text-color-secondary) !important;
+  }
+
+  .preview-value {
+    color: var(--text-color) !important;
+  }
+
+  .preview-text {
+    color: #cbd2e0 !important;
+  }
+
+  ::ng-deep .p-inputgroup-addon {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #9aa3b5 !important;
+  }
+
+  ::ng-deep .p-message.p-message-error {
+    background-color: rgba(239, 68, 68, 0.12) !important;
+    border-color: rgba(248, 113, 113, 0.35) !important;
+    color: #fca5a5 !important;
+  }
+
+  ::ng-deep .p-stepper {
+    &.p-stepper-vertical {
+      .p-step-header:hover {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+      }
+
+      .p-step.p-step-active .p-step-header {
+        background: linear-gradient(135deg, rgba(109, 107, 240, 0.16) 0%, rgba(109, 107, 240, 0.07) 100%) !important;
+      }
+    }
+  }
+
+  .bg-white {
+    background-color: var(--surface-card) !important;
+  }
+}
