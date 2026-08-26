@@ -24,6 +24,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Instalar dependencias del proyecto
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 RUN npm ci --legacy-peer-deps || npm install
 
 # Copiar todo el código fuente de la aplicación

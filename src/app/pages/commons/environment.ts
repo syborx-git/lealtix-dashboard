@@ -7,10 +7,10 @@
 // ==============================================================================
 
 export const environment = {
-  production: false,
-  /** URL Base del Backend (Spring Boot / API Service) */
-  apiUrl: 'https://chip-elegant-obtain-kids.trycloudflare.com/api',
-  landingPageBaseUrl: 'https://full-accountability-big-rug.trycloudflare.com/landing-page',
+  production: true,
+  /** URL Base del Backend en Hetzner (Puerto 8082) */
+  apiUrl: 'http://5.161.82.24:8082/api',
+  landingPageBaseUrl: 'http://5.161.82.24:3000/landing-page',
   kitchenMockEnabled: false
 };
 
