@@ -615,3 +615,90 @@
   gap: 0.75rem;
   padding: 1rem 0 0 0;
 }
+
+::ng-deep {
+  :root[class*='app-dark'],
+  .app-dark {
+    .waiter-dashboard {
+      background: var(--surface-ground);
+    }
+
+    .kpi-card-wrapper {
+      .p-card {
+        background-color: var(--surface-card);
+        border-color: rgba(255, 255, 255, 0.08);
+      }
+    }
+
+    .kpi-card {
+      &.card-indigo {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(79, 70, 229, 0.08) 100%);
+        border-color: rgba(99, 102, 241, 0.3);
+      }
+
+      &.card-green {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(22, 163, 74, 0.08) 100%);
+        border-color: rgba(34, 197, 94, 0.3);
+      }
+
+      &.card-blue {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.08) 100%);
+        border-color: rgba(59, 130, 246, 0.3);
+      }
+
+      &.card-orange {
+        background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(234, 88, 12, 0.08) 100%);
+        border-color: rgba(249, 115, 22, 0.3);
+      }
+    }
+
+    .cross-sell-product {
+      background: var(--surface-card);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .product-image-wrapper,
+    .product-image-placeholder {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .product-price {
+      color: #8b8ffa;
+    }
+
+    .ltv-badge {
+      color: #8b8ffa;
+    }
+
+    .visit-badge {
+      color: #fb923c;
+    }
+
+    .p-datatable {
+      &.p-datatable-striped {
+        tbody > tr:nth-child(odd) {
+          background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        tbody > tr:nth-child(even) {
+          background-color: rgba(255, 255, 255, 0.04);
+        }
+      }
+
+      th {
+        background: rgba(255, 255, 255, 0.03);
+        color: #cbd2e0;
+        border-color: rgba(255, 255, 255, 0.08);
+      }
+
+      td {
+        border-color: rgba(255, 255, 255, 0.05);
+      }
+
+      .p-paginator {
+        background: rgba(255, 255, 255, 0.02);
+        border-color: rgba(255, 255, 255, 0.08);
+      }
+    }
+  }
+}

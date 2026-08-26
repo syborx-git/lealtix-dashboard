@@ -13,11 +13,11 @@ import { UserProfileComponent } from '@/shared/components/user-profile.component
         <div class="layout-menu-wrapper">
             <app-menu></app-menu>
         </div>
-        <div class="sidebar-footer" style="display: flex; flex-direction: column; height: auto; justify-content: space-between; gap: 16px; padding: 16px; border-top: 1px solid var(--surface-border);">
-            <div class="sidebar-user-section">
+        <div class="sidebar-footer" style="display: flex; flex-direction: column; gap: 14px; padding: 14px 0 2rem 0; border-top: 1.5px solid var(--lealtix-glass-border);">
+            <div class="sidebar-user-section w-full">
                 <app-user-profile></app-user-profile>
             </div>
-            <button pButton type="button" icon="pi pi-power-off" class="p-button-text logout-button" (click)="logout()" style="width: 100%; margin-top: auto;">Cerrar Sesión</button>
+            <button pButton type="button" icon="pi pi-power-off" class="p-button-text p-button-danger logout-button" (click)="logout()" style="width: 100%; border-radius: 10px; font-weight: 600; justify-content: center; height: 32px; font-size: 0.8125rem;">Cerrar Sesión</button>
         </div>
     </div>`
 })

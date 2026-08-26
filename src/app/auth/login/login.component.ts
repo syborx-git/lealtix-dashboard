@@ -31,6 +31,7 @@ import { finalize } from 'rxjs/operators';
     ],
     providers: [MessageService],
     templateUrl: './login.component.html',
+    styleUrls: ['./login.component.scss']
 })
 export class LoginComponent {
     private authService = inject(AuthService);

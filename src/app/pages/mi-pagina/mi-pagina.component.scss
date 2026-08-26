@@ -621,3 +621,108 @@
     }
   }
 }
+
+:root[class*='app-dark'],
+.app-dark {
+  :host ::ng-deep {
+    .header-title {
+      color: #e6e8ef !important;
+    }
+
+    .header-subtitle {
+      color: var(--text-color-secondary) !important;
+    }
+
+    .p-card {
+      background: var(--surface-card) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .status-title {
+      color: #e6e8ef !important;
+    }
+
+    .status-description {
+      color: var(--text-color-secondary) !important;
+    }
+
+    .field-label {
+      color: #cbd2e0 !important;
+    }
+
+    .p-inputgroup-addon {
+      background: rgba(255, 255, 255, 0.03) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+
+      i {
+        color: var(--text-color-secondary) !important;
+      }
+    }
+
+    .url-label {
+      background: rgba(255, 255, 255, 0.03) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+      color: #cbd2e0 !important;
+    }
+
+    .field-hint {
+      color: var(--text-color-secondary) !important;
+    }
+
+    .qr-display-area {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.06) 100%) !important;
+    }
+
+    .qr-container {
+      background: var(--surface-card) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .qr-label {
+      color: #cbd2e0 !important;
+    }
+
+    .p-divider {
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .tips-title {
+      color: #e6e8ef !important;
+    }
+
+    .tip-item {
+      background: rgba(255, 255, 255, 0.03) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .tip-title {
+      color: #e6e8ef !important;
+    }
+
+    .tip-content small {
+      color: var(--text-color-secondary) !important;
+    }
+
+    .menu-description {
+      color: var(--text-color-secondary) !important;
+    }
+
+    .menu-hint {
+      color: var(--text-color-secondary) !important;
+    }
+
+    .warning-card {
+      background: rgba(245, 158, 11, 0.1) !important;
+      border-color: rgba(245, 158, 11, 0.25) !important;
+      border-left-color: #f59e0b !important;
+    }
+
+    .warning-title {
+      color: #fbbf24 !important;
+    }
+
+    .warning-text {
+      color: #fde68a !important;
+    }
+  }
+}

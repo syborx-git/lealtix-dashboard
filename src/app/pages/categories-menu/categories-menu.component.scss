@@ -287,3 +287,83 @@
     transform: scale(1) rotate(0deg);
   }
 }
+
+/* === DARK MODE OVERRIDES === */
+::ng-deep {
+  :root[class*='app-dark'], .app-dark {
+    .p-datatable .p-datatable-thead > tr > th {
+      background: rgba(255,255,255,0.03) !important;
+      color: #a8b0c0 !important;
+      border-color: rgba(255,255,255,0.08) !important;
+    }
+
+    .p-datatable .p-datatable-tbody > tr:hover {
+      background: rgba(99,102,241,0.08) !important;
+    }
+
+    .p-datatable .p-datatable-tbody > tr > td {
+      border-color: rgba(255,255,255,0.05) !important;
+    }
+
+    .p-dialog .p-dialog-content {
+      background: #14141c !important;
+    }
+
+    .p-dialog h2 {
+      color: #ffffff !important;
+    }
+
+    .p-dialog p, .p-dialog div {
+      color: #cbd2e0 !important;
+    }
+
+    .global-loading-spinner {
+      background: rgba(20,20,28,0.95) !important;
+    }
+
+    .category-title {
+      color: #ffffff !important;
+    }
+
+    .category-description {
+      color: #cbd2e0 !important;
+    }
+
+    .p-button-danger.p-button-outlined {
+      color: #f87171 !important;
+      border-color: rgba(248,113,113,0.3) !important;
+
+      &:hover {
+        background: rgba(248,113,113,0.12) !important;
+        border-color: rgba(248,113,113,0.3) !important;
+        color: #f87171 !important;
+      }
+    }
+
+    .pi-bars {
+      color: #9aa3b5 !important;
+    }
+
+    .p-paginator {
+      background: rgba(255,255,255,0.02) !important;
+      border-top-color: rgba(255,255,255,0.08) !important;
+
+      .p-paginator-page {
+        color: #b6bdcc !important;
+
+        &:hover:not(.p-disabled) {
+          background: rgba(255,255,255,0.08) !important;
+        }
+      }
+
+      .p-paginator-element {
+        color: #b6bdcc !important;
+      }
+    }
+
+    .p-datatable .p-datatable-emptymessage .pi,
+    .p-datatable-emptymessage .pi {
+      color: #3d4561 !important;
+    }
+  }
+}

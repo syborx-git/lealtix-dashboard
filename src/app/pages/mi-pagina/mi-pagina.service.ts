@@ -83,7 +83,7 @@ export class MiPaginaService {
    */
   private getBaseUrl(): string {
     const baseUrl = environment.production
-      ? 'https://lealtix.com.mx/landing-page'
+      ? 'https://full-accountability-big-rug.trycloudflare.com/landing-page'
       : 'http://localhost:4200/landing-page';
     return baseUrl;
   }
