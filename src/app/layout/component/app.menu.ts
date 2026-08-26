@@ -49,11 +49,14 @@ export class AppMenu implements OnInit {
     }
 
     private buildMenu() {
+        // Un solo Dashboard: si el usuario es admin (view_dashboard) va a KPIs,
+        // si es mesero (solo dashboard_mesero) va a su dashboard de mesero.
+        const dashboardRoute = this.userPermissions.includes('view_dashboard')
+            ? '/dashboard/kpis'
+            : '/dashboard/mesero';
+
         const allMenuItems: MenuItem[] = [
-            // Waiter Dashboard - specific for mesero role
-            { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/dashboard/mesero'], requiredPermissions: ['dashboard_mesero'] },
-            // Admin/Default Dashboard
-            { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/dashboard/kpis'], requiredPermissions: ['view_dashboard'] },
+            { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: [dashboardRoute], requiredPermissions: ['view_dashboard', 'dashboard_mesero'] },
             { label: 'Admin Page', icon: 'pi pi-fw pi-globe', routerLink: ['/dashboard/adminPage'], requiredPermissions: ['manage_admin_page'] },
             { label: 'Categorías', icon: 'pi pi-fw pi-tags', routerLink: ['/dashboard/categoriesMenu'], requiredPermissions: ['manage_categories'] },
             {

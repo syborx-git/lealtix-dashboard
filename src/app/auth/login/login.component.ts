@@ -68,10 +68,19 @@ export class LoginComponent {
         }
 
         this.loading = true;
+        const startedAt = Date.now();
+        const minLoadingMs = 2500;
 
         // Enviar password en claro
         this.authService.loginAndStore({ email, password })
-            .pipe(finalize(() => (this.loading = false)))
+            .pipe(
+                finalize(() => {
+                    // Garantizar que el loader se vea al menos 2.5s
+                    const elapsed = Date.now() - startedAt;
+                    const remaining = Math.max(0, minLoadingMs - elapsed);
+                    setTimeout(() => (this.loading = false), remaining);
+                })
+            )
             .subscribe({
                 next: (res: any) => {
                     if (!res) {
