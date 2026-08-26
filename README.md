@@ -132,4 +132,97 @@ Una vez levantado, ingresa desde tu navegador a: **`http://localhost:4201`**
 * **[`docker-compose.yml`](file:///c:/Users/kike2/OneDrive/Escritorio/Lealtix/workspace/FE/lealtix-dashboard/docker-compose.yml):** Orquestación simple de contenedores con reinicio automático.
 * **[`.dockerignore`](file:///c:/Users/kike2/OneDrive/Escritorio/Lealtix/workspace/FE/lealtix-dashboard/.dockerignore):** Exclusión de `node_modules` y `.git` para builds súper rápidos.
 
+---
+
+## 🎯 Datos de Demo / Pruebas
+
+El script de seed [`demo_seed.sql`](../lealtix-BE/src/main/resources/db/demo_seed.sql) carga un entorno de pruebas completo en la base de datos Neon.
+
+### 🏪 Negocio de Demo
+
+| Campo       | Valor                                           |
+|-------------|-------------------------------------------------|
+| Nombre      | La Taquería Demo                                |
+| Tipo        | Restaurante                                     |
+| Slug        | `la-taqueria-demo`                              |
+| Dirección   | Av. Insurgentes Sur 1234, Col. Del Valle, CDMX  |
+| Teléfono    | +52 55 9876 5432                                |
+
+---
+
+### 🔑 Credenciales de Acceso
+
+> **Contraseña de todos los usuarios:** `Demo2025!`
+
+| Rol           | Email                        | Panel en Dashboard            |
+|---------------|------------------------------|-------------------------------|
+| **ADMIN**     | `admin@lealtix-demo.com`     | Dashboard completo (propietario) |
+| **ADMIN**     | `admin.demo@taqueria.com`    | Dashboard completo (interno)  |
+| **MESERO**    | `carlos@taqueria.com`        | Vista comanda                 |
+| **COCINA**    | `ana.cocina@taqueria.com`    | Vista cocina                  |
+| **CAJA**      | `luis.caja@taqueria.com`     | Vista caja                    |
+| **MARKETING** | `sofia.mkt@taqueria.com`     | Vista campañas y analytics    |
+
+---
+
+### 👥 Clientes de Demo (10 registros)
+
+| Nombre          | Email                     | Género | Cumpleaños  |
+|-----------------|---------------------------|--------|-------------|
+| Maria Gonzalez  | `maria.g@gmail.com`       | F      | 10 Mar 1992 |
+| Juan Perez      | `juan.p@hotmail.com`      | M      | 22 Jul 1985 |
+| Laura Martinez  | `laura.m@gmail.com`       | F      | 30 Nov 1998 |
+| Roberto Silva   | `roberto.s@yahoo.com`     | M      | 15 Ene 1979 |
+| Carmen Lopez    | `carmen.l@gmail.com`      | F      | 05 Jun 2000 |
+| Diego Ramirez   | `diego.r@outlook.com`     | M      | 18 Sep 1995 |
+| Valentina Cruz  | `vale.c@gmail.com`        | F      | 25 Dic 1990 |
+| Arturo Mendoza  | `arturo.m@hotmail.com`    | M      | 02 Abr 1988 |
+| Isabela Torres  | `isabela.t@gmail.com`     | F      | 14 Ago 1997 |
+| Marcos Herrera  | `marcos.h@yahoo.com`      | M      | 28 Feb 1983 |
+
+---
+
+### 📣 Campaña Activa de Demo
+
+| Campo         | Valor                                    |
+|---------------|------------------------------------------|
+| Título        | Tacolandia de Verano 2025                |
+| Estado        | `ACTIVE`                                 |
+| Tipo de Promo | `DISCOUNT` — 20% de descuento            |
+| Reward        | 20% off, compra mínima $150              |
+| Vigencia      | Últimos 5 días → próximos 25 días        |
+| Métricas demo | 145 views · 52 clicks · 8 redenciones    |
+
+#### 🎟️ Cupones de Demo
+
+| Código           | Cliente        | Estado     | Nota                          |
+|------------------|----------------|------------|-------------------------------|
+| `DEMO-SUMMER-01` | Maria Gonzalez | `ACTIVE`   | Disponible para canjear       |
+| `DEMO-SUMMER-02` | Juan Perez     | `REDEEMED` | Canjeado por Carlos (Mesero)  |
+
+---
+
+### 🗄️ Menú Cargado
+
+| Categoría  | Productos                                                            |
+|------------|----------------------------------------------------------------------|
+| Tacos      | Taco de Pastor $35 · Taco de Suadero $38 · Taco de Canasta $25      |
+| Bebidas    | Agua de Jamaica $25 · Refresco $22 · Michelada $65                   |
+| Antojitos  | Quesadilla de Hongos $55 · Sope de Chorizo $45                       |
+| Postres    | Nieve de Limon $30 · Churros con Chocolate $40                       |
+
+---
+
+### ▶️ Cómo cargar los datos de demo
+
+```bash
+# Opción A: SQL Editor de Neon
+# Pegar el contenido de lealtix-BE/src/main/resources/db/demo_seed.sql
+
+# Opción B: psql desde Hetzner
+psql "postgresql://neondb_owner:TU_PASSWORD@tu-host.neon.tech/neondb?sslmode=require" \
+  -f /var/www/lealtix/lealtix-BE/src/main/resources/db/demo_seed.sql
+```
+
+Para limpiar los datos al terminar la demo, ejecutar la sección `LIMPIEZA` comentada al final del script SQL.
 
