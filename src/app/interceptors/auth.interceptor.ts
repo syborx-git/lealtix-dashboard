@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Injector } from '@angular/core';
 import {
 	HttpInterceptor,
 	HttpRequest,
@@ -16,11 +16,21 @@ import { Router } from '@angular/router';
  */
 @Injectable({ providedIn: 'root' })
 export class AuthInterceptor implements HttpInterceptor {
-	constructor(private authService: AuthService, private router: Router) {}
+	private authService?: AuthService;
+
+	constructor(private injector: Injector, private router: Router) {}
+
+	private getAuthService(): AuthService {
+		if (!this.authService) {
+			this.authService = this.injector.get(AuthService);
+		}
+		return this.authService;
+	}
 
 	intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-		const token = this.authService.getToken();
-		const tenantId = this.authService.getTenantId();
+		const authService = this.getAuthService();
+		const token = authService.getToken() || localStorage.getItem('accessToken');
+		const tenantId = authService.getTenantId();
 
 		// Clonar la request y agregar headers
 		let authReq = req;
@@ -53,7 +63,7 @@ export class AuthInterceptor implements HttpInterceptor {
 				// Manejar 401 Unauthorized - Token expirado o inválido
 				if (error.status === 401) {
 					console.warn('[AuthInterceptor] Token inválido o expirado, redirigiendo a login');
-					this.authService.logout();
+					this.getAuthService().logout();
 					this.router.navigate(['/dashboard/auth/login']);
 				}
 
