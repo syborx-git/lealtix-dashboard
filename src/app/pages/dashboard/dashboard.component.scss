@@ -40,8 +40,9 @@
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.25rem;
+  width: 100%;
 }
 
 .kpi-card {
@@ -57,11 +58,16 @@
   &:has(.slate) { border-top: 4px solid #64748B !important; }
 
   ::ng-deep .p-card-body {
-    padding: 1.25rem 1.5rem;
+    padding: 1.5rem 1.75rem;
+    display: flex;
+    align-items: center;
+    height: 100%;
   }
 
   ::ng-deep .p-card-content {
     padding: 0;
+    flex: 1;
+    width: 100%;
   }
 
   &:hover {
@@ -78,13 +84,16 @@
 .kpi-content {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1.25rem;
+  flex: 1;
+  width: 100%;
 }
 
 .kpi-icon-wrapper {
-  width: 3.25rem;
-  height: 3.25rem;
-  border-radius: 14px;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -92,7 +101,7 @@
   transition: transform 0.3s ease;
 
   i {
-    font-size: 1.4rem;
+    font-size: 1.7rem;
     color: white;
   }
 
@@ -136,7 +145,7 @@
 }
 
 .kpi-label {
-  font-size: 0.725rem;
+  font-size: 0.8rem;
   color: var(--text-color-secondary);
   font-weight: 700;
   text-transform: uppercase;
@@ -144,7 +153,7 @@
 }
 
 .kpi-value {
-  font-size: 1.75rem;
+  font-size: 2.25rem;
   font-weight: 800;
   color: var(--text-color);
   line-height: 1.1;
@@ -598,20 +607,26 @@
   }
 
   .kpi-grid {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .kpi-card {
+    ::ng-deep .p-card-body {
+      padding: 1.25rem 1.25rem;
+    }
   }
 
   .kpi-icon-wrapper {
-    width: 2.75rem;
-    height: 2.75rem;
+    width: 3.25rem;
+    height: 3.25rem;
 
     i {
-      font-size: 1.15rem;
+      font-size: 1.3rem;
     }
   }
 
   .kpi-value {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
   }
 
   .insights-grid {

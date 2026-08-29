@@ -65,8 +65,12 @@ export class InventoryService {
     return this.http.get<any>(`${this.baseUrl}/dish/${dishId}/additionals`);
   }
 
-  addAdditional(dishId: number, insumoId: number, cantidad: number): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/dish/${dishId}/additionals`, { insumoId, cantidad });
+  addAdditional(dishId: number, insumoId: number, cantidad: number, precio: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/dish/${dishId}/additionals`, { insumoId, cantidad, precio });
+  }
+
+  updateAdditional(additionalId: number, cantidad: number, precio: number): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/additionals/${additionalId}`, { cantidad, precio });
   }
 
   removeAdditional(additionalId: number): Observable<any> {

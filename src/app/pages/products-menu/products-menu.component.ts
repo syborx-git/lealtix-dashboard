@@ -24,6 +24,7 @@ import { TagModule } from 'primeng/tag';
 import { InputIconModule } from 'primeng/inputicon';
 import { IconFieldModule } from 'primeng/iconfield';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { TooltipModule } from 'primeng/tooltip';
 import { Product } from '../model/product.component';
 import { ProductService } from './service/product.service';
 import { CrossSellingService, CrossSellingConfig, CrossSellingDraft } from './service/cross-selling.service';
@@ -79,6 +80,7 @@ interface ExportColumn {
         IconFieldModule,
         FileUploadModule,
         ConfirmDialogModule,
+        TooltipModule,
         ProductDialogComponent,
         ConfettiComponent
     ],
@@ -127,6 +129,15 @@ export class ProductMenuComponent implements OnInit {
 
     products = signal<Product[]>([]);
 
+    // Pestaña activa de la tabla unificada: 'products' | 'insumos'
+    activeTab = signal<'products' | 'insumos'>('products');
+
+    setActiveTab(tab: 'products' | 'insumos') {
+        this.activeTab.set(tab);
+        this.tableFirst = 0;
+        this.dt?.reset();
+    }
+
     crossSellingItems: CrossSellingConfig[] = [];
     crossSellingCatalog: CatalogCategory[] = [];
     crossSellingCatalogOptions: TreeNode[] = [];
@@ -134,10 +145,45 @@ export class ProductMenuComponent implements OnInit {
     crossSellingSaving: boolean = false;
     crossSellingMax: number = 3;
 
-    insumosCatalog: any[] = [];
+    insumos = signal<any[]>([]);
+    insumosLoading = signal<boolean>(false);
     productRecipeLines: any[] = [];
     recipeLoading: boolean = false;
-    lastCreatedInsumoId: number | null = null;
+    unidades = ['pieza', 'gramos', 'mililitros'];
+    tipoIngredienteOptions = [
+        { label: 'Base (siempre en la receta)', value: 'BASE' },
+        { label: 'Modificable (puede retirarse)', value: 'MODIFICABLE' },
+        { label: 'Adicional (costo extra)', value: 'ADICIONAL' }
+    ];
+
+    // Stock por producto (inventario) para mostrarlo en la tabla de productos
+    inventoryItems = signal<any[]>([]);
+
+    // Diálogo "Ver receta" (asignar insumos por platillo: base/modificable/adicional)
+    recipeVisible = false;
+    recipeItem: any | null = null;
+    recipeIngredients = signal<any[]>([]);
+    loadingRecipes = signal<boolean>(false);
+    recipeInsumoId: number | null = null;
+    recipeCantidad = 0;
+    recipeTipoIngrediente = 'BASE';
+    recipePrecio = 0;
+    recipeAddLoading = signal<boolean>(false);
+    editingRecipe: any | null = null;
+    editRecipeCantidad = 0;
+    editRecipeModificable = false;
+    editRecipePrecio = 0;
+
+    // Diálogo de insumo (crear/editar/restock)
+    insumoDialogVisible = false;
+    editingInsumo: any | null = null;
+    insumoNombre = '';
+    insumoUnidad = 'pieza';
+    insumoStock = 0;
+    insumoMin = 0;
+    insumoRestockVisible = false;
+    insumoRestockTarget: any | null = null;
+    insumoRestockCantidad = 0;
 
     newCategory: { name?: string; description?: string; tenantId?: string; active: boolean } = {
         name: '',
@@ -205,7 +251,8 @@ export class ProductMenuComponent implements OnInit {
                     this.loadCategories();
                     this.loadProducts();
                     this.loadCrossSellingCatalog();
-                    this.loadInsumosCatalog();
+                    this.loadInsumos();
+                    this.loadInventory();
                     this.checkBannerConditions();
                     this.checkCampaignSetupPrompt();
 
@@ -289,17 +336,283 @@ export class ProductMenuComponent implements OnInit {
         });
     }
 
-    private loadInsumosCatalog(): void {
+    private loadInsumos(): void {
         if (!this.tenantId) return;
+        this.insumosLoading.set(true);
         this.inventoryService.getInsumos(this.tenantId).subscribe({
             next: (res) => {
-                this.insumosCatalog = res?.object || [];
+                this.insumos.set(res?.object || []);
+                this.insumosLoading.set(false);
             },
             error: (err) => {
-                console.error('Error loading insumos catalog', err);
-                this.insumosCatalog = [];
+                console.error('Error loading insumos', err);
+                this.insumos.set([]);
+                this.insumosLoading.set(false);
             }
         });
+    }
+
+    private loadInventory(): void {
+        if (!this.tenantId) return;
+        this.inventoryService.getByTenant(this.tenantId).subscribe({
+            next: (res) => {
+                this.inventoryItems.set(res?.object || []);
+            },
+            error: (err) => {
+                console.error('Error loading inventory', err);
+                this.inventoryItems.set([]);
+            }
+        });
+    }
+
+    /** Stock actual de un producto (según inventario del backend) */
+    stockOf(product: any): number {
+        const id = this.normalizeProductId(product?.id);
+        if (id == null) return 0;
+        const item = this.inventoryItems().find((i: any) => Number(i.id) === id);
+        return item?.stock ?? 0;
+    }
+
+    stockBadgeClass(product: any): string {
+        const id = this.normalizeProductId(product?.id);
+        const item = id == null ? null : this.inventoryItems().find((i: any) => Number(i.id) === id);
+        if (!item) return 'p-tag-secondary';
+        if (item.stock <= 0) return 'p-tag-danger';
+        if (item.lowStock) return 'p-tag-warning';
+        return 'p-tag-success';
+    }
+
+    stockBadgeLabel(product: any): string {
+        const id = this.normalizeProductId(product?.id);
+        const item = id == null ? null : this.inventoryItems().find((i: any) => Number(i.id) === id);
+        if (!item || item.stock == null) return '—';
+        return `${item.stock} ${item.unidad ?? ''}`.trim();
+    }
+
+    /* ============ Receta (Ver receta) ============ */
+
+    openRecipe(product: any) {
+        const id = this.normalizeProductId(product?.id);
+        if (id == null) return;
+        this.recipeItem = product;
+        this.recipeIngredients.set([]);
+        this.recipeInsumoId = null;
+        this.recipeCantidad = 0;
+        this.recipeTipoIngrediente = 'BASE';
+        this.recipePrecio = 0;
+        this.recipeVisible = true;
+        this.loadRecipeLines(id);
+    }
+
+    private loadRecipeLines(dishId: number): void {
+        this.loadingRecipes.set(true);
+        const lines: any[] = [];
+        this.inventoryService.getRecipes(dishId).subscribe({
+            next: (res) => {
+                const recipes = (res?.object || []).map((r: any) => ({
+                    ...r,
+                    kind: 'RECIPE',
+                    tipoIngrediente: r.modificable ? 'MODIFICABLE' : 'BASE'
+                }));
+                lines.push(...recipes);
+                this.inventoryService.getAdditionals(dishId).subscribe({
+                    next: (res2) => {
+                        const additionals = (res2?.object || []).map((a: any) => ({
+                            ...a,
+                            kind: 'ADDITIONAL',
+                            tipoIngrediente: 'ADICIONAL'
+                        }));
+                        lines.push(...additionals);
+                        this.recipeIngredients.set(lines);
+                        this.loadingRecipes.set(false);
+                    },
+                    error: () => {
+                        this.recipeIngredients.set(lines);
+                        this.loadingRecipes.set(false);
+                    }
+                });
+            },
+            error: () => {
+                this.recipeIngredients.set(lines);
+                this.loadingRecipes.set(false);
+            }
+        });
+    }
+
+    addRecipeIngredient() {
+        const dishId = this.normalizeProductId(this.recipeItem?.id);
+        if (!dishId || !this.recipeInsumoId || this.recipeCantidad <= 0) return;
+        this.recipeAddLoading.set(true);
+        const finish = () => {
+            this.recipeInsumoId = null;
+            this.recipeCantidad = 0;
+            this.recipePrecio = 0;
+            this.recipeTipoIngrediente = 'BASE';
+            this.loadRecipeLines(dishId);
+            this.loadInventory();
+            this.messageService.add({ severity: 'success', summary: 'Insumo agregado', detail: 'Se actualizó la receta del platillo', life: 3000 });
+        };
+        if (this.recipeTipoIngrediente === 'ADICIONAL') {
+            this.inventoryService.addAdditional(dishId, this.recipeInsumoId, this.recipeCantidad, this.recipePrecio || 0).subscribe({
+                next: () => {
+                    finish();
+                    this.recipeAddLoading.set(false);
+                },
+                error: (err) => {
+                    this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo agregar el adicional', life: 3000 });
+                    this.recipeAddLoading.set(false);
+                }
+            });
+        } else {
+            this.inventoryService.addRecipeIngredient(dishId, this.recipeInsumoId, this.recipeCantidad, this.recipeTipoIngrediente === 'MODIFICABLE').subscribe({
+                next: () => {
+                    finish();
+                    this.recipeAddLoading.set(false);
+                },
+                error: (err) => {
+                    this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo agregar el insumo', life: 3000 });
+                    this.recipeAddLoading.set(false);
+                }
+            });
+        }
+    }
+
+    removeRecipeIngredient(ing: any) {
+        const label = ing.kind === 'ADDITIONAL' ? 'adicional' : 'ingrediente';
+        this.confirmationService.confirm({
+            message: `¿Quitar "${ing.insumoName}" (${label}) de la receta?`,
+            header: 'Confirmar',
+            icon: 'pi pi-exclamation-triangle',
+            accept: () => {
+                const dishId = this.normalizeProductId(this.recipeItem?.id);
+                const action = ing.kind === 'ADDITIONAL'
+                    ? this.inventoryService.removeAdditional(ing.id)
+                    : this.inventoryService.removeRecipeIngredient(ing.id);
+                action.subscribe({
+                    next: () => {
+                        if (dishId) this.loadRecipeLines(dishId);
+                        this.loadInventory();
+                    },
+                    error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: `No se pudo quitar el ${label}`, life: 3000 })
+                });
+            }
+        });
+    }
+
+    startEditIngredient(ing: any) {
+        this.editingRecipe = ing;
+        this.editRecipeCantidad = ing.cantidad;
+        this.editRecipeModificable = !!ing.modificable;
+        this.editRecipePrecio = Number(ing.precio ?? 0);
+    }
+
+    cancelEditIngredient() {
+        this.editingRecipe = null;
+    }
+
+    saveEditIngredient() {
+        if (!this.editingRecipe || this.editRecipeCantidad <= 0) return;
+        const dishId = this.normalizeProductId(this.recipeItem?.id);
+        const ing = this.editingRecipe;
+        const action = ing.kind === 'ADDITIONAL'
+            ? this.inventoryService.updateAdditional(ing.id, this.editRecipeCantidad, this.editRecipePrecio)
+            : this.inventoryService.updateRecipeIngredient(ing.id, this.editRecipeCantidad, this.editRecipeModificable);
+        action.subscribe({
+            next: () => {
+                this.editingRecipe = null;
+                if (dishId) this.loadRecipeLines(dishId);
+                this.loadInventory();
+                this.messageService.add({ severity: 'success', summary: 'Actualizado', detail: 'Insumo de la receta actualizado', life: 3000 });
+            },
+            error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar', life: 3000 })
+        });
+    }
+
+    /* ============ Insumos (crear/editar/almacenar) ============ */
+
+    openNewInsumo() {
+        this.editingInsumo = null;
+        this.insumoNombre = '';
+        this.insumoUnidad = 'pieza';
+        this.insumoStock = 0;
+        this.insumoMin = 0;
+        this.insumoDialogVisible = true;
+    }
+
+    openEditInsumo(insumo: any) {
+        this.editingInsumo = insumo;
+        this.insumoNombre = insumo.nombre;
+        this.insumoUnidad = insumo.unidad || 'pieza';
+        this.insumoStock = insumo.stock;
+        this.insumoMin = insumo.stockMinimo;
+        this.insumoDialogVisible = true;
+    }
+
+    saveInsumo() {
+        if (!this.insumoNombre.trim()) return;
+        const done = () => {
+            this.insumoDialogVisible = false;
+            this.loadInsumos();
+        };
+        if (this.editingInsumo) {
+            this.inventoryService.updateInsumo(
+                this.editingInsumo.id, this.insumoNombre, this.insumoUnidad, this.insumoStock, this.insumoMin
+            ).subscribe({
+                next: () => { this.messageService.add({ severity: 'success', summary: 'Insumo actualizado', detail: 'Listo', life: 3000 }); done(); },
+                error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el insumo', life: 3000 })
+            });
+        } else {
+            this.inventoryService.createInsumo(
+                this.tenantId, this.insumoNombre, this.insumoUnidad, this.insumoStock, this.insumoMin
+            ).subscribe({
+                next: () => { this.messageService.add({ severity: 'success', summary: 'Insumo creado', detail: 'Listo para usar en recetas', life: 3000 }); done(); },
+                error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear el insumo', life: 3000 })
+            });
+        }
+    }
+
+    deleteInsumo(insumo: any) {
+        this.confirmationService.confirm({
+            message: `¿Eliminar el insumo "${insumo.nombre}"?`,
+            header: 'Confirmar',
+            icon: 'pi pi-exclamation-triangle',
+            accept: () => {
+                this.inventoryService.deleteInsumo(insumo.id).subscribe({
+                    next: (res) => {
+                        if (res.code !== 200) {
+                            this.messageService.add({ severity: 'warn', summary: 'Aviso', detail: res.message, life: 3000 });
+                            return;
+                        }
+                        this.messageService.add({ severity: 'success', summary: 'Insumo eliminado', detail: 'Listo', life: 3000 });
+                        this.loadInsumos();
+                    },
+                    error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar el insumo', life: 3000 })
+                });
+            }
+        });
+    }
+
+    openInsumoRestock(insumo: any) {
+        this.insumoRestockTarget = insumo;
+        this.insumoRestockCantidad = 0;
+        this.insumoRestockVisible = true;
+    }
+
+    doInsumoRestock() {
+        if (!this.insumoRestockTarget || this.insumoRestockCantidad <= 0) return;
+        this.inventoryService.restockInsumo(this.insumoRestockTarget.id, this.insumoRestockCantidad).subscribe({
+            next: (res) => {
+                this.messageService.add({ severity: 'success', summary: 'Exitoso', detail: `Stock del insumo: ${res.object}`, life: 3000 });
+                this.insumoRestockVisible = false;
+                this.loadInsumos();
+                this.loadInventory();
+            },
+            error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo reabastecer', life: 3000 })
+        });
+    }
+
+    isLowStock(insumo: any): boolean {
+        return insumo.stock <= insumo.stockMinimo;
     }
 
     private loadRecipeForProduct(productId: number | null): void {
@@ -323,29 +636,9 @@ export class ProductMenuComponent implements OnInit {
         });
     }
 
-    onAddRecipeLine(line: any) {
-        this.productRecipeLines = [...this.productRecipeLines, line];
-    }
-
-    onCreateInsumo(draft: any) {
-        if (!this.tenantId || !draft?.nombre) return;
-        this.inventoryService.createInsumo(this.tenantId, draft.nombre, draft.unidad || 'pieza', draft.stock ?? 0, draft.stockMinimo ?? 0).subscribe({
-            next: (res) => {
-                const nuevo = res?.object;
-                if (nuevo?.id) {
-                    this.insumosCatalog = [...this.insumosCatalog, nuevo];
-                    this.lastCreatedInsumoId = nuevo.id;
-                    this.messageService.add({ severity: 'success', summary: 'Insumo creado', detail: `${nuevo.nombre} creado y listo para la receta`, life: 3000 });
-                }
-            },
-            error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear el insumo', life: 3000 })
-        });
-    }
-
     private resetRecipeState(): void {
         this.productRecipeLines = [];
         this.recipeLoading = false;
-        this.lastCreatedInsumoId = null;
     }
 
     private loadCrossSellingForProduct(productId: number | null): void {
