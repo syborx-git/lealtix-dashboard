@@ -53,7 +53,8 @@ export class KitchenOrderFacadeService implements OnDestroy {
             clearInterval(this.pollingTimer);
             this.pollingTimer = null;
         }
-        this.orderSseService.disconnect();
+        // NO desconectar el SSE aquí: la conexión es global (AppLayout la mantiene
+        // viva en todos los módulos). Desconectarla cortaría las notificaciones.
         this.clearAllReadyTimers();
         this.destroy$.next();
     }

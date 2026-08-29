@@ -27,6 +27,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Product } from '../model/product.component';
 import { ProductService } from './service/product.service';
 import { CrossSellingService, CrossSellingConfig, CrossSellingDraft } from './service/cross-selling.service';
+import { InventoryService } from '../inventario/service/inventory.service';
 import { ImageService } from '../service/image.service';
 import { ProductDialogComponent } from './product-dialog.component';
 import { forkJoin } from 'rxjs';
@@ -133,6 +134,11 @@ export class ProductMenuComponent implements OnInit {
     crossSellingSaving: boolean = false;
     crossSellingMax: number = 3;
 
+    insumosCatalog: any[] = [];
+    productRecipeLines: any[] = [];
+    recipeLoading: boolean = false;
+    lastCreatedInsumoId: number | null = null;
+
     newCategory: { name?: string; description?: string; tenantId?: string; active: boolean } = {
         name: '',
         description: '',
@@ -159,6 +165,7 @@ export class ProductMenuComponent implements OnInit {
         private route: ActivatedRoute,
         private confettiService: ConfettiService,
         private campaignService: CampaignService,
+        private inventoryService: InventoryService,
         private router: Router
     ) {
         this.categoryForm = this.fb.group({
@@ -198,6 +205,7 @@ export class ProductMenuComponent implements OnInit {
                     this.loadCategories();
                     this.loadProducts();
                     this.loadCrossSellingCatalog();
+                    this.loadInsumosCatalog();
                     this.checkBannerConditions();
                     this.checkCampaignSetupPrompt();
 
@@ -279,6 +287,65 @@ export class ProductMenuComponent implements OnInit {
                 this.refreshCrossSellingOptions();
             }
         });
+    }
+
+    private loadInsumosCatalog(): void {
+        if (!this.tenantId) return;
+        this.inventoryService.getInsumos(this.tenantId).subscribe({
+            next: (res) => {
+                this.insumosCatalog = res?.object || [];
+            },
+            error: (err) => {
+                console.error('Error loading insumos catalog', err);
+                this.insumosCatalog = [];
+            }
+        });
+    }
+
+    private loadRecipeForProduct(productId: number | null): void {
+        this.productRecipeLines = [];
+        if (!productId) return;
+        this.recipeLoading = true;
+        this.inventoryService.getRecipes(productId).subscribe({
+            next: (res) => {
+                const items = res?.object || [];
+                this.productRecipeLines = items.map((r: any) => ({
+                    insumoId: r.insumoId,
+                    cantidad: r.cantidad,
+                    modificable: r.modificable
+                }));
+                this.recipeLoading = false;
+            },
+            error: () => {
+                this.productRecipeLines = [];
+                this.recipeLoading = false;
+            }
+        });
+    }
+
+    onAddRecipeLine(line: any) {
+        this.productRecipeLines = [...this.productRecipeLines, line];
+    }
+
+    onCreateInsumo(draft: any) {
+        if (!this.tenantId || !draft?.nombre) return;
+        this.inventoryService.createInsumo(this.tenantId, draft.nombre, draft.unidad || 'pieza', draft.stock ?? 0, draft.stockMinimo ?? 0).subscribe({
+            next: (res) => {
+                const nuevo = res?.object;
+                if (nuevo?.id) {
+                    this.insumosCatalog = [...this.insumosCatalog, nuevo];
+                    this.lastCreatedInsumoId = nuevo.id;
+                    this.messageService.add({ severity: 'success', summary: 'Insumo creado', detail: `${nuevo.nombre} creado y listo para la receta`, life: 3000 });
+                }
+            },
+            error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear el insumo', life: 3000 })
+        });
+    }
+
+    private resetRecipeState(): void {
+        this.productRecipeLines = [];
+        this.recipeLoading = false;
+        this.lastCreatedInsumoId = null;
     }
 
     private loadCrossSellingForProduct(productId: number | null): void {
@@ -894,6 +961,7 @@ export class ProductMenuComponent implements OnInit {
         this.productImagePreview = null;
         this.productForm.get('productImage')?.setValue(null);
         this.resetCrossSellingState();
+        this.resetRecipeState();
         this.productDialog = true;
     }
 
@@ -916,6 +984,7 @@ export class ProductMenuComponent implements OnInit {
         this.productImagePreview = null;
         this.productForm.get('productImage')?.setValue(null);
         this.resetCrossSellingState();
+        this.resetRecipeState();
         this.productDialog = true;
     }
 
@@ -935,6 +1004,7 @@ export class ProductMenuComponent implements OnInit {
         this.productImagePreview = product.imageUrl ?? null;
         const productId = this.getCurrentProductId();
         this.loadCrossSellingForProduct(productId);
+        this.loadRecipeForProduct(productId);
         this.productDialog = true;
     }
 
@@ -1132,11 +1202,24 @@ export class ProductMenuComponent implements OnInit {
                 next: (resp) => {
                     this.messageService.add({ severity: 'success', summary: 'Producto creado', detail: `${newProduct.name} creado`, life: 3000 });
 
+                    // Guardar la receta (insumos) del producto
+                    const savedId = resp?.object?.id ?? prod.id;
+                    if (savedId != null) {
+                        this.inventoryService.setRecipes(savedId, this.productRecipeLines).subscribe({
+                            next: () => {
+                                window.dispatchEvent(new Event('productsUpdated'));
+                            },
+                            error: (err) => {
+                                console.error('Error saving recipe', err);
+                                window.dispatchEvent(new Event('productsUpdated'));
+                            }
+                        });
+                    } else {
+                        window.dispatchEvent(new Event('productsUpdated'));
+                    }
+
                     // Check if this is the first product created
                     if (isNewProduct) {
-                        // Trigger event for menu update only when a new product is created
-                        window.dispatchEvent(new Event('productsUpdated'));
-
                         this.productService.getProductsByTenantId(this.tenantId).subscribe({
                             next: (data) => {
                                 this.loadProducts();

@@ -441,6 +441,167 @@
   outline-offset: 2px !important;
 }
 
+/* ============================================================================
+   ADMIN PAGE — REFINAMIENTO PREMIUM
+   ============================================================================ */
+
+/* Encabezado de la página */
+.admin-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  &__text {
+    h2 {
+      font-size: 1.75rem;
+      font-weight: 800;
+      margin: 0 0 0.25rem;
+      letter-spacing: -0.02em;
+      color: var(--text-color);
+    }
+
+    p {
+      margin: 0;
+      color: var(--text-color-secondary);
+      font-size: 0.925rem;
+    }
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.9rem;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, var(--lealtix-primary-50), var(--lealtix-primary-100));
+    border: 1px solid var(--lealtix-primary-200);
+    color: var(--lealtix-primary-700);
+    font-size: 0.8rem;
+    font-weight: 700;
+
+    i {
+      font-size: 0.9rem;
+    }
+  }
+}
+
+/* Tarjeta contenedora premium */
+.card {
+  border: 1px solid var(--surface-border) !important;
+  box-shadow: var(--lealtix-shadow-card) !important;
+  transition: box-shadow 0.3s ease;
+}
+
+/* Stepper premium */
+::ng-deep .p-stepper.p-stepper-vertical {
+  .p-step {
+    .p-step-header {
+      border-radius: 0.75rem;
+      font-weight: 600;
+      color: var(--text-color-secondary);
+      transition: all 0.25s ease;
+
+      .p-step-number {
+        background: var(--surface-hover) !important;
+        border: 1px solid var(--surface-border) !important;
+        color: var(--text-color-secondary) !important;
+        font-weight: 700 !important;
+        transition: all 0.25s ease;
+      }
+
+      &:hover {
+        background-color: var(--surface-hover);
+      }
+    }
+
+    &.p-step-active {
+      .p-step-header {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(99, 102, 241, 0.05)) !important;
+        color: var(--lealtix-primary-600);
+
+        .p-step-number {
+          background: linear-gradient(135deg, var(--lealtix-primary-500), var(--lealtix-primary-600)) !important;
+          border-color: transparent !important;
+          color: #fff !important;
+          box-shadow: var(--lealtix-shadow-primary);
+        }
+      }
+    }
+  }
+}
+
+/* Campos y labels */
+.field-label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.p-inputtext,
+.p-inputtextarea {
+  background-color: var(--surface-card) !important;
+  border-radius: 0.75rem !important;
+  border-color: var(--surface-border) !important;
+  transition: all 0.25s ease !important;
+
+  &:focus {
+    border-color: var(--lealtix-primary-500) !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.14) !important;
+  }
+}
+
+/* Botones de navegación */
+::ng-deep .p-button {
+  &.p-button-success {
+    background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+    border-color: transparent !important;
+    box-shadow: 0 6px 16px rgba(34, 197, 94, 0.25);
+  }
+}
+
+/* Paneles de preview */
+::ng-deep .p-panel {
+  border: 1px solid var(--surface-border) !important;
+  border-radius: var(--lealtix-radius-lg) !important;
+  overflow: hidden;
+  box-shadow: var(--lealtix-shadow-card);
+
+  .p-panel-header {
+    background: linear-gradient(135deg, var(--lealtix-primary-500), var(--lealtix-primary-600)) !important;
+    border-bottom: none !important;
+  }
+
+  .p-panel-content {
+    padding: 1.5rem !important;
+  }
+}
+
+/* Dark mode refinements */
+:root[class*='app-dark'],
+.app-dark {
+  .admin-page-header__badge {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.3);
+    color: var(--lealtix-primary-300);
+  }
+
+  .card {
+    background-color: var(--surface-card) !important;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+
 :root[class*='app-dark'],
 .app-dark {
   .kitchen-toggle-block {

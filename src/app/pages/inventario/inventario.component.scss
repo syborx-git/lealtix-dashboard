@@ -1,0 +1,64 @@
+.inventario-container {
+  padding: 0.5rem;
+}
+
+.inventario-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  h2 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    margin: 0 0 0.25rem;
+    letter-spacing: -0.02em;
+    color: var(--text-color);
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-color-secondary);
+    font-size: 0.925rem;
+  }
+}
+
+.inv-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid var(--surface-border);
+}
+
+.inv-dish-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 999px;
+  color: var(--primary-color);
+  background: var(--primary-color-subtle, color-mix(in srgb, var(--primary-color) 12%, white));
+  vertical-align: middle;
+}
+
+.inv-calc-badge {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 999px;
+  color: var(--text-color-secondary);
+  background: var(--surface-ground);
+  border: 1px dashed var(--surface-border);
+}
+
+.recipe-add {
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  padding: 1rem;
+  background: var(--surface-card);
+}

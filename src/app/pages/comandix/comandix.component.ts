@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Subject, firstValueFrom } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import confetti from 'canvas-confetti';
 
 // PrimeNG
 import { CardModule } from 'primeng/card';
@@ -258,7 +257,9 @@ export class ComandixComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopPolling();
-    this.orderSseService.disconnect();
+    // NO desconectar el SSE aquí: la conexión es global (AppLayout la mantiene
+    // viva en todos los módulos). Desconectarla al salir de esta página cortaría
+    // las notificaciones en el resto del dashboard.
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -313,18 +314,13 @@ export class ComandixComponent implements OnInit, OnDestroy {
 
       const pendingOrders = mappedOrders.filter((order) => this.normalizeOrderStatus(order.estado) === 'PENDIENTE');
 
-      // Reproducir sonido cuando existan pendientes
-      if (pendingOrders.length > 0) {
-        this.playNotificationSound();
-      }
+      // La notificación de nueva orden (sonido + toast) la maneja AppLayout vía SSE
+      // en todos los módulos. Aquí solo se detectan para registrarlas como conocidas.
 
-      // Detectar nuevas órdenes y disparar alerta
+      // Detectar nuevas órdenes (solo logging; sin alerta para no duplicar)
       const newOrders = mappedOrders.filter(order => !this.knownOrderIds.has(order.id));
       if (!isFirstPoll && newOrders.length > 0) {
-        console.log('[Comandix] 🆕 Nuevas órdenes detectadas:', newOrders.length);
-        newOrders.forEach(order => {
-          this.triggerNewOrderAlert(order);
-        });
+        console.log('[Comandix] 🆕 Nuevas órdenes detectadas vía polling:', newOrders.length);
       }
 
       // Registrar todas las órdenes conocidas
@@ -522,56 +518,14 @@ export class ComandixComponent implements OnInit, OnDestroy {
    * Sonido DOBLE + Confetti + Dialog detallado
    */
   private triggerNewOrderAlertWithDetailsAndDialog(order: any): void {
-    // 1) SONIDO DOS VECES
-    this.playNotificationSound(2, 500);
-
-    // 2) Confetti con paleta Lealtix
-    confetti({
-      particleCount: 90,
-      spread: 75,
-      origin: { y: 0.35 },
-      colors: ['#DA9F5B', '#33211D', '#FFFBF2', '#c8882a', '#f0c080']
-    });
-
-    // 3) Mostrar DIALOG detallado de orden (flujo unificado)
-    // En lugar de mostrar modal intermedio, abrimos directamente el detalle
+    // El sonido + confetti + toast global ya lo maneja AppLayout (funciona en cualquier página).
+    // Aquí solo abrimos el detalle de la orden dentro de la pantalla del mesero.
     this.openOrderDetail(order);
-
-    // 4) Toast breve notificando que llegó la orden
-    this.messageService.add({
-      severity: 'success',
-      summary: '¡Nueva Orden!',
-      detail: `Orden #${order.id.slice(0, 8).toUpperCase()} — Confirma o rechaza el pedido`,
-      life: 4000,
-      icon: 'pi pi-shopping-bag'
-    });
   }
 
   // ==================== ALERTA DE NUEVA ORDEN ====================
-
-  triggerNewOrderAlert(order: PendingOrder): void {
-    // 1) Sonido
-    this.playNotificationSound();
-
-    // 2) Confetti con paleta Lealtix
-    confetti({
-      particleCount: 90,
-      spread: 75,
-      origin: { y: 0.35 },
-      colors: ['#DA9F5B', '#33211D', '#FFFBF2', '#c8882a', '#f0c080']
-    });
-
-    // 3) Toast con resumen del pedido
-    const clientName = order.customerName ?? order.nombre ?? 'Cliente General';
-    const total = order.totalFinal ?? order.subtotal ?? 0;
-    this.messageService.add({
-      severity: 'success',
-      summary: '¡Nueva Orden!',
-      detail: `${clientName} — Total: $${total.toFixed(2)}`,
-      life: 6000,
-      icon: 'pi pi-shopping-bag'
-    });
-  }
+  // La notificación (sonido + confetti + toast) la maneja AppLayout vía SSE en
+  // todos los módulos, para que llegue una sola vez sin importar la página.
 
   // ==================== DETALLE DE ORDEN ====================
 

@@ -17,6 +17,7 @@ import { CampaignTemplatesListComponent } from '@/pages/campaigns/components/cam
 import { CreateCampaignComponent } from '@/pages/campaigns/components/create-campaign/create-campaign.component';
 import { ManualRedemptionComponent } from '@/pages/manual-redemption/manual-redemption.component';
 import { MiPaginaComponent } from '@/pages/mi-pagina/mi-pagina.component';
+import { InventarioComponent } from '@/pages/inventario/inventario.component';
 // import eliminado: MenuPrintComponent
 import { MenuClassicPrintComponent } from '@/pages/menu-classic-print/menu-classic-print.component';
 
@@ -67,6 +68,7 @@ export const appRoutes: Routes = [
                     { path: 'campaigns/:id', component: CampaignDetailsComponent, title: 'Detalles de Campaña', canActivate: [PermissionGuard], data: { permission: 'manage_campaigns' } },
                     { path: 'campaign-templates', component: CampaignTemplatesListComponent, title: 'Plantillas de Campañas', canActivate: [PermissionGuard], data: { permission: 'view_campaign_templates' } },
                     { path: 'manual-redemption', component: ManualRedemptionComponent, canActivate: [PermissionGuard], data: { permission: 'process_redemption' } },
+                    { path: 'inventario', component: InventarioComponent, title: 'Inventario', canActivate: [PermissionGuard], data: { permission: 'view_products' } },
                     { path: 'mi-pagina', component: MiPaginaComponent, title: 'Mi Página', canActivate: [PermissionGuard], data: { permission: 'view_products' } },
                     { path: 'clientes', component: ClienteListComponent, title: 'Gestión de Clientes', canActivate: [PermissionGuard], data: { permission: 'view_customers' } },
                     { path: 'users', component: UserManagementComponent, title: 'Gestión de Equipo', canActivate: [PermissionGuard], data: { permission: 'view_users' } },

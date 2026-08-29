@@ -1,16 +1,22 @@
-import { Component, Renderer2, ViewChild } from '@angular/core';
+import { Component, OnInit, Renderer2, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { filter, Subscription } from 'rxjs';
+import confetti from 'canvas-confetti';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 import { AppTopbar } from './app.topbar';
 import { AppSidebar } from './app.sidebar';
 import { AppFooter } from './app.footer';
 import { LayoutService } from '../service/layout.service';
+import { OrderSseService, SseNewOrderEvent } from '@/pages/comandix/services/order-sse.service';
+import { AuthService } from '@/auth/auth.service';
 
 @Component({
     selector: 'app-layout',
     standalone: true,
-    imports: [CommonModule, AppTopbar, AppSidebar, RouterModule, AppFooter],
+    imports: [CommonModule, AppTopbar, AppSidebar, RouterModule, AppFooter, ToastModule],
+    providers: [MessageService],
     template: `<div class="layout-wrapper" [ngClass]="containerClass">
         <app-topbar></app-topbar>
         <app-sidebar></app-sidebar>
@@ -21,12 +27,16 @@ import { LayoutService } from '../service/layout.service';
             <app-footer></app-footer>
         </div>
         <div class="layout-mask animate-fadein"></div>
+        <p-toast position="bottom-right"></p-toast>
     </div> `
 })
-export class AppLayout {
+export class AppLayout implements OnInit {
     overlayMenuOpenSubscription: Subscription;
 
     menuOutsideClickListener: any;
+
+    private readonly NOTIFICATION_SOUND = 'assets/sounds/dragon-studio-correct-472358.mp3';
+    private sseSub: Subscription | null = null;
 
     @ViewChild(AppSidebar) appSidebar!: AppSidebar;
 
@@ -35,7 +45,10 @@ export class AppLayout {
     constructor(
         public layoutService: LayoutService,
         public renderer: Renderer2,
-        public router: Router
+        public router: Router,
+        private orderSseService: OrderSseService,
+        private authService: AuthService,
+        private messageService: MessageService
     ) {
         this.overlayMenuOpenSubscription = this.layoutService.overlayOpen$.subscribe(() => {
             if (!this.menuOutsideClickListener) {
@@ -54,6 +67,74 @@ export class AppLayout {
         this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {
             this.hideMenu();
         });
+    }
+
+    ngOnInit(): void {
+        this.startGlobalOrderNotifications();
+    }
+
+    /**
+     * Notificación global de nuevas órdenes del CHATBOT: funciona en cualquier
+     * página del dashboard (no solo en la pantalla del mesero), con sonido.
+     */
+    private startGlobalOrderNotifications(): void {
+        const tenantId = this.authService.getTenantId();
+        if (!tenantId) {
+            console.warn('[AppLayout] Sin tenantId, no se activan notificaciones globales de órdenes');
+            return;
+        }
+
+        // Conexión SSE global (reconexión automática nativa del navegador)
+        this.orderSseService.connect(tenantId);
+
+        // Escuchar nuevas órdenes desde cualquier página
+        this.sseSub = this.orderSseService.newOrder$.subscribe({
+            next: (sseEvent: SseNewOrderEvent) => {
+                if (sseEvent.tenantId !== tenantId) {
+                    return;
+                }
+                this.notifyNewOrder(sseEvent);
+            }
+        });
+    }
+
+    private notifyNewOrder(event: SseNewOrderEvent): void {
+        const order = event.order;
+
+        // 1) Sonido dos veces
+        this.playNotificationSound(2, 500);
+
+        // 2) Confetti con paleta Lealtix
+        confetti({
+            particleCount: 90,
+            spread: 75,
+            origin: { y: 0.35 },
+            colors: ['#DA9F5B', '#33211D', '#FFFBF2', '#c8882a', '#f0c080']
+        });
+
+        // 3) Toast global con resumen del pedido
+        const clientName = order.customerName ?? 'Cliente General';
+        const total = order.total ?? order.subtotal ?? 0;
+        this.messageService.add({
+            severity: 'success',
+            summary: '¡Nueva Orden!',
+            detail: `${clientName} — Total: $${Number(total).toFixed(2)}`,
+            life: 6000,
+            icon: 'pi pi-shopping-bag'
+        });
+    }
+
+    private playNotificationSound(times = 1, delayMs = 500): void {
+        for (let index = 0; index < times; index++) {
+            setTimeout(() => {
+                try {
+                    const audio = new Audio(this.NOTIFICATION_SOUND);
+                    audio.play().catch(() => {});
+                } catch {
+                    // silent: archivo puede no existir en dev
+                }
+            }, index * delayMs);
+        }
     }
 
     isOutsideClicked(event: MouseEvent) {
@@ -85,7 +166,7 @@ export class AppLayout {
         if (document.body.classList) {
             document.body.classList.remove('blocked-scroll');
         } else {
-            document.body.className = document.body.className.replace(new RegExp('(^|\\b)' + 'blocked-scroll'.split(' ').join('|') + '(\\b|$)', 'gi'), ' ');
+            document.body.className = document.body.className.replace(new RegExp('(^|\\s)' + 'blocked-scroll'.split(' ').join('|') + '(\\s|$)', 'gi'), ' ');
         }
     }
 
@@ -103,6 +184,12 @@ export class AppLayout {
         if (this.overlayMenuOpenSubscription) {
             this.overlayMenuOpenSubscription.unsubscribe();
         }
+
+        if (this.sseSub) {
+            this.sseSub.unsubscribe();
+        }
+
+        this.orderSseService.disconnect();
 
         if (this.menuOutsideClickListener) {
             this.menuOutsideClickListener();

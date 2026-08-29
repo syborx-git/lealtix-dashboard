@@ -1,0 +1,305 @@
+<div class="inventario-container">
+  <div class="inventario-header">
+    <div>
+      <h2>Inventario</h2>
+      <p>Los platillos gastan insumos compartidos; el stock se descuenta con cada comanda</p>
+    </div>
+    <button pButton label="Actualizar" icon="pi pi-refresh" severity="secondary" (click)="load(); loadInsumos()"></button>
+  </div>
+
+  <p-tabs value="productos">
+    <p-tablist>
+      <p-tab value="productos">Productos</p-tab>
+      <p-tab value="insumos">Insumos</p-tab>
+    </p-tablist>
+    <p-tabpanels>
+    <!-- ============ PESTAÑA PRODUCTOS ============ -->
+    <p-tabpanel value="productos">
+      <div class="p-2">
+      <p-table #dt [value]="items()" [loading]="loading()" [paginator]="true" [rows]="10" [rowsPerPageOptions]="[5,10,25]" [globalFilterFields]="['name','categoryName']" responsiveLayout="scroll" [tableStyle]="{ 'min-width': '60rem' }">
+        <ng-template pTemplate="caption">
+          <div class="flex items-center justify-between">
+            <h5 class="m-0">{{ items().length }} productos</h5>
+            <p-iconfield>
+              <p-inputicon styleClass="pi pi-search" />
+              <input pInputText type="text" (input)="dt.filterGlobal($any($event.target).value, 'contains')" placeholder="Buscar..." />
+            </p-iconfield>
+          </div>
+        </ng-template>
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Producto</th>
+            <th>Categoría</th>
+            <th>Stock</th>
+            <th>Stock Mínimo</th>
+            <th>Unidad</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-item>
+          <tr>
+            <td>
+              <div class="flex items-center gap-2">
+                <img *ngIf="item.imageUrl" [src]="item.imageUrl" class="inv-thumb" alt="" />
+                <div>
+                  <strong>{{ item.name }}</strong>
+                  <span *ngIf="isDish(item)" class="inv-dish-badge" pTooltip="Su stock se calcula de sus insumos" tooltipPosition="top">Platillo</span>
+                </div>
+              </div>
+            </td>
+            <td>{{ item.categoryName || '—' }}</td>
+            <td class="font-bold">
+              <span class="flex align-items-center gap-2">
+                {{ item.stock }}
+                <span *ngIf="isDish(item)" class="inv-calc-badge" pTooltip="{{ stockHint(item) }}" tooltipPosition="top">calculado</span>
+              </span>
+            </td>
+            <td>{{ item.stockMinimo }}</td>
+            <td>{{ item.unidad }}</td>
+            <td><p-tag [value]="stockLabel(item)" [severity]="stockSeverity(item)"></p-tag></td>
+            <td>
+              <ng-container *ngIf="isDish(item)">
+                <p-button icon="pi pi-book" size="small" [rounded]="true" [outlined]="true" severity="warn" (click)="openRecipe(item)" pTooltip="Receta (BOM)" tooltipPosition="top" />
+                <p-button icon="pi pi-plus-circle" size="small" [rounded]="true" [outlined]="true" severity="help" class="ml-2" (click)="openAdditionals(item)" pTooltip="Adicionales" tooltipPosition="top" />
+              </ng-container>
+              <ng-container *ngIf="!isDish(item)">
+                <p-button icon="pi pi-plus" size="small" [rounded]="true" [outlined]="true" (click)="openRestock(item)" pTooltip="Restock" tooltipPosition="top" />
+                <p-button icon="pi pi-pencil" size="small" [rounded]="true" [outlined]="true" severity="secondary" class="ml-2" (click)="openEdit(item)" pTooltip="Editar" tooltipPosition="top" />
+              </ng-container>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr><td colspan="7" class="text-center p-8">No hay productos en el inventario</td></tr>
+        </ng-template>
+      </p-table>
+      </div>
+    </p-tabpanel>
+
+    <!-- ============ PESTAÑA INSUMOS ============ -->
+    <p-tabpanel value="insumos">
+      <div class="p-2">
+      <div class="flex justify-content-between align-items-center mb-3">
+        <p class="m-0 text-600">Los insumos se comparten entre todos los platillos y no aparecen como productos en el menú.</p>
+        <p-button label="Nuevo insumo" icon="pi pi-plus" (click)="openNewInsumo()" />
+      </div>
+      <p-table [value]="insumos()" [loading]="loadingInsumos()" [paginator]="true" [rows]="10" responsiveLayout="scroll" [tableStyle]="{ 'min-width': '50rem' }">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Insumo</th>
+            <th>Unidad</th>
+            <th>Stock</th>
+            <th>Stock Mínimo</th>
+            <th>Acciones</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-insumo>
+          <tr>
+            <td class="font-semibold">{{ insumo.nombre }}</td>
+            <td>{{ insumo.unidad }}</td>
+            <td class="font-bold">{{ insumo.stock }}</td>
+            <td>{{ insumo.stockMinimo }}</td>
+            <td>
+              <p-button icon="pi pi-plus" size="small" [rounded]="true" [outlined]="true" (click)="openInsumoRestock(insumo)" pTooltip="Restock" tooltipPosition="top" />
+              <p-button icon="pi pi-pencil" size="small" [rounded]="true" [outlined]="true" severity="secondary" class="ml-2" (click)="openEditInsumo(insumo)" pTooltip="Editar" tooltipPosition="top" />
+              <p-button icon="pi pi-trash" size="small" [rounded]="true" [outlined]="true" severity="danger" class="ml-2" (click)="deleteInsumo(insumo)" pTooltip="Eliminar" tooltipPosition="top" />
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr><td colspan="5" class="text-center p-8">Sin insumos registrados. Crea uno para empezar.</td></tr>
+        </ng-template>
+      </p-table>
+      </div>
+    </p-tabpanel>
+    </p-tabpanels>
+  </p-tabs>
+
+  <!-- ============ DIALOGO RECETA (BOM) ============ -->
+  <p-dialog header="Receta (BOM)" [(visible)]="recipeVisible" [style]="{ width: '640px' }">
+    <ng-container *ngIf="recipeItem">
+      <p class="mt-0"><strong>{{ recipeItem.name }}</strong> — el stock del platillo se calcula de sus insumos.</p>
+      <p-message severity="info" [text]="stockHint(recipeItem)" styleClass="mb-3"></p-message>
+      <div class="recipe-add p-fluid mb-3">
+        <div class="field">
+          <label class="block mb-1 text-sm text-600">Insumo (compartido)</label>
+          <p-select [(ngModel)]="recipeInsumoId" [options]="insumos()" optionLabel="nombre" optionValue="id" placeholder="Selecciona un insumo" class="w-full" />
+        </div>
+        <div class="field">
+          <label class="block mb-1 text-sm text-600">Cantidad por platillo</label>
+          <p-inputNumber [(ngModel)]="recipeCantidad" [min]="0" [step]="0.5" class="w-full" />
+        </div>
+        <div class="field flex align-items-center gap-2 mt-4">
+          <p-checkbox [(ngModel)]="recipeModificable" binary="true" inputId="modificable" />
+          <label for="modificable" class="text-sm">Modificable (el cliente puede quitarlo en la comanda)</label>
+        </div>
+        <div class="field">
+          <p-button label="Agregar insumo" icon="pi pi-plus" [disabled]="!recipeInsumoId || recipeCantidad <= 0" (click)="addIngredient()" />
+        </div>
+      </div>
+
+      <p-table [value]="recipeIngredients()" [tableStyle]="{ 'min-width': '30rem' }">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Insumo</th>
+            <th>Cantidad</th>
+            <th>Stock actual</th>
+            <th>Modificable</th>
+            <th></th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-ing>
+          <ng-container *ngIf="editingRecipe?.id !== ing.id; else editRow">
+            <tr>
+              <td>{{ ing.insumoName }}</td>
+              <td>{{ ing.cantidad }} {{ ing.unidad }}</td>
+              <td>{{ ing.stock }}</td>
+              <td><p-tag [value]="ing.modificable ? 'Sí' : 'No'" [severity]="ing.modificable ? 'warn' : 'secondary'" /></td>
+              <td>
+                <p-button icon="pi pi-pencil" size="small" [rounded]="true" [text]="true" severity="secondary" (click)="startEditIngredient(ing)" pTooltip="Editar" tooltipPosition="top" />
+                <p-button icon="pi pi-trash" size="small" [rounded]="true" [text]="true" severity="danger" (click)="removeIngredient(ing)" pTooltip="Quitar" tooltipPosition="top" />
+              </td>
+            </tr>
+          </ng-container>
+          <ng-template #editRow>
+            <tr>
+              <td>{{ ing.insumoName }}</td>
+              <td class="flex align-items-center gap-2">
+                <p-inputNumber [(ngModel)]="editRecipeCantidad" [min]="0" [step]="0.5" [useGrouping]="false" styleClass="w-8rem" />
+                <span class="text-600 text-sm">{{ ing.unidad }}</span>
+              </td>
+              <td>{{ ing.stock }}</td>
+              <td>
+                <p-checkbox [(ngModel)]="editRecipeModificable" binary="true" inputId="editModificable" />
+              </td>
+              <td>
+                <p-button icon="pi pi-check" size="small" [rounded]="true" [text]="true" severity="success" (click)="saveEditIngredient()" pTooltip="Guardar" tooltipPosition="top" />
+                <p-button icon="pi pi-times" size="small" [rounded]="true" [text]="true" severity="secondary" (click)="cancelEditIngredient()" pTooltip="Cancelar" tooltipPosition="top" />
+              </td>
+            </tr>
+          </ng-template>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr><td colspan="5" class="text-center p-6">Sin insumos. Agrega los que componen este platillo.</td></tr>
+        </ng-template>
+      </p-table>
+    </ng-container>
+  </p-dialog>
+
+  <!-- ============ DIALOGO ADICIONALES ============ -->
+  <p-dialog header="Adicionales permitidos" [(visible)]="additionalVisible" [style]="{ width: '560px' }">
+    <ng-container *ngIf="additionalItem">
+      <p class="mt-0">Extras que el cliente puede agregar a <strong>{{ additionalItem.name }}</strong> (se descuentan del stock).</p>
+      <div class="recipe-add p-fluid mb-3">
+        <div class="field">
+          <label class="block mb-1 text-sm text-600">Insumo adicional</label>
+          <p-select [(ngModel)]="additionalInsumoId" [options]="insumos()" optionLabel="nombre" optionValue="id" placeholder="Selecciona un insumo" class="w-full" />
+        </div>
+        <div class="field">
+          <label class="block mb-1 text-sm text-600">Cantidad</label>
+          <p-inputNumber [(ngModel)]="additionalCantidad" [min]="0" [step]="0.5" class="w-full" />
+        </div>
+        <div class="field">
+          <p-button label="Permitir adicional" icon="pi pi-plus" [disabled]="!additionalInsumoId || additionalCantidad <= 0" (click)="addAdditionalItem()" />
+        </div>
+      </div>
+      <p-table [value]="dishAdditionals()" [tableStyle]="{ 'min-width': '28rem' }">
+        <ng-template pTemplate="header">
+          <tr><th>Adicional</th><th>Cantidad</th><th>Stock</th><th></th></tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-add>
+          <tr>
+            <td>{{ add.insumoName }}</td>
+            <td>{{ add.cantidad }} {{ add.unidad }}</td>
+            <td>{{ add.stock }}</td>
+            <td><p-button icon="pi pi-trash" size="small" [rounded]="true" [text]="true" severity="danger" (click)="removeAdditionalItem(add)" pTooltip="Quitar" tooltipPosition="top" /></td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr><td colspan="4" class="text-center p-6">Sin adicionales permitidos.</td></tr>
+        </ng-template>
+      </p-table>
+    </ng-container>
+  </p-dialog>
+
+  <!-- ============ DIALOGOS PRODUCTO (SIN RECETA) ============ -->
+  <p-dialog header="Restock" [(visible)]="restockVisible" [style]="{ width: '400px' }">
+    <div class="p-fluid">
+      <div class="mb-3">
+        <label class="font-semibold block mb-2">Producto: <strong>{{ restockItem?.name }}</strong></label>
+        <label class="block mb-1 text-sm text-600">Cantidad a agregar</label>
+        <p-inputNumber [(ngModel)]="restockCantidad" [min]="0" [step]="1" class="w-full" />
+      </div>
+      <div class="flex justify-content-end gap-2">
+        <p-button label="Cancelar" severity="secondary" (click)="restockVisible = false" />
+        <p-button label="Agregar stock" icon="pi pi-plus" (click)="doRestock()" />
+      </div>
+    </div>
+  </p-dialog>
+
+  <p-dialog header="Editar Inventario" [(visible)]="editVisible" [style]="{ width: '400px' }">
+    <div class="p-fluid">
+      <div class="mb-3">
+        <label class="font-semibold block mb-2">Producto: <strong>{{ editItem?.name }}</strong></label>
+        <label class="block mb-1 text-sm text-600">Stock</label>
+        <p-inputNumber [(ngModel)]="editStock" [min]="0" [step]="1" class="w-full" />
+      </div>
+      <div class="mb-3">
+        <label class="block mb-1 text-sm text-600">Stock mínimo</label>
+        <p-inputNumber [(ngModel)]="editMin" [min]="0" [step]="1" class="w-full" />
+      </div>
+      <div class="mb-3">
+        <label class="block mb-1 text-sm text-600">Unidad</label>
+        <p-select [(ngModel)]="editUnidad" [options]="unidades" class="w-full" />
+      </div>
+      <div class="flex justify-content-end gap-2">
+        <p-button label="Cancelar" severity="secondary" (click)="editVisible = false" />
+        <p-button label="Guardar" icon="pi pi-check" (click)="saveEdit()" />
+      </div>
+    </div>
+  </p-dialog>
+
+  <!-- ============ DIALOGOS INSUMO ============ -->
+  <p-dialog [header]="editingInsumo ? 'Editar insumo' : 'Nuevo insumo'" [(visible)]="insumoDialogVisible" [style]="{ width: '420px' }">
+    <div class="p-fluid">
+      <div class="mb-3">
+        <label class="block mb-1 text-sm text-600">Nombre</label>
+        <input pInputText type="text" [(ngModel)]="insumoNombre" placeholder="Ej. Tortilla, Pollo, Salsa..." class="w-full" />
+      </div>
+      <div class="mb-3">
+        <label class="block mb-1 text-sm text-600">Unidad</label>
+        <p-select [(ngModel)]="insumoUnidad" [options]="unidades" class="w-full" />
+      </div>
+      <div class="mb-3">
+        <label class="block mb-1 text-sm text-600">Stock actual</label>
+        <p-inputNumber [(ngModel)]="insumoStock" [min]="0" [step]="0.5" class="w-full" />
+      </div>
+      <div class="mb-3">
+        <label class="block mb-1 text-sm text-600">Stock mínimo</label>
+        <p-inputNumber [(ngModel)]="insumoMin" [min]="0" [step]="0.5" class="w-full" />
+      </div>
+      <div class="flex justify-content-end gap-2">
+        <p-button label="Cancelar" severity="secondary" (click)="insumoDialogVisible = false" />
+        <p-button label="Guardar" icon="pi pi-check" (click)="saveInsumo()" />
+      </div>
+    </div>
+  </p-dialog>
+
+  <p-dialog header="Restock de insumo" [(visible)]="insumoRestockVisible" [style]="{ width: '400px' }">
+    <div class="p-fluid">
+      <div class="mb-3">
+        <label class="font-semibold block mb-2">Insumo: <strong>{{ insumoRestockTarget?.nombre }}</strong></label>
+        <label class="block mb-1 text-sm text-600">Cantidad a agregar</label>
+        <p-inputNumber [(ngModel)]="insumoRestockCantidad" [min]="0" [step]="0.5" class="w-full" />
+      </div>
+      <div class="flex justify-content-end gap-2">
+        <p-button label="Cancelar" severity="secondary" (click)="insumoRestockVisible = false" />
+        <p-button label="Agregar stock" icon="pi pi-plus" (click)="doInsumoRestock()" />
+      </div>
+    </div>
+  </p-dialog>
+
+  <p-confirmDialog></p-confirmDialog>
+  <p-toast></p-toast>
+</div>
