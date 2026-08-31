@@ -8,8 +8,8 @@
 
 export const environment = {
   production: true,
-  /** URL Base del Backend (Spring Boot / API Service) — Servidor Hetzner */
-  apiUrl: 'http://5.161.82.24:8082/api',
-  landingPageBaseUrl: 'http://5.161.82.24:3000/landing-page',
+  /** URL Base del Backend en Producción (HTTPS) */
+  apiUrl: 'https://api.lealtix.com.mx/api',
+  landingPageBaseUrl: 'https://lealtix.com.mx/landing-page',
   kitchenMockEnabled: false
 };
