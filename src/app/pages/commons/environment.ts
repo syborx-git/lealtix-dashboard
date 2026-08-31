@@ -8,8 +8,8 @@
 
 export const environment = {
   production: true,
-  /** URL Base del Backend local (Spring Boot / API Service) */
-  apiUrl: 'http://localhost:8080/api',
-  landingPageBaseUrl: 'http://localhost:4200/landing-page',
+  /** URL Base del Backend (Spring Boot / API Service) — Servidor Hetzner */
+  apiUrl: 'http://5.161.82.24:8082/api',
+  landingPageBaseUrl: 'http://5.161.82.24:3000/landing-page',
   kitchenMockEnabled: false
 };

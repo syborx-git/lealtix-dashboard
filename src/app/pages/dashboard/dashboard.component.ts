@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardModule } from 'primeng/card';
 import { ChartModule } from 'primeng/chart';
@@ -18,6 +18,9 @@ import {
   TimeSeriesCountDTO,
   CouponStatsDTO,
   SalesSummaryDTO,
+  SalesByPeriodDTO,
+  TopProductDTO,
+  SalesByCategoryDTO,
   CampaignPerformanceDTO,
   RepeatPurchaseRateDTO,
   IdentifiedVsGeneralDTO,
@@ -69,6 +72,11 @@ export class DashboardComponent implements OnInit {
   ventasResumen = signal<SalesSummaryDTO | null>(null);
   campanasPerformance = signal<CampaignPerformanceDTO[]>([]);
 
+  // Costos y Ganancias (simulados por ahora; después se conectan datos reales)
+  private static readonly COST_PERCENTAGE = 0.55;
+  costos = computed(() => (this.ventasResumen()?.totalSales ?? 0) * DashboardComponent.COST_PERCENTAGE);
+  ganancias = computed(() => (this.ventasResumen()?.totalSales ?? 0) - this.costos());
+
   // Loyalty Metrics Signals
   repeatPurchaseRate = signal<RepeatPurchaseRateDTO | null>(null);
   identifiedVsGeneral = signal<IdentifiedVsGeneralDTO | null>(null);
@@ -87,6 +95,20 @@ export class DashboardComponent implements OnInit {
   barChartOptions = signal<any>(null);
   doughnutData = signal<any>(null);
   doughnutOptions = signal<any>(null);
+  salesPeriodData = signal<any>(null);
+  salesPeriodOptions = signal<any>(null);
+  topProductsList = signal<TopProductDTO[]>([]);
+  topClientsData = signal<any>(null);
+  topClientsOptions = signal<any>(null);
+  salesByCategoryData = signal<any>(null);
+  salesByCategoryOptions = signal<any>(null);
+  periodo = signal<string>('week');
+  periodoOptions = [
+    { label: 'Día', value: 'day' },
+    { label: 'Semana', value: 'week' },
+    { label: 'Mes', value: 'month' },
+    { label: 'Año', value: 'year' }
+  ];
   identifiedVsGeneralChartData = signal<any>(null);
   identifiedVsGeneralChartOptions = signal<any>(null);
 
@@ -276,6 +298,9 @@ export class DashboardComponent implements OnInit {
       nuevos: this.dashboardService.clientesNuevosPorPeriodo(this.tenantId, fromIso, toIso),
       cupones: this.dashboardService.statsCupones(this.tenantId, fromIso, toIso),
       ventas: this.dashboardService.resumenVentas(this.tenantId, fromIso, toIso),
+      ventasPeriodo: this.dashboardService.ventasPorPeriodo(this.tenantId, 'week', fromIso, toIso),
+      topProducts: this.dashboardService.topProductos(this.tenantId, fromIso, toIso),
+      ventasCategoria: this.dashboardService.ventasPorCategoria(this.tenantId, fromIso, toIso),
       performance: this.dashboardService.rendimientoCampanas(this.tenantId, fromIso, toIso),
       // Nuevas métricas de lealtad
       repeatPurchase: this.dashboardLoyaltyService.repeatPurchaseRate(this.tenantId, fromIso, toIso),
@@ -291,6 +316,9 @@ export class DashboardComponent implements OnInit {
         const nuevos = this.extractArray(res.nuevos);
         const cupones = this.extractArray(res.cupones);
         const ventas = this.extractValue(res.ventas);
+        const ventasPeriodo = this.extractArray(res.ventasPeriodo);
+        const topProducts = this.extractArray(res.topProducts);
+        const ventasCategoria = this.extractArray(res.ventasCategoria);
         const performance = this.extractArray(res.performance);
 
         this.totalClientes.set(total);
@@ -318,6 +346,10 @@ export class DashboardComponent implements OnInit {
         this.buildBarChart(cupones);
         this.buildDoughnut(cupones);
         this.buildIdentifiedVsGeneralChart(idVsGen);
+        this.buildSalesPeriodChart(ventasPeriodo);
+        this.buildTopProductsList(topProducts);
+        this.buildTopClientsChart(ltv);
+        this.buildSalesByCategoryChart(ventasCategoria);
 
         this.generateInsights();
         this.loading.set(false);
@@ -326,6 +358,306 @@ export class DashboardComponent implements OnInit {
         console.error('Dashboard load error', err);
         this.error.set('Error cargando datos del dashboard');
         this.loading.set(false);
+      }
+    });
+  }
+
+  private buildSalesPeriodChart(series: SalesByPeriodDTO[]): void {
+    if (!series || series.length < 2) {
+      this.buildSimulatedSalesPeriodChart(this.periodo());
+      return;
+    }
+    const labels = series.map(s => s.periodStart);
+    const total = series.map(s => s.totalSales);
+    const identified = series.map(s => s.identifiedSales);
+    const general = series.map(s => s.generalSales);
+    this.salesPeriodData.set({
+      labels,
+      datasets: [
+        {
+          label: 'Ventas',
+          data: total,
+          fill: true,
+          tension: 0.4,
+          borderColor: '#6366F1',
+          backgroundColor: 'rgba(99,102,241,0.12)'
+        },
+        {
+          label: 'Identificadas',
+          data: identified,
+          fill: false,
+          tension: 0.4,
+          borderColor: '#10B981',
+          backgroundColor: 'transparent'
+        },
+        {
+          label: 'Generales',
+          data: general,
+          fill: false,
+          tension: 0.4,
+          borderColor: '#94A3B8',
+          backgroundColor: 'transparent'
+        }
+      ]
+    });
+    this.setSalesPeriodOptions();
+  }
+
+  /** Datos simulados para visualizar la gráfica (se reemplaza con datos reales cuando haya). */
+  private buildSimulatedSalesPeriodChart(period: string = 'week'): void {
+    const now = new Date();
+    const labels: string[] = [];
+    const total: number[] = [];
+    const identified: number[] = [];
+    const general: number[] = [];
+
+    const pointCounts: Record<string, number> = { day: 14, week: 8, month: 12, year: 5 };
+    const steps: Record<string, number> = { day: 1, week: 7, month: 30, year: 365 };
+    const points = pointCounts[period] ?? 8;
+    const step = steps[period] ?? 7;
+    const base = 8200;
+
+    for (let i = points - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i * step);
+      labels.push(d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }));
+      const growth = 1 + (points - 1 - i) * 0.085 + (i % 2 === 0 ? 0.03 : -0.015);
+      const t = Math.round(base * growth);
+      const idt = Math.round(t * (0.62 + (points - 1 - i) * 0.012));
+      total.push(t);
+      identified.push(idt);
+      general.push(t - idt);
+    }
+
+    this.salesPeriodData.set({
+      labels,
+      datasets: [
+        {
+          label: 'Ventas',
+          data: total,
+          fill: true,
+          tension: 0.4,
+          borderColor: '#6366F1',
+          backgroundColor: 'rgba(99,102,241,0.12)'
+        },
+        {
+          label: 'Identificadas',
+          data: identified,
+          fill: false,
+          tension: 0.4,
+          borderColor: '#10B981',
+          backgroundColor: 'transparent'
+        },
+        {
+          label: 'Generales',
+          data: general,
+          fill: false,
+          tension: 0.4,
+          borderColor: '#94A3B8',
+          backgroundColor: 'transparent'
+        }
+      ]
+    });
+    this.setSalesPeriodOptions();
+  }
+
+  cambiarPeriodo(p: string): void {
+    if (this.periodo() === p) return;
+    this.periodo.set(p);
+    this.loadSalesPeriod();
+  }
+
+  periodoLabel(): string {
+    const found = this.periodoOptions.find(o => o.value === this.periodo());
+    return found ? found.label.toLowerCase() : 'periodo';
+  }
+
+  private loadSalesPeriod(): void {
+    if (!this.tenantId) return;
+    const { fromIso, toIso } = this.getPeriodRange(this.periodo());
+    this.dashboardService.ventasPorPeriodo(this.tenantId, this.periodo(), fromIso, toIso).subscribe({
+      next: (res) => this.buildSalesPeriodChart(res || []),
+      error: () => this.buildSimulatedSalesPeriodChart(this.periodo())
+    });
+  }
+
+  private getPeriodRange(p: string): { fromIso: string; toIso: string } {
+    const to = new Date();
+    const from = new Date(to);
+    switch (p) {
+      case 'day': from.setDate(from.getDate() - 30); break;
+      case 'month': from.setMonth(from.getMonth() - 11); break;
+      case 'year': from.setFullYear(from.getFullYear() - 4); break;
+      default: from.setDate(from.getDate() - 84);
+    }
+    return { fromIso: from.toISOString(), toIso: to.toISOString() };
+  }
+
+  private setSalesPeriodOptions(): void {
+    this.salesPeriodOptions.set({
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: {
+        padding: { top: 15, bottom: 5, left: 10, right: 10 }
+      },
+      plugins: {
+        legend: { display: false },
+        datalabels: { display: false },
+        tooltip: {
+          enabled: true,
+          padding: 10,
+          titleFont: { size: 13 },
+          bodyFont: { size: 12 }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 11 }, color: '#64748b' }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: '#f1f5f9' },
+          ticks: { font: { size: 11 }, color: '#64748b', callback: (value: any) => '$' + Number(value).toLocaleString() }
+        }
+      }
+    });
+  }
+
+  private buildTopProductsList(products: TopProductDTO[]): void {
+    const list = (products && products.length > 0)
+      ? products.slice(0, 5)
+      : [
+          { productName: 'Enchiladas', totalQuantity: 142, totalRevenue: 0 },
+          { productName: 'Tacos al Pastor', totalQuantity: 118, totalRevenue: 0 },
+          { productName: 'Quesadillas', totalQuantity: 96, totalRevenue: 0 },
+          { productName: 'Hamburguesa', totalQuantity: 84, totalRevenue: 0 },
+          { productName: 'Refresco', totalQuantity: 71, totalRevenue: 0 }
+        ];
+    this.topProductsList.set(list);
+  }
+
+  private buildTopClientsChart(customers: CustomerLTVDTO[]): void {
+    const top = [...(customers || [])]
+      .sort((a, b) => b.lifetimeValue - a.lifetimeValue)
+      .slice(0, 6);
+
+    if (top.length < 2) {
+      const simulated = [
+        { customerName: 'Valeria Méndez', lifetimeValue: 18450, totalOrders: 0, averageOrderValue: 0 },
+        { customerName: 'Carlos Santillán', lifetimeValue: 15230, totalOrders: 0, averageOrderValue: 0 },
+        { customerName: 'Mariana Duarte', lifetimeValue: 12980, totalOrders: 0, averageOrderValue: 0 },
+        { customerName: 'Rodrigo Garza', lifetimeValue: 10410, totalOrders: 0, averageOrderValue: 0 },
+        { customerName: 'Ana Sofía Ruiz', lifetimeValue: 8760, totalOrders: 0, averageOrderValue: 0 },
+        { customerName: 'Jorge Ramírez', lifetimeValue: 6420, totalOrders: 0, averageOrderValue: 0 }
+      ];
+      this.setTopClientsChart(simulated.map(c => c.customerName), simulated.map(c => c.lifetimeValue));
+      return;
+    }
+
+    this.setTopClientsChart(
+      top.map(c => c.customerName),
+      top.map(c => c.lifetimeValue)
+    );
+  }
+
+  private setTopClientsChart(labels: string[], data: number[]): void {
+    this.topClientsData.set({
+      labels,
+      datasets: [
+        {
+          label: 'LTV ($)',
+          data,
+          backgroundColor: 'rgba(99,102,241,0.85)',
+          hoverBackgroundColor: '#4f46e5',
+          borderRadius: 8,
+          maxBarThickness: 42
+        }
+      ]
+    });
+    this.topClientsOptions.set({
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: {
+        padding: { top: 15, bottom: 5, left: 10, right: 10 }
+      },
+      plugins: {
+        legend: { display: false },
+        datalabels: { display: false },
+        tooltip: {
+          enabled: true,
+          padding: 10,
+          titleFont: { size: 13 },
+          bodyFont: { size: 12 }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { maxRotation: 45, minRotation: 0, font: { size: 11, weight: '500' }, color: '#64748b' }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: '#f1f5f9' },
+          ticks: { font: { size: 11 }, color: '#64748b', callback: (value: any) => '$' + Number(value).toLocaleString() }
+        }
+      }
+    });
+  }
+
+  private buildSalesByCategoryChart(categories: SalesByCategoryDTO[]): void {
+    const palette = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
+    const list = (categories && categories.length > 0)
+      ? categories.slice(0, 8)
+      : [
+          { categoryName: 'Desayunos', totalSales: 42000 },
+          { categoryName: 'Comidas', totalSales: 68000 },
+          { categoryName: 'Bebidas', totalSales: 31000 },
+          { categoryName: 'Postres', totalSales: 19000 },
+          { categoryName: 'Botanas', totalSales: 15000 }
+        ];
+
+    this.salesByCategoryData.set({
+      labels: list.map(c => c.categoryName),
+      datasets: [
+        {
+          label: 'Ventas ($)',
+          data: list.map(c => c.totalSales),
+          backgroundColor: list.map((_, i) => palette[i % palette.length]),
+          hoverBackgroundColor: list.map((_, i) => palette[i % palette.length]),
+          borderRadius: 8,
+          maxBarThickness: 46,
+          clip: false
+        }
+      ]
+    });
+    this.salesByCategoryOptions.set({
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: {
+        padding: { top: 15, bottom: 5, left: 10, right: 10 }
+      },
+      plugins: {
+        legend: { display: false },
+        datalabels: { display: false },
+        tooltip: {
+          enabled: true,
+          padding: 10,
+          titleFont: { size: 13 },
+          bodyFont: { size: 12 }
+        }
+      },
+      scales: {
+        x: {
+          display: false,
+          beginAtZero: true,
+          grid: { display: false },
+          ticks: { display: false }
+        },
+        y: {
+          grid: { color: '#f1f5f9' },
+          ticks: { font: { size: 11 }, color: '#64748b' }
+        }
       }
     });
   }

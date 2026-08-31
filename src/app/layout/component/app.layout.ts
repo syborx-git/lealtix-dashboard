@@ -18,9 +18,9 @@ import { AuthService } from '@/auth/auth.service';
     imports: [CommonModule, AppTopbar, AppSidebar, RouterModule, AppFooter, ToastModule],
     providers: [MessageService],
     template: `<div class="layout-wrapper" [ngClass]="containerClass">
-        <app-topbar></app-topbar>
         <app-sidebar></app-sidebar>
         <div class="layout-main-container">
+            <app-topbar></app-topbar>
             <div class="layout-main">
                 <router-outlet></router-outlet>
             </div>

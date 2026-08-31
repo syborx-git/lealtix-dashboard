@@ -46,13 +46,14 @@
 
             &.layout-static-inactive {
                 .layout-sidebar {
-                    transform: translateX(-100%);
+                    transform: none;
                     left: 0;
+                    width: 80px;
                 }
 
                 .layout-main-container {
-                    margin-left: 0;
-                    padding-left: 2rem;
+                    margin-left: 80px;
+                    padding-left: 1.5rem;
                 }
             }
         }
