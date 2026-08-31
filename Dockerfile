@@ -23,7 +23,6 @@ WORKDIR /app
 # Copiar archivos de dependencias para aprovechar la caché de Docker
 COPY package*.json ./
 
-# Instalar dependencias del proyecto
 ENV NODE_OPTIONS="--max-old-space-size=2048"
 RUN npm ci --legacy-peer-deps || npm install
 
