@@ -128,7 +128,7 @@
         <p-inputNumber [(ngModel)]="insumoRestockCantidad" [min]="0" [step]="0.5" styleClass="w-full" />
       </div>
       <div *ngIf="insumoRestockTarget && insumoRestockCantidad > 0" class="text-sm text-600">
-        Nuevo stock: <strong>{{ (insumoRestockTarget.stock ?? 0) + insumoRestockCantidad }} {{ insumoRestockTarget.unidad || 'pieza' }}</strong>
+        Nuevo stock: <strong>{{ insumoRestockTarget.stock + insumoRestockCantidad }} {{ insumoRestockTarget.unidad || 'pieza' }}</strong>
       </div>
     </div>
     <ng-template #footer>
