@@ -68,16 +68,14 @@ export class MiPaginaComponent implements OnInit {
     this.isLoading.set(true);
 
     const user = this.authService.getCurrentUser();
-    if (!user || !user.userEmail) {
-      this.showError('No se encontró usuario autenticado');
+    if (!user || !user.tenantId) {
+      this.showError('No se encontró usuario autenticado o tenant');
       this.isLoading.set(false);
       return;
     }
 
-    this.tenantService.getTenantByEmail(user.userEmail).subscribe({
-      next: (resp) => {
-        debugger;
-        const tenant = resp?.object;
+    this.tenantService.getTenantById(user.tenantId).subscribe({
+      next: (tenant) => {
         const tenantId = tenant?.id;
         const tenantSlug = tenant?.slug;
 
@@ -284,7 +282,7 @@ export class MiPaginaComponent implements OnInit {
     }
 
     // 3) Final fallback (shouldn't normally hit in browser environments).
-    return 'https://lealtix.com.mx/landing-page';
+    return 'https://full-accountability-big-rug.trycloudflare.com/landing-page';
   }
 
   /**

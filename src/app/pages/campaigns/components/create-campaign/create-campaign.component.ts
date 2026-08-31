@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { min, startWith } from 'rxjs/operators';
 
 // PrimeNG imports
 import { ButtonModule } from 'primeng/button';
@@ -19,8 +20,11 @@ import { DividerModule } from 'primeng/divider';
 import { ChipModule } from 'primeng/chip';
 import { DialogModule } from 'primeng/dialog';
 import { TooltipModule } from 'primeng/tooltip';
-import { MessageService } from 'primeng/api';
+import { MessageService, TreeNode } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { MessageModule } from 'primeng/message';
+import { TreeSelectModule } from 'primeng/treeselect';
 
 // Models and Services
 import { CampaignTemplate } from '@/models/campaign-template.model';
@@ -31,10 +35,12 @@ import { RewardResponse, CreateRewardRequest } from '../../models/reward.model';
 import { ConfigureRewardRequest } from '@/models/update-campaign-request';
 import { CampaignService } from '../../services/campaign.service';
 import { CampaignTemplateService } from '../../services/campaign-template.service';
+import { CatalogService } from '../../services/catalog.service';
 import { CampaignPreviewDialogComponent } from './campaign-dialog/campaign-preview-dialog.component';
-import { RewardFormComponent } from '../reward-form/reward-form.component';
 import { TenantService } from '@/pages/admin-page/service/tenant.service';
+import { AuthService } from '@/auth/auth.service';
 import { ImageService } from '@/pages/service/image.service';
+import { REWARD_TYPE_OPTIONS } from '../../constants/reward-types';
 
 @Component({
   selector: 'app-create-campaign',
@@ -58,8 +64,10 @@ import { ImageService } from '@/pages/service/image.service';
     DialogModule,
     TooltipModule,
     ToastModule,
-    CampaignPreviewDialogComponent,
-    RewardFormComponent
+    InputNumberModule,
+    MessageModule,
+    TreeSelectModule,
+    CampaignPreviewDialogComponent
   ],
   providers: [MessageService],
   templateUrl: './create-campaign.component.html',
@@ -67,6 +75,8 @@ import { ImageService } from '@/pages/service/image.service';
 })
 export class CreateCampaignComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
+  // Expose enum to template
+  public RewardType = RewardType;
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
@@ -74,7 +84,9 @@ export class CreateCampaignComponent implements OnInit {
   private templateService = inject(CampaignTemplateService);
   private messageService = inject(MessageService);
   private tenantService = inject(TenantService);
+  private authService = inject(AuthService);
   private imageService = inject(ImageService);
+  private catalogService = inject(CatalogService);
 
   // Signals
   loading = signal<boolean>(false);
@@ -92,7 +104,19 @@ export class CreateCampaignComponent implements OnInit {
   currentReward = signal<RewardResponse | null>(null);
   loadingReward = signal<boolean>(false);
   campaignId = signal<number | null>(null);
-  @ViewChild('rewardFormComp') rewardFormComp?: RewardFormComponent;
+  // Email confirmation dialog signals
+  showEmailConfirmationDialog = signal<boolean>(false);
+  pendingCampaignUpdate = signal<any>(null);
+
+  // Reward-related properties
+  productTree: TreeNode[] = [];
+  selectedProductNode: TreeNode | null = null; // Complete node object for p-treeSelect
+  isLoadingProducts = false;
+  private lastLoadedTenantId: number | null = null;
+  private isUpdatingValidators = false;
+
+  rewardTypes = REWARD_TYPE_OPTIONS;
+
   @ViewChild('statusSelect', { read: ElementRef }) statusSelect?: ElementRef;
   // Trigger to make preview computed reactive to form changes
   private formTrigger = signal<number>(0);
@@ -173,6 +197,11 @@ export class CreateCampaignComponent implements OnInit {
     this.loadTenantData();
     this.checkEditMode();
     this.loadTemplateIfProvided();
+    this.setupRewardFormListeners();
+    // Load product tree if tenantId is available
+    if (this.tenantId && Number(this.tenantId) > 0) {
+      this.loadProductTree(this.tenantId);
+    }
   }
 
   private checkEditMode(): void {
@@ -246,11 +275,55 @@ export class CreateCampaignComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (reward) => {
+          if (!reward) {
+            this.currentReward.set(null);
+            const campaign = this.campaignToEdit();
+            if (campaign?.promoType === 'NONE') {
+              this.updateRewardValidators(RewardType.NONE);
+              this.campaignForm.patchValue({
+                rewardType: RewardType.NONE,
+                rewardDescription: campaign.description || ''
+              }, { emitEvent: false });
+              this.formTrigger.update(n => n + 1);
+            }
+            this.loadingReward.set(false);
+            return;
+          }
+
           this.currentReward.set(reward);
+          console.log('[loadCampaignReward] Cargando reward:', reward);
+
+          // 1. Set validators FIRST (without touching values)
+          this.updateRewardValidators(reward.rewardType as RewardType);
+
+          // 2. Populate all reward values silently (emitEvent:false prevents
+          //    setupRewardFormListeners from firing and clearing the values we just set)
+          this.campaignForm.patchValue({
+            rewardType:          reward.rewardType,
+            numericValue:        reward.numericValue        ?? null,
+            productId:           reward.productId           ?? null,
+            buyQuantity:         reward.buyQuantity         ?? null,
+            freeQuantity:        reward.freeQuantity        ?? null,
+            rewardDescription:   reward.description        ?? '',
+            minPurchaseAmount:   reward.minPurchaseAmount   ?? null,
+            usageLimit:          reward.usageLimit          ?? null
+          }, { emitEvent: false });
+
+          // 3. Manually trigger preview recalculation
+          this.formTrigger.update(n => n + 1);
+
+          // 4. Handle product selection for product-based reward types
+          if (reward.productId && (reward.rewardType === RewardType.FREE_PRODUCT || reward.rewardType === RewardType.BUY_X_GET_Y)) {
+            if (this.productTree.length > 0) {
+              this.setSelectedProductNode(reward.productId);
+            } else {
+              this.loadProductTree(this.tenantId ?? undefined);
+            }
+          }
+
           this.loadingReward.set(false);
         },
         error: (error) => {
-          // No mostrar error si simplemente no existe el reward
           if (error.status !== 404) {
             console.error('Error loading campaign reward:', error);
           }
@@ -261,52 +334,52 @@ export class CreateCampaignComponent implements OnInit {
   }
 
   private populateFormWithCampaign(campaign: any): void {
-    // Parse dates if they exist
     const startDate = campaign.startDate ? new Date(campaign.startDate) : null;
-    const endDate = campaign.endDate ? new Date(campaign.endDate) : null;
+    const endDate   = campaign.endDate   ? new Date(campaign.endDate)   : null;
+    const isPromoNone = campaign.promoType === 'NONE';
 
-    // Ensure segmentation is an array and validate values
+    // Normalize segmentation to an array of valid values
     let segmentationValues: string[] = [];
-    if (campaign.segmentation) {
-      if (Array.isArray(campaign.segmentation)) {
-        // Filter to only include valid values that exist in our options
-        segmentationValues = campaign.segmentation.filter((value: string) =>
-          this.segmentationOptions.some(option => option.value === value)
-        );
-      } else if (typeof campaign.segmentation === 'string') {
-        // If it's a single string, convert to array
-        const value = campaign.segmentation;
-        if (this.segmentationOptions.some(option => option.value === value)) {
-          segmentationValues = [value];
-        }
+    if (Array.isArray(campaign.segmentation)) {
+      segmentationValues = campaign.segmentation.filter((v: string) =>
+        this.segmentationOptions.some(o => o.value === v)
+      );
+    } else if (typeof campaign.segmentation === 'string') {
+      if (this.segmentationOptions.some(o => o.value === campaign.segmentation)) {
+        segmentationValues = [campaign.segmentation];
       }
     }
 
+    // Populate campaign-level fields only.
+    // Reward fields (numericValue, productId, minPurchaseAmount, usageLimit, etc.)
+    // are populated by loadCampaignReward() after the reward endpoint responds.
     this.campaignForm.patchValue({
-      title: campaign.title || '',
-      subtitle: campaign.subtitle || '',
-      description: campaign.description || '',
-      imageUrl: campaign.imageUrl || '',
-      startDate: startDate,
-      endDate: endDate,
-      callToAction: campaign.callToAction || '', // URL opcional
-      channels: campaign.channels || ['email'],
+      title:        campaign.title        || '',
+      subtitle:     campaign.subtitle     || '',
+      description:  campaign.description  || '',
+      imageUrl:     campaign.imageUrl     || '',
+      startDate,
+      endDate,
+      callToAction: campaign.callToAction || '',
+      channels:     campaign.channels     || ['email'],
       segmentation: segmentationValues,
-      status: campaign.status || 'DRAFT',
-      isAutomatic: campaign.isAutomatic || false
+      status:       campaign.status       || 'DRAFT',
+      isAutomatic:  campaign.isAutomatic  || false,
+      promoType:    campaign.promoType    || '',
+      // Pre-set NONE reward type so the form shows the description field immediately;
+      // loadCampaignReward() will overwrite if the backend returns a real reward.
+      ...(isPromoNone ? { rewardType: RewardType.NONE, rewardDescription: campaign.description || '' } : {})
     });
 
-    // Set uploaded image URL if exists
     if (campaign.imageUrl) {
       this.uploadedImageUrl.set(campaign.imageUrl);
     }
 
-    // Update channels text
-    if (campaign.channels && campaign.channels.length > 0) {
+    if (campaign.channels?.length > 0) {
       this.campaignForm.patchValue({ channelsText: campaign.channels.join(', ') });
     }
 
-    // Force update segmentation after a small delay to ensure the multiselect is properly initialized
+    // Delay segmentation setValue to ensure MultiSelect is initialized
     setTimeout(() => {
       this.campaignForm.get('segmentation')?.setValue(segmentationValues, { emitEvent: true });
     }, 100);
@@ -327,7 +400,16 @@ export class CreateCampaignComponent implements OnInit {
       channels: [['email']],
       segmentation: [['all']],
       status: ['DRAFT'], // Control de estado
-      isAutomatic: [true]
+      isAutomatic: [true],
+      // Reward fields
+      rewardType: [null, Validators.required],
+      numericValue: [null],
+      productId: [null],
+      buyQuantity: [null],
+      freeQuantity: [null],
+      rewardDescription: ['', [Validators.required, Validators.maxLength(500)]],
+      minPurchaseAmount: [null],
+      usageLimit: [null]
     });
 
     // Subscribe to form changes for live preview
@@ -351,8 +433,6 @@ export class CreateCampaignComponent implements OnInit {
             this.template.set(template);
             this.applyTemplate(template);
             this.loading.set(false);
-            // Focus and open the reward type select after view is fully rendered
-            setTimeout(() => this.rewardFormComp?.focusRewardType(), 500);
           },
           error: (error: any) => {
             console.error('Error loading template:', error);
@@ -384,27 +464,20 @@ export class CreateCampaignComponent implements OnInit {
   }
 
   private loadTenantData(): void {
-    const userStr = sessionStorage.getItem('usuario') ?? localStorage.getItem('usuario');
-    if (userStr) {
-      try {
-        const userObj = JSON.parse(userStr);
-        if (userObj && userObj.userEmail) {
-          this.tenantService.getTenantByEmail(String(userObj.userEmail || '').trim()).subscribe({
-            next: (resp) => {
-              const tenant = resp?.object;
-              this.tenantId = tenant?.id ?? 0;
-              this.clientName.set(tenant.nombreNegocio || 'Negocio');
-              this.clientLogo.set(tenant.logoUrl || null);
-              this.clientSlug.set(tenant.slug || null);
-            },
-            error: (err) => {
-              console.error('Error fetching tenant:', err);
-            }
-          });
+    const currentUser = this.authService.getCurrentUser();
+    const tenantId = currentUser?.tenantId;
+    if (tenantId) {
+      this.tenantService.getTenantById(tenantId).subscribe({
+        next: (tenant) => {
+          this.tenantId = tenant?.id ?? 0;
+          this.clientName.set(tenant.nombreNegocio || 'Negocio');
+          this.clientLogo.set(tenant.logoUrl || null);
+          this.clientSlug.set(tenant.slug || null);
+        },
+        error: (err) => {
+          console.error('Error fetching tenant:', err);
         }
-      } catch (e) {
-        console.warn('Failed to parse stored usuario:', e);
-      }
+      });
     }
   }
 
@@ -454,6 +527,8 @@ export class CreateCampaignComponent implements OnInit {
       const titleControl = this.campaignForm.get('title');
       const startControl = this.campaignForm.get('startDate');
       const endControl = this.campaignForm.get('endDate');
+      const rewardTypeControl = this.campaignForm.get('rewardType');
+      const statusControl = this.campaignForm.get('status');
 
       const titleValid = !!titleControl?.value && titleControl.value.trim().length >= 3;
       const datesValid = !!startControl?.value && !!endControl?.value;
@@ -469,6 +544,19 @@ export class CreateCampaignComponent implements OnInit {
         });
         return;
       }
+
+      // Validar que rewardType esté seleccionado al activar una campaña
+      const isActivating = statusControl?.value === 'ACTIVE';
+      if (isActivating && !rewardTypeControl?.value) {
+        rewardTypeControl?.markAsTouched();
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Tipo de Beneficio Requerido',
+          detail: 'Debes seleccionar un tipo de beneficio antes de activar la campaña'
+        });
+        return;
+      }
+
       this.updateCampaignWithReward();
     } else {
       // Modo creación: validación mínima, siempre guardar como DRAFT
@@ -513,8 +601,6 @@ export class CreateCampaignComponent implements OnInit {
   }
 
   private updateCampaignWithReward(): void {
-    debugger;
-    this.saving.set(true);
     const campaignId = this.campaignId();
 
     if (!campaignId) {
@@ -523,106 +609,29 @@ export class CreateCampaignComponent implements OnInit {
         summary: 'Error',
         detail: 'No se encontró el ID de la campaña'
       });
-      this.saving.set(false);
       return;
     }
 
     const formValue = this.campaignForm.value;
+    const currentStatus = this.campaignToEdit()?.status;
+    const newStatus = formValue.status;
+    const rewardType = formValue.rewardType;
 
-    // Obtener el rewardType seleccionado actualmente usando el nuevo método
-    const selectedRewardType = this.rewardFormComp?.getSelectedRewardType?.();
-    const rewardFromForm = this.rewardFormComp?.getConfigureRewardRequest?.();
-    const existingReward = this.currentReward();
+    // Detectar si se está activando una campaña 2x1
+    const isActivating = currentStatus !== 'ACTIVE' && newStatus === 'ACTIVE';
+    const is2x1Campaign = rewardType === RewardType.BUY_X_GET_Y;
 
-    // Determinar promoType basado en el rewardType seleccionado
-    let promoType = formValue.promoType;
-
-    if (selectedRewardType === RewardType.NONE) {
-      // Si es "Ninguno (solo promoción)", enviar 'NONE' como promoType
-      promoType = 'NONE';
+    if (isActivating && is2x1Campaign) {
+      // Guardar el request pendiente y mostrar el modal de confirmación
+      const updateRequest = this.buildUpdateRequest(formValue);
+      this.pendingCampaignUpdate.set(updateRequest);
+      this.showEmailConfirmationDialog.set(true);
+      return;
     }
 
-    const updateRequest = {
-      title: formValue.title,
-      subtitle: formValue.subtitle,
-      description: formValue.description,
-      imageUrl: this.uploadedImageUrl() || formValue.imageUrl,
-      promoType: promoType,
-      promoValue: formValue.promoValue,
-      startDate: this.formatDateForBackend(formValue.startDate),
-      endDate: this.formatDateForBackend(formValue.endDate),
-      callToAction: formValue.callToAction || 'Obtener promoción',
-      channels: formValue.channels,
-      segmentation: formValue.segmentation,
-      isAutomatic: formValue.isAutomatic,
-      status: formValue.status
-    };
-
-    // Incluir reward solo si no es NONE
-    if (selectedRewardType === RewardType.NONE) {
-      // No incluir reward en el payload cuando es NONE
-      console.log('[Campaign] Updating campaign with NONE reward type - no reward payload');
-    } else if (rewardFromForm) {
-      // Incluir reward directamente en el payload si hay datos en el formulario
-      const selectedKey = (this.rewardFormComp as any)?.selectedProductKey;
-      const descFromForm = (this.rewardFormComp as any)?.rewardForm?.get('description')?.value;
-      const rewardPayload: any = { ...rewardFromForm };
-      if (selectedKey !== undefined && selectedKey !== null) {
-        rewardPayload.selectedProductKey = selectedKey;
-        if (!rewardPayload.productId) {
-          const asNum = Number(selectedKey);
-          if (!isNaN(asNum)) rewardPayload.productId = asNum;
-        }
-      }
-      if (descFromForm) {
-        rewardPayload.description = descFromForm;
-      }
-      (updateRequest as any).reward = rewardPayload as any;
-    } else if (existingReward) {
-      // Si hay reward existente y no es NONE (primera condición lo descartó), incluirlo
-      const rewardPayload: any = {
-        rewardType: existingReward.rewardType,
-        numericValue: existingReward.numericValue,
-        productId: existingReward.productId,
-        buyQuantity: existingReward.buyQuantity,
-        freeQuantity: existingReward.freeQuantity,
-        customConfig: existingReward.customConfig,
-        description: existingReward.description,
-        minPurchaseAmount: existingReward.minPurchaseAmount,
-        usageLimit: existingReward.usageLimit
-      };
-      (updateRequest as any).reward = rewardPayload;
-    }
-
-    // Usar el endpoint que acepta reward embebido en el payload
-    this.campaignService.updateCampaign(campaignId, updateRequest as any)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (response) => {
-          console.log('[Campaign] Campaña actualizada:', response);
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Campaña actualizada correctamente'
-          });
-          this.saving.set(false);
-          this.campaignSaved.set(true);
-
-          // Navegar de vuelta a la lista de campañas después de actualizar
-          setTimeout(() => {
-            this.router.navigate(['/dashboard/campaigns']);
-          }, 1500);
-        },
-        error: (err) => {
-          console.error('[Campaign] Error actualizando campaña:', err);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Error al actualizar la campaña'
-          });
-          this.saving.set(false);
-        }
-      });
+    // Si no es 2x1 o no se está activando, proceder normalmente
+    const updateRequest = this.buildUpdateRequest(formValue);
+    this.executeUpdateCampaign(updateRequest, false);
   }
 
   private saveCampaignWithReward(isDraft: boolean): void {
@@ -660,56 +669,93 @@ export class CreateCampaignComponent implements OnInit {
           this.campaignId.set(createdCampaignId);
 
           // Si hay datos válidos de reward, crear el reward
-          if (this.rewardFormComp?.hasValidRewardData()) {
-            const rewardData = this.rewardFormComp.getRewardData();
-            if (rewardData) {
-              this.campaignService.createReward(createdCampaignId, rewardData)
-                .pipe(takeUntilDestroyed(this.destroyRef))
-                .subscribe({
-                  next: (reward) => {
-                    this.currentReward.set(reward);
-                    // Detectar si es campaña de bienvenida y está activa para mostrar confeti
-                    const isWelcomeCampaign = this.template()?.id === 1;
-                    const isActive = !isDraft;
-                    console.log('[Confetti Debug] saveCampaignWithReward - templateId:', this.template()?.id, 'isWelcomeCampaign:', isWelcomeCampaign, 'isDraft:', isDraft, 'isActive:', isActive);
+          const rewardType = formValue.rewardType;
+          if (rewardType && rewardType !== RewardType.NONE) {
+            const rewardData: CreateRewardRequest = {
+              rewardType: rewardType,
+              description: formValue.rewardDescription,
+              minPurchaseAmount: formValue.minPurchaseAmount,
+              usageLimit: formValue.usageLimit
+            };
 
-                    this.messageService.add({
-                      severity: 'success',
-                      summary: 'Éxito',
-                      detail: isDraft
-                        ? 'Borrador y beneficio guardados correctamente'
-                        : 'Campaña y beneficio creados correctamente'
-                    });
-                    this.saving.set(false);
-                    this.campaignSaved.set(true);
-
-                    setTimeout(() => {
-                      this.router.navigate(['/dashboard/campaigns'], {
-                        state: { showWelcomeConfetti: isWelcomeCampaign && isActive }
-                      });
-                    }, 1500);
-                  },
-                  error: (err) => {
-                    console.error('Error creating reward:', err);
-                    this.messageService.add({
-                      severity: 'success',
-                      summary: 'Campaña guardada',
-                      detail: isDraft
-                        ? 'Borrador guardado pero hubo un error al guardar el beneficio'
-                        : 'Campaña creada pero hubo un error al guardar el beneficio'
-                    });
-                    this.saving.set(false);
-                    this.campaignSaved.set(true);
-
-                    setTimeout(() => {
-                      this.router.navigate(['/dashboard/campaigns']);
-                    }, 1500);
+            // Add type-specific fields
+            switch (rewardType) {
+              case RewardType.PERCENT_DISCOUNT:
+              case RewardType.FIXED_AMOUNT:
+                if (formValue.numericValue !== null && formValue.numericValue !== undefined) {
+                  rewardData.numericValue = Number(formValue.numericValue);
+                }
+                break;
+              case RewardType.FREE_PRODUCT:
+                if (formValue.productId) {
+                  const productId = typeof formValue.productId === 'number' ? formValue.productId : Number(formValue.productId);
+                  if (!isNaN(productId) && productId > 0) {
+                    rewardData.productId = productId;
                   }
-                });
-            } else {
-              this.showSuccessAndNavigate(isDraft);
+                }
+                break;
+              case RewardType.BUY_X_GET_Y:
+                // For 2x1 promotion: include productId (same product for buy and free)
+                if (formValue.productId) {
+                  const productId = typeof formValue.productId === 'number' ? formValue.productId : Number(formValue.productId);
+                  if (!isNaN(productId) && productId > 0) {
+                    rewardData.productId = productId;
+                  }
+                }
+                if (formValue.buyQuantity) {
+                  rewardData.buyQuantity = Number(formValue.buyQuantity);
+                }
+                if (formValue.freeQuantity) {
+                  rewardData.freeQuantity = Number(formValue.freeQuantity);
+                }
+                break;
             }
+
+            this.campaignService.createReward(createdCampaignId, rewardData)
+              .pipe(takeUntilDestroyed(this.destroyRef))
+              .subscribe({
+                next: (reward) => {
+                  this.currentReward.set(reward);
+                  // Detectar si es campaña de bienvenida y está activa para mostrar confeti
+                  const isWelcomeCampaign = this.template()?.id === 1;
+                  const isActive = !isDraft;
+                  console.log('[Confetti Debug] saveCampaignWithReward - templateId:', this.template()?.id, 'isWelcomeCampaign:', isWelcomeCampaign, 'isDraft:', isDraft, 'isActive:', isActive);
+
+                  this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: isDraft
+                      ? 'Borrador y beneficio guardados correctamente'
+                      : 'Campaña y beneficio creados correctamente'
+                  });
+                  this.saving.set(false);
+                  this.campaignSaved.set(true);
+
+                  setTimeout(() => {
+                    this.router.navigate(['/dashboard/campaigns'], {
+                      state: { showWelcomeConfetti: isWelcomeCampaign && isActive }
+                    });
+                  }, 1500);
+                },
+                error: (err) => {
+                  console.error('Error creating reward:', err);
+                  this.messageService.add({
+                    severity: 'success',
+                    summary: 'Campaña guardada',
+                    detail: isDraft
+                      ? 'Borrador guardado pero hubo un error al guardar el beneficio'
+                      : 'Campaña creada pero hubo un error al guardar el beneficio'
+                  });
+                  this.saving.set(false);
+                  this.campaignSaved.set(true);
+
+                  setTimeout(() => {
+                    this.router.navigate(['/dashboard/campaigns']);
+                  }, 1500);
+                }
+              });
           } else {
+            // No hay reward type seleccionado o es NONE
             this.showSuccessAndNavigate(isDraft);
           }
         },
@@ -778,22 +824,37 @@ export class CreateCampaignComponent implements OnInit {
     };
 
     // Incluir reward en el payload si existe en el formulario o ya existe en la campaña
-    const rewardFromForm = this.rewardFormComp?.getConfigureRewardRequest?.();
     const existingReward = this.currentReward();
-    if (rewardFromForm) {
-      (updateRequest as any).reward = rewardFromForm as ConfigureRewardRequest;
-    } else if (existingReward) {
-      const rewardPayload: ConfigureRewardRequest = {
-        rewardType: existingReward.rewardType as any,
-        numericValue: existingReward.numericValue,
-        productId: existingReward.productId,
-        buyQuantity: existingReward.buyQuantity,
-        freeQuantity: existingReward.freeQuantity,
-        customConfig: existingReward.customConfig,
-        description: existingReward.description,
-        minPurchaseAmount: existingReward.minPurchaseAmount,
-        usageLimit: existingReward.usageLimit
+    const rewardType = formValue.rewardType;
+    if (rewardType && rewardType !== RewardType.NONE) {
+      const rewardPayload: any = {
+        rewardType,
+        description: formValue.rewardDescription
       };
+
+      // Add type-specific fields based on reward type
+      if (rewardType === RewardType.PERCENT_DISCOUNT || rewardType === RewardType.FIXED_AMOUNT) {
+        rewardPayload.numericValue = formValue.numericValue;
+      }
+      if (rewardType === RewardType.FREE_PRODUCT) {
+        rewardPayload.productId = formValue.productId;
+      }
+      if (rewardType === RewardType.BUY_X_GET_Y) {
+        rewardPayload.buyQuantity = formValue.buyQuantity;
+        rewardPayload.freeQuantity = formValue.freeQuantity;
+      }
+      if (rewardType === RewardType.CUSTOM) {
+        rewardPayload.customConfig = formValue.customConfig;
+      }
+
+      // Add optional fields if present
+      if (formValue.minPurchaseAmount) {
+        rewardPayload.minPurchaseAmount = formValue.minPurchaseAmount;
+      }
+      if (formValue.usageLimit) {
+        rewardPayload.usageLimit = formValue.usageLimit;
+      }
+
       (updateRequest as any).reward = rewardPayload;
     }
 
@@ -1045,6 +1106,13 @@ export class CreateCampaignComponent implements OnInit {
   }
 
   getRewardSummary(): string {
+    // If the selected reward type is NONE, show explicit message
+    if (this.selectedRewardType === RewardType.NONE) {
+      // Prefer any existing description; otherwise a default message
+      const desc = this.campaignForm.get('rewardDescription')?.value;
+      return desc ? desc : 'Sin beneficio (Solo promoción)';
+    }
+
     const reward = this.currentReward();
     if (!reward) return 'No configurado';
 
@@ -1059,6 +1127,9 @@ export class CreateCampaignComponent implements OnInit {
         return `Compra ${reward.buyQuantity} lleva ${reward.freeQuantity} gratis`;
       case 'CUSTOM':
         return reward.description || 'Beneficio personalizado';
+      case 'NONE':
+        // If backend returned a NONE reward, show its description or default
+        return reward.description || 'Sin beneficio (Solo promoción)';
       default:
         return 'Beneficio configurado';
     }
@@ -1104,5 +1175,451 @@ export class CreateCampaignComponent implements OnInit {
         }
       }, 600);
     }
+  }
+
+  // ============================================================================
+  // REWARD-RELATED METHODS
+  // ============================================================================
+
+  private setupRewardFormListeners(): void {
+    this.campaignForm.get('rewardType')?.valueChanges
+      .pipe(
+        startWith(this.campaignForm.get('rewardType')?.value),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((type: RewardType) => {
+        // Clear values from fields that no longer apply to the new type.
+        // This runs only for user-driven changes; programmatic loads use emitEvent:false.
+        this.clearRewardFieldValues(type);
+        this.updateRewardValidators(type);
+
+        // Load product tree when a product-based reward type is selected
+        if (type === RewardType.FREE_PRODUCT || type === RewardType.BUY_X_GET_Y) {
+          if (this.productTree.length === 0) {
+            this.lastLoadedTenantId = null;
+          }
+          this.loadProductTree(this.tenantId ?? undefined);
+        }
+
+        // Default quantities for 2x1 if not yet set
+        if (type === RewardType.BUY_X_GET_Y) {
+          if (!this.campaignForm.get('buyQuantity')?.value) {
+            this.campaignForm.patchValue({ buyQuantity: 1 }, { emitEvent: false });
+          }
+          if (!this.campaignForm.get('freeQuantity')?.value) {
+            this.campaignForm.patchValue({ freeQuantity: 1 }, { emitEvent: false });
+          }
+        }
+      });
+  }
+
+  /**
+   * Clears reward field values that do not apply to the newly selected reward type.
+   * Only called for user-driven type changes (not during programmatic form population).
+   */
+  private clearRewardFieldValues(newType: RewardType): void {
+    const patch: Partial<Record<string, null>> = {};
+
+    if (newType !== RewardType.PERCENT_DISCOUNT && newType !== RewardType.FIXED_AMOUNT) {
+      patch['numericValue'] = null;
+    }
+
+    if (newType !== RewardType.FREE_PRODUCT && newType !== RewardType.BUY_X_GET_Y) {
+      patch['productId'] = null;
+      this.selectedProductNode = null;
+    }
+
+    if (newType !== RewardType.BUY_X_GET_Y) {
+      patch['buyQuantity'] = null;
+      patch['freeQuantity'] = null;
+    }
+
+    if (Object.keys(patch).length > 0) {
+      this.campaignForm.patchValue(patch, { emitEvent: false });
+    }
+  }
+
+  /**
+   * Updates form validators based on the selected reward type.
+   * Does NOT modify field values — use clearRewardFieldValues() for that.
+   */
+  private updateRewardValidators(rewardType: RewardType): void {
+    if (this.isUpdatingValidators) return;
+    this.isUpdatingValidators = true;
+
+    try {
+      const rewardFields = ['numericValue', 'productId', 'buyQuantity', 'freeQuantity', 'rewardDescription', 'minPurchaseAmount', 'usageLimit'];
+      rewardFields.forEach(field => this.campaignForm.get(field)?.clearValidators());
+
+      switch (rewardType) {
+        case RewardType.NONE:
+          // Description is required so promotional-only campaigns have a message
+          this.campaignForm.get('rewardDescription')?.setValidators([Validators.required, Validators.maxLength(500)]);
+          break;
+
+        case RewardType.PERCENT_DISCOUNT:
+          this.campaignForm.get('numericValue')?.setValidators([Validators.required, Validators.min(0.01), Validators.max(100)]);
+          this.campaignForm.get('rewardDescription')?.setValidators([Validators.required, Validators.maxLength(500)]);
+          break;
+
+        case RewardType.FIXED_AMOUNT:
+          this.campaignForm.get('numericValue')?.setValidators([Validators.required, Validators.min(0.01)]);
+          this.campaignForm.get('rewardDescription')?.setValidators([Validators.required, Validators.maxLength(500)]);
+          break;
+
+        case RewardType.FREE_PRODUCT:
+          this.campaignForm.get('productId')?.setValidators([Validators.required]);
+          this.campaignForm.get('rewardDescription')?.setValidators([Validators.required, Validators.maxLength(500)]);
+          break;
+
+        case RewardType.BUY_X_GET_Y:
+          this.campaignForm.get('productId')?.setValidators([Validators.required]);
+          this.campaignForm.get('buyQuantity')?.setValidators([Validators.required, Validators.min(1)]);
+          this.campaignForm.get('freeQuantity')?.setValidators([Validators.required, Validators.min(1)]);
+          this.campaignForm.get('rewardDescription')?.setValidators([Validators.required, Validators.maxLength(500)]);
+          break;
+
+        case RewardType.CUSTOM:
+          this.campaignForm.get('rewardDescription')?.setValidators([Validators.required, Validators.maxLength(500)]);
+          break;
+      }
+
+      this.campaignForm.get('rewardDescription')?.enable({ emitEvent: false });
+      rewardFields.forEach(field => this.campaignForm.get(field)?.updateValueAndValidity({ emitEvent: false }));
+    } finally {
+      this.isUpdatingValidators = false;
+    }
+  }
+
+  private loadProductTree(tenantId?: number): void {
+    if (this.isLoadingProducts || this.lastLoadedTenantId === tenantId) {
+      return;
+    }
+
+    if (tenantId && Number(tenantId) > 0) {
+      this.isLoadingProducts = true;
+      this.lastLoadedTenantId = tenantId;
+      this.catalogService.getCategoriesWithProducts(tenantId).subscribe({
+        next: (categories) => {
+          this.productTree = this.catalogService.mapToTreeNodes(categories);
+          this.isLoadingProducts = false;
+
+          // Si hay un productId en el formulario, seleccionarlo ahora que el árbol está cargado
+          const productId = this.campaignForm.get('productId')?.value;
+          if (productId && Number(productId) > 0) {
+            this.setSelectedProductNode(Number(productId));
+          }
+        },
+        error: (err) => {
+          this.isLoadingProducts = false;
+          console.warn('Failed to load product tree from backend, using mock data', err);
+          this.loadMockProductTree();
+        }
+      });
+    } else {
+      this.loadMockProductTree();
+    }
+  }
+
+  private loadMockProductTree(): void {
+    this.productTree = [
+      {
+        label: 'Bebidas',
+        key: 'cat-1',
+        selectable: false,
+        children: [
+          { label: 'Café Americano', key: '101', selectable: true },
+          { label: 'Latte', key: '102', selectable: true },
+          { label: 'Cappuccino', key: '103', selectable: true }
+        ]
+      },
+      {
+        label: 'Postres',
+        key: 'cat-2',
+        selectable: false,
+        children: [
+          { label: 'Tarta de Chocolate', key: '201', selectable: true },
+          { label: 'Cheesecake', key: '202', selectable: true }
+        ]
+      },
+      {
+        label: 'Bocadillos',
+        key: 'cat-3',
+        selectable: false,
+        children: [
+          { label: 'Sándwich Club', key: '301', selectable: true },
+          { label: 'Wrap de Pollo', key: '302', selectable: true }
+        ]
+      }
+    ];
+
+    // Si hay un productId en el formulario, seleccionarlo ahora que el árbol está cargado
+    const productId = this.campaignForm.get('productId')?.value;
+    if (productId && Number(productId) > 0) {
+      this.setSelectedProductNode(Number(productId));
+    }
+  }
+
+  onProductTreeSelect(node: TreeNode | null): void {
+    if (node && node.key) {
+      const productId = typeof node.key === 'number' ? node.key : Number(node.key);
+      if (!isNaN(productId) && productId > 0) {
+        this.campaignForm.get('productId')?.setValue(productId);
+        this.selectedProductNode = node;
+        console.debug('[onProductTreeSelect]', { node, productId });
+      }
+    } else {
+      this.campaignForm.get('productId')?.setValue(null);
+      this.selectedProductNode = null;
+    }
+  }
+
+  /**
+   * Find a product node in the tree by productId and set it as selected
+   * Used when loading existing rewards in edit mode
+   */
+  private setSelectedProductNode(productId: number): void {
+    console.log('[setSelectedProductNode] Buscando producto con ID:', productId, 'Árbol tiene', this.productTree.length, 'nodos');
+
+    const findNode = (nodes: TreeNode[]): TreeNode | null => {
+      for (const node of nodes) {
+        if (node.key && Number(node.key) === productId) {
+          return node;
+        }
+        if (node.children) {
+          const found = findNode(node.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const foundNode = findNode(this.productTree);
+    if (foundNode) {
+      this.selectedProductNode = foundNode;
+      console.log('[setSelectedProductNode] ✅ Producto encontrado y seleccionado:', foundNode.label);
+    } else {
+      console.warn('[setSelectedProductNode] ⚠️ No se encontró el producto con ID:', productId);
+    }
+  }
+
+  // Getters for template
+  get selectedRewardType(): RewardType | null {
+    return this.campaignForm.get('rewardType')?.value;
+  }
+
+  get showNumericValue(): boolean {
+    return this.selectedRewardType === RewardType.PERCENT_DISCOUNT ||
+           this.selectedRewardType === RewardType.FIXED_AMOUNT;
+  }
+
+  get showProductId(): boolean {
+    return this.selectedRewardType === RewardType.FREE_PRODUCT ||
+           this.selectedRewardType === RewardType.BUY_X_GET_Y;
+  }
+
+  get showBuyGetQuantities(): boolean {
+    return this.selectedRewardType === RewardType.BUY_X_GET_Y;
+  }
+
+  get show2x1Product(): boolean {
+    // Show product selector for 2x1 promotion (same product)
+    return this.selectedRewardType === RewardType.BUY_X_GET_Y;
+  }
+
+  get productIdLabel(): string {
+    if (this.selectedRewardType === RewardType.BUY_X_GET_Y) {
+      return 'Producto 2x1';
+    }
+    return 'Producto a regalar';
+  }
+
+  get productIdHelperText(): string {
+    if (this.selectedRewardType === RewardType.BUY_X_GET_Y) {
+      return 'Selecciona el producto que participará en la promoción 2x1. El cliente comprará 1 y recibirá 1 adicional gratis.';
+    }
+    return 'Selecciona la categoría y luego el producto que se regalará.';
+  }
+
+  get numericValueLabel(): string {
+    if (this.selectedRewardType === RewardType.PERCENT_DISCOUNT) {
+      return 'Porcentaje de descuento (%)';
+    }
+    if (this.selectedRewardType === RewardType.FIXED_AMOUNT) {
+      return 'Monto fijo ($)';
+    }
+    return 'Valor';
+  }
+
+  /**
+   * Construye el request de actualización de campaña
+   */
+  private buildUpdateRequest(formValue: any): any {
+    // Determinar promoType basado en el rewardType seleccionado
+    let promoType = formValue.promoType;
+    if (this.selectedRewardType === RewardType.NONE) {
+      promoType = 'NONE';
+    }
+
+    const updateRequest: any = {
+      title: formValue.title,
+      subtitle: formValue.subtitle,
+      description: promoType === 'NONE' ? formValue.rewardDescription : formValue.description,
+      imageUrl: this.uploadedImageUrl() || formValue.imageUrl,
+      promoType: promoType,
+      promoValue: formValue.promoValue,
+      startDate: this.formatDateForBackend(formValue.startDate),
+      endDate: this.formatDateForBackend(formValue.endDate),
+      callToAction: formValue.callToAction || 'Obtener promoción',
+      channels: formValue.channels,
+      segmentation: formValue.segmentation,
+      isAutomatic: formValue.isAutomatic,
+      status: formValue.status
+    };
+
+    // Incluir reward solo si no es NONE
+    if (this.selectedRewardType !== RewardType.NONE && formValue.rewardType) {
+      const rewardPayload: any = {
+        rewardType: formValue.rewardType,
+        description: formValue.rewardDescription,
+        minPurchaseAmount: formValue.minPurchaseAmount,
+        usageLimit: formValue.usageLimit
+      };
+
+      // Add type-specific fields
+      switch (formValue.rewardType) {
+        case RewardType.PERCENT_DISCOUNT:
+        case RewardType.FIXED_AMOUNT:
+          if (formValue.numericValue !== null && formValue.numericValue !== undefined) {
+            rewardPayload.numericValue = Number(formValue.numericValue);
+          }
+          break;
+        case RewardType.FREE_PRODUCT:
+          if (formValue.productId) {
+            const productId = typeof formValue.productId === 'number' ? formValue.productId : Number(formValue.productId);
+            if (!isNaN(productId) && productId > 0) {
+              rewardPayload.productId = productId;
+            }
+          }
+          break;
+        case RewardType.BUY_X_GET_Y:
+          if (formValue.buyQuantity) {
+            rewardPayload.buyQuantity = Number(formValue.buyQuantity);
+          }
+          if (formValue.freeQuantity) {
+            rewardPayload.freeQuantity = Number(formValue.freeQuantity);
+          }
+          break;
+      }
+
+      updateRequest.reward = rewardPayload;
+    }
+
+    return updateRequest;
+  }
+
+  /**
+   * Ejecuta la actualización de la campaña y opcionalmente envía emails
+   */
+  private executeUpdateCampaign(updateRequest: any, shouldSendEmails: boolean = false): void {
+    const campaignId = this.campaignId();
+    if (!campaignId) return;
+
+    this.saving.set(true);
+
+    this.campaignService.updateCampaign(campaignId, updateRequest)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          console.log('[Campaign] Campaña actualizada:', response);
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Éxito',
+            detail: 'Campaña actualizada correctamente'
+          });
+
+          // Si se debe enviar emails, llamar al endpoint
+          if (shouldSendEmails) {
+            this.sendCampaignEmails(campaignId);
+          } else {
+            this.saving.set(false);
+            this.campaignSaved.set(true);
+            this.navigateToListWithToast();
+          }
+        },
+        error: (err) => {
+          console.error('[Campaign] Error actualizando campaña:', err);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Error al actualizar la campaña'
+          });
+          this.saving.set(false);
+        }
+      });
+  }
+
+  /**
+   * Envía los emails masivos de la campaña
+   */
+  private sendCampaignEmails(campaignId: number): void {
+    this.campaignService.sendMassiveEmails(campaignId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          console.log('[Campaign] Emails enviados:', response);
+          this.saving.set(false);
+          this.campaignSaved.set(true);
+          this.navigateToListWithToast(true);
+        },
+        error: (err) => {
+          console.error('[Campaign] Error enviando emails:', err);
+          const errorMessage = err?.error?.message || err?.message || 'Error al iniciar el envío de emails';
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Campaña activada',
+            detail: `La campaña se activó correctamente, pero hubo un problema al enviar los emails: ${errorMessage}`
+          });
+          this.saving.set(false);
+          this.navigateToListWithToast(false);
+        }
+      });
+  }
+
+  /**
+   * Navega al listado de campañas con un toast informativo
+   */
+  private navigateToListWithToast(emailsSent: boolean = false): void {
+    setTimeout(() => {
+      this.router.navigate(['/dashboard/campaigns']).then(() => {
+        if (emailsSent) {
+          this.messageService.add({
+            severity: 'info',
+            summary: 'Proceso en curso',
+            detail: 'El envío de emails se está procesando. Esto puede tardar unos minutos dependiendo del tamaño de tu audiencia.',
+            life: 6000
+          });
+        }
+      });
+    }, 1000);
+  }
+
+  /**
+   * Confirma el envío de emails desde el modal
+   */
+  confirmEmailSend(): void {
+    const updateRequest = this.pendingCampaignUpdate();
+    if (!updateRequest) return;
+
+    this.showEmailConfirmationDialog.set(false);
+    this.executeUpdateCampaign(updateRequest, true);
+  }
+
+  /**
+   * Cancela el envío de emails desde el modal
+   */
+  cancelEmailSend(): void {
+    this.showEmailConfirmationDialog.set(false);
+    this.pendingCampaignUpdate.set(null);
   }
 }

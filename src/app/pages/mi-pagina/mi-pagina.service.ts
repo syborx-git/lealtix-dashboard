@@ -29,14 +29,13 @@ export class MiPaginaService {
   getTenantPageInfo(): Observable<TenantPageInfo | null> {
     const user = this.authService.getCurrentUser();
 
-    if (!user || !user.userEmail) {
-      console.warn('No se encontró usuario autenticado');
+    if (!user || !user.tenantId) {
+      console.warn('No se encontró usuario autenticado o tenant');
       return of(null);
     }
 
-    return this.tenantService.getTenantByEmail(user.userEmail).pipe(
-      map((resp) => {
-        const tenant = resp?.object;
+    return this.tenantService.getTenantById(user.tenantId).pipe(
+      map((tenant) => {
         const tenantId = tenant?.id;
         const tenantSlug = tenant?.slug;
 
@@ -84,7 +83,7 @@ export class MiPaginaService {
    */
   private getBaseUrl(): string {
     const baseUrl = environment.production
-      ? 'https://lealtix.com.mx/landing-page'
+      ? 'https://full-accountability-big-rug.trycloudflare.com/landing-page'
       : 'http://localhost:4200/landing-page';
     return baseUrl;
   }

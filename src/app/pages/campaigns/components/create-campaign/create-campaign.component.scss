@@ -1,12 +1,129 @@
-// Create Campaign Component Styles
-// Professional, modern styling using PrimeNG utilities
+/* ============================================================================
+   CREATE CAMPAIGN - Estilos de componente
+   Alineados con el sistema de diseño Lealtix
+   ============================================================================ */
 
+/* === DIÁLOGO DE CONFIRMACIÓN DE EMAIL === */
+.email-dialog-content {
+  .email-header {
+    .icon-wrap {
+      .icon-bg {
+        width: 3rem;
+        height: 3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--lealtix-radius-lg);
+        background: var(--lealtix-primary-50);
+        color: var(--lealtix-primary-500);
+        i { font-size: 1.25rem; }
+      }
+    }
+
+    .title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--lealtix-slate-900);
+    }
+
+    .subtitle {
+      font-size: 0.875rem;
+      color: var(--lealtix-slate-600);
+    }
+  }
+
+  .email-body {
+    .card {
+      padding: 0.75rem;
+      border-radius: var(--lealtix-radius-md);
+      background: white;
+      box-shadow: var(--lealtix-shadow-sm);
+      border: 1px solid var(--lealtix-slate-200);
+    }
+
+    .segmentation-card {
+      .card-icon {
+        color: var(--lealtix-primary-500);
+        font-size: 1.25rem;
+      }
+
+      .label {
+        font-size: 0.625rem;
+        color: var(--lealtix-slate-600);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin: 0 0 0.125rem 0;
+      }
+
+      .value {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--lealtix-slate-900);
+        margin: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+
+    .warning-card {
+      border-left: 3px solid #f59e0b;
+      background: #fef3c7;
+      border-radius: var(--lealtix-radius-md);
+
+      .warning-icon {
+        color: #f59e0b;
+        font-size: 1.25rem;
+      }
+
+      .warning-label {
+        color: #d97706;
+        font-size: 0.675rem;
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+        font-weight: 600;
+      }
+
+      .warning-list {
+        color: #92400e;
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+      }
+    }
+
+    .info-card {
+      background: var(--lealtix-slate-50);
+      border-radius: var(--lealtix-radius-md);
+
+      .info-icon {
+        color: var(--lealtix-primary-500);
+        font-size: 1.25rem;
+      }
+
+      .info-text {
+        font-weight: 600;
+        color: var(--lealtix-slate-900);
+      }
+
+      p.text-xs {
+        color: var(--lealtix-slate-500);
+      }
+    }
+  }
+
+  @media (max-width: 520px) {
+    .email-header .title { font-size: 0.95rem; }
+    .email-body .value { white-space: normal; }
+  }
+}
+/* === CONTENEDOR PRINCIPAL === */
 .create-campaign-container {
   padding: 1.5rem;
   max-width: 1600px;
   margin: 0 auto;
 }
 
+/* === HEADER === */
 .campaign-header {
   display: flex;
   justify-content: space-between;
@@ -16,7 +133,8 @@
   gap: 1rem;
 
   h1 {
-    color: var(--text-color);
+    color: var(--lealtix-slate-900);
+    font-weight: 700;
     margin: 0;
   }
 
@@ -36,6 +154,7 @@
   }
 }
 
+/* === CONTENIDO === */
 .campaign-content {
   margin-top: 1.5rem;
 
@@ -74,7 +193,7 @@
   }
 }
 
-// Form Styles
+/* === ESTILOS DEL FORMULARIO === */
 .campaign-form {
     .form-section {
       margin-bottom: 1.5rem;
@@ -82,10 +201,10 @@
       .section-title {
         font-size: 1.25rem;
         font-weight: 600;
-        color: var(--text-color);
+        color: var(--lealtix-slate-900);
         margin-bottom: 1.25rem;
         padding-bottom: 0.5rem;
-        border-bottom: 2px solid var(--surface-border);
+        border-bottom: 2px solid var(--lealtix-slate-200);
       }
 
       // Default field spacing for stacked layout
@@ -95,8 +214,9 @@
         label {
           display: block;
           margin-bottom: 0.5rem;
-          color: var(--text-color);
+          color: var(--lealtix-slate-800);
           font-size: 0.95rem;
+          font-weight: 600;
         }
 
         small {
@@ -105,20 +225,21 @@
           font-size: 0.875rem;
 
           &.p-error {
-            color: var(--red-500);
+            color: #dc2626;
           }
 
           &.text-500 {
-            color: var(--text-color-secondary);
+            color: var(--lealtix-slate-500);
           }
         }
       }
 
       // Highlight style for the 'Beneficio Actual' box
       .benefit-highlight {
-        background: #e6f4ff; /* light blue */
+        background: var(--lealtix-primary-50);
         text-align: center;
-        border: 1px solid rgba(29, 78, 216, 0.08); /* subtle blue border */
+        border: 1px solid var(--lealtix-primary-200);
+        border-radius: var(--lealtix-radius-md);
 
         // center the inner flex contents (icon + text)
         &.flex, .flex {
@@ -166,8 +287,9 @@
           label {
             display: block;
             margin-bottom: 0.5rem;
-            color: var(--text-color);
+            color: var(--lealtix-slate-800);
             font-size: 0.95rem;
+            font-weight: 600;
           }
 
           // Ensure all PrimeNG components take full width
@@ -192,14 +314,14 @@
     max-height: 200px;
     object-fit: contain;
     object-position: center;
-    border-radius: var(--border-radius);
-    border: 1px solid var(--surface-border);
+    border-radius: var(--lealtix-radius-md);
+    border: 1px solid var(--lealtix-slate-200);
     padding: 0.5rem;
     background: white;
   }
 }
 
-// Preview Sticky Panel
+/* === PANEL DE PREVIEW FIJO === */
 .preview-sticky {
   position: sticky;
   top: 1.5rem;
@@ -211,24 +333,26 @@
   }
 }
 
-// Campaign Preview Styles
+/* === ESTILOS DE PREVIEW DE CAMPAÑA === */
 .campaign-preview {
-  background: linear-gradient(135deg, var(--surface-50) 0%, var(--surface-100) 100%);
-  border-radius: var(--border-radius);
+  background: linear-gradient(135deg, var(--lealtix-slate-50) 0%, var(--lealtix-slate-100) 100%);
+  border-radius: var(--lealtix-radius-lg);
   padding: 1.5rem;
   min-height: 400px;
+  box-shadow: var(--lealtix-shadow-sm);
+  border: 1px solid var(--lealtix-slate-200);
 
   .preview-image-container {
     width: 100%;
     height: 250px;
     margin-bottom: 1.5rem;
-    border-radius: var(--border-radius);
+    border-radius: var(--lealtix-radius-md);
     overflow: hidden;
     background: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--surface-border);
+    border: 1px solid var(--lealtix-slate-200);
 
     .preview-main-image {
       width: 100%;
@@ -243,7 +367,7 @@
     .preview-title {
       font-size: 1.75rem;
       font-weight: 700;
-      color: var(--text-color);
+      color: var(--lealtix-slate-900);
       margin: 0 0 0.75rem 0;
       line-height: 1.3;
     }
@@ -251,13 +375,13 @@
     .preview-subtitle {
       font-size: 1.1rem;
       font-weight: 500;
-      color: var(--text-color-secondary);
+      color: var(--lealtix-slate-600);
       margin: 0 0 1rem 0;
     }
 
     .preview-description {
       font-size: 1rem;
-      color: var(--text-color);
+      color: var(--lealtix-slate-700);
       line-height: 1.6;
       margin: 0 0 1.5rem 0;
       white-space: pre-wrap;
@@ -270,7 +394,7 @@
       margin-bottom: 1.25rem;
 
       ::ng-deep .promo-chip {
-        background: var(--primary-color);
+        background: var(--lealtix-primary-500);
         color: white;
         font-weight: 600;
       }
@@ -278,16 +402,17 @@
       .promo-value {
         font-size: 1.25rem;
         font-weight: 700;
-        color: var(--primary-color);
+        color: var(--lealtix-primary-600);
       }
     }
 
     .preview-dates {
       margin-bottom: 1.5rem;
       padding: 0.75rem;
-      background: var(--surface-0);
-      border-radius: var(--border-radius);
-      border-left: 3px solid var(--primary-color);
+      background: white;
+      border-radius: var(--lealtix-radius-md);
+      border-left: 3px solid var(--lealtix-primary-500);
+      box-shadow: var(--lealtix-shadow-sm);
     }
 
     .preview-cta {
@@ -296,6 +421,7 @@
       ::ng-deep .p-button {
         font-size: 1.1rem;
         padding: 0.75rem 1.5rem;
+        border-radius: var(--lealtix-radius-md);
       }
     }
   }
@@ -322,12 +448,13 @@
   }
 }
 
-// PrimeNG Component Overrides
+/* === SOBREESCRITURAS DE COMPONENTES PRIMENG === */
 ::ng-deep {
   // Card styling
   .p-card {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    border-radius: var(--border-radius);
+    box-shadow: var(--lealtix-shadow-sm);
+    border-radius: var(--lealtix-radius-lg);
+    border: 1px solid var(--lealtix-slate-200);
 
     .p-card-body {
       padding: 1.5rem;
@@ -340,26 +467,36 @@
   .p-select,
   .p-datepicker {
     width: 100%;
+    border-radius: var(--lealtix-radius-md);
+    border-color: var(--lealtix-slate-300);
+
+    &:focus {
+      border-color: var(--lealtix-primary-500);
+      box-shadow: 0 0 0 3px var(--lealtix-primary-50);
+    }
   }
 
   // Toggle button styling
   .p-togglebutton {
     min-width: 180px;
+    border-radius: var(--lealtix-radius-md);
 
     &.p-button-checked {
-      background-color: var(--primary-color);
-      border-color: var(--primary-color);
+      background-color: var(--lealtix-primary-500);
+      border-color: var(--lealtix-primary-500);
     }
   }
 
   // File upload
   .p-fileupload-choose {
     width: 100%;
+    border-radius: var(--lealtix-radius-md);
   }
 
   // Divider
   .p-divider {
     margin: 1.5rem 0;
+    border-color: var(--lealtix-slate-200);
   }
 
   // Checkbox
@@ -370,20 +507,265 @@
   // Buttons in header
   .p-button {
     font-weight: 500;
+    border-radius: var(--lealtix-radius-md);
+    transition: all 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--lealtix-shadow-md);
+    }
   }
 
   // Dialog
   .p-dialog {
     .p-dialog-header {
       padding: 1.5rem;
+      background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%);
+      color: white;
     }
 
     .p-dialog-content {
       padding: 1.5rem;
     }
   }
-}// Responsive adjustments
+
+  // Email Confirmation Dialog Styles
+  ::ng-deep .email-confirmation-dialog {
+    .p-dialog-header {
+      background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%);
+      color: white;
+      border: none;
+      padding: 1.25rem 1.5rem !important;
+      border-radius: var(--lealtix-radius-xl) var(--lealtix-radius-xl) 0 0;
+
+      .p-dialog-title {
+        display: none; // Hide default title
+      }
+    }
+
+    .p-dialog-content {
+      padding: 1.5rem !important;
+      background: #ffffff;
+
+      .p-dialog-close {
+        color: white;
+        background: transparent;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+      }
+    }
+
+    .p-dialog-footer {
+      padding: 1.5rem !important;
+      border-top: 1px solid var(--lealtix-slate-200);
+      background: var(--lealtix-slate-50);
+    }
+  }
+
+  // Email Dialog Content Styles
+  .email-dialog-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+
+    .main-message {
+      margin-bottom: 0.5rem;
+
+      h3 {
+        color: var(--lealtix-primary-700);
+      }
+    }
+
+    .info-box {
+      padding: 1rem;
+      border-radius: var(--lealtix-radius-md);
+      background: var(--lealtix-slate-50);
+      border: 1px solid var(--lealtix-slate-200);
+      transition: all 0.2s ease;
+
+      &.segmentation-info {
+        background: linear-gradient(135deg, var(--lealtix-primary-50) 0%, var(--lealtix-primary-100) 100%);
+        border-color: var(--lealtix-primary-200);
+
+        i {
+          color: var(--lealtix-primary-600);
+        }
+
+        p {
+          color: var(--lealtix-primary-900);
+        }
+      }
+
+      &.secondary-info {
+        background: var(--lealtix-primary-50);
+        border-color: var(--lealtix-primary-200);
+        padding: 0.75rem 1rem;
+
+        i {
+          min-width: 1.2rem;
+          text-align: center;
+          animation: spin 2s linear infinite;
+        }
+
+        span {
+          color: var(--lealtix-primary-700);
+        }
+      }
+    }
+
+    .warning-box {
+      padding: 1rem;
+      border-radius: var(--lealtix-radius-md);
+      background: linear-gradient(135deg, #fef3c7 0%, rgba(255, 193, 7, 0.05) 100%);
+      border: 1px solid #fbbf24;
+
+      i {
+        color: #d97706;
+      }
+
+      p {
+        color: #78350f;
+      }
+
+      ul {
+        list-style: none;
+        padding: 0;
+
+        li {
+          color: #92400e;
+          display: flex;
+          gap: 0.5rem;
+
+          strong {
+            color: #78350f;
+            min-width: 60px;
+          }
+        }
+      }
+    }
+  }
+
+  /* === ACCIONES DEL FOOTER - MOBILE FIRST === */
+  .footer-actions {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.75rem;
+
+    p-button {
+      ::ng-deep {
+        .p-button {
+          width: 100%;
+          font-size: 0.875rem;
+          padding: 0.75rem 1rem;
+          font-weight: 500;
+          border-radius: var(--lealtix-radius-md);
+          transition: all 0.2s ease;
+
+          &.p-button-raised {
+            box-shadow: var(--lealtix-shadow-sm);
+
+            &:hover:not(:disabled) {
+              box-shadow: var(--lealtix-shadow-md);
+              transform: translateY(-2px);
+            }
+          }
+
+          &.p-button-outlined {
+            border: 2px solid var(--lealtix-slate-300);
+
+            &:hover:not(:disabled) {
+              background: var(--lealtix-slate-100);
+              border-color: var(--lealtix-slate-400);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
+
+/* ============================================================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================================================ */
 @media (max-width: 991px) {
+  .create-campaign-container {
+    padding: 1rem;
+  }
+
+  ::ng-deep .email-confirmation-dialog {
+    .p-dialog {
+      margin: 0.5rem !important;
+      width: calc(100% - 1rem) !important;
+      max-width: 400px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+    }
+
+    .p-dialog-header {
+      padding: 1rem 1.25rem !important;
+
+      .flex {
+        gap: 0.75rem !important;
+
+        i {
+          font-size: 1rem;
+        }
+
+        span {
+          font-size: 1rem;
+        }
+      }
+    }
+
+    .p-dialog-content {
+      padding: 1.25rem !important;
+    }
+
+    .p-dialog-footer {
+      padding: 1rem !important;
+    }
+  }
+
+  .email-dialog-content {
+    .info-box,
+    .warning-box {
+      padding: 0.75rem !important;
+      gap: 0.5rem !important;
+
+      i {
+        font-size: 1rem !important;
+      }
+
+      p {
+        font-size: 0.75rem !important;
+      }
+
+      ul li {
+        font-size: 0.75rem !important;
+      }
+    }
+  }
+
+  .footer-actions {
+    gap: 0.5rem !important;
+
+    p-button ::ng-deep .p-button {
+      padding: 0.625rem 0.875rem !important;
+      font-size: 0.8125rem !important;
+    }
+  }
+
   .create-campaign-container {
     padding: 1rem;
   }
@@ -439,5 +821,199 @@
         font-size: 1.1rem;
       }
     }
+  }
+}
+
+:root[class*='app-dark'],
+.app-dark {
+  ::ng-deep .email-confirmation-dialog {
+    .p-dialog-content {
+      background: var(--surface-card) !important;
+    }
+
+    .p-dialog-footer {
+      background: rgba(255, 255, 255, 0.02) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+  }
+
+  ::ng-deep .email-dialog-content {
+    .email-header {
+      .icon-bg {
+        background: rgba(99, 102, 241, 0.15) !important;
+        color: var(--lealtix-primary-300) !important;
+      }
+
+      .title {
+        color: #ffffff !important;
+      }
+
+      .subtitle {
+        color: var(--text-color-secondary) !important;
+      }
+    }
+
+    .email-body {
+      .card {
+        background: var(--surface-card) !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+      }
+
+      .segmentation-card {
+        .label {
+          color: var(--text-color-secondary) !important;
+        }
+
+        .value {
+          color: #e6e8ef !important;
+        }
+      }
+
+      .warning-card {
+        background: rgba(245, 158, 11, 0.12) !important;
+        border-left-color: #f59e0b !important;
+
+        .warning-label {
+          color: #fbbf24 !important;
+        }
+
+        .warning-list {
+          color: #fcd34d !important;
+        }
+      }
+
+      .info-card {
+        background: rgba(255, 255, 255, 0.03) !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+
+        .info-text {
+          color: #e6e8ef !important;
+        }
+
+        p.text-xs {
+          color: var(--text-color-secondary) !important;
+        }
+      }
+    }
+
+    .main-message h3 {
+      color: var(--lealtix-primary-300) !important;
+    }
+
+    .info-box {
+      background: rgba(255, 255, 255, 0.03) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+
+      &.segmentation-info {
+        background: rgba(99, 102, 241, 0.12) !important;
+        border-color: rgba(99, 102, 241, 0.3) !important;
+
+        p {
+          color: var(--lealtix-primary-300) !important;
+        }
+      }
+
+      &.secondary-info {
+        background: rgba(99, 102, 241, 0.12) !important;
+        border-color: rgba(99, 102, 241, 0.3) !important;
+
+        span {
+          color: var(--lealtix-primary-300) !important;
+        }
+      }
+    }
+
+    .warning-box {
+      background: rgba(245, 158, 11, 0.1) !important;
+      border-color: rgba(245, 158, 11, 0.35) !important;
+
+      i {
+        color: #fbbf24 !important;
+      }
+
+      p {
+        color: #fcd34d !important;
+      }
+
+      ul li {
+        color: #fcd34d !important;
+
+        strong {
+          color: #fde68a !important;
+        }
+      }
+    }
+  }
+
+  .campaign-header h1 {
+    color: #e6e8ef !important;
+  }
+
+  .campaign-form {
+    .form-section {
+      .section-title {
+        color: #e6e8ef !important;
+        border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+      }
+
+      .field label {
+        color: #cbd2e0 !important;
+      }
+
+      .benefit-highlight {
+        background: rgba(99, 102, 241, 0.12) !important;
+        border-color: rgba(99, 102, 241, 0.3) !important;
+      }
+    }
+
+    .preview-image {
+      background: var(--surface-card) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+  }
+
+  .campaign-preview {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+
+    .preview-image-container {
+      background: var(--surface-card) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+
+      .preview-main-image {
+        background: var(--surface-card) !important;
+      }
+    }
+
+    .preview-content {
+      .preview-title {
+        color: #ffffff !important;
+      }
+
+      .preview-subtitle {
+        color: var(--text-color-secondary) !important;
+      }
+
+      .preview-description {
+        color: #cbd2e0 !important;
+      }
+
+      .preview-dates {
+        background: var(--surface-card) !important;
+      }
+    }
+  }
+
+  ::ng-deep .footer-actions p-button ::ng-deep .p-button.p-button-outlined {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.05) !important;
+      border-color: rgba(255, 255, 255, 0.2) !important;
+    }
+  }
+
+  ::ng-deep .p-card {
+    border-color: rgba(255, 255, 255, 0.08) !important;
   }
 }

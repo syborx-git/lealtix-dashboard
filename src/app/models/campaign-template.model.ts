@@ -8,4 +8,5 @@ export interface CampaignTemplate {
   defaultImageUrl?: string;
   defaultPromoType?: string;
   active?: boolean;
+  inUse?: boolean;
 }

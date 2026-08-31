@@ -1,3 +1,8 @@
+/* ============================================================================
+   CAMPAIGN TEMPLATES LIST - Estilos de componente
+   Alineados con el sistema de diseño Lealtix
+   ============================================================================ */
+
 :host {
   display: block;
 }
@@ -10,68 +15,71 @@
 /* Card structure - Clean and spacious */
 .template-card {
   height: 100%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: box-shadow 0.3s ease;
+  box-shadow: var(--lealtix-shadow-sm);
+  transition: all 0.3s ease;
+  border-radius: var(--lealtix-radius-lg);
+  border: 1px solid var(--lealtix-slate-200);
+  overflow: hidden;
 }
+
 .template-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--lealtix-shadow-lg);
+  transform: translateY(-4px);
+  border-color: var(--lealtix-primary-200);
 }
+
 .template-card .p-card-body {
   padding: 1.5rem;
   height: 100%;
   display: flex;
 }
+
 .template-card .p-card-content {
   padding: 0;
   flex: 1;
   display: flex;
 }
+
 .p-card {
   overflow: hidden;
-  border-radius: 0.75rem;
-  border: 1px solid #e5e7eb;
+  border-radius: var(--lealtix-radius-lg);
+  border: 1px solid var(--lealtix-slate-200);
 }
 
-/* Image wrapper - Professional gradient background */
+/* Image wrapper - tarjeta chiquita (miniatura izquierda) */
 .card-image-wrapper-horizontal {
   width: 160px;
   min-width: 160px;
-  height: 100%;
+  height: 200px;
   min-height: 200px;
   overflow: hidden;
-  /* neutral background to hide letterboxing gaps */
-  background: #f5f5f5;
-  border-radius: 0.5rem;
+  background: var(--lealtix-slate-50);
+  border-radius: var(--lealtix-radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  position: relative; /* needed for ::before blurred background */
+  position: relative;
+  transition: transform 0.3s ease;
 }
+
+.template-card:hover .card-image-wrapper-horizontal {
+  transform: scale(1.02);
+}
+
 .card-image-wrapper-horizontal::before {
-  /* blurred background fill using the same image via CSS variable set inline */
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: var(--bg-image);
-  background-size: cover;
-  background-position: center;
-  filter: blur(12px) saturate(0.9);
-  transform: scale(1.06);
-  z-index: 0;
+  content: none;
 }
 
 .card-image-wrapper-horizontal img {
-  /* Fill the wrapper's width and height while preserving aspect ratio.
-     object-fit: contain makes the image scale down/up to fit both dimensions
-     without cropping or distortion. */
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   object-position: center;
   display: block;
   position: relative;
   z-index: 1;
+  border-radius: var(--lealtix-radius-md);
 }
 
 /* Main content wrapper */
@@ -83,27 +91,40 @@
 .template-header {
   margin: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid #f3f4f6;
+  border-bottom: 2px solid var(--lealtix-slate-200);
 }
+
 .template-title {
   font-size: 1.25rem;
-  font-weight: 800;
-  color: #0f172a;
+  font-weight: 700;
+  color: var(--lealtix-slate-900);
   font-family: 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   margin: 0 0 0.5rem 0;
   line-height: 1.4;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.025em;
+  transition: color 0.2s ease;
 }
+
+.template-card:hover .template-title {
+  color: var(--lealtix-primary-600);
+}
+
 .template-category {
   display: inline-block;
   font-size: 0.75rem;
-  color: #6b7280;
-  background: #f3f4f6;
+  color: var(--lealtix-slate-600);
+  background: var(--lealtix-slate-100);
   padding: 0.25rem 0.75rem;
-  border-radius: 0.375rem;
+  border-radius: var(--lealtix-radius-md);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.template-card:hover .template-category {
+  background: var(--lealtix-primary-50);
+  color: var(--lealtix-primary-700);
 }
 
 /* Content area - Title and description */
@@ -114,23 +135,26 @@
   gap: 1.25rem;
   padding-right: 1rem;
 }
+
 .content-item {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
+
 .content-label {
   font-size: 0.8125rem;
-  font-weight: 800;
-  color: #111827;
+  font-weight: 700;
+  color: var(--lealtix-slate-800);
   font-family: 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 0.125rem;
 }
+
 .content-text {
   font-size: 0.9375rem;
-  color: #374151;
+  color: var(--lealtix-slate-700);
   margin: 0;
   line-height: 1.6;
   font-weight: 500;
@@ -156,13 +180,25 @@
   flex-shrink: 0;
   padding-left: 0.5rem;
 }
+
 .chip-right-container ::ng-deep .p-chip {
   font-size: 0.8125rem;
   padding: 0.5rem 1rem;
-  border-radius: 1.5rem;
+  border-radius: var(--lealtix-radius-full);
   font-weight: 700;
   letter-spacing: 0.3px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--lealtix-shadow-sm);
+  background: var(--lealtix-primary-50);
+  color: var(--lealtix-primary-700);
+  border: 1px solid var(--lealtix-primary-200);
+  transition: all 0.2s ease;
+}
+
+.template-card:hover .chip-right-container ::ng-deep .p-chip {
+  background: var(--lealtix-primary-500);
+  color: white;
+  border-color: var(--lealtix-primary-500);
+  transform: scale(1.05);
 }
 
 /* Footer section - Buttons at bottom */
@@ -171,7 +207,32 @@
   gap: 0.75rem;
   padding-top: 1.25rem;
   margin-top: 1.25rem;
-  border-top: 2px solid #f3f4f6;
+  border-top: 2px solid var(--lealtix-slate-200);
+}
+
+/* Estado visual cuando la plantilla está en uso */
+.in-use-card {
+  opacity: 0.55;
+  pointer-events: auto;
+  filter: grayscale(0.15);
+}
+
+.in-use-card .template-title,
+.in-use-card .content-text,
+.in-use-card .template-category {
+  color: var(--lealtix-slate-500) !important;
+}
+
+/* Buttons styling */
+::ng-deep .template-footer .p-button {
+  border-radius: var(--lealtix-radius-lg) !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--lealtix-shadow-md) !important;
+  }
 }
 
 /* Responsive adjustments */
@@ -189,5 +250,112 @@
   }
   .template-title {
     font-size: 1.125rem;
+  }
+  .template-header {
+    margin: 1rem;
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+/* Teléfono: tarjetas apiladas y limpias */
+@media (max-width: 640px) {
+  .template-card .flex.flex-row {
+    flex-direction: column;
+  }
+
+  .card-image-wrapper-horizontal {
+    width: 100%;
+    min-width: 100%;
+    height: 110px;
+    min-height: 110px;
+    max-height: 110px;
+  }
+
+  .template-card .p-card-body {
+    padding: 0.75rem;
+  }
+
+  .template-header {
+    margin: 0.75rem 0;
+    padding-bottom: 0.5rem;
+  }
+
+  .template-content {
+    padding-right: 0;
+    gap: 0.75rem;
+  }
+
+  .template-footer {
+    padding-top: 0.75rem;
+    margin-top: 0.75rem;
+
+    .p-button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .chip-right-container {
+    padding-left: 0;
+  }
+}
+
+:root[class*='app-dark'],
+.app-dark {
+  .template-card,
+  .p-card {
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .template-card:hover {
+    border-color: rgba(129, 140, 248, 0.35) !important;
+  }
+
+  ::ng-deep .card-image-wrapper-horizontal {
+    background: rgba(255, 255, 255, 0.03) !important;
+  }
+
+  .template-header,
+  .template-footer {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .template-title {
+    color: #e6e8ef !important;
+  }
+
+  .template-card:hover .template-title {
+    color: var(--lealtix-primary-400) !important;
+  }
+
+  .template-category {
+    color: #9aa3b5 !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+  }
+
+  .template-card:hover .template-category {
+    background: rgba(99, 102, 241, 0.15) !important;
+    color: var(--lealtix-primary-300) !important;
+  }
+
+  .content-label {
+    color: #cbd2e0 !important;
+  }
+
+  .content-text {
+    color: #cbd2e0 !important;
+  }
+
+  ::ng-deep .chip-right-container .p-chip {
+    background: rgba(99, 102, 241, 0.15) !important;
+    color: #a5b4fc !important;
+    border: 1px solid rgba(99, 102, 241, 0.3) !important;
+  }
+
+  .in-use-card .template-title,
+  .in-use-card .content-text,
+  .in-use-card .template-category {
+    color: var(--text-color-secondary) !important;
   }
 }

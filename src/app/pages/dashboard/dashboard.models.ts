@@ -17,6 +17,24 @@ export interface SalesSummaryDTO {
   transactionCount: number;
 }
 
+export interface SalesByPeriodDTO {
+  periodStart: string;
+  totalSales: number;
+  identifiedSales: number;
+  generalSales: number;
+}
+
+export interface TopProductDTO {
+  productName: string;
+  totalQuantity: number;
+  totalRevenue: number;
+}
+
+export interface SalesByCategoryDTO {
+  categoryName: string;
+  totalSales: number;
+}
+
 export interface CampaignPerformanceDTO {
   campaignId: number;
   campaignName: string;
@@ -25,4 +43,56 @@ export interface CampaignPerformanceDTO {
   totalSales: number;
   avgTicket: number;
   redemptionRatePct: number;
+}
+
+// Nueva Lealtix - Métricas de Lealtad
+
+export interface RepeatPurchaseRateDTO {
+  totalCustomers: number;
+  repeatCustomers: number;
+  repeatRate: number;
+  oneTimeBuyers: number;
+  multiTimeBuyers: number;
+}
+
+export interface IdentifiedVsGeneralDTO {
+  identifiedOrdersCount: number;
+  identifiedRevenue: number;
+  identifiedAvgTicket: number;
+  generalOrdersCount: number;
+  generalRevenue: number;
+  generalAvgTicket: number;
+  identifiedPercentage: number;
+  generalPercentage: number;
+}
+
+export interface CustomerLTVDTO {
+  customerId: number;
+  customerName: string;
+  lifetimeValue: number;
+  totalOrders: number;
+  averageOrderValue: number;
+}
+
+export interface CouponConversionDTO {
+  campaignId: number;
+  campaignName: string;
+  totalCouponsIssued: number;
+  totalCouponsRedeemed: number;
+  conversionRate: number;
+  revenueFromCoupons: number;
+}
+
+export interface CustomizationAnalysisDTO {
+  keyword: string;
+  frequency: number;
+  percentage: number;
+}
+
+export interface CampaignROIDTO {
+  campaignId: number;
+  roi: number;
+  profit: number;
+  revenueGenerated: number;
+  campaignCost: number;
 }

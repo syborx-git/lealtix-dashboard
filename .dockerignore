@@ -1,0 +1,11 @@
+node_modules
+.git
+.gitignore
+.angular
+dist
+npm-debug.log
+README.md
+.agents
+.claude
+.vscode
+.idea

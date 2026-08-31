@@ -1,0 +1,361 @@
+/* ============================================================================
+   CAMPAIGN FORM - Estilos de componente
+   Alineados con el sistema de diseño Lealtix
+   ============================================================================ */
+
+/* === TARJETA PRINCIPAL === */
+.card {
+  background: white;
+  border-radius: var(--lealtix-radius-xl);
+  padding: 2rem;
+  box-shadow: var(--lealtix-shadow-sm);
+  border: 1px solid var(--lealtix-slate-200);
+}
+
+/* === HEADER CON BOTÓN DE REGRESO === */
+h2 {
+  color: var(--lealtix-slate-900);
+  font-weight: 700;
+  font-size: 1.75rem;
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+
+h3 {
+  color: var(--lealtix-slate-800);
+  font-weight: 700;
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+/* === SELECCIÓN DE TEMPLATES === */
+::ng-deep .border-primary {
+  border: 2px solid var(--lealtix-primary-500) !important;
+  box-shadow: 0 0 0 3px var(--lealtix-primary-50) !important;
+  transform: scale(1.02);
+}
+
+::ng-deep .cursor-pointer {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+::ng-deep .cursor-pointer:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--lealtix-shadow-md);
+  border-color: var(--lealtix-primary-200);
+}
+
+/* === FORMULARIO === */
+.p-fluid .field {
+  margin-bottom: 1.5rem;
+}
+
+label {
+  font-weight: 600;
+  color: var(--lealtix-slate-800);
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+/* === INPUTS === */
+::ng-deep .p-inputtext,
+::ng-deep .p-inputtextarea,
+::ng-deep select {
+  border-radius: var(--lealtix-radius-md) !important;
+  border-color: var(--lealtix-slate-300) !important;
+  transition: all 0.2s ease !important;
+
+  &:focus {
+    border-color: var(--lealtix-primary-500) !important;
+    box-shadow: 0 0 0 3px var(--lealtix-primary-50) !important;
+  }
+
+  &.p-invalid,
+  &.ng-invalid.ng-dirty {
+    border-color: #ef4444 !important;
+  }
+}
+
+::ng-deep .p-select,
+::ng-deep .p-treeselect {
+  border-radius: var(--lealtix-radius-md) !important;
+
+  .p-select-label,
+  .p-treeselect-label {
+    padding: 0.75rem !important;
+  }
+}
+
+/* === BOTONES DE INFO === */
+::ng-deep .pi-info-circle {
+  color: var(--lealtix-primary-500);
+  cursor: help;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--lealtix-primary-600);
+  }
+}
+
+/* === MENSAJES DE ERROR === */
+small.p-error,
+small.text-red-600 {
+  color: #ef4444;
+  font-size: 0.875rem;
+  display: block;
+  margin-top: 0.25rem;
+}
+
+small.text-500 {
+  color: var(--lealtix-slate-500);
+  font-size: 0.875rem;
+}
+
+/* === MENSAJES DE INFORMACIÓN === */
+::ng-deep .p-message {
+  margin-top: 0.5rem;
+  border-radius: var(--lealtix-radius-md);
+
+  &.p-message-info {
+    background: var(--lealtix-primary-50);
+    border-color: var(--lealtix-primary-200);
+    color: var(--lealtix-primary-700);
+  }
+
+  &.p-message-warn {
+    background: #fef3c7;
+    border-color: #fde68a;
+    color: #92400e;
+  }
+
+  &.p-message-error {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #991b1b;
+  }
+}
+
+/* === CHECKBOX Y FIELD-CHECKBOX === */
+.field-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  label {
+    margin: 0;
+    font-weight: 600;
+  }
+}
+
+/* === INPUTGROUP === */
+::ng-deep .p-inputgroup {
+  .p-inputgroup-addon {
+    background: var(--lealtix-slate-100);
+    border-color: var(--lealtix-slate-300);
+    color: var(--lealtix-slate-700);
+    font-weight: 600;
+  }
+}
+
+/* === PREVIEW DE IMAGEN === */
+.border-round {
+  border-radius: var(--lealtix-radius-lg);
+}
+
+.border-1 {
+  border: 1px solid var(--lealtix-slate-200);
+}
+
+/* === BOTONES === */
+::ng-deep .p-button {
+  border-radius: var(--lealtix-radius-lg) !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: var(--lealtix-shadow-md) !important;
+  }
+
+  &.p-button-secondary {
+    &.p-button-outlined {
+      border-color: var(--lealtix-slate-300) !important;
+      color: var(--lealtix-slate-700) !important;
+
+      &:hover {
+        background: var(--lealtix-slate-50) !important;
+        border-color: var(--lealtix-slate-400) !important;
+      }
+    }
+  }
+}
+
+/* === DIVIDER === */
+::ng-deep .p-divider {
+  border-color: var(--lealtix-slate-200);
+  margin: 1.5rem 0;
+}
+
+/* === CHIPS EN TEMPLATES === */
+::ng-deep .p-chip {
+  background: var(--lealtix-primary-50);
+  color: var(--lealtix-primary-700);
+  border: 1px solid var(--lealtix-primary-200);
+  border-radius: var(--lealtix-radius-full);
+  font-weight: 600;
+
+  &.p-chip-outlined {
+    background: transparent;
+  }
+}
+
+/* === CAJAS DE INFORMACIÓN === */
+.bg-blue-50 {
+  background: var(--lealtix-primary-50);
+}
+
+.border-blue-200 {
+  border-color: var(--lealtix-primary-200);
+}
+
+.text-blue-600 {
+  color: var(--lealtix-primary-600);
+}
+
+.text-blue-800 {
+  color: var(--lealtix-primary-800);
+}
+
+.text-blue-900 {
+  color: var(--lealtix-primary-900);
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+  .card {
+    padding: 1rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  h3 {
+    font-size: 1.125rem;
+  }
+
+  .flex.justify-content-end {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+}
+
+:root[class*='app-dark'],
+.app-dark {
+  .card {
+    background: var(--surface-card) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  h2 {
+    color: #ffffff !important;
+  }
+
+  h3 {
+    color: #e6e8ef !important;
+  }
+
+  label {
+    color: #cbd2e0 !important;
+  }
+
+  ::ng-deep .border-primary {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.22) !important;
+  }
+
+  ::ng-deep .cursor-pointer:hover {
+    border-color: rgba(129, 140, 248, 0.35) !important;
+  }
+
+  ::ng-deep .p-inputtext,
+  ::ng-deep .p-inputtextarea,
+  ::ng-deep select {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    color: #e6e8ef !important;
+
+    &:focus {
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.22) !important;
+    }
+  }
+
+  ::ng-deep .p-message {
+    &.p-message-info {
+      background: rgba(99, 102, 241, 0.12) !important;
+      border-color: rgba(99, 102, 241, 0.3) !important;
+      color: var(--lealtix-primary-300) !important;
+    }
+
+    &.p-message-warn {
+      background: rgba(245, 158, 11, 0.12) !important;
+      border-color: rgba(245, 158, 11, 0.3) !important;
+      color: #fbbf24 !important;
+    }
+
+    &.p-message-error {
+      background: rgba(239, 68, 68, 0.12) !important;
+      border-color: rgba(239, 68, 68, 0.3) !important;
+      color: #fca5a5 !important;
+    }
+  }
+
+  ::ng-deep .p-inputgroup {
+    .p-inputgroup-addon {
+      background: rgba(255, 255, 255, 0.04) !important;
+      border-color: rgba(255, 255, 255, 0.1) !important;
+      color: #cbd2e0 !important;
+    }
+  }
+
+  ::ng-deep .p-button.p-button-secondary.p-button-outlined {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: #cbd2e0 !important;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.05) !important;
+      border-color: rgba(255, 255, 255, 0.2) !important;
+    }
+  }
+
+  ::ng-deep .p-divider {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  ::ng-deep .p-chip {
+    background: rgba(99, 102, 241, 0.15) !important;
+    color: #a5b4fc !important;
+    border-color: rgba(99, 102, 241, 0.3) !important;
+  }
+
+  .bg-blue-50 {
+    background: rgba(99, 102, 241, 0.12) !important;
+  }
+
+  .border-blue-200 {
+    border-color: rgba(99, 102, 241, 0.3) !important;
+  }
+
+  .text-blue-600 {
+    color: var(--lealtix-primary-400) !important;
+  }
+
+  .text-blue-800,
+  .text-blue-900 {
+    color: var(--lealtix-primary-300) !important;
+  }
+
+  .border-1 {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+}

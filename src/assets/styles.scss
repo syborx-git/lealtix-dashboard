@@ -1,138 +1,1505 @@
-/* You can add global styles to this file, and also import other style files */
 @use './tailwind.css';
 @use './layout/layout.scss';
 @use 'primeicons/primeicons.css';
 @use './demo/demo.scss';
 
+/* ============================================================================
+   IMPORTACIÓN DE TIPOGRAFÍA MODERNA
+   ============================================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* ============================================================================
+   LEALTIX - Sistema de Diseño Global Premium
+   "Transformar ventas en relaciones"
+
+   Filosofía: Profesional, premium, accesible para usuarios no técnicos
+   Paleta: Grises azulados (Slate) + Índigo vibrante
+   Tipografía: Inter (moderna, legible, versátil)
+   ============================================================================ */
+
+/* ============================================================================
+   ANIMACIONES @KEYFRAMES — SISTEMA DE MOVIMIENTO PREMIUM
+   ============================================================================ */
+@keyframes lealtix-fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes lealtix-fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes lealtix-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes lealtix-slideInLeft {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes lealtix-slideInRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes lealtix-scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes lealtix-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes lealtix-pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.3); }
+  50% { box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); }
+}
+
+@keyframes lealtix-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes lealtix-gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes lealtix-borderGlow {
+  0%, 100% { border-color: var(--lealtix-primary-200); }
+  50% { border-color: var(--lealtix-primary-400); }
+}
+
+@keyframes lealtix-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes lealtix-progressFill {
+  from { width: 0; }
+}
+
+@keyframes lealtix-countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes lealtix-subtlePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes lealtix-slideDown {
+  from { opacity: 0; transform: translateY(-10px); max-height: 0; }
+  to { opacity: 1; transform: translateY(0); max-height: 500px; }
+}
+
+/* ============================================================================
+   VARIABLES CSS - PALETA DE COLORES PROFESIONAL
+   ============================================================================ */
+:root {
+  /* === PALETA PRINCIPAL: ÍNDIGO VIBRANTE === */
+  --lealtix-primary-50: #eef2ff;
+  --lealtix-primary-100: #e0e7ff;
+  --lealtix-primary-200: #c7d2fe;
+  --lealtix-primary-300: #a5b4fc;
+  --lealtix-primary-400: #818cf8;
+  --lealtix-primary-500: #6366f1;  /* Color principal de acción */
+  --lealtix-primary-600: #4f46e5;
+  --lealtix-primary-700: #4338ca;
+  --lealtix-primary-800: #3730a3;
+  --lealtix-primary-900: #312e81;
+
+  /* === GRISES AZULADOS (SLATE) - BASE NEUTRA === */
+  --lealtix-slate-50: #f8fafc;
+  --lealtix-slate-100: #f1f5f9;
+  --lealtix-slate-200: #e2e8f0;
+  --lealtix-slate-300: #cbd5e1;
+  --lealtix-slate-400: #94a3b8;
+  --lealtix-slate-500: #64748b;
+  --lealtix-slate-600: #475569;
+  --lealtix-slate-700: #334155;
+  --lealtix-slate-800: #1e293b;
+  --lealtix-slate-900: #0f172a;
+
+  /* === COLORES FUNCIONALES (PASTELES SUAVES) === */
+  --lealtix-success-light: #d1fae5;
+  --lealtix-success-dark: #065f46;
+  --lealtix-warning-light: #fed7aa;
+  --lealtix-warning-dark: #92400e;
+  --lealtix-danger-light: #fee2e2;
+  --lealtix-danger-dark: #991b1b;
+  --lealtix-info-light: #dbeafe;
+  --lealtix-info-dark: #1e40af;
+
+  /* === APLICACIÓN DE COLORES (MODO CLARO PREMIUM) === */
+  --primary-color: var(--lealtix-primary-500);
+  --primary-color-hover: var(--lealtix-primary-600);
+  --text-color: #0f172a;
+  --text-color-secondary: #55627a;
+  --surface-ground: #f4f5fb;
+  --surface-card: #ffffff;
+  --surface-section: #fbfbfe;
+  --surface-border: rgba(15, 23, 42, 0.09);
+  --surface-hover: rgba(99, 102, 241, 0.05);
+
+  /* === SOMBRAS PREMIUM (con color) === */
+  --lealtix-shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.05);
+  --lealtix-shadow-md: 0 4px 6px -1px rgb(15 23 42 / 0.07), 0 2px 4px -2px rgb(15 23 42 / 0.05);
+  --lealtix-shadow-lg: 0 10px 15px -3px rgb(15 23 42 / 0.08), 0 4px 6px -4px rgb(15 23 42 / 0.05);
+  --lealtix-shadow-xl: 0 20px 25px -5px rgb(15 23 42 / 0.1), 0 8px 10px -6px rgb(15 23 42 / 0.06);
+  --lealtix-shadow-2xl: 0 25px 50px -12px rgb(15 23 42 / 0.18);
+  --lealtix-shadow-primary: 0 4px 14px 0 rgba(99, 102, 241, 0.25);
+  --lealtix-shadow-primary-lg: 0 8px 24px 0 rgba(99, 102, 241, 0.3);
+  --lealtix-shadow-card: 0 1px 3px rgba(15,23,42,0.05), 0 4px 12px rgba(15,23,42,0.05);
+  --lealtix-shadow-card-hover: 0 4px 8px rgba(15,23,42,0.06), 0 12px 28px rgba(99,102,241,0.08);
+
+  --lealtix-radius-sm: 0.5rem;
+  --lealtix-radius-md: 0.75rem;
+  --lealtix-radius-lg: 1rem;
+  --lealtix-radius-xl: 1.25rem;
+  --lealtix-radius-2xl: 1.5rem;
+
+  /* === ESPACIADO GENEROSO === */
+  --lealtix-spacing-xs: 0.5rem;
+  --lealtix-spacing-sm: 0.75rem;
+  --lealtix-spacing-md: 1rem;
+  --lealtix-spacing-lg: 1.5rem;
+  --lealtix-spacing-xl: 2rem;
+  --lealtix-spacing-2xl: 3rem;
+
+  /* === GLASS EFFECT (CLARO) === */
+  --lealtix-glass-bg: rgba(255, 255, 255, 0.7);
+  --lealtix-glass-border: rgba(15, 23, 42, 0.07);
+  --lealtix-glass-blur: blur(18px) saturate(150%);
+}
+
+/* Fondo claro premium: glow índigo sutil + rejilla fina */
+body {
+  background-color: #f4f5fb;
+  background-image:
+    radial-gradient(ellipse 70% 45% at 15% -15%, rgba(99, 102, 241, 0.08), transparent 60%),
+    radial-gradient(ellipse 55% 40% at 100% 0%, rgba(168, 85, 247, 0.05), transparent 55%),
+    linear-gradient(rgba(15,23,42,0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15,23,42,0.028) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 44px 44px, 44px 44px;
+  background-attachment: fixed;
+}
+
+/* === MODO OSCURO (PREDETERMINADO - PREMIUM) === */
+:root[class*='app-dark'],
+.app-dark {
+  --text-color: #e6e8ef;
+  --text-color-secondary: #9aa3b5;
+  --surface-ground: #09090e;
+  --surface-card: #101016;
+  --surface-section: #0d0d13;
+  --surface-border: rgba(255, 255, 255, 0.08);
+  --surface-hover: rgba(255, 255, 255, 0.05);
+
+  /* Paleta primaria intensificada para oscuro */
+  --lealtix-primary-400: #8b8ffa;
+  --lealtix-primary-500: #6d6bf0;
+  --lealtix-primary-600: #5b56e8;
+  --lealtix-primary-700: #4f46e5;
+
+  /* Vidrio premium */
+  --lealtix-glass-bg: rgba(16, 16, 22, 0.72);
+  --lealtix-glass-border: rgba(255, 255, 255, 0.08);
+  --lealtix-glass-blur: blur(20px) saturate(140%);
+
+  /* Sombras profundas */
+  --lealtix-shadow-card: 0 1px 2px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.35);
+  --lealtix-shadow-card-hover: 0 4px 12px rgba(0,0,0,0.45), 0 16px 40px rgba(79,70,229,0.12);
+  --lealtix-shadow-primary: 0 4px 20px rgba(99, 102, 241, 0.35);
+  --lealtix-shadow-primary-lg: 0 8px 32px rgba(99, 102, 241, 0.4);
+  --lealtix-shadow-xl: 0 20px 40px rgba(0,0,0,0.5);
+  --lealtix-shadow-2xl: 0 32px 64px rgba(0,0,0,0.6);
+}
+
+/* Fondo premium tipo Linear: gradientes radiales índigo/violeta + rejilla sutil */
+:root[class*='app-dark'] body,
+.app-dark body {
+  background-color: #09090e;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 20% -20%, rgba(99, 102, 241, 0.14), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(168, 85, 247, 0.09), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 50% 120%, rgba(99, 102, 241, 0.08), transparent 60%),
+    linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 44px 44px, 44px 44px;
+  background-attachment: fixed;
+}
+
+/* ============================================================================
+   CUSTOM SCROLLBAR — ESTILO PREMIUM
+   ============================================================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--lealtix-slate-300);
+  border-radius: 100px;
+  transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--lealtix-slate-400);
+}
+
+:root[class*='app-dark'] ::-webkit-scrollbar-thumb,
+.app-dark ::-webkit-scrollbar-thumb {
+  background: var(--lealtix-slate-600);
+}
+
+:root[class*='app-dark'] ::-webkit-scrollbar-thumb:hover,
+.app-dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--lealtix-slate-500);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--lealtix-slate-300) transparent;
+}
+
+/* ============================================================================
+   SELECTION HIGHLIGHT
+   ============================================================================ */
+::selection {
+  background-color: var(--lealtix-primary-200);
+  color: var(--lealtix-primary-900);
+}
+
+:root[class*='app-dark'] ::selection,
+.app-dark ::selection {
+  background-color: var(--lealtix-primary-700);
+  color: var(--lealtix-primary-100);
+}
+
+.welcome-banner {
+  border-radius: var(--lealtix-radius-lg);
+  padding: 1rem;
+  border-left: 4px solid #F59E0B;
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+}
+.welcome-banner-title { color: #92400E; }
+.welcome-banner-text { color: #78350F; }
+
+:root[class*='app-dark'] .welcome-banner,
+.app-dark .welcome-banner {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.16) 0%, rgba(217, 119, 6, 0.1) 100%);
+  border-left-color: #F59E0B;
+}
+:root[class*='app-dark'] .welcome-banner-title,
+.app-dark .welcome-banner-title { color: #fbbf24; }
+:root[class*='app-dark'] .welcome-banner-text,
+.app-dark .welcome-banner-text { color: #fcd34d; }
+
+/* ============================================================================
+   TIPOGRAFÍA - JERARQUÍA Y PESOS
+   ============================================================================ */
+* {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-size: 0.9375rem; /* 15px - más legible que 14px */
+  line-height: 1.6;
+  color: var(--text-color);
+  background-color: var(--surface-ground);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-color);
+  margin-bottom: var(--lealtix-spacing-md);
+}
+
+h1 { font-size: 2.25rem; letter-spacing: -0.025em; }
+h2 { font-size: 1.875rem; letter-spacing: -0.025em; }
+h3 { font-size: 1.5rem; }
+h4 { font-size: 1.25rem; }
+h5 { font-size: 1.125rem; }
+h6 { font-size: 1rem; }
+
+.text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+.text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+.text-base { font-size: 1rem; line-height: 1.5rem; }
+.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+.text-xs { font-size: 0.75rem; line-height: 1rem; }
+
+/* ============================================================================
+   OVERRIDES GLOBALES DE PRIMENG — PREMIUM
+   ============================================================================ */
+
+/* === BOTONES: PREMIUM CON MICRO-ANIMACIONES === */
+.p-button {
+  border-radius: var(--lealtix-radius-lg) !important;
+  font-weight: 600 !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: var(--lealtix-shadow-sm) !important;
+  padding: 0.625rem 1.25rem !important;
+  font-size: 0.9375rem !important;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.01em;
+}
+
+.p-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
+}
+
+.p-button:hover::after {
+  transform: translateX(100%);
+}
+
+.p-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--lealtix-shadow-md) !important;
+}
+
+.p-button:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 0.1s !important;
+}
+
+.p-button.p-button-sm {
+  padding: 0.5rem 1rem !important;
+  font-size: 0.875rem !important;
+}
+
+.p-button.p-button-lg {
+  padding: 0.75rem 1.5rem !important;
+  font-size: 1rem !important;
+}
+
+.p-button-icon-only {
+  border-radius: var(--lealtix-radius-lg) !important;
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+}
+
+/* Botón primario */
+.p-button:not(.p-button-outlined):not(.p-button-text):not(.p-button-secondary):not(.p-button-danger):not(.p-button-success):not(.p-button-warning):not(.p-button-help):not(.p-button-info) {
+  background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%) !important;
+  border-color: var(--lealtix-primary-500) !important;
+}
+
+.p-button:not(.p-button-outlined):not(.p-button-text):not(.p-button-secondary):not(.p-button-danger):not(.p-button-success):not(.p-button-warning):not(.p-button-help):not(.p-button-info):hover {
+  background: linear-gradient(135deg, var(--lealtix-primary-600) 0%, var(--lealtix-primary-700) 100%) !important;
+  border-color: var(--lealtix-primary-600) !important;
+  box-shadow: var(--lealtix-shadow-primary) !important;
+}
+
+/* Botón secundario */
+.p-button.p-button-secondary {
+  background-color: var(--lealtix-slate-100) !important;
+  border-color: var(--lealtix-slate-300) !important;
+  color: var(--lealtix-slate-700) !important;
+}
+
+.p-button.p-button-secondary:hover {
+  background-color: var(--lealtix-slate-200) !important;
+  border-color: var(--lealtix-slate-400) !important;
+}
+
+/* Botón de peligro */
+.p-button.p-button-danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  border-color: #dc2626 !important;
+}
+
+.p-button.p-button-danger:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+  border-color: #b91c1c !important;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.25) !important;
+}
+
+/* === INPUTS Y FORMULARIOS: PREMIUM FOCUS === */
+.p-inputtext,
+.p-inputtextarea,
+.p-dropdown,
+.p-multiselect,
+.p-calendar .p-inputtext,
+.p-chips .p-chips-multiple-container,
+.p-inputnumber-input {
+  border-radius: var(--lealtix-radius-lg) !important;
+  border: 1.5px solid var(--surface-border) !important;
+  padding: 0.625rem 0.875rem !important;
+  font-size: 0.9375rem !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  background-color: var(--surface-card) !important;
+}
+
+.p-inputtext:focus,
+.p-inputtextarea:focus {
+  border-color: var(--lealtix-primary-400) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12), var(--lealtix-shadow-sm) !important;
+  outline: none !important;
+}
+
+.p-dropdown:not(.p-disabled):hover,
+.p-multiselect:not(.p-disabled):hover {
+  border-color: var(--lealtix-primary-300) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08) !important;
+}
+
+.p-float-label label {
+  font-weight: 500;
+  color: var(--text-color-secondary);
+  transition: all 0.2s ease;
+}
+
+/* === TABLAS: PREMIUM === */
+.p-datatable {
+  border-radius: var(--lealtix-radius-xl) !important;
+  overflow: hidden;
+  box-shadow: var(--lealtix-shadow-card) !important;
+  border: 1px solid var(--surface-border) !important;
+}
+
+.p-datatable .p-datatable-thead > tr > th {
+  background-color: var(--lealtix-slate-50) !important;
+  color: var(--lealtix-slate-600) !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  font-size: 0.7rem !important;
+  letter-spacing: 0.08em;
+  padding: 0.875rem 1.25rem !important;
+  border: none !important;
+  border-bottom: 2px solid var(--lealtix-slate-200) !important;
+}
+
+.p-datatable .p-datatable-tbody > tr > td {
+  padding: 1rem 1.25rem !important;
+  border: none !important;
+  border-bottom: 1px solid var(--surface-border) !important;
+  transition: background-color 0.15s ease;
+}
+
+.p-datatable .p-datatable-tbody > tr:last-child > td {
+  border-bottom: none !important;
+}
+
+.p-datatable .p-datatable-tbody > tr {
+  transition: all 0.2s ease;
+}
+
+.p-datatable .p-datatable-tbody > tr:hover {
+  background-color: var(--lealtix-primary-50) !important;
+}
+
+/* Eliminar bordes verticales innecesarios */
+.p-datatable .p-datatable-tbody > tr > td,
+.p-datatable .p-datatable-thead > tr > th {
+  border-left: none !important;
+  border-right: none !important;
+}
+
+/* === PAGINADOR: COLORES HOMOLOGADOS === */
+.p-paginator {
+  background-color: var(--surface-card) !important;
+  padding: 1rem 1.25rem !important;
+  border-radius: 0 0 var(--lealtix-radius-xl) var(--lealtix-radius-xl) !important;
+  border-top: 1px solid var(--surface-border) !important;
+}
+
+.p-paginator .p-paginator-pages .p-paginator-page {
+  border-radius: var(--lealtix-radius-md) !important;
+  min-width: 2.5rem !important;
+  height: 2.5rem !important;
+  margin: 0 0.25rem !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  font-weight: 500 !important;
+  color: var(--lealtix-slate-700) !important;
+}
+
+.p-paginator .p-paginator-pages .p-paginator-page:hover {
+  background-color: var(--lealtix-primary-50) !important;
+  color: var(--lealtix-primary-700) !important;
+  transform: translateY(-1px);
+}
+
+.p-paginator .p-paginator-pages .p-paginator-page.p-paginator-page-selected {
+  background: linear-gradient(135deg, var(--lealtix-primary-500), var(--lealtix-primary-600)) !important;
+  color: white !important;
+  box-shadow: var(--lealtix-shadow-primary) !important;
+  font-weight: 600 !important;
+}
+
+.p-paginator .p-paginator-pages .p-paginator-page.p-paginator-page-selected:hover {
+  background: linear-gradient(135deg, var(--lealtix-primary-600), var(--lealtix-primary-700)) !important;
+  transform: translateY(-1px);
+}
+
+.p-paginator .p-paginator-first,
+.p-paginator .p-paginator-prev,
+.p-paginator .p-paginator-next,
+.p-paginator .p-paginator-last {
+  border-radius: var(--lealtix-radius-md) !important;
+  min-width: 2.5rem !important;
+  height: 2.5rem !important;
+  color: var(--lealtix-slate-600) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.p-paginator .p-paginator-first:hover,
+.p-paginator .p-paginator-prev:hover,
+.p-paginator .p-paginator-next:hover,
+.p-paginator .p-paginator-last:hover {
+  background-color: var(--lealtix-slate-100) !important;
+  color: var(--lealtix-slate-900) !important;
+  transform: translateY(-1px);
+}
+
+.p-paginator .p-dropdown {
+  border-radius: var(--lealtix-radius-md) !important;
+  border-color: var(--lealtix-slate-300) !important;
+  margin: 0 0.5rem !important;
+}
+
+.p-paginator .p-paginator-current {
+  color: var(--lealtix-slate-600) !important;
+  font-weight: 500 !important;
+}
+
+/* === DIÁLOGOS Y MODALES — PREMIUM === */
+.p-dialog {
+  border-radius: var(--lealtix-radius-2xl) !important;
+  box-shadow: var(--lealtix-shadow-2xl) !important;
+  overflow: hidden;
+  animation: lealtix-scaleIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(0,0,0,0.05) !important;
+}
+
+.p-dialog .p-dialog-header {
+  background-color: var(--surface-card) !important;
+  padding: 1.5rem 1.75rem !important;
+  border-bottom: 1px solid var(--surface-border) !important;
+}
+
+.p-dialog .p-dialog-title {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: var(--text-color) !important;
+  letter-spacing: -0.01em;
+}
+
+.p-dialog .p-dialog-content {
+  padding: 1.5rem 1.75rem !important;
+  background-color: var(--surface-card) !important;
+}
+
+.p-dialog .p-dialog-footer {
+  padding: 1rem 1.75rem !important;
+  background-color: var(--lealtix-slate-50) !important;
+  border-top: 1px solid var(--surface-border) !important;
+}
+
+/* Dialog overlay */
+.p-dialog-mask {
+  backdrop-filter: blur(4px) !important;
+}
+
+/* === TARJETAS (CARDS) — PREMIUM === */
+.p-card,
+.surface-card {
+  border-radius: var(--lealtix-radius-xl) !important;
+  box-shadow: var(--lealtix-shadow-card) !important;
+  border: 1px solid var(--surface-border) !important;
+  background-color: var(--surface-card) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.p-card:hover {
+  box-shadow: var(--lealtix-shadow-card-hover) !important;
+  transform: translateY(-2px);
+}
+
+.p-card .p-card-body {
+  padding: var(--lealtix-spacing-xl) !important;
+}
+
+.p-card .p-card-title {
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  margin-bottom: var(--lealtix-spacing-md) !important;
+  letter-spacing: -0.01em;
+}
+
+/* === BADGES: PREMIUM === */
+.p-badge {
+  border-radius: var(--lealtix-radius-md) !important;
+  padding: 0.35rem 0.75rem !important;
+  font-weight: 600 !important;
+  font-size: 0.75rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s ease;
+}
+
+.p-badge.p-badge-success,
+.badge-success {
+  background-color: var(--lealtix-success-light) !important;
+  color: var(--lealtix-success-dark) !important;
+}
+
+.p-badge.p-badge-warning,
+.badge-warning {
+  background-color: var(--lealtix-warning-light) !important;
+  color: var(--lealtix-warning-dark) !important;
+}
+
+.p-badge.p-badge-danger,
+.badge-danger {
+  background-color: var(--lealtix-danger-light) !important;
+  color: var(--lealtix-danger-dark) !important;
+}
+
+.p-badge.p-badge-info,
+.badge-info {
+  background-color: var(--lealtix-info-light) !important;
+  color: var(--lealtix-info-dark) !important;
+}
+
+/* Badge para "Cliente Frecuente" y similares */
+.badge-frequent,
+.p-tag.tag-frequent {
+  background-color: var(--lealtix-primary-100) !important;
+  color: var(--lealtix-primary-700) !important;
+}
+
+/* === MENÚS Y DROPDOWNS === */
+.p-menu,
+.p-tieredmenu,
+.p-contextmenu {
+  border-radius: var(--lealtix-radius-xl) !important;
+  box-shadow: var(--lealtix-shadow-xl) !important;
+  border: 1px solid var(--surface-border) !important;
+  padding: 0.5rem !important;
+  animation: lealtix-scaleIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.p-menuitem-link {
+  border-radius: var(--lealtix-radius-md) !important;
+  padding: 0.75rem 1rem !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.p-menuitem-link:hover {
+  background-color: var(--lealtix-primary-50) !important;
+  transform: translateX(2px);
+}
+
+/* === PANELES Y ACCORDIONS === */
+.p-panel,
+.p-accordion .p-accordion-header {
+  border-radius: var(--lealtix-radius-lg) !important;
+}
+
+.p-panel .p-panel-header {
+  background-color: var(--lealtix-slate-100) !important;
+  border-radius: var(--lealtix-radius-lg) var(--lealtix-radius-lg) 0 0 !important;
+  padding: 1rem 1.25rem !important;
+}
+
+/* === TOOLTIPS === */
+.p-tooltip .p-tooltip-text {
+  border-radius: var(--lealtix-radius-md) !important;
+  padding: 0.5rem 0.75rem !important;
+  font-size: 0.8125rem !important;
+  box-shadow: var(--lealtix-shadow-xl) !important;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+/* === DIVIDERS === */
+.p-divider {
+  border-color: var(--surface-border) !important;
+}
+
+/* === TOASTS — PREMIUM === */
+.p-toast .p-toast-message {
+  border-radius: var(--lealtix-radius-lg) !important;
+  box-shadow: var(--lealtix-shadow-xl) !important;
+  animation: lealtix-slideInRight 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  border-left: 4px solid;
+  backdrop-filter: blur(8px);
+}
+
+.p-toast .p-toast-message.p-toast-message-success {
+  border-left-color: #10B981;
+}
+
+.p-toast .p-toast-message.p-toast-message-error {
+  border-left-color: #EF4444;
+}
+
+.p-toast .p-toast-message.p-toast-message-warn {
+  border-left-color: #F59E0B;
+}
+
+.p-toast .p-toast-message.p-toast-message-info {
+  border-left-color: #3B82F6;
+}
+
+/* === SKELETON — SHIMMER PREMIUM === */
+.p-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--lealtix-slate-100) 25%,
+    var(--lealtix-slate-200) 50%,
+    var(--lealtix-slate-100) 75%
+  ) !important;
+  background-size: 200% 100% !important;
+  animation: lealtix-shimmer 1.5s ease-in-out infinite !important;
+  border-radius: var(--lealtix-radius-md) !important;
+}
+
+/* ============================================================================
+   ESTADOS VACÍOS (EMPTY STATES)
+   ============================================================================ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--lealtix-spacing-2xl);
+  text-align: center;
+  min-height: 300px;
+  animation: lealtix-fadeIn 0.4s ease;
+}
+
+.empty-state-icon {
+  font-size: 4rem;
+  color: var(--lealtix-slate-300);
+  margin-bottom: var(--lealtix-spacing-lg);
+  animation: lealtix-float 3s ease-in-out infinite;
+}
+
+.empty-state-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-color);
+  margin-bottom: var(--lealtix-spacing-sm);
+}
+
+.empty-state-description {
+  font-size: 0.9375rem;
+  color: var(--text-color-secondary);
+  margin-bottom: var(--lealtix-spacing-xl);
+  max-width: 400px;
+}
+
+/* ============================================================================
+   UTILIDADES PERSONALIZADAS
+   ============================================================================ */
+
+/* Espaciado generoso */
+.lealtix-container {
+  padding: var(--lealtix-spacing-xl);
+}
+
+.lealtix-section {
+  margin-bottom: var(--lealtix-spacing-2xl);
+}
+
+/* Sombras */
+.shadow-lealtix-sm { box-shadow: var(--lealtix-shadow-sm) !important; }
+.shadow-lealtix-md { box-shadow: var(--lealtix-shadow-md) !important; }
+.shadow-lealtix-lg { box-shadow: var(--lealtix-shadow-lg) !important; }
+.shadow-lealtix-xl { box-shadow: var(--lealtix-shadow-xl) !important; }
+
+/* Bordes redondeados */
+.rounded-lealtix-sm { border-radius: var(--lealtix-radius-sm) !important; }
+.rounded-lealtix-md { border-radius: var(--lealtix-radius-md) !important; }
+.rounded-lealtix-lg { border-radius: var(--lealtix-radius-lg) !important; }
+.rounded-lealtix-xl { border-radius: var(--lealtix-radius-xl) !important; }
+
+/* Tarjetas de contenido */
+.content-card {
+  background-color: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--lealtix-radius-xl);
+  padding: var(--lealtix-spacing-xl);
+  box-shadow: var(--lealtix-shadow-card);
+  margin-bottom: var(--lealtix-spacing-lg);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.content-card:hover {
+  box-shadow: var(--lealtix-shadow-card-hover);
+  transform: translateY(-1px);
+}
+
+/* Animation utility classes */
+.animate-fade-in-up {
+  animation: lealtix-fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.animate-fade-in-down {
+  animation: lealtix-fadeInDown 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.animate-scale-in {
+  animation: lealtix-scaleIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.animate-slide-in-left {
+  animation: lealtix-slideInLeft 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* Staggered animation delays */
+.animate-delay-1 { animation-delay: 0.05s; }
+.animate-delay-2 { animation-delay: 0.1s; }
+.animate-delay-3 { animation-delay: 0.15s; }
+.animate-delay-4 { animation-delay: 0.2s; }
+.animate-delay-5 { animation-delay: 0.25s; }
+.animate-delay-6 { animation-delay: 0.3s; }
+
+/* ============================================================================
+   COMPATIBILIDAD CON ESTILOS ANTERIORES
+   ============================================================================ */
+
 /* Info button/icon unified styling */
 .info-button {
-	color: #F59E0B !important; /* soft orange */
-	opacity: 0.95;
-	padding: 0.15rem 0.35rem; /* fixed small padding */
+  color: var(--lealtix-warning-dark) !important;
+  opacity: 0.95;
+  padding: 0.15rem 0.35rem;
+  border-radius: var(--lealtix-radius-md);
+  transition: all 0.2s ease-in-out;
 }
 
 .info-button:hover,
 .info-button:focus {
-	color: #D97706 !important; /* slightly darker orange on hover */
+  color: #92400e !important;
+  background-color: var(--lealtix-warning-light);
 }
 
-/* Generic info icon color across the app - match PrimeNG look in both light/dark
-	 Target any element with the icon classes (span or i), and button icon variants */
 .pi.pi-info-circle,
 .p-button .pi.pi-info-circle,
 .p-button .p-button-icon.pi-info-circle,
 .p-button-icon.pi-info-circle {
-	color: #F59E0B !important; /* soft orange */
-	opacity: 1 !important;
+  color: var(--lealtix-warning-dark) !important;
+  opacity: 1 !important;
 }
 
-/* Align info icon to the right within label blocks */
 .field > label.font-semibold,
 label.font-semibold {
-	display: flex;
-	align-items: center;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
 }
 
 .field > label.font-semibold .pi.pi-info-circle,
 label.font-semibold .pi.pi-info-circle {
-	margin-left: auto; /* push icon to right */
-	padding-left: 0.35rem; /* fixed spacing from label */
+  margin-left: auto;
+  padding-left: 0.35rem;
 }
 
-/* Logout button emphasis in sidebar */
-.logout-button {
-  font-weight: 700 !important; /* bold */
-  color: var(--text-color) !important;
+.layout-sidebar .logout-button {
+  font-weight: 700 !important;
+  color: #dc2626 !important;
+  opacity: 1 !important;
+  margin-top: 1.25rem !important;
+  background: rgba(220, 38, 38, 0.08) !important;
+  border: 1px solid rgba(220, 38, 38, 0.25) !important;
+  font-size: 0.8125rem !important;
+
+  &:hover {
+    background: rgba(220, 38, 38, 0.15) !important;
+    color: #b91c1c !important;
+    border-color: rgba(220, 38, 38, 0.4) !important;
+  }
 }
 
-/* Ensure sidebar footer styling doesn't get hidden */
+:root[class*='app-dark'] .logout-button,
+.app-dark .logout-button {
+  color: #fda4af !important;
+  opacity: 1 !important;
+  background: rgba(248, 113, 113, 0.1) !important;
+  border-color: rgba(248, 113, 113, 0.18) !important;
+
+  &:hover {
+    background: rgba(248, 113, 113, 0.18) !important;
+    color: #fecdd3 !important;
+  }
+}
+
 .sidebar-footer {
-	padding: 1rem;
-	border-top: 1px solid var(--surface-border);
-	display: flex;
-	justify-content: center;
-	align-items: center;
+  padding: 1rem;
+  border-top: 1px solid var(--surface-border);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-/* Dark mode: match the topbar moon icon color (primary) so info buttons remain visible */
+/* Dark mode info icons */
 :root[class*='app-dark'] .info-button,
 .app-dark .info-button {
-	color: var(--primary-color, #F59E0B) !important;
-	opacity: 1 !important;
+  color: var(--lealtix-warning-light) !important;
+  opacity: 1 !important;
 }
 
 :root[class*='app-dark'] .info-button:hover,
-.app-dark .info-button:hover,
-:root[class*='app-dark'] .info-button:focus,
-.app-dark .info-button:focus {
-	color: color-mix(in srgb, var(--primary-color, #F59E0B) 80%, black 20%) !important;
+.app-dark .info-button:hover {
+  color: #fbbf24 !important;
+  background-color: rgba(251, 191, 36, 0.1);
 }
 
-/* Dark mode for standalone info icons */
 :root[class*='app-dark'] .pi.pi-info-circle,
-.app-dark .pi.pi-info-circle,
-:root[class*='app-dark'] .p-button .pi.pi-info-circle,
-.app-dark .p-button .pi.pi-info-circle,
-:root[class*='app-dark'] .p-button-icon.pi.pi-info-circle,
-.app-dark .p-button-icon.pi.pi-info-circle {
-	color: var(--primary-color, #F59E0B) !important;
-	opacity: 1 !important;
+.app-dark .pi.pi-info-circle {
+  color: var(--lealtix-warning-light) !important;
+  opacity: 1 !important;
 }
 
-/* Ensure landing URL label text is visible in dark mode for Mi Página component only */
+/* URL label visibility in dark mode */
 :root[class*='app-dark'] app-mi-pagina .url-label,
 .app-dark app-mi-pagina .url-label {
-	color: #ffffff !important;
-	/* override inline light background on the label in dark mode */
-	background-color: var(--surface-ground, #0b1220) !important;
-	border-color: rgba(255,255,255,0.06) !important;
+  color: #ffffff !important;
+  background-color: var(--surface-ground, #0b1220) !important;
+  border-color: rgba(255,255,255,0.06) !important;
 }
 
-/* Mobile / dark-mode safety: ensure info icons/buttons remain visible
-	 Some utility classes may override icon color on small screens; force visibility. */
-@media (max-width: 991px) {
-	/* mobile safety: ensure info icons are visible in dark mode */
-	:root[class*='app-dark'] .pi.pi-info-circle,
-	.app-dark .pi.pi-info-circle,
-	:root[class*='app-dark'] .p-button .pi.pi-info-circle,
-	.app-dark .p-button .pi.pi-info-circle,
-	:root[class*='app-dark'] .p-button-icon.pi.pi-info-circle,
-	.app-dark .p-button-icon.pi.pi-info-circle,
-	i.pi.pi-info-circle.text-500 {
-		color: var(--primary-color, #F59E0B) !important;
-		opacity: 1 !important;
-	}
-}
-
-/* Social icons: use brand colours and ensure contrast across themes */
+/* Social icons */
 .p-inputgroup-addon i[class*='pi-'],
 .preview-label i[class*='pi-'],
 i[class*='pi-']._social-icon {
-	/* default: use text color variable for consistency */
-	color: var(--text-color, #111827) !important;
-	opacity: 1 !important;
+  color: var(--text-color, #111827) !important;
+  opacity: 1 !important;
 }
 
-/* Specific brand colours */
 i.pi-facebook { color: #1877F2 !important; }
 i.pi-instagram { color: #E1306C !important; }
 i.pi-twitter { color: #1DA1F2 !important; }
 i.pi-youtube { color: #FF0000 !important; }
 i.pi-whatsapp { color: #25D366 !important; }
 
-/* Dark-mode and mobile safety: force visibility for social icons */
 :root[class*='app-dark'] i.pi-facebook,
 .app-dark i.pi-facebook,
 :root[class*='app-dark'] i.pi-instagram,
-.app-dark i.pi-instagram,
-:root[class*='app-dark'] i.pi-twitter,
-.app-dark i.pi-twitter,
-:root[class*='app-dark'] i.pi-youtube,
-.app-dark i.pi-youtube,
-:root[class*='app-dark'] .p-inputgroup-addon i[class*='pi-'],
-.app-dark .p-inputgroup-addon i[class*='pi-'] {
-	opacity: 1 !important;
+.app-dark i.pi-instagram {
+  opacity: 1 !important;
 }
 
-/* Backward compatibility: small input addon adjustments */
-.p-inputgroup-addon.bg-gray-100 { background-color: var(--surface-card, #fff) !important; }
+.p-inputgroup-addon.bg-gray-100 {
+  background-color: var(--surface-card, #fff) !important;
+}
+
+/* ============================================================================
+   RESPONSIVE: MOBILE-FIRST
+   ============================================================================ */
+@media (max-width: 991px) {
+  .lealtix-container {
+    padding: var(--lealtix-spacing-md);
+  }
+
+  .p-datatable .p-datatable-thead > tr > th,
+  .p-datatable .p-datatable-tbody > tr > td {
+    padding: 0.75rem 0.875rem !important;
+  }
+
+  h1 { font-size: 1.75rem; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.25rem; }
+
+  .p-dialog {
+    width: 95vw !important;
+    max-width: 95vw !important;
+  }
+
+  /* Ensure touch targets are at least 44px */
+  .p-button {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+
+  /* Mobile safety for icons */
+  :root[class*='app-dark'] .pi.pi-info-circle,
+  .app-dark .pi.pi-info-circle {
+    color: var(--lealtix-warning-light) !important;
+    opacity: 1 !important;
+  }
+
+  /* Disable hover transforms on mobile */
+  .p-card:hover,
+  .content-card:hover {
+    transform: none;
+  }
+}
+
+/* ============================================================================
+   TABS - HOMOLOGACIÓN A SISTEMA LEALTIX
+   ============================================================================ */
+/* PrimeNG Tabs */
+.p-tabview {
+  .p-tabview-nav {
+    background: var(--lealtix-slate-50) !important;
+    border-bottom: 2px solid var(--lealtix-slate-200) !important;
+  }
+
+  .p-tabview-nav-btn {
+    color: var(--lealtix-slate-700) !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 1rem 1.5rem !important;
+    font-weight: 500 !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+    &:hover {
+      color: var(--lealtix-primary-600) !important;
+      background: var(--lealtix-slate-100) !important;
+    }
+  }
+
+  .p-tabview-nav-btn.p-tab-active {
+    color: var(--lealtix-primary-600) !important;
+    background: white !important;
+    border-bottom: 3px solid var(--lealtix-primary-600) !important;
+    border-bottom-color: var(--lealtix-primary-600) !important;
+
+    .p-tab-title {
+      color: var(--lealtix-primary-600) !important;
+      font-weight: 600 !important;
+    }
+  }
+
+  .p-tab-active {
+    color: var(--lealtix-primary-600) !important;
+    background: white !important;
+    border-bottom: 3px solid var(--lealtix-primary-600) !important;
+
+    .p-tab-title {
+      color: var(--lealtix-primary-600) !important;
+      font-weight: 600 !important;
+    }
+  }
+
+  .p-tabview-panels {
+    background: white !important;
+    border: 1px solid var(--lealtix-slate-200) !important;
+    border-top: none !important;
+    border-radius: 0 0 var(--lealtix-radius-lg) var(--lealtix-radius-lg) !important;
+    padding: 1.5rem !important;
+  }
+
+  .p-tabview-panel {
+    padding: 0 !important;
+  }
+}
+
+/* Estilos fallback para selectores alternativos */
+.p-tab.p-tab-active,
+.p-tab.active {
+  color: var(--lealtix-primary-600) !important;
+  border-color: var(--lealtix-primary-600) !important;
+  background: var(--lealtix-primary-50) !important;
+
+  .p-tab-title {
+    color: var(--lealtix-primary-600) !important;
+    font-weight: 600 !important;
+  }
+}
+
+.p-tab-active {
+  color: var(--lealtix-primary-600) !important;
+  border-color: var(--lealtix-primary-600) !important;
+  background: var(--lealtix-primary-50) !important;
+}
+
+/* PrimeNG TabMenu */
+.p-tabmenu {
+  .p-tabmenu-nav {
+    background: var(--lealtix-slate-50) !important;
+    border-bottom: 2px solid var(--lealtix-slate-200) !important;
+  }
+
+  .p-tabmenuitem {
+    &.p-highlight .p-menuitem-link {
+      color: var(--lealtix-primary-600) !important;
+      border-bottom-color: var(--lealtix-primary-600) !important;
+
+      .p-menuitem-text {
+        color: var(--lealtix-primary-600) !important;
+        font-weight: 600 !important;
+      }
+    }
+  }
+}
+
+/* Chips de estatus de orden (Comandix / cierre de cuenta) */
+.status-comanda { background: #e3f2fd !important; color: #1f3b5c !important; border: 1px solid #bcdff9; }
+.status-confirmada { background: #f3e5f5 !important; color: #5a2b66 !important; border: 1px solid #dfc6e9; }
+.status-en_preparacion { background: #fff3e0 !important; color: #7a4c00 !important; border: 1px solid #ffd8a8; }
+.status-listo { background: #e8f5e9 !important; color: #1f5130 !important; border: 1px solid #c6e6cb; }
+.status-pagada { background: #c8e6c9 !important; color: #10481b !important; border: 1px solid #9fd5a3; }
+.status-cancelada { background: #ffebee !important; color: #7c1d1d !important; border: 1px solid #f9c8cf; }
+
+/* ============================================================================
+   DARK PREMIUM — OVERRIDES PARA EL MODO OSCURO (LINEAR/VERCEL STYLE)
+   ============================================================================ */
+:root[class*='app-dark'],
+.app-dark {
+
+  /* === TARJETAS GLASSMORPHISM === */
+  .p-card,
+  .surface-card,
+  .content-card {
+    background-color: var(--surface-card);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.35);
+    backdrop-filter: blur(14px);
+  }
+
+  .p-card:hover,
+  .content-card:hover {
+    border-color: rgba(129, 140, 248, 0.25);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.45), 0 16px 44px rgba(99,102,241,0.14);
+  }
+
+  /* === TABLAS OSCURAS === */
+  .p-datatable {
+    background: transparent;
+    border-color: rgba(255,255,255,0.08);
+  }
+
+  .p-datatable .p-datatable-thead > tr > th {
+    background-color: rgba(255,255,255,0.03) !important;
+    color: #a8b0c0 !important;
+    border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+  }
+
+  .p-datatable .p-datatable-tbody > tr:nth-child(even) {
+    background-color: rgba(255,255,255,0.015);
+  }
+
+  .p-datatable .p-datatable-tbody > tr:hover {
+    background-color: rgba(99,102,241,0.08) !important;
+  }
+
+  .p-datatable .p-datatable-tbody > tr > td {
+    border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+  }
+
+  /* === PAGINADOR OSCURO === */
+  .p-paginator {
+    background-color: rgba(255,255,255,0.02) !important;
+    border-top: 1px solid rgba(255,255,255,0.08) !important;
+  }
+  .p-paginator .p-paginator-pages .p-paginator-page {
+    color: #b6bdcc !important;
+  }
+  .p-paginator .p-paginator-pages .p-paginator-page:hover {
+    background-color: rgba(255,255,255,0.08) !important;
+    color: #ffffff !important;
+  }
+  .p-paginator .p-paginator-first,
+  .p-paginator .p-paginator-prev,
+  .p-paginator .p-paginator-next,
+  .p-paginator .p-paginator-last {
+    color: #9aa3b5 !important;
+  }
+  .p-paginator .p-paginator-first:hover,
+  .p-paginator .p-paginator-prev:hover,
+  .p-paginator .p-paginator-next:hover,
+  .p-paginator .p-paginator-last:hover {
+    background-color: rgba(255,255,255,0.08) !important;
+    color: #ffffff !important;
+  }
+  .p-paginator .p-paginator-current {
+    color: #9aa3b5 !important;
+  }
+  .p-paginator .p-dropdown {
+    background-color: var(--surface-card) !important;
+    border-color: rgba(255,255,255,0.12) !important;
+  }
+
+  /* === INPUTS OSCUROS === */
+  .p-inputtext,
+  .p-inputtextarea,
+  .p-dropdown,
+  .p-multiselect,
+  .p-calendar .p-inputtext,
+  .p-chips .p-chips-multiple-container,
+  .p-inputnumber-input {
+    background-color: rgba(255,255,255,0.04) !important;
+    border-color: rgba(255,255,255,0.1) !important;
+    color: #e6e8ef !important;
+  }
+
+  .p-inputtext::placeholder,
+  .p-inputtextarea::placeholder {
+    color: #6b7280 !important;
+  }
+
+  .p-inputtext:focus,
+  .p-inputtextarea:focus {
+    border-color: var(--lealtix-primary-500) !important;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.22), 0 0 24px rgba(99,102,241,0.15) !important;
+    background-color: rgba(99,102,241,0.05) !important;
+  }
+
+  .p-dropdown:not(.p-disabled):hover,
+  .p-multiselect:not(.p-disabled):hover {
+    border-color: var(--lealtix-primary-400) !important;
+  }
+
+  .p-dropdown-panel,
+  .p-multiselect-panel {
+    background-color: #14141c !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 24px 48px rgba(0,0,0,0.6) !important;
+  }
+
+  .p-dropdown-panel .p-dropdown-items .p-dropdown-item,
+  .p-multiselect-panel .p-multiselect-items .p-multiselect-item {
+    color: #cbd2e0 !important;
+  }
+
+  .p-dropdown-panel .p-dropdown-items .p-dropdown-item:not(.p-highlight):hover,
+  .p-multiselect-panel .p-multiselect-items .p-multiselect-item:not(.p-highlight):hover {
+    background-color: rgba(99,102,241,0.1) !important;
+    color: #ffffff !important;
+  }
+
+  .p-dropdown-panel .p-dropdown-items .p-dropdown-item.p-highlight,
+  .p-multiselect-panel .p-multiselect-items .p-multiselect-item.p-highlight {
+    background-color: rgba(99,102,241,0.2) !important;
+    color: #a5b4fc !important;
+  }
+
+  /* === DIÁLOGOS OSCUROS === */
+  .p-dialog {
+    background-color: #14141c !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+  }
+  .p-dialog .p-dialog-header {
+    background-color: #14141c !important;
+    border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+  }
+  .p-dialog .p-dialog-content {
+    background-color: #14141c !important;
+  }
+  .p-dialog .p-dialog-footer {
+    background-color: rgba(255,255,255,0.02) !important;
+    border-top: 1px solid rgba(255,255,255,0.08) !important;
+  }
+  .p-dialog-mask {
+    backdrop-filter: blur(6px) !important;
+    background-color: rgba(0,0,0,0.5) !important;
+  }
+
+  /* === MENÚS OSCUROS === */
+  .p-menu,
+  .p-tieredmenu,
+  .p-contextmenu,
+  .p-menu-list {
+    background-color: #14141c !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+  }
+  .p-menuitem-link {
+    color: #cbd2e0 !important;
+  }
+  .p-menuitem-link:hover {
+    background-color: rgba(99,102,241,0.1) !important;
+    color: #ffffff !important;
+  }
+
+  /* === PANELES / ACCORDION OSCUROS === */
+  .p-panel .p-panel-header,
+  .p-accordion .p-accordion-header .p-accordion-header-link {
+    background-color: rgba(255,255,255,0.03) !important;
+    border-color: rgba(255,255,255,0.08) !important;
+  }
+  .p-accordion .p-accordion-content {
+    background-color: var(--surface-card) !important;
+    border-color: rgba(255,255,255,0.08) !important;
+  }
+
+  /* === TABS OSCUROS === */
+  .p-tabview .p-tabview-nav {
+    background: transparent !important;
+    border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+  }
+  .p-tabview .p-tabview-nav-btn {
+    color: #9aa3b5 !important;
+  }
+  .p-tabview .p-tabview-nav-btn:hover {
+    color: #ffffff !important;
+    background: rgba(255,255,255,0.05) !important;
+  }
+  .p-tabview .p-tabview-nav-btn.p-tab-active,
+  .p-tabview .p-tabview-nav .p-tabview-nav-link.p-highlight,
+  .p-tabview .p-tabview-nav .p-tabview-selected {
+    color: #a5b4fc !important;
+    border-bottom-color: var(--lealtix-primary-500) !important;
+    background: transparent !important;
+  }
+  .p-tabview .p-tabview-panels {
+    background: var(--surface-card) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    border-top: none !important;
+  }
+  .p-tab-active {
+    color: #a5b4fc !important;
+    background: rgba(99,102,241,0.12) !important;
+    border-color: var(--lealtix-primary-500) !important;
+  }
+
+  /* === BADGES OSCUROS (pasteles translúcidos) === */
+  .p-badge.p-badge-success,
+  .badge-success { background-color: rgba(16,185,129,0.15) !important; color: #34d399 !important; }
+  .p-badge.p-badge-warning,
+  .badge-warning { background-color: rgba(245,158,11,0.15) !important; color: #fbbf24 !important; }
+  .p-badge.p-badge-danger,
+  .badge-danger { background-color: rgba(239,68,68,0.15) !important; color: #f87171 !important; }
+  .p-badge.p-badge-info,
+  .badge-info { background-color: rgba(59,130,246,0.15) !important; color: #60a5fa !important; }
+  .badge-frequent,
+  .p-tag.tag-frequent { background-color: rgba(99,102,241,0.18) !important; color: #a5b4fc !important; }
+
+  /* === TOASTS OSCUROS === */
+  .p-toast .p-toast-message {
+    background-color: rgba(20,20,28,0.92) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+  }
+
+  /* === SKELETON OSCURO === */
+  .p-skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%) !important;
+    background-size: 200% 100% !important;
+  }
+
+  /* === CALENDARIO OSCURO === */
+  .p-datepicker {
+    background-color: #14141c !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+  }
+  .p-datepicker:not(.p-disabled) table td span:not(.p-highlight):not(.p-disabled):hover {
+    background-color: rgba(255,255,255,0.08) !important;
+  }
+  .p-datepicker table td > span.p-highlight {
+    background: linear-gradient(135deg, var(--lealtix-primary-500), var(--lealtix-primary-700)) !important;
+    color: #ffffff !important;
+  }
+
+  /* === CHECKBOX / RADIO OSCUROS === */
+  .p-checkbox .p-checkbox-box,
+  .p-radiobutton .p-radiobutton-box {
+    background-color: rgba(255,255,255,0.05) !important;
+    border-color: rgba(255,255,255,0.15) !important;
+  }
+  .p-checkbox .p-checkbox-box.p-highlight,
+  .p-radiobutton .p-radiobutton-box.p-highlight {
+    background: linear-gradient(135deg, var(--lealtix-primary-500), var(--lealtix-primary-700)) !important;
+    border-color: var(--lealtix-primary-500) !important;
+  }
+
+  /* === STATS / WIDGETS GLOW === */
+  .stat-widget,
+  .stats-widget,
+  .widget {
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .empty-state-icon {
+    color: #3d4561;
+  }
+}
+
+/* ============================================================================
+   DARK PREMIUM — PÁGINAS CRUD (toolbars, headers de tabla, diálogos internos)
+   ============================================================================ */
+:root[class*='app-dark'],
+.app-dark {
+
+  /* Toolbar */
+  .p-toolbar {
+    background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.015) 100%) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.3) !important;
+  }
+
+  /* Header de tabla (banner gradiente) — el input interno oscuro */
+  .p-datatable .p-datatable-header {
+    background: linear-gradient(135deg, rgba(79,70,229,0.9) 0%, rgba(99,102,241,0.85) 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(99,102,241,0.4) !important;
+    h5 { color: #ffffff !important; }
+    .p-inputtext, .p-inputicon, i, input {
+      background: rgba(0,0,0,0.2) !important;
+      color: #ffffff !important;
+      border-color: rgba(255,255,255,0.2) !important;
+    }
+    .p-inputtext::placeholder { color: rgba(255,255,255,0.7) !important; }
+  }
+
+  /* Headers de tabla estándar */
+  .p-datatable .p-datatable-thead > tr > th {
+    background: rgba(255,255,255,0.03) !important;
+    color: #a8b0c0 !important;
+    border-color: rgba(255,255,255,0.08) !important;
+  }
+
+  .p-datatable .p-datatable-tbody > tr > td {
+    border-color: rgba(255,255,255,0.05) !important;
+  }
+
+  /* Diálogos internos: texto y títulos */
+  .p-dialog {
+    h2, h3, h4 {
+      color: #ffffff !important;
+    }
+    p, div, label, span {
+      color: #cbd2e0 !important;
+    }
+    .p-dialog-content {
+      background: #14141c !important;
+    }
+  }
+
+  /* Tarjetas internas de dialogo / form */
+  .global-loading-spinner {
+    background: rgba(20,20,28,0.95) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+  }
+
+  /* Listas internas de CRUD */
+  .p-datatable .p-datatable-tbody > tr:hover {
+    background-color: rgba(99,102,241,0.08) !important;
+  }
+}
+
+/* === VENTANA CONFIABLE: todo contenido transparente para el glass === */
+.layout-main-container {
+  position: relative;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

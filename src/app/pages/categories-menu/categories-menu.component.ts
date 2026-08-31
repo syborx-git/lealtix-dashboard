@@ -25,6 +25,7 @@ import { Category } from '../model/category.component';
 import { CategoryService } from './service/category.service';
 import { forkJoin } from 'rxjs';
 import { TenantService } from '../admin-page/service/tenant.service';
+import { AuthService } from '@/auth/auth.service';
 import { CategoryDialogComponent } from './category-dialog.component';
 import { ConfettiService } from '@/confetti/confetti.service';
 import { ConfettiComponent } from '@/confetti/confetti.component';
@@ -109,6 +110,7 @@ export class CategoriesMenuComponent implements OnInit {
         private confirmationService: ConfirmationService,
         private fb: FormBuilder,
         private tenantService: TenantService,
+        private authService: AuthService,
         private confettiService: ConfettiService,
         private router: Router,
         private productService: ProductService,
@@ -125,27 +127,12 @@ export class CategoriesMenuComponent implements OnInit {
     }
 
     ngOnInit() {
-        const userStr = sessionStorage.getItem('usuario') ?? localStorage.getItem('usuario');
-        if (userStr) {
-            try {
-                const userObj = JSON.parse(userStr);
-                if (userObj && userObj.userEmail) {
-                    this.tenantService.getTenantByEmail(String(userObj.userEmail || '').trim()).subscribe({
-                        next: (resp) => {
-                            const tenant = resp?.object;
-                            this.tenantId = tenant?.id ?? 0;
-                            this.categoryForm.patchValue({ tenantId: this.tenantId });
-                            this.loadCategories();
-                            this.checkBannerConditions();
-                        },
-                        error: (err) => {
-                            console.error('Error fetching tenant:', err);
-                        }
-                    });
-                }
-            } catch (e) {
-                console.warn('Failed to parse stored usuario:', e);
-            }
+        const currentUser = this.authService.getCurrentUser();
+        this.tenantId = currentUser?.tenantId ?? 0;
+        if (this.tenantId > 0) {
+            this.categoryForm.patchValue({ tenantId: this.tenantId });
+            this.loadCategories();
+            this.checkBannerConditions();
         }
     }
 
@@ -525,65 +512,41 @@ export class CategoriesMenuComponent implements OnInit {
 
         forkJoin({
             products: this.productService.getProductsByTenantId(this.tenantId),
-            welcomeStatus: this.campaignService.getWelcomeCampaignStatus(this.tenantId)
+            campaigns: this.campaignService.getByBusiness(this.tenantId)
         }).subscribe({
-            next: ({ products, welcomeStatus }) => {
+            next: ({ products, campaigns }) => {
                 const productCount = Array.isArray(products) ? products.length : (products?.object?.length ?? 0);
                 const hasProducts = productCount > 0;
-                const campaignExists = welcomeStatus?.exists ?? false;
-                const campaignStatus = welcomeStatus?.status;
+                const welcomeCampaigns = (campaigns || []).filter(c => c.template?.id === 1);
+                const active = welcomeCampaigns.some(c => c.status === 'ACTIVE');
+                const draft = !active && welcomeCampaigns.some(c => c.status === 'DRAFT');
 
-                console.debug('[Banner][categories-menu] tenantId=', this.tenantId, 'productCount=', productCount, 'welcomeStatus=', welcomeStatus);
-
-                if (!hasProducts || (campaignExists && campaignStatus === 'ACTIVE')) {
+                if (!hasProducts || active) {
                     this.showWelcomeBanner.set(false);
                     return;
                 }
 
-                if (!campaignExists) {
+                if (welcomeCampaigns.length === 0) {
                     this.showWelcomeBanner.set(true);
                     this.bannerMessage.set({
                         title: 'Tu negocio ya está listo.',
                         description: 'Ahora configura tu campaña de bienvenida para empezar a recibir clientes.',
                         buttonText: 'Configurar campaña de bienvenida'
                     });
-                } else if (campaignStatus === 'DRAFT') {
+                } else if (draft) {
                     this.showWelcomeBanner.set(true);
                     this.bannerMessage.set({
                         title: '¡Ya casi está todo listo!',
                         description: 'Tienes una campaña de bienvenida guardada como borrador. Actívala para comenzar a recibir clientes.',
                         buttonText: 'Activar campaña de bienvenida'
                     });
+                } else {
+                    this.showWelcomeBanner.set(false);
                 }
             },
             error: (err) => {
-                console.warn('[Banner][categories-menu] welcome-status failed, falling back to campaigns list', err);
-                this.productService.getProductsByTenantId(this.tenantId).subscribe({
-                    next: (productsResp) => {
-                        const productCount = Array.isArray(productsResp) ? productsResp.length : (productsResp?.object?.length ?? 0);
-                        const hasProducts = productCount > 0;
-
-                        this.campaignService.getByBusiness(this.tenantId).subscribe({
-                            next: (campaigns) => {
-                                const welcomeCampaigns = (campaigns || []).filter(c => c.template?.id === 1);
-                                const active = welcomeCampaigns.some(c => c.status === 'ACTIVE');
-                                const draft = !active && welcomeCampaigns.some(c => c.status === 'DRAFT');
-
-                                if (!hasProducts || active) { this.showWelcomeBanner.set(false); return; }
-
-                                if (welcomeCampaigns.length === 0) {
-                                    this.showWelcomeBanner.set(true);
-                                    this.bannerMessage.set({ title: 'Tu negocio ya está listo.', description: 'Ahora configura tu campaña de bienvenida para empezar a recibir clientes.', buttonText: 'Configurar campaña de bienvenida' });
-                                } else if (draft) {
-                                    this.showWelcomeBanner.set(true);
-                                    this.bannerMessage.set({ title: '¡Ya casi está todo listo!', description: 'Tienes una campaña de bienvenida guardada como borrador. Actívala para comenzar a recibir clientes.', buttonText: 'Activar campaña de bienvenida' });
-                                }
-                            },
-                            error: (e2) => { console.error('[Banner][categories-menu] fallback getByBusiness failed', e2); this.showWelcomeBanner.set(false); }
-                        });
-                    },
-                    error: (e3) => { console.error('[Banner][categories-menu] fallback getProducts failed', e3); this.showWelcomeBanner.set(false); }
-                });
+                console.error('[Banner][categories-menu] campaigns check failed', err);
+                this.showWelcomeBanner.set(false);
             }
         });
     }

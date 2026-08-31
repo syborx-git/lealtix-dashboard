@@ -11,6 +11,7 @@ import { CampaignTemplateService } from '../../services/campaign-template.servic
 import { ProductService } from '@/pages/products-menu/service/product.service';
 import { CampaignService } from '../../services/campaign.service';
 import { TenantService } from '@/pages/admin-page/service/tenant.service';
+import { AuthService } from '@/auth/auth.service';
 import { forkJoin } from 'rxjs';
 
 @Component({
@@ -41,29 +42,33 @@ export class CampaignTemplatesListComponent implements OnInit {
     private router: Router,
     private productService: ProductService,
     private campaignService: CampaignService,
-    private tenantService: TenantService
+    private tenantService: TenantService,
+    private authService: AuthService
   ) {}
 
   // Fallback handler for template images
   onImageError(event: Event) {
     const img = event?.target as HTMLImageElement | null;
     if (img) {
-      img.src = 'https://via.placeholder.com/600x300?text=Sin+imagen';
+      img.src = this.fallbackImage;
     }
   }
+
+  private readonly fallbackImage =
+    'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27600%27 height=%27300%27%3E%3Crect width=%27100%25%27 height=%27100%25%27 fill=%27%23f1f5f9%27/%3E%3Ctext x=%2750%25%27 y=%2750%25%27 fill=%27%2394a3b8%27 font-family=%27Inter,sans-serif%27 font-size=%2724%27 text-anchor=%27middle%27 dominant-baseline=%27middle%27%3ESin imagen%3C/text%3E%3C/svg%3E';
 
   // Optimize Cloudinary images by adding transformations
   getOptimizedImageUrl(url: string | undefined): string {
     if (!url) {
-      return 'https://via.placeholder.com/600x300?text=Sin+imagen';
+      return this.fallbackImage;
     }
 
     // If it's a Cloudinary URL, add transformation parameters
     if (url.includes('cloudinary.com')) {
-      // Insert transformation after /upload/
+      // Proporción uniforme 4:5 (la de la tarjeta) con crop inteligente
       const transformedUrl = url.replace(
         '/upload/',
-        '/upload/w_600,h_300,c_fill,f_auto,q_auto/'
+        '/upload/w_400,h_500,c_fill,g_auto,f_auto,q_auto/'
       );
       return transformedUrl;
     }
@@ -77,34 +82,19 @@ export class CampaignTemplatesListComponent implements OnInit {
   }
 
   private loadTenantAndBanner(): void {
-    const userStr = sessionStorage.getItem('usuario') ?? localStorage.getItem('usuario');
-    if (!userStr) return;
-
-    try {
-      const userObj = JSON.parse(userStr);
-      if (!userObj?.userEmail) return;
-
-      this.tenantService.getTenantByEmail(String(userObj.userEmail).trim()).subscribe({
-        next: (resp) => {
-          const tenant = resp?.object;
-          this.tenantId = tenant?.id ?? 0;
-          if (this.tenantId > 0) {
-            this.checkBannerConditions();
-          }
-        },
-        error: (err) => {
-          console.error('Error fetching tenant:', err);
-        }
-      });
-    } catch (e) {
-      console.warn('Failed to parse stored usuario:', e);
+    const currentUser = this.authService.getCurrentUser();
+    this.tenantId = currentUser?.tenantId ?? 0;
+    if (this.tenantId > 0) {
+      this.checkBannerConditions();
+      // Reload templates using tenant-specific endpoint
+      this.loadTemplates();
     }
   }
 
   private loadTemplates(): void {
     this.loading.set(true);
 
-    this.campaignTemplateService.getAll()
+    this.campaignTemplateService.getAll(this.tenantId)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (templates) => {
@@ -174,65 +164,41 @@ export class CampaignTemplatesListComponent implements OnInit {
 
     forkJoin({
       products: this.productService.getProductsByTenantId(this.tenantId),
-      welcomeStatus: this.campaignService.getWelcomeCampaignStatus(this.tenantId)
+      campaigns: this.campaignService.getByBusiness(this.tenantId)
     }).subscribe({
-      next: ({ products, welcomeStatus }) => {
+      next: ({ products, campaigns }) => {
         const productCount = Array.isArray(products) ? products.length : (products?.object?.length ?? 0);
         const hasProducts = productCount > 0;
-        const campaignExists = welcomeStatus?.exists ?? false;
-        const campaignStatus = welcomeStatus?.status;
+        const welcomeCampaigns = (campaigns || []).filter(c => c.template?.id === 1);
+        const active = welcomeCampaigns.some(c => c.status === 'ACTIVE');
+        const draft = !active && welcomeCampaigns.some(c => c.status === 'DRAFT');
 
-        console.debug('[Banner][templates-list] tenantId=', this.tenantId, 'productCount=', productCount, 'welcomeStatus=', welcomeStatus);
-
-        if (!hasProducts || (campaignExists && campaignStatus === 'ACTIVE')) {
+        if (!hasProducts || active) {
           this.showWelcomeBanner.set(false);
           return;
         }
 
-        if (!campaignExists) {
+        if (welcomeCampaigns.length === 0) {
           this.showWelcomeBanner.set(true);
           this.bannerMessage.set({
             title: 'Tu negocio ya está listo.',
             description: 'Ahora configura tu campaña de bienvenida para empezar a recibir clientes.',
             buttonText: 'Configurar campaña de bienvenida'
           });
-        } else if (campaignStatus === 'DRAFT') {
+        } else if (draft) {
           this.showWelcomeBanner.set(true);
           this.bannerMessage.set({
             title: '¡Ya casi está todo listo!',
             description: 'Tienes una campaña de bienvenida guardada como borrador. Actívala para comenzar a recibir clientes.',
             buttonText: 'Activar campaña de bienvenida'
           });
+        } else {
+          this.showWelcomeBanner.set(false);
         }
       },
       error: (err) => {
-        console.warn('[Banner][templates-list] welcome-status failed, falling back to campaigns list', err);
-        this.productService.getProductsByTenantId(this.tenantId).subscribe({
-          next: (productsResp) => {
-            const productCount = Array.isArray(productsResp) ? productsResp.length : (productsResp?.object?.length ?? 0);
-            const hasProducts = productCount > 0;
-
-            this.campaignService.getByBusiness(this.tenantId).subscribe({
-              next: (campaigns) => {
-                const welcomeCampaigns = (campaigns || []).filter(c => c.template?.id === 1);
-                const active = welcomeCampaigns.some(c => c.status === 'ACTIVE');
-                const draft = !active && welcomeCampaigns.some(c => c.status === 'DRAFT');
-
-                if (!hasProducts || (active)) { this.showWelcomeBanner.set(false); return; }
-
-                if (welcomeCampaigns.length === 0) {
-                  this.showWelcomeBanner.set(true);
-                  this.bannerMessage.set({ title: 'Tu negocio ya está listo.', description: 'Ahora configura tu campaña de bienvenida para empezar a recibir clientes.', buttonText: 'Configurar campaña de bienvenida' });
-                } else if (draft) {
-                  this.showWelcomeBanner.set(true);
-                  this.bannerMessage.set({ title: '¡Ya casi está todo listo!', description: 'Tienes una campaña de bienvenida guardada como borrador. Actívala para comenzar a recibir clientes.', buttonText: 'Activar campaña de bienvenida' });
-                }
-              },
-              error: (e2) => { console.error('[Banner][templates-list] fallback getByBusiness failed', e2); this.showWelcomeBanner.set(false); }
-            });
-          },
-          error: (e3) => { console.error('[Banner][templates-list] fallback getProducts failed', e3); this.showWelcomeBanner.set(false); }
-        });
+        console.error('[Banner][templates-list] campaigns check failed', err);
+        this.showWelcomeBanner.set(false);
       }
     });
   }

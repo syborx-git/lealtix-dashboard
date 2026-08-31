@@ -85,18 +85,21 @@ export class CampaignService {
           throw new Error('Respuesta inválida del servidor');
         }
 
-        // Manejar ambos formatos: data o object
-        const data = resp.data || resp.object;
-        if (!data) {
-          throw new Error('Respuesta sin datos');
+        // Manejar múltiples formatos de respuesta:
+        // 1. { data: { ...campaign } }
+        // 2. { object: { ...campaign } }
+        // 3. { code: 200, data: { ...campaign } }
+        // 4. Directamente el objeto campaña
+        const data = resp.data || resp.object || (resp.code && (resp.data || resp.object)) || resp;
+
+        // Si data existe y es un objeto con propiedades de campaña
+        if (!data || typeof data !== 'object') {
+          console.warn('Respuesta del servidor:', resp);
+          throw new Error('Respuesta sin datos válidos');
         }
 
-        // Retornar solo el objeto data
-        if (resp.code === 200 || resp.code === 201) {
-          return data as NewCampaignResponse;
-        } else {
-          throw new Error(resp.message || 'Error actualizando campaña');
-        }
+        // Retornar el objeto data
+        return data as NewCampaignResponse;
       }),
       tap({
         next: (response: NewCampaignResponse) => {
@@ -419,15 +422,47 @@ export class CampaignService {
   }
 
   /**
-   * Valida el estado de la campaña de bienvenida (ACTIVE o DRAFT)
-   * GET /campaigns/tenant/{tenantId}/welcome-status
+   * Envía emails masivos para una campaña
+   * POST /campaigns/{id}/send
+   *
+   * Inicia el proceso de envío masivo de emails para la campaña especificada.
+   * La campaña debe estar en estado READY para poder iniciar el envío.
+   *
+   * @param campaignId ID de la campaña
+   * @returns Observable con el resultado del envío
    */
-  getWelcomeCampaignStatus(tenantId: number): Observable<{ status: string | null; exists: boolean }> {
-    return this.http.get<GenericResponse<{ status: string | null; exists: boolean }>>(`${this.baseUrl}/tenant/${tenantId}/welcome-status`)
+  sendMassiveEmails(campaignId: number): Observable<{
+    status: string;
+    message: string;
+    campaignId: number;
+    currentStatus: string;
+  }> {
+    return this.http.post<any>(`${this.baseUrl}/${campaignId}/send`, {})
       .pipe(
         map(response => {
-          const mappedResponse = this.mapper.mapGenericResponse(response);
-          return mappedResponse.object;
+          // Manejar respuesta directa del backend
+          if (response.status === 'SUCCESS') {
+            return {
+              status: response.status,
+              message: response.message,
+              campaignId: response.campaignId,
+              currentStatus: response.currentStatus
+            };
+          } else {
+            throw new Error(response.message || 'Error al enviar emails');
+          }
+        }),
+        tap({
+          next: (response) => {
+            console.log('Envío de emails iniciado:', response);
+          },
+          error: (error: any) => {
+            console.error('Error al enviar emails:', error);
+          }
+        }),
+        catchError(error => {
+          console.error('Error en sendMassiveEmails:', error);
+          return throwError(() => error);
         })
       );
   }

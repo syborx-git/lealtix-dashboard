@@ -1,12 +1,12 @@
 <!-- Banner persistente de bienvenida -->
 <div class="mb-4" *ngIf="showWelcomeBanner()">
-    <div class="border-round p-4 shadow-2" style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-left: 4px solid #F59E0B;">
+    <div class="welcome-banner">
         <div class="flex align-items-center justify-content-between flex-wrap gap-3">
             <div class="flex align-items-start gap-3 flex-1">
                 <span class="text-4xl" style="line-height: 1;">🚀</span>
                 <div>
-                    <div class="font-semibold text-xl mb-2" style="color: #92400E;">{{ bannerMessage().title }}</div>
-                    <div class="line-height-3" style="color: #78350F;">{{ bannerMessage().description }}</div>
+                    <div class="font-semibold text-xl mb-2 welcome-banner-title">{{ bannerMessage().title }}</div>
+                    <div class="line-height-3 welcome-banner-text">{{ bannerMessage().description }}</div>
                 </div>
             </div>
             <p-button
@@ -47,7 +47,7 @@
             <h5 class="m-0">Gestión de Campañas</h5>
             <p-iconfield>
                 <p-inputicon styleClass="pi pi-search" />
-                <input pInputText type="text" (input)="onSearchChange($event)" [(ngModel)]="searchText" placeholder="Buscar campañas..." />
+                <input pInputText type="text" (input)="onSearchChange($event)" [(ngModel)]="searchText" />
             </p-iconfield>
         </div>
     </ng-template>
@@ -64,14 +64,15 @@
         </tr>
     </ng-template>
     <ng-template pTemplate="body" let-item>
-        <tr>
+        <tr [ngClass]="{ 'in-use-row': item.campaign.template?.inUse }">
             <td style="width: 3rem">
-                <p-tableCheckbox [value]="item.campaign" />
+                <p-tableCheckbox [value]="item.campaign" [disabled]="item.campaign.template?.inUse" />
             </td>
             <td style="min-width: 14rem">
                 <div class="flex flex-column gap-2">
                     <div class="flex items-center gap-2">
                         <span class="font-semibold text-900 line-height-3 text-base">{{ item.campaign.title }}</span>
+                        <p-chip *ngIf="item.campaign.template?.inUse" label="En uso" styleClass="p-chip-outlined text-xs" size="small"></p-chip>
                         <!-- Badge de validación -->
                         <span
                             class="validation-badge"
@@ -117,8 +118,8 @@
             </td>
             <td>
                 <div class="flex gap-1">
-                    <p-button icon="pi pi-pencil" size="small" [rounded]="true" [outlined]="true" severity="secondary" (onClick)="editCampaign(item.campaign)" aria-label="Editar campaña" />
-                    <p-button icon="pi pi-trash" size="small" [rounded]="true" [outlined]="true" severity="danger" (onClick)="deleteCampaign(item.campaign)" aria-label="Eliminar campaña" />
+                    <p-button icon="pi pi-pencil" size="small" [rounded]="true" [outlined]="true" severity="secondary" (onClick)="editCampaign(item.campaign)" aria-label="Editar campaña" [disabled]="item.campaign.template?.inUse" />
+                    <p-button icon="pi pi-trash" size="small" [rounded]="true" [outlined]="true" severity="danger" (onClick)="deleteCampaign(item.campaign)" aria-label="Eliminar campaña" [disabled]="item.campaign.template?.inUse" />
                 </div>
             </td>
         </tr>
@@ -127,8 +128,8 @@
         <tr>
             <td [attr.colspan]="columns.length + 2" class="py-8">
                 <div class="flex flex-col items-center justify-center gap-2">
-                    <h3 class="text-2xl font-semibold text-gray-800 mb-1 text-center">No se encontraron campañas</h3>
-                    <p class="text-gray-500 mb-4 text-center" style="max-width: 350px;">
+                    <h3 class="text-2xl font-semibold text-900 mb-1 text-center">No se encontraron campañas</h3>
+                    <p class="text-500 mb-4 text-center" style="max-width: 350px;">
                         {{ searchText || selectedStatus ? 'No hay campañas que coincidan con los filtros.' : 'Crea tu primera campaña para comenzar.' }}
                     </p>
                 </div>
@@ -163,8 +164,8 @@
 >
   <div class="flex flex-col items-center gap-4">
     <div style="font-size: 3.5rem;">🎉</div>
-    <h2 class="font-bold text-2xl text-primary-700 m-0">¡Campaña de bienvenida activada!</h2>
-    <p class="text-lg text-gray-700 m-0">
+    <h2 class="font-bold text-2xl text-primary-500 m-0">¡Campaña de bienvenida activada!</h2>
+    <p class="text-lg text-700 m-0">
       Tu campaña ya está lista. Ahora puedes registrar clientes para que reciban este beneficio automáticamente.
     </p>
         <div class="mt-3 w-full">

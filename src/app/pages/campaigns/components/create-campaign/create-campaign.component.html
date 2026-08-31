@@ -164,8 +164,8 @@
                     <i class="pi pi-gift text-3xl text-primary"></i>
                     <div>
                       <p class="font-semibold m-0 mb-1">Beneficio Actual</p>
-                      <p class="text-500 m-0" *ngIf="!loadingReward()">{{ getRewardSummary() }}</p>
-                      <p class="text-500 m-0" *ngIf="loadingReward()">
+                      <p class="text-500 m-0" *ngIf="!loadingReward() || selectedRewardType === RewardType.NONE">{{ getRewardSummary() }}</p>
+                      <p class="text-500 m-0" *ngIf="loadingReward() && selectedRewardType !== RewardType.NONE">
                         <i class="pi pi-spin pi-spinner"></i> Cargando...
                       </p>
                     </div>
@@ -173,14 +173,190 @@
                 </div>
               </div>
 
-              <!-- Componente de formulario de reward -->
-              <app-reward-form #rewardFormComp
-                [campaignId]="campaignId() ?? undefined"
-                [existingReward]="currentReward() ?? undefined"
-                [tenantId]="tenantId ?? undefined"
-                (saved)="onRewardSaved($event)"
-                (pending)="onPendingReward($event)"
-              ></app-reward-form>
+              <!-- Componente de formulario de reward integrado -->
+              <!-- Tipo de Reward -->
+              <div class="field">
+                <label for="rewardType" class="font-semibold">
+                  Tipo de beneficio <span class="text-red-500">*</span>
+                  <i class="pi pi-info-circle ml-2 text-500"
+                     pTooltip="Selecciona el tipo de beneficio que recibirán tus clientes. Cada tipo tiene configuraciones específicas."
+                     tooltipPosition="right"></i>
+                </label>
+                <p-select
+                  id="rewardType"
+                  formControlName="rewardType"
+                  [options]="rewardTypes"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Seleccione el tipo de beneficio"
+                  class="w-full"
+                  [styleClass]="campaignForm.get('rewardType')?.invalid && campaignForm.get('rewardType')?.touched ? 'ng-invalid ng-dirty' : ''"
+                ></p-select>
+
+                <!-- Mensaje de error inline -->
+                <p-message
+                  *ngIf="campaignForm.get('rewardType')?.invalid && campaignForm.get('rewardType')?.touched"
+                  severity="warn"
+                  text="Debes seleccionar un tipo de beneficio para continuar"
+                  styleClass="mt-2 w-full">
+                </p-message>
+
+                <!-- Mensaje de ayuda informativo -->
+                <small class="text-500 block mt-2" *ngIf="!campaignForm.get('rewardType')?.value">
+                  💡 Elige cómo quieres recompensar a tus clientes
+                </small>
+              </div>
+
+              <!-- Valor Numérico (para PERCENT_DISCOUNT y FIXED_AMOUNT) -->
+              <div class="field" *ngIf="showNumericValue">
+                <label for="numericValue" class="font-semibold">
+                  {{ numericValueLabel }} <span class="text-red-500">*</span>
+                </label>
+                <p-inputnumber
+                  id="numericValue"
+                  formControlName="numericValue"
+                  class="w-full"
+                  [min]="0"
+                  [max]="selectedRewardType === 'PERCENT_DISCOUNT' ? 100 : 999999"
+                  [suffix]="selectedRewardType === 'PERCENT_DISCOUNT' ? '%' : ''"
+                  [prefix]="selectedRewardType === 'FIXED_AMOUNT' ? '$' : ''"
+                  [styleClass]="campaignForm.get('numericValue')?.invalid && campaignForm.get('numericValue')?.touched ? 'ng-invalid ng-dirty' : ''"
+                ></p-inputnumber>
+                <small class="p-error" *ngIf="campaignForm.get('numericValue')?.invalid && campaignForm.get('numericValue')?.touched">
+                  Este campo es requerido
+                </small>
+              </div>
+
+              <!-- ID de Producto (para FREE_PRODUCT y BUY_X_GET_Y) -->
+              <div class="field" *ngIf="showProductId">
+                <!-- Mensaje info para 2x1 -->
+                <p-message
+                  *ngIf="show2x1Product"
+                  severity="info"
+                  text="Selecciona el producto que participará en la promoción. El cliente comprará 1 y recibirá 1 adicional gratis."
+                  [styleClass]="'w-full mb-3'">
+                </p-message>
+
+                <label for="productId" class="font-semibold">
+                  {{ productIdLabel }} <span class="text-red-500">*</span>
+                </label>
+                <p-treeSelect
+                  [options]="productTree"
+                  selectionMode="single"
+                  placeholder="Selecciona categoría → producto"
+                  [(ngModel)]="selectedProductNode"
+                  [ngModelOptions]="{standalone: true}"
+                  (ngModelChange)="onProductTreeSelect($event)"
+                  [style]="{ width: '100%' }"
+                  [filter]="true"
+                ></p-treeSelect>
+                <small class="p-error" *ngIf="campaignForm.get('productId')?.invalid && campaignForm.get('productId')?.touched">
+                  Debes seleccionar un producto
+                </small>
+                <small class="text-500 block mt-2" *ngIf="campaignForm.get('productId')?.value && !campaignForm.get('productId')?.invalid">
+                  <strong>✓ Producto seleccionado:</strong> ID {{ campaignForm.get('productId')?.value }}
+                </small>
+              </div>
+
+              <!-- Cantidades para BUY_X_GET_Y -->
+              <div class="field" *ngIf="showBuyGetQuantities">
+                <label for="buyQuantity" class="font-semibold">
+                  Cantidad a comprar <span class="text-red-500">*</span>
+                </label>
+                <p-inputnumber
+                  id="buyQuantity"
+                  formControlName="buyQuantity"
+                  class="w-full"
+                  [min]="1"
+                  [useGrouping]="false"
+                  [styleClass]="campaignForm.get('buyQuantity')?.invalid && campaignForm.get('buyQuantity')?.touched ? 'ng-invalid ng-dirty' : ''"
+                ></p-inputnumber>
+                <small class="p-error" *ngIf="campaignForm.get('buyQuantity')?.invalid && campaignForm.get('buyQuantity')?.touched">
+                  Este campo es requerido
+                </small>
+              </div>
+
+              <div class="field" *ngIf="showBuyGetQuantities">
+                <label for="freeQuantity" class="font-semibold">
+                  Cantidad gratis <span class="text-red-500">*</span>
+                </label>
+                <p-inputnumber
+                  id="freeQuantity"
+                  formControlName="freeQuantity"
+                  class="w-full"
+                  [min]="1"
+                  [useGrouping]="false"
+                  [styleClass]="campaignForm.get('freeQuantity')?.invalid && campaignForm.get('freeQuantity')?.touched ? 'ng-invalid ng-dirty' : ''"
+                ></p-inputnumber>
+                <small class="p-error" *ngIf="campaignForm.get('freeQuantity')?.invalid && campaignForm.get('freeQuantity')?.touched">
+                  Este campo es requerido
+                </small>
+              </div>
+
+              <!-- Descripción del Reward (visible para cualquier tipo seleccionado, incluyendo NONE) -->
+              <div class="field" *ngIf="selectedRewardType">
+                <label for="rewardDescription" class="font-semibold">
+                  Descripción del beneficio <span class="text-red-500">*</span>
+                </label>
+                <textarea
+                  pTextarea
+                  id="rewardDescription"
+                  formControlName="rewardDescription"
+                  rows="3"
+                  class="w-full"
+                  placeholder="Descripción del beneficio (máximo 500 caracteres)"
+                  [class.ng-invalid]="campaignForm.get('rewardDescription')?.invalid && campaignForm.get('rewardDescription')?.touched"
+                  [class.ng-dirty]="campaignForm.get('rewardDescription')?.invalid && campaignForm.get('rewardDescription')?.touched"
+                  maxlength="500"
+                ></textarea>
+                <small class="p-error" *ngIf="campaignForm.get('rewardDescription')?.hasError('required') && campaignForm.get('rewardDescription')?.touched">
+                  Este campo es requerido
+                </small>
+              </div>
+
+              <!-- Mensaje informativo cuando se selecciona NONE -->
+              <div class="field" *ngIf="selectedRewardType === RewardType.NONE">
+                <div class="p-3 border-round bg-blue-50 border-1 border-blue-200">
+                  <div class="flex align-items-start gap-2">
+                    <i class="pi pi-info-circle text-blue-600 mt-1"></i>
+                    <div>
+                      <p class="m-0 font-semibold text-blue-900">Campaña sin beneficio económico</p>
+                      <p class="m-0 mt-1 text-sm text-blue-800">
+                        Esta campaña será solo promocional.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Campos opcionales (solo si NO es NONE) -->
+              <div class="field" *ngIf="selectedRewardType !== RewardType.NONE">
+                <label for="minPurchaseAmount" class="font-semibold">
+                  Monto mínimo de compra (opcional)
+                </label>
+                <p-inputnumber
+                  id="minPurchaseAmount"
+                  formControlName="minPurchaseAmount"
+                  class="w-full"
+                  [min]="0"
+                  prefix="$"
+                  placeholder="0.00"
+                ></p-inputnumber>
+              </div>
+
+              <div class="field" *ngIf="selectedRewardType !== RewardType.NONE">
+                <label for="usageLimit" class="font-semibold">
+                  Límite de uso (opcional)
+                </label>
+                <p-inputnumber
+                  id="usageLimit"
+                  formControlName="usageLimit"
+                  class="w-full"
+                  [min]="1"
+                  [useGrouping]="false"
+                  placeholder="Sin límite"
+                ></p-inputnumber>
+              </div>
             </div>
 
             <p-divider></p-divider>
@@ -446,5 +622,109 @@
   [clientSlug]="clientSlug()"
   [rewardDescription]="currentReward()?.description"
 ></app-campaign-preview-dialog>
+
+<!-- Email Confirmation Dialog - Mobile First Design -->
+<p-dialog
+  [(visible)]="showEmailConfirmationDialog"
+  [modal]="true"
+  [closable]="true"
+  [draggable]="false"
+  [resizable]="false"
+  styleClass="email-confirmation-dialog"
+  [style]="{ width: '100%', maxWidth: '420px' }"
+>
+  <ng-template pTemplate="header">
+    <div class="flex align-items-center gap-2 w-full">
+      <i class="pi pi-send text-primary text-xl"></i>
+      <span class="font-semibold text-lg">Confirmar Envío</span>
+    </div>
+  </ng-template>
+
+    <div class="email-dialog-content">
+      <!-- Main Message -->
+      <div class="email-header p-3">
+        <div class="flex gap-3 align-items-center">
+          <div class="icon-wrap flex-shrink-0">
+            <div class="icon-bg">
+              <i class="pi pi-envelope"></i>
+            </div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h3 class="m-0 mb-1 title">Envío Masivo de Emails</h3>
+            <p class="m-0 subtitle">Se enviará un email promocional a todos los usuarios seleccionados</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Details grid -->
+      <div class="email-body p-3">
+        <div class="grid">
+          <div class="col-12">
+            <div class="card segmentation-card mb-3">
+              <div class="flex align-items-start gap-3">
+                <i class="pi pi-users card-icon"></i>
+                <div class="flex-1 min-w-0">
+                  <p class="label">Audiencia</p>
+                  <p class="value" title="{{ campaignForm.get('segmentation')?.value?.join(', ') || 'Todos los clientes' }}">
+                    {{ campaignForm.get('segmentation')?.value?.join(', ') || 'Todos los clientes' }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="card warning-card mb-3">
+              <div class="flex gap-3 align-items-start">
+                <i class="pi pi-exclamation-triangle warning-icon"></i>
+                <div class="flex-1 min-w-0">
+                  <p class="label warning-label">Importante</p>
+                  <ul class="warning-list m-0 pl-3">
+                    <li><strong>Tiempo:</strong> El proceso puede tardar varios minutos</li>
+                    <li><strong>Irreversible:</strong> No podrás cancelar el envío</li>
+                    <li><strong>Revisar:</strong> Asegúrate de haber validado la campaña</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="card info-card">
+              <div class="flex align-items-center gap-3">
+                <i class="pi pi-spin pi-spinner info-icon"></i>
+                <div>
+                  <p class="m-0 info-text">El envío se procesará en segundo plano</p>
+                  <p class="m-0 text-xs text-500">Recibirás una notificación cuando finalice</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <ng-template pTemplate="footer">
+    <div class="footer-actions">
+      <p-button
+        label="Cancelar"
+        icon="pi pi-arrow-left"
+        [outlined]="true"
+        severity="secondary"
+        (onClick)="cancelEmailSend()"
+        [style]="{ width: '100%' }"
+        ariaLabel="Cancelar envío"
+      ></p-button>
+      <p-button
+        label="Activar y Enviar"
+        icon="pi pi-send"
+        (onClick)="confirmEmailSend()"
+        [loading]="saving()"
+        [style]="{ width: '100%' }"
+        ariaLabel="Confirmar activación y envío"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
 
 <p-toast></p-toast>

@@ -1,5 +1,9 @@
-// Modern Promotional Card Design - Professional & Minimalist
+/* ============================================================================
+   CAMPAIGN PREVIEW DIALOG - Estilos de componente
+   Alineados con el sistema de diseño Lealtix
+   ============================================================================ */
 
+/* === CONTENEDOR DE CAPTURA === */
 .preview-capture {
   max-width: 800px;
   background: transparent;
@@ -10,20 +14,20 @@
   position: relative;
 }
 
-// Main promotional card container
+/* === TARJETA PROMOCIONAL === */
 .promo-card {
   position: relative;
   width: 100%;
   min-height: 600px;
-  background: linear-gradient(145deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-  border-radius: 24px;
+  background: linear-gradient(145deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 50%, var(--lealtix-primary-400) 100%);
+  border-radius: var(--lealtix-radius-xxl, 24px);
   overflow: hidden;
   box-shadow:
-    0 25px 50px rgba(102, 126, 234, 0.3),
+    var(--lealtix-shadow-2xl),
     0 0 0 1px rgba(255, 255, 255, 0.1) inset;
 }
 
-// Decorative background elements
+/* === FONDO DECORATIVO === */
 .promo-background {
   position: absolute;
   top: 0;
@@ -41,9 +45,9 @@
     bottom: 0;
     background: linear-gradient(
       135deg,
-      rgba(102, 126, 234, 0.9) 0%,
-      rgba(118, 75, 162, 0.85) 50%,
-      rgba(240, 147, 251, 0.8) 100%
+      rgba(99, 102, 241, 0.9) 0%,
+      rgba(79, 70, 229, 0.85) 50%,
+      rgba(139, 92, 246, 0.8) 100%
     );
   }
 
@@ -83,7 +87,7 @@
   }
 }
 
-// Header with client branding
+/* === HEADER CON BRANDING === */
 .promo-header-modern {
   position: relative;
   z-index: 10;
@@ -103,25 +107,25 @@
     width: 56px;
     height: 56px;
     object-fit: contain;
-    border-radius: 16px;
+    border-radius: var(--lealtix-radius-lg);
     background: rgba(255, 255, 255, 0.95);
     padding: 8px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--lealtix-shadow-xl);
   }
 
   .client-initials-modern {
     width: 56px;
     height: 56px;
     background: rgba(255, 255, 255, 0.95);
-    color: #667eea;
-    border-radius: 16px;
+    color: var(--lealtix-primary-500);
+    border-radius: var(--lealtix-radius-lg);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 20px;
     font-weight: 900;
     letter-spacing: 1px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--lealtix-shadow-xl);
   }
 
   .client-info-compact {
@@ -134,7 +138,7 @@
     font-size: 18px;
     font-weight: 700;
     margin: 0 0 6px 0;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    text-shadow: var(--lealtix-shadow-md);
   }
 
   .promo-badge {
@@ -146,13 +150,13 @@
     text-transform: uppercase;
     letter-spacing: 1.2px;
     padding: 6px 12px;
-    border-radius: 20px;
+    border-radius: var(--lealtix-radius-full);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
   }
 }
 
-// Main content area
+/* === ÁREA DE CONTENIDO PRINCIPAL === */
 .promo-content-main {
   position: relative;
   z-index: 10;
@@ -162,13 +166,13 @@
   gap: 24px;
 }
 
-// Visual section (image)
+/* === SECCIÓN VISUAL (IMAGEN) === */
 .promo-visual-section {
   .image-container-modern {
     position: relative;
     width: 100%;
     height: 280px;
-    border-radius: 20px;
+    border-radius: var(--lealtix-radius-xl);
     overflow: hidden;
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
@@ -181,7 +185,7 @@
     object-fit: contain;
     object-position: center;
     background: white;
-    border-radius: 20px;
+    border-radius: var(--lealtix-radius-xl);
   }
 
   .image-overlay {
@@ -195,11 +199,11 @@
       rgba(0, 0, 0, 0) 60%,
       rgba(0, 0, 0, 0.1) 100%
     );
-    border-radius: 20px;
+    border-radius: var(--lealtix-radius-xl);
   }
 }
 
-// Content section (text)
+/* === SECCIÓN DE CONTENIDO (TEXTO) === */
 .promo-content-section {
   color: white;
   text-align: center;
@@ -214,7 +218,7 @@
     line-height: 1.1;
     margin: 0 0 12px 0;
     color: white;
-    text-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    text-shadow: var(--lealtix-shadow-lg);
     letter-spacing: -0.5px;
   }
 
@@ -227,12 +231,12 @@
   }
 }
 
-// Offer highlight section
+/* === SECCIÓN DE OFERTA DESTACADA === */
 .offer-highlight {
   background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
+  border-radius: var(--lealtix-radius-xl);
   padding: 20px;
   margin-bottom: 24px;
   text-align: center;
@@ -249,7 +253,7 @@
     font-weight: 900;
     color: white;
     line-height: 1;
-    text-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    text-shadow: var(--lealtix-shadow-lg);
     letter-spacing: -2px;
   }
 
@@ -262,7 +266,7 @@
   }
 }
 
-// Description section
+/* === SECCIÓN DE DESCRIPCIÓN === */
 .description-section {
   margin-bottom: 24px;
 
@@ -276,7 +280,7 @@
   }
 }
 
-// Time information
+/* === INFORMACIÓN DE TIEMPO === */
 .time-info {
   .validity-modern {
     display: flex;
@@ -286,7 +290,7 @@
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 50px;
+    border-radius: var(--lealtix-radius-full);
     padding: 12px 20px;
     margin: 0 auto;
     width: fit-content;
@@ -305,32 +309,28 @@
   }
 }
 
-// Call to Action section
+/* === SECCIÓN DE CALL TO ACTION === */
 .cta-section {
   text-align: center;
   margin-top: 8px;
 
   ::ng-deep .cta-button-modern {
     background: white !important;
-    color: #667eea !important;
+    color: var(--lealtix-primary-500) !important;
     border: none !important;
     font-size: 16px !important;
     font-weight: 700 !important;
     padding: 16px 32px !important;
-    border-radius: 50px !important;
+    border-radius: var(--lealtix-radius-full) !important;
     text-transform: uppercase !important;
     letter-spacing: 1px !important;
-    box-shadow:
-      0 12px 24px rgba(0, 0, 0, 0.2),
-      0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+    box-shadow: var(--lealtix-shadow-xl) !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     min-width: 200px !important;
 
     &:hover {
       transform: translateY(-2px) !important;
-      box-shadow:
-        0 16px 32px rgba(0, 0, 0, 0.25),
-        0 0 0 1px rgba(255, 255, 255, 0.1) inset !important;
+      box-shadow: var(--lealtix-shadow-2xl) !important;
       background: rgba(255, 255, 255, 0.95) !important;
     }
 
@@ -344,7 +344,7 @@
   }
 }
 
-// No image placeholder
+/* === PLACEHOLDER SIN IMAGEN === */
 .no-image-section {
   .no-image-placeholder-modern {
     display: flex;
@@ -356,7 +356,7 @@
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     border: 2px dashed rgba(255, 255, 255, 0.3);
-    border-radius: 20px;
+    border-radius: var(--lealtix-radius-xl);
     text-align: center;
   }
 
@@ -375,7 +375,7 @@
   }
 }
 
-// Footer with Lealtix branding
+/* === FOOTER CON BRANDING LEALTIX === */
 .promo-footer-modern {
   position: relative;
   z-index: 10;
@@ -410,10 +410,13 @@
   }
 }
 
-// Responsive design
+/* ============================================================================
+   RESPONSIVE DESIGN - ADAPTACIONES MÓVILES
+   ============================================================================ */
+
 @media (max-width: 768px) {
   .promo-card {
-    border-radius: 20px;
+    border-radius: var(--lealtix-radius-xl);
     min-height: 550px;
   }
 
@@ -444,7 +447,7 @@
   .promo-visual-section {
     .image-container-modern {
       height: 220px;
-      border-radius: 16px;
+      border-radius: var(--lealtix-radius-lg);
     }
   }
 
@@ -459,7 +462,7 @@
 
   .offer-highlight {
     padding: 16px;
-    border-radius: 16px;
+    border-radius: var(--lealtix-radius-lg);
 
     .discount-text {
       font-size: 36px;
@@ -501,10 +504,10 @@
   }
 }
 
-// Compact mobile version
+/* === VERSIÓN MÓVIL COMPACTA === */
 @media (max-width: 480px) {
   .promo-card {
-    border-radius: 16px;
+    border-radius: var(--lealtix-radius-lg);
     min-height: 500px;
   }
 

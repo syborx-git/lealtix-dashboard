@@ -2,7 +2,49 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1rem 0 1rem 0;
+    padding: 1.5rem 0;
     gap: 0.5rem;
-    border-top: 1px solid var(--surface-border);
+    border-top: 1.5px solid var(--lealtix-glass-border);
+    font-size: 0.8125rem;
+    color: var(--text-color-secondary);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+
+    a {
+      transition: all 0.25s ease;
+      position: relative;
+
+      &::after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        transform: scaleX(0);
+        height: 1.5px;
+        bottom: -2px;
+        left: 0;
+        background-color: var(--lealtix-primary-500);
+        transform-origin: bottom right;
+        transition: transform 0.25s ease-out;
+      }
+
+      &:hover {
+        color: var(--lealtix-primary-600) !important;
+
+        &::after {
+          transform: scaleX(1);
+          transform-origin: bottom left;
+        }
+
+        i {
+          transform: scale(1.2);
+          color: #ef4444;
+        }
+      }
+    }
+
+    i {
+      color: var(--lealtix-slate-400);
+      font-size: 0.875rem;
+      transition: all 0.25s ease;
+    }
 }

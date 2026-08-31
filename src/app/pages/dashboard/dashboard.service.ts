@@ -6,6 +6,9 @@ import {
   TimeSeriesCountDTO,
   CouponStatsDTO,
   SalesSummaryDTO,
+  SalesByPeriodDTO,
+  TopProductDTO,
+  SalesByCategoryDTO,
   CampaignPerformanceDTO
 } from './dashboard.models';
 
@@ -60,6 +63,24 @@ export class DashboardService {
   resumenVentas(tenantId: number, from: string, to: string): Observable<SalesSummaryDTO> {
     return this.http
       .get<SalesSummaryDTO>(`${this.base}/sales/summary`, { params: this.params(tenantId, from, to) })
+      .pipe(catchError((e) => throwError(() => e)));
+  }
+
+  ventasPorPeriodo(tenantId: number, period: string, from: string, to: string): Observable<SalesByPeriodDTO[]> {
+    return this.http
+      .get<SalesByPeriodDTO[]>(`${this.base}/sales/by-period`, { params: this.params(tenantId, from, to).set('period', period) })
+      .pipe(catchError((e) => throwError(() => e)));
+  }
+
+  topProductos(tenantId: number, from: string, to: string): Observable<TopProductDTO[]> {
+    return this.http
+      .get<TopProductDTO[]>(`${this.base}/sales/top-products`, { params: this.params(tenantId, from, to) })
+      .pipe(catchError((e) => throwError(() => e)));
+  }
+
+  ventasPorCategoria(tenantId: number, from: string, to: string): Observable<SalesByCategoryDTO[]> {
+    return this.http
+      .get<SalesByCategoryDTO[]>(`${this.base}/sales/by-category`, { params: this.params(tenantId, from, to) })
       .pipe(catchError((e) => throwError(() => e)));
   }
 

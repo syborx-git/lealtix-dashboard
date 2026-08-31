@@ -1,12 +1,12 @@
 <!-- Banner persistente de bienvenida -->
 <div class="mb-4" *ngIf="showWelcomeBanner()">
-    <div class="border-round p-4 shadow-2" style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-left: 4px solid #F59E0B;">
+    <div class="welcome-banner">
         <div class="flex align-items-center justify-content-between flex-wrap gap-3">
             <div class="flex align-items-start gap-3 flex-1">
                 <span class="text-4xl" style="line-height: 1;">🚀</span>
                 <div>
-                    <div class="font-semibold text-xl mb-2" style="color: #92400E;">{{ bannerMessage().title }}</div>
-                    <div class="line-height-3" style="color: #78350F;">{{ bannerMessage().description }}</div>
+                    <div class="font-semibold text-xl mb-2 welcome-banner-title">{{ bannerMessage().title }}</div>
+                    <div class="line-height-3 welcome-banner-text">{{ bannerMessage().description }}</div>
                 </div>
             </div>
             <p-button
@@ -38,16 +38,20 @@
     </div>
 </div>
 
-<p-table #dt [value]="categories()" [rows]="10" [columns]="cols" [paginator]="true" [globalFilterFields]="['name', 'description']"
-    [tableStyle]="{ 'min-width': '75rem' }" [(selection)]="selectedCategories" [rowHover]="true" dataKey="id"
-    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} categories" [showCurrentPageReport]="true"
+<p-table #dt [value]="categories()"
+    [rows]="10" [columns]="cols" [paginator]="true"
+    [globalFilterFields]="['name', 'description']"
+    [tableStyle]="{ 'min-width': '75rem' }"
+    [(selection)]="selectedCategories"
+    [rowHover]="true" dataKey="id"
+    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} categorías" [showCurrentPageReport]="true"
     [rowsPerPageOptions]="[10, 30, 50]">
     <ng-template #caption>
         <div class="flex items-center justify-between">
             <h5 class="m-0">Categorías del Menú</h5>
             <p-iconfield>
                 <p-inputicon styleClass="pi pi-search" />
-                <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Buscar..." />
+                <input pInputText type="text" (input)="onGlobalFilter(dt, $event)"  />
             </p-iconfield>
         </div>
     </ng-template>
@@ -90,7 +94,7 @@
                 <p-tableCheckbox [value]="category" />
             </td>
             <td style="width: 4rem; text-align: center; cursor: move;">
-                <i class="pi pi-bars text-gray-500"></i>
+                <i class="pi pi-bars text-500"></i>
             </td>
             <td style="width: 8rem; text-align: center;">
                 <span class="font-semibold">{{ category.displayOrder }}</span>
@@ -105,6 +109,17 @@
                     (click)="editCategory(category)" />
                 <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [outlined]="true"
                     (click)="deleteCategory(category)" />
+            </td>
+        </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+        <tr>
+            <td colspan="7" class="text-center p-8">
+                <div class="empty-state">
+                    <i class="pi pi-tags empty-state-icon"></i>
+                    <h3 class="empty-state-title">No hay categorías</h3>
+                    <p class="empty-state-description">Organiza tu menú creando tu primera categoría.</p>
+                </div>
             </td>
         </tr>
     </ng-template>
@@ -125,20 +140,20 @@
     [(visible)]="showCategoryReminderDialog"
     [modal]="true"
     [closable]="false"
-    [style]="{ width: '28rem', textAlign: 'center', borderRadius: '1.25rem', overflow: 'hidden' }"
-    contentStyle="padding:2rem 1.75rem; border-radius:1.25rem;"
+    [style]="{ width: '30rem', maxWidth: '90vw' }"
+    contentStyleClass="border-round-xl"
     baseZIndex="2100"
 >
-    <div class="flex flex-col items-center gap-3 text-center">
-        <span class="text-4xl" aria-hidden="true">🏷️</span>
-        <h2 class="font-bold text-2xl text-primary-700">{{ categoryReminderProps.title }}</h2>
-        <p class="text-gray-700 line-height-3">
+    <div class="category-modal-content">
+        <span class="category-emoji" aria-hidden="true">🏷️</span>
+        <h2 class="category-title">{{ categoryReminderProps.title }}</h2>
+        <p class="category-description">
             {{ categoryReminderProps.description }}
         </p>
         <button
             pButton
             type="button"
-            class="p-button-primary w-full mt-2"
+            class="category-button"
             [label]="categoryReminderProps.buttonText"
             (click)="handleCategoryReminderAcknowledged()"
         ></button>
@@ -151,26 +166,27 @@
   [(visible)]="showFirstCategoryCongrats"
   [modal]="true"
   [closable]="false"
-  [style]="{ width: '30rem', textAlign: 'center', borderRadius: '1.5rem', overflow: 'hidden' }"
-  contentStyle="padding:2.5rem 2rem; border-radius:1.5rem;"
+  [style]="{ width: '32rem', maxWidth: '90vw' }"
+  contentStyleClass="border-round-xl"
   baseZIndex="2000"
 >
-  <div class="flex flex-col items-center justify-center gap-4">
-    <div style="font-size:2.2rem;">✅</div>
-    <h2 class="font-bold text-2xl text-primary-700 mb-2">¡Perfecto! Ya tienes tu primera categoría</h2>
-    <div class="text-lg text-gray-700 mb-2">
+  <div class="category-modal-content">
+    <div class="category-emoji">✅</div>
+    <h2 class="category-title">¡Perfecto! Ya tienes tu primera categoría</h2>
+    <div class="category-description">
       Ahora puedes comenzar a crear productos y asignarlos a esta categoría.
     </div>
-    <div class="flex gap-3 mt-3">
+    <div class="flex gap-3 mt-3 w-full" style="justify-content: center;">
       <button pButton
           label="Lo haré después"
-          class="p-button-outlined"
+          severity="secondary"
+          [outlined]="true"
           (click)="closeFirstCategoryDialog()">
       </button>
       <button pButton
           label="Crear mi primer producto"
           icon="pi pi-plus"
-          class="p-button-success"
+          severity="success"
           (click)="goToCreateProduct()">
       </button>
     </div>

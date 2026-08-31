@@ -1,0 +1,30 @@
+# ==============================================================================
+# LEALTIX DASHBOARD - DOCKER COMPOSE
+# ==============================================================================
+# Para iniciar la aplicación de forma fácil y rápida:
+# 👉 Ejecuta: docker compose up -d --build
+# 👉 Para detener: docker compose down
+#
+# 📌 CAMBIO DE URL DEL BACKEND (BE):
+# Antes de construir el contenedor, edita tu archivo de entorno:
+# 📁 src/app/pages/commons/environment.ts
+# Modifica la propiedad `apiUrl` con la URL final de tu servidor Backend.
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  lealtix-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lealtix_dashboard_container
+    restart: always
+    ports:
+      # Respetando el puerto de salida predeterminado de tu proyecto (4201)
+      # Mapeo: [Puerto Host]:[Puerto Contenedor]
+      - "4201:80"
+      # Si prefieres exponerlo directamente en el puerto HTTP estándar (80), usa:
+      # - "80:80"
+    environment:
+      - NODE_ENV=production

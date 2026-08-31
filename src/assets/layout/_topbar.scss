@@ -1,17 +1,11 @@
 @use 'mixins' as *;
 
 .layout-topbar {
-    position: fixed;
-    height: 4rem;
-    z-index: 997;
-    left: 0;
-    top: 0;
-    width: 100%;
-    padding: 0 2rem;
-    background-color: var(--surface-card);
-    transition: left var(--layout-section-transition-duration);
+    position: static;
+    padding: 0 0 1rem 0;
     display: flex;
     align-items: center;
+    transition: background-color 0.3s ease;
 
     .layout-topbar-logo-container {
         width: 20rem;
@@ -22,11 +16,34 @@
     .layout-topbar-logo {
         display: inline-flex;
         align-items: center;
-        font-size: 1.5rem;
+        font-size: 1.35rem;
         border-radius: var(--content-border-radius);
         color: var(--text-color);
-        font-weight: 500;
-        gap: 0.5rem;
+        font-weight: 800; // Bold brand name
+        letter-spacing: -0.03em;
+        gap: 0.75rem;
+
+        span {
+          position: absolute;
+          left: 44%;
+          font-size: 3.5rem;
+          font-weight: 900;
+          line-height: 1;
+          white-space: nowrap;
+          transform-origin: center;
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          background: linear-gradient(135deg, var(--text-color) 40%, var(--lealtix-primary-600) 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+
+          &:hover {
+            transform: scale(1.05);
+          }
+        }
+
+        img {
+          transition: transform 0.3s ease;
+        }
 
         svg {
             width: 3rem;
@@ -41,16 +58,36 @@
         display: inline-flex;
         justify-content: center;
         align-items: center;
-        color: var(--text-color-secondary);
-        border-radius: 50%;
+        border-radius: 12px; // Rounded but not complete circles for a modern SaaS look
         width: 2.5rem;
         height: 2.5rem;
-        color: var(--text-color);
-        transition: background-color var(--element-transition-duration);
+        color: var(--text-color-secondary);
+        background: rgba(255, 255, 255, 0.32);
+        backdrop-filter: blur(18px) saturate(180%);
+        -webkit-backdrop-filter: blur(18px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.55);
+        box-shadow:
+          inset 0 1px 1px rgba(255, 255, 255, 0.9),
+          inset 0 -1px 1px rgba(255, 255, 255, 0.25),
+          inset 0 0 0 0.5px rgba(255, 255, 255, 0.35),
+          0 2px 8px rgba(15, 23, 42, 0.06);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         cursor: pointer;
 
         &:hover {
-            background-color: var(--surface-hover);
+            color: var(--lealtix-primary-600);
+            background: rgba(255, 255, 255, 0.5);
+            border-color: rgba(255, 255, 255, 0.8);
+            box-shadow:
+              inset 0 1px 1px rgba(255, 255, 255, 1),
+              inset 0 -1px 1px rgba(255, 255, 255, 0.3),
+              0 2px 10px rgba(15, 23, 42, 0.08),
+              0 4px 16px rgba(99, 102, 241, 0.12);
+            transform: translateY(-1px);
+        }
+
+        &:active {
+            transform: translateY(0);
         }
 
         &:focus-visible {
@@ -58,17 +95,50 @@
         }
 
         i {
-            font-size: 1.25rem;
+            font-size: 1.15rem;
+            transition: transform 0.2s ease;
+        }
+
+        &:hover i {
+            transform: scale(1.08);
         }
 
         span {
-            font-size: 1rem;
+            font-size: 0.9rem;
+            font-weight: 500;
             display: none;
         }
 
         &.layout-topbar-action-highlight {
             background-color: var(--primary-color);
             color: var(--primary-contrast-color);
+            box-shadow: var(--lealtix-shadow-primary);
+        }
+
+        &.theme-toggle {
+            color: var(--text-color-secondary);
+            background: rgba(255, 255, 255, 0.32);
+            backdrop-filter: blur(18px) saturate(180%);
+            -webkit-backdrop-filter: blur(18px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.55);
+            box-shadow:
+              inset 0 1px 1px rgba(255, 255, 255, 0.9),
+              inset 0 -1px 1px rgba(255, 255, 255, 0.25),
+              inset 0 0 0 0.5px rgba(255, 255, 255, 0.35),
+              0 2px 8px rgba(15, 23, 42, 0.06);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+            &:hover {
+                color: var(--lealtix-primary-600);
+                background: rgba(255, 255, 255, 0.5);
+                border-color: rgba(255, 255, 255, 0.8);
+                box-shadow:
+                  inset 0 1px 1px rgba(255, 255, 255, 1),
+                  inset 0 -1px 1px rgba(255, 255, 255, 0.3),
+                  0 2px 10px rgba(15, 23, 42, 0.08),
+                  0 4px 16px rgba(99, 102, 241, 0.12);
+                transform: translateY(-1px);
+            }
         }
     }
 
@@ -83,23 +153,26 @@
     .layout-topbar-actions {
         margin-left: auto;
         display: flex;
-        gap: 1rem;
+        gap: 1.25rem;
+        align-items: center;
     }
 
     .layout-topbar-menu-content {
         display: flex;
-        gap: 1rem;
+        gap: 1.25rem;
+        align-items: center;
     }
 
     .layout-config-menu {
         display: flex;
-        gap: 1rem;
+        gap: 1.25rem;
+        align-items: center;
     }
 }
 
 @media (max-width: 991px) {
     .layout-topbar {
-        padding: 0 2rem;
+        padding: 0 2rem 0 0.75rem;
 
         .layout-topbar-logo-container {
             width: auto;
@@ -133,7 +206,7 @@
                 gap: 0.5rem;
             }
 
-            .layout-topbar-action {
+    .layout-topbar-action {
                 display: flex;
                 width: 100%;
                 height: auto;
@@ -155,6 +228,72 @@
 
         .layout-topbar-menu-content {
             flex-direction: column;
+        }
+    }
+}
+
+@media (max-width: 640px) {
+    .layout-topbar-logo span {
+        display: none;
+    }
+}
+
+// Dark mode topbar refinements
+:root[class*='app-dark'] .layout-topbar,
+.app-dark .layout-topbar {
+    background-color: rgba(9, 9, 14, 0.72);
+    border-bottom: 1.5px solid rgba(255,255,255,0.07);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.04) inset,
+      0 8px 32px rgba(0, 0, 0, 0.35);
+
+    .layout-topbar-logo span {
+        background: linear-gradient(135deg, #ffffff 40%, var(--lealtix-primary-400) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .layout-topbar-action {
+        color: #dbe0ec;
+        background: rgba(255, 255, 255, 0.07);
+        backdrop-filter: blur(18px) saturate(180%);
+        -webkit-backdrop-filter: blur(18px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow:
+          inset 0 1px 1px rgba(255, 255, 255, 0.16),
+          inset 0 -1px 1px rgba(255, 255, 255, 0.05),
+          0 2px 8px rgba(0, 0, 0, 0.2);
+
+        &:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.14);
+            border-color: rgba(255, 255, 255, 0.22);
+            box-shadow:
+              inset 0 1px 1px rgba(255, 255, 255, 0.22),
+              0 2px 10px rgba(0, 0, 0, 0.25),
+              0 4px 20px rgba(99, 102, 241, 0.2);
+            transform: translateY(-1px);
+        }
+
+        &.theme-toggle {
+            color: #dbe0ec;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow:
+              inset 0 1px 1px rgba(255, 255, 255, 0.16),
+              inset 0 -1px 1px rgba(255, 255, 255, 0.05),
+              0 2px 8px rgba(0, 0, 0, 0.2);
+
+            &:hover {
+                color: #ffffff;
+                background: rgba(255, 255, 255, 0.14);
+                border-color: rgba(255, 255, 255, 0.22);
+                box-shadow:
+                  inset 0 1px 1px rgba(255, 255, 255, 0.22),
+                  0 2px 10px rgba(0, 0, 0, 0.25),
+                  0 4px 20px rgba(99, 102, 241, 0.2);
+                transform: translateY(-1px);
+            }
         }
     }
 }

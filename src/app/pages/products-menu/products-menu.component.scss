@@ -1,14 +1,28 @@
+/* ============================================================================
+   PRODUCTS MENU - Estilos de componente
+   Alineados con el sistema de diseño Lealtix
+   ============================================================================ */
+
+/* === TABLA: ESTILOS DE FILAS === */
 .fixed-row {
-  height: 140px; /* fixed row height to accommodate image + padding */
+  height: auto;
+  min-height: 100px;
+  transition: all 0.3s ease;
+
+  > td {
+    vertical-align: middle;
+  }
 }
 
-.fixed-row > td {
-  vertical-align: middle; /* center content vertically */
+::ng-deep .p-datatable-tbody > tr.fixed-row {
+  height: auto !important;
+  min-height: 100px !important;
 }
 
+/* === IMAGEN DE PRODUCTO === */
 .img-cell {
-  width: 120px;
-  height: 120px;
+  width: 100%;
+  height: 100px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -16,25 +30,146 @@
 }
 
 .product-thumb {
-  width: 120px;
-  height: 120px;
-  object-fit: contain; /* ensure the full image is visible within the box */
+  max-width: 100px;
+  max-height: 100px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
   display: block;
+  border-radius: 0.5rem;
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: scale(1.05);
+  }
 }
 
-/* Ensure table rows keep constant height even when content wraps */
-.p-datatable-tbody > tr.fixed-row {
-  height: 140px !important;
+/* === BOTÓN DANGER CON MEJOR CONTRASTE === */
+::ng-deep .p-button-danger {
+  &.p-button-outlined {
+    color: #dc2626 !important;
+    border-color: #fca5a5 !important;
+    background: transparent !important;
+
+    &:hover {
+      background-color: #fee2e2 !important;
+      border-color: #f87171 !important;
+      color: #b91c1c !important;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2) !important;
+    }
+
+    &:active {
+      background-color: #fecaca !important;
+      transform: translateY(0);
+    }
+  }
+
+  &:not(.p-button-outlined) {
+    background: #dc2626 !important;
+    border-color: #dc2626 !important;
+
+    &:hover {
+      background: #b91c1c !important;
+      border-color: #b91c1c !important;
+      transform: translateY(-1px);
+      box-shadow: var(--lealtix-shadow-md) !important;
+    }
+  }
 }
 
-/* Global loading overlay styles */
+/* === TOOLBAR === */
+::ng-deep .p-toolbar {
+  background: linear-gradient(135deg, var(--lealtix-slate-50) 0%, white 100%) !important;
+  border: 1px solid var(--lealtix-slate-200) !important;
+  border-radius: var(--lealtix-radius-lg) !important;
+  padding: 1rem 1.5rem !important;
+  box-shadow: var(--lealtix-shadow-sm) !important;
+  width: 100% !important;
+  max-width: none !important;
+}
+
+/* === TOOLBAR: GRID DE 3 BOTONES QUE OCUPAN TODO EL ANCHO === */
+::ng-deep .p-toolbar .p-toolbar-start {
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+.toolbar-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  width: 100%;
+}
+
+::ng-deep .toolbar-actions .p-button {
+  width: 100% !important;
+}
+
+/* === TABLA === */
+::ng-deep .p-datatable {
+  table-layout: fixed !important;
+  width: 100% !important;
+
+  .p-datatable-header {
+    background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%) !important;
+    color: white !important;
+    border-radius: var(--lealtix-radius-lg) var(--lealtix-radius-lg) 0 0 !important;
+    padding: 1.25rem 1.5rem !important;
+    font-weight: 600 !important;
+
+    h5 {
+      color: white !important;
+      font-weight: 700 !important;
+      margin: 0 !important;
+    }
+
+    input {
+      border-radius: var(--lealtix-radius-md) !important;
+    }
+  }
+
+  .p-datatable-thead > tr > th {
+    background: var(--lealtix-slate-100) !important;
+    color: var(--lealtix-slate-700) !important;
+    font-weight: 600 !important;
+    border-color: var(--lealtix-slate-200) !important;
+    padding: 1rem !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .p-datatable-tbody > tr {
+    transition: all 0.2s ease !important;
+
+    &:hover {
+      background-color: var(--lealtix-slate-50) !important;
+    }
+
+    > td {
+      border-color: var(--lealtix-slate-200) !important;
+      padding: 1rem !important;
+      overflow: hidden !important;
+      word-break: break-word !important;
+      white-space: normal !important;
+    }
+  }
+
+  /* Responsive column widths */
+  .p-datatable-wrapper {
+    overflow-x: visible !important;
+  }
+}
+
+/* === LOADING OVERLAY === */
 .global-loading-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 9999; /* on top of everything */
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -46,7 +181,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.35);
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
 }
 
 .global-loading-spinner {
@@ -57,9 +193,9 @@
   justify-content: center;
   width: 120px;
   height: 120px;
-  border-radius: 8px;
-  background: rgba(255,255,255,0.9);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  border-radius: var(--lealtix-radius-lg);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: var(--lealtix-shadow-xl);
 }
 
 .custom-spinner {
@@ -67,13 +203,597 @@
   height: 64px;
 }
 
-/* Upload modal step cards styling */
+/* === UPLOAD DIALOG === */
 .upload-step-card {
-  border: 1px solid var(--surface-300);
+  border: 1px solid var(--lealtix-slate-200);
   transition: all 0.2s ease;
 
   &:hover {
-    border-color: var(--primary-300);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border-color: var(--lealtix-primary-300);
+    box-shadow: var(--lealtix-shadow-sm);
+    transform: translateY(-2px);
   }
+}
+
+/* === MODALES === */
+::ng-deep .p-dialog {
+  .p-dialog-content {
+    background: white;
+    border-radius: var(--lealtix-radius-xl);
+    padding: 2rem !important;
+  }
+
+  .p-dialog-header {
+    border-radius: var(--lealtix-radius-xl) var(--lealtix-radius-xl) 0 0;
+  }
+
+  h2 {
+    color: var(--lealtix-primary-700) !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.025em;
+    line-height: 1.3 !important;
+    margin: 0.5rem 0 !important;
+  }
+
+  p, div {
+    color: var(--lealtix-slate-700) !important;
+    line-height: 1.7 !important;
+  }
+
+  .p-button {
+    padding: 0.75rem 1.5rem !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    border-radius: var(--lealtix-radius-lg) !important;
+    transition: all 0.2s ease !important;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--lealtix-shadow-lg) !important;
+    }
+  }
+}
+
+/* === ESTILOS ESPECÍFICOS PARA MODALES DE PRODUCTOS === */
+.product-modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1.5rem;
+  width: 100%;
+  padding: 0.5rem;
+}
+
+.product-emoji {
+  font-size: 3.5rem;
+  line-height: 1;
+  animation: bounceIn 0.6s ease-out;
+  display: block;
+  margin: 0 auto;
+}
+
+.product-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--lealtix-primary-700);
+  margin: 0;
+  padding: 0 1rem;
+  line-height: 1.3;
+  letter-spacing: -0.025em;
+  width: 100%;
+}
+
+.product-description {
+  font-size: 1rem;
+  color: var(--lealtix-slate-700);
+  line-height: 1.7;
+  margin: 0;
+  padding: 0 1rem;
+  max-width: 28rem;
+  width: 100%;
+}
+
+.product-button {
+  width: 100%;
+  padding: 0.875rem 1.5rem !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  margin-top: 0.5rem;
+}
+
+/* === BOTONES DE ACCIÓN EN LA TABLA === */
+::ng-deep .p-button-rounded {
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  transition: all 0.2s ease !important;
+
+  &:hover {
+    transform: translateY(-2px) scale(1.05);
+  }
+}
+
+/* === ANIMACIÓN === */
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-10deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1) rotate(5deg);
+  }
+  70% {
+    transform: scale(0.95) rotate(-2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+:root[class*='app-dark'],
+.app-dark {
+  ::ng-deep .p-toolbar {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.02) 100%) !important;
+    border: 1px solid var(--surface-border) !important;
+    box-shadow: var(--lealtix-shadow-sm) !important;
+  }
+
+  ::ng-deep .p-datatable {
+    .p-datatable-thead > tr > th {
+      background: rgba(255, 255, 255, 0.03) !important;
+      color: #cbd2e0 !important;
+      border-color: var(--surface-border) !important;
+    }
+
+    .p-datatable-tbody > tr {
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.04) !important;
+      }
+
+      > td {
+        border-color: var(--surface-border) !important;
+      }
+    }
+  }
+
+  .global-loading-spinner {
+    background: var(--surface-card) !important;
+    border: 1px solid var(--surface-border) !important;
+  }
+
+  .upload-step-card {
+    border: 1px solid var(--surface-border) !important;
+  }
+
+  ::ng-deep .p-dialog {
+    .p-dialog-content {
+      background: var(--surface-card) !important;
+    }
+
+    h2 {
+      color: var(--lealtix-primary-300) !important;
+    }
+
+    p, div {
+      color: var(--text-color-secondary) !important;
+    }
+  }
+
+  .product-title {
+    color: var(--lealtix-primary-300) !important;
+  }
+
+  .product-description {
+    color: var(--text-color-secondary) !important;
+  }
+
+  ::ng-deep .p-paginator {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border-top-color: rgba(255, 255, 255, 0.08) !important;
+
+    .p-paginator-page {
+      color: #b6bdcc !important;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.08) !important;
+        color: #fff !important;
+      }
+    }
+
+    .p-paginator-prev,
+    .p-paginator-next {
+      color: #9aa3b5 !important;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.08) !important;
+        color: #fff !important;
+      }
+    }
+
+    .p-dropdown {
+      background: #14141c !important;
+      border-color: rgba(255, 255, 255, 0.12) !important;
+    }
+  }
+
+  ::ng-deep .p-datatable-emptymessage,
+  ::ng-deep .p-datatable-tbody .p-datatable-emptymessage td {
+    color: #9aa3b5 !important;
+  }
+}
+
+/* === TOOLBAR: BOTONES DE AGREGAR MÁS GRANDES CON HOVER LLAMATIVO === */
+::ng-deep .p-toolbar .add-btn {
+  padding: 1.35rem 1.4rem !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.012em;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  border: none !important;
+  color: #fff !important;
+  border-radius: var(--lealtix-radius-lg) !important;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.28) !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.4, 1) !important;
+
+  .p-button-icon {
+    font-size: 1.15rem !important;
+    transition: transform 0.3s ease !important;
+  }
+
+  &:hover {
+    background: linear-gradient(135deg, #f472b6 0%, #db2777 100%) !important;
+    color: #fff !important;
+    transform: translateY(-3px) scale(1.05) !important;
+    box-shadow: 0 10px 26px rgba(219, 39, 119, 0.42) !important;
+
+    .p-button-icon {
+      transform: scale(1.18) rotate(-6deg);
+    }
+  }
+
+  &:active {
+    transform: translateY(-1px) scale(0.99) !important;
+    box-shadow: 0 5px 14px rgba(219, 39, 119, 0.35) !important;
+  }
+}
+
+/* === TOOLBAR: BOTÓN VERDE "CARGAR MENÚ" (excel) === */
+::ng-deep .p-toolbar .upload-btn {
+  padding: 1.35rem 1.4rem !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.012em;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
+  border: none !important;
+  color: #fff !important;
+  border-radius: var(--lealtix-radius-lg) !important;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.28) !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.4, 1) !important;
+
+  .p-button-icon {
+    font-size: 1.15rem !important;
+    transition: transform 0.3s ease !important;
+  }
+
+  &:hover {
+    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%) !important;
+    color: #fff !important;
+    transform: translateY(-3px) scale(1.05) !important;
+    box-shadow: 0 10px 26px rgba(34, 197, 94, 0.42) !important;
+
+    .p-button-icon {
+      transform: scale(1.18) rotate(-6deg);
+    }
+  }
+
+  &:active {
+    transform: translateY(-1px) scale(0.99) !important;
+    box-shadow: 0 5px 14px rgba(34, 197, 94, 0.35) !important;
+  }
+}
+
+/* === PANEL DE CATÁLOGO ÚNICO (PRODUCTOS | INSUMOS CON TABS) === */
+.catalog-panel {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  box-shadow: var(--lealtix-shadow-sm);
+  border: 1px solid var(--lealtix-slate-200);
+}
+
+/* === TABS SUPERIORES === */
+.catalog-tabs {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  background: var(--lealtix-slate-100);
+  border-radius: var(--lealtix-radius-lg);
+  padding: 0.375rem;
+}
+
+.catalog-tab {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: var(--lealtix-radius-md);
+  background: transparent;
+  color: var(--lealtix-slate-600);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  i {
+    font-size: 1rem;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--lealtix-primary-600);
+  }
+}
+
+.catalog-tab-active {
+  background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%);
+  color: #fff;
+  box-shadow: var(--lealtix-shadow-sm);
+
+  &:hover {
+    background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%);
+    color: #fff;
+  }
+}
+
+::ng-deep .catalog-panel .p-datatable {
+  table-layout: fixed !important;
+  width: 100% !important;
+}
+
+::ng-deep .catalog-panel .p-datatable-header {
+  padding: 0.9rem 1rem !important;
+}
+
+/* === BADGES DE STOCK === */
+.stock-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.stock-ok {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.stock-low {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  animation: pulseLow 2s ease-in-out infinite;
+}
+
+.p-tag-success {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+.p-tag-warning {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+.p-tag-danger {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+}
+
+@keyframes pulseLow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(239, 68, 68, 0);
+  }
+}
+
+/* === BOTÓN REDONDO "VER RECETA" LLAMATIVO === */
+::ng-deep .recipe-round-btn {
+  width: 2.75rem !important;
+  height: 2.75rem !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
+  background: linear-gradient(135deg, #f59e0b 0%, #ef4444 55%, #ec4899 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35) !important;
+  color: #fff !important;
+  transition: all 0.25s ease !important;
+
+  &:hover {
+    transform: translateY(-2px) scale(1.08) !important;
+    box-shadow: 0 6px 18px rgba(239, 68, 68, 0.45) !important;
+  }
+
+  .p-button-icon {
+    font-size: 1.05rem !important;
+  }
+}
+
+/* === DETALLE DE RECETA === */
+.recipe-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.recipe-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--lealtix-radius-md);
+  background: var(--lealtix-slate-50);
+  border: 1px solid var(--lealtix-slate-200);
+}
+
+.recipe-line-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.recipe-line-name {
+  font-weight: 600;
+  color: var(--lealtix-slate-800);
+  font-size: 0.9375rem;
+}
+
+.recipe-line-detail {
+  font-size: 0.8125rem;
+  color: var(--lealtix-slate-500);
+}
+
+.ing-type-badge {
+  display: inline-block;
+  margin-left: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.25rem;
+}
+
+.badge-base {
+  background: var(--lealtix-slate-200);
+  color: var(--lealtix-slate-700);
+}
+
+.badge-modificable {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.badge-adicional {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.recipe-line-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.recipe-line-edit {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  width: 100%;
+
+  .recipe-line-name {
+    flex: 1 1 100%;
+  }
+
+  .recipe-edit-qty {
+    width: 7rem;
+  }
+}
+
+.recipe-add-row {
+  border: 1px solid var(--lealtix-primary-200);
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.04) 0%, rgba(255, 255, 255, 0.6) 100%);
+}
+
+/* === DIÁLOGOS HOMOGÉNEOS (receta / insumo / restock): anchos, redondeados, campos grandes === */
+::ng-deep .recipe-dialog,
+::ng-deep .insumo-dialog {
+  border-radius: 1.5rem !important;
+  overflow: hidden;
+  border: 1px solid var(--lealtix-slate-200) !important;
+  box-shadow: var(--lealtix-shadow-2xl) !important;
+
+  .p-dialog-header {
+    background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%);
+    color: #fff;
+    padding: 1.5rem 2rem;
+    border-radius: 1.5rem 1.5rem 0 0;
+    border-bottom: none;
+
+    .p-dialog-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .p-dialog-header-icon {
+      color: rgba(255, 255, 255, 0.9);
+    }
+  }
+
+  .p-dialog-content {
+    padding: 2rem;
+  }
+
+  .p-dialog-footer {
+    padding: 1.25rem 2rem;
+    background: var(--lealtix-slate-50);
+    border-top: 1px solid var(--lealtix-slate-200);
+
+    .p-button {
+      padding: 0.85rem 1.75rem !important;
+      font-size: 0.9375rem !important;
+      font-weight: 700 !important;
+      border-radius: 1rem !important;
+    }
+  }
+
+  .p-inputtext,
+  .p-inputnumber,
+  .p-select,
+  .p-inputtextarea {
+    border-radius: 1rem !important;
+    border: 2px solid var(--lealtix-slate-300) !important;
+    font-size: 1rem !important;
+    padding: 0.9rem 1.1rem !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+    width: 100% !important;
+  }
+
+  .p-inputtext:focus,
+  .p-inputtextarea:focus,
+  .p-select:focus {
+    border-color: var(--lealtix-primary-500) !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18) !important;
+  }
+
+  label {
+    font-weight: 700;
+    font-size: 0.9375rem;
+    color: var(--lealtix-slate-800);
+  }
+}
+
+::ng-deep .recipe-dialog .p-inputnumber-input,
+::ng-deep .insumo-dialog .p-inputnumber-input {
+  border-radius: 1rem !important;
+  border: 2px solid var(--lealtix-slate-300) !important;
+  font-size: 1rem !important;
+  padding: 0.9rem 1.1rem !important;
+  width: 100% !important;
 }

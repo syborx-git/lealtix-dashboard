@@ -1,0 +1,120 @@
+<p-toast position="top-right"></p-toast>
+<p-confirmDialog [style]="{ width: '450px' }"></p-confirmDialog>
+
+<!-- Toolbar -->
+<p-toolbar styleClass="mb-3">
+  <ng-template pTemplate="start">
+    <p-button
+      label="Nuevo Miembro"
+      icon="pi pi-plus"
+      styleClass="text-sm p-button-sm"
+      (onClick)="abrirDialogoNuevo()"
+      [disabled]="loading()"></p-button>
+  </ng-template>
+</p-toolbar>
+
+<!-- Tabla de Usuarios -->
+<p-table
+  #dt
+  [value]="usuarios()"
+  [rows]="rows"
+  [columns]="['nombre', 'email', 'rol']"
+  [paginator]="true"
+  [globalFilterFields]="['nombre', 'email', 'rol']"
+  [loading]="loading()"
+  [totalRecords]="totalRecords()"
+  [rowsPerPageOptions]="[5, 10, 20]"
+  [tableStyle]="{ 'min-width': '70rem' }"
+  [(selection)]="selectedUsuarios"
+  [rowHover]="true"
+  dataKey="id"
+  currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} miembros"
+  [showCurrentPageReport]="true"
+  responsiveLayout="scroll"
+  [lazy]="true"
+  [first]="first"
+  (onLazyLoad)="onLazyLoad($event)">
+
+  <!-- Caption con buscador -->
+  <ng-template pTemplate="caption">
+    <div class="flex items-center justify-between">
+      <h5 class="m-0">Gestión de Equipo</h5>
+      <p-iconfield iconPosition="left">
+
+        <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Buscar miembros..." />
+      </p-iconfield>
+    </div>
+  </ng-template>
+
+  <!-- Header -->
+  <ng-template pTemplate="header">
+    <tr>
+      <th pSortableColumn="nombre" style="min-width: 15rem">
+        Nombre
+        <p-sortIcon field="nombre"></p-sortIcon>
+      </th>
+      <th pSortableColumn="email" style="min-width: 18rem">
+        Email
+        <p-sortIcon field="email"></p-sortIcon>
+      </th>
+      <th pSortableColumn="rol" style="min-width: 10rem">
+        Rol
+        <p-sortIcon field="rol"></p-sortIcon>
+      </th>
+      <th style="min-width: 10rem"></th>
+    </tr>
+  </ng-template>
+
+  <!-- Body -->
+  <ng-template pTemplate="body" let-usuario>
+    <tr>
+      <td style="min-width: 15rem">{{ usuario.nombre }}</td>
+      <td style="min-width: 18rem">{{ usuario.email }}</td>
+      <td style="min-width: 10rem">
+        <p-tag
+          [value]="formatRolName(usuario.rol)"
+          [severity]="getColorForRole(usuario.rol)"></p-tag>
+      </td>
+      <td>
+        <p-button
+          icon="pi pi-pencil"
+          class="mr-2"
+          [rounded]="true"
+          [outlined]="true"
+          (click)="abrirDialogoEditar(usuario)" />
+        <p-button
+          icon="pi pi-trash"
+          severity="danger"
+          [rounded]="true"
+          [outlined]="true"
+          (click)="eliminarUsuario(usuario)" />
+      </td>
+    </tr>
+  </ng-template>
+
+  <!-- Empty State -->
+  <ng-template pTemplate="emptymessage">
+    <tr>
+      <td colspan="4" class="text-center py-6">
+        <div class="flex flex-column align-items-center gap-3">
+          <i class="pi pi-users text-6xl text-surface-400"></i>
+          <h3 class="text-xl font-medium m-0">No se encontraron miembros</h3>
+          <p class="text-surface-500 m-0">Intenta ajustar los filtros de búsqueda o agrega un nuevo miembro.</p>
+        </div>
+      </td>
+    </tr>
+  </ng-template>
+</p-table>
+
+<!-- User Dialog Component -->
+<app-user-dialog
+  [visible]="dialogVisible()"
+  (visibleChange)="dialogVisible.set($event)"
+  [usuarioEnEdicion]="selectedUsuario"
+  [usuarioForm]="usuarioForm"
+  [submitted]="false"
+  [loading]="loading()"
+  [availableRoles]="getRolesForDialog()"
+  (save)="guardarUsuario()"
+  (hide)="cerrarDialogo()"
+></app-user-dialog>

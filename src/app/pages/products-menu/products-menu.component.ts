@@ -24,16 +24,22 @@ import { TagModule } from 'primeng/tag';
 import { InputIconModule } from 'primeng/inputicon';
 import { IconFieldModule } from 'primeng/iconfield';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { TooltipModule } from 'primeng/tooltip';
 import { Product } from '../model/product.component';
 import { ProductService } from './service/product.service';
+import { CrossSellingService, CrossSellingConfig, CrossSellingDraft } from './service/cross-selling.service';
+import { InventoryService } from '../inventario/service/inventory.service';
 import { ImageService } from '../service/image.service';
 import { ProductDialogComponent } from './product-dialog.component';
 import { forkJoin } from 'rxjs';
 import { TenantService } from '../admin-page/service/tenant.service';
+import { AuthService } from '@/auth/auth.service';
 import { ConfettiService } from '@/confetti/confetti.service';
 import { ConfettiComponent } from '@/confetti/confetti.component';
 import { environment } from '../commons/environment.dev';
 import { CampaignService } from '@/pages/campaigns/services/campaign.service';
+import { CatalogService, CatalogCategory } from '@/pages/campaigns/services/catalog.service';
+import { TreeNode } from 'primeng/api';
 import Papa from 'papaparse';
 
 interface Column {
@@ -74,6 +80,7 @@ interface ExportColumn {
         IconFieldModule,
         FileUploadModule,
         ConfirmDialogModule,
+        TooltipModule,
         ProductDialogComponent,
         ConfettiComponent
     ],
@@ -122,6 +129,62 @@ export class ProductMenuComponent implements OnInit {
 
     products = signal<Product[]>([]);
 
+    // Pestaña activa de la tabla unificada: 'products' | 'insumos'
+    activeTab = signal<'products' | 'insumos'>('products');
+
+    setActiveTab(tab: 'products' | 'insumos') {
+        this.activeTab.set(tab);
+        this.tableFirst = 0;
+        this.dt?.reset();
+    }
+
+    crossSellingItems: CrossSellingConfig[] = [];
+    crossSellingCatalog: CatalogCategory[] = [];
+    crossSellingCatalogOptions: TreeNode[] = [];
+    crossSellingLoading: boolean = false;
+    crossSellingSaving: boolean = false;
+    crossSellingMax: number = 3;
+
+    insumos = signal<any[]>([]);
+    insumosLoading = signal<boolean>(false);
+    productRecipeLines: any[] = [];
+    recipeLoading: boolean = false;
+    unidades = ['pieza', 'gramos', 'mililitros'];
+    tipoIngredienteOptions = [
+        { label: 'Base (siempre en la receta)', value: 'BASE' },
+        { label: 'Modificable (puede retirarse)', value: 'MODIFICABLE' },
+        { label: 'Adicional (costo extra)', value: 'ADICIONAL' }
+    ];
+
+    // Stock por producto (inventario) para mostrarlo en la tabla de productos
+    inventoryItems = signal<any[]>([]);
+
+    // Diálogo "Ver receta" (asignar insumos por platillo: base/modificable/adicional)
+    recipeVisible = false;
+    recipeItem: any | null = null;
+    recipeIngredients = signal<any[]>([]);
+    loadingRecipes = signal<boolean>(false);
+    recipeInsumoId: number | null = null;
+    recipeCantidad = 0;
+    recipeTipoIngrediente = 'BASE';
+    recipePrecio = 0;
+    recipeAddLoading = signal<boolean>(false);
+    editingRecipe: any | null = null;
+    editRecipeCantidad = 0;
+    editRecipeModificable = false;
+    editRecipePrecio = 0;
+
+    // Diálogo de insumo (crear/editar/restock)
+    insumoDialogVisible = false;
+    editingInsumo: any | null = null;
+    insumoNombre = '';
+    insumoUnidad = 'pieza';
+    insumoStock = 0;
+    insumoMin = 0;
+    insumoRestockVisible = false;
+    insumoRestockTarget: any | null = null;
+    insumoRestockCantidad = 0;
+
     newCategory: { name?: string; description?: string; tenantId?: string; active: boolean } = {
         name: '',
         description: '',
@@ -137,14 +200,18 @@ export class ProductMenuComponent implements OnInit {
 
     constructor(
         private productService: ProductService,
+        private crossSellingService: CrossSellingService,
+        private catalogService: CatalogService,
         private messageService: MessageService,
         private confirmationService: ConfirmationService,
         private fb: FormBuilder,
         private imageService: ImageService,
         private tenantService: TenantService,
+        private authService: AuthService,
         private route: ActivatedRoute,
         private confettiService: ConfettiService,
         private campaignService: CampaignService,
+        private inventoryService: InventoryService,
         private router: Router
     ) {
         this.categoryForm = this.fb.group({
@@ -173,42 +240,429 @@ export class ProductMenuComponent implements OnInit {
         const nav = this.router.getCurrentNavigation?.();
         this.cameFromMenu = Boolean((nav && (nav.extras as any)?.state?.fromMenu) || this.route.snapshot.queryParams['fromMenu'] === 'true');
 
-        const userStr = sessionStorage.getItem('usuario') ?? localStorage.getItem('usuario');
-        if (userStr) {
-            try {
-                const userObj = JSON.parse(userStr);
-                if (userObj && userObj.userEmail) {
-                    this.tenantService.getTenantByEmail(String(userObj.userEmail || '').trim()).subscribe({
-                        next: (resp) => {
-                            const tenant = resp?.object;
-                            this.tenantId = tenant?.id ?? 0;
-                            this.tenantSlug = tenant?.slug ?? null;
-                            this.loadCategories();
-                            this.loadProducts();
-                            this.checkBannerConditions();
-                            this.checkCampaignSetupPrompt();
+        const currentUser = this.authService.getCurrentUser();
+        const tenantId = currentUser?.tenantId;
 
-                            // Check for categoryId query param to auto-open product dialog
-                            this.route.queryParams.subscribe(params => {
-                                const categoryId = params['categoryId'];
-                                if (categoryId) {
-                                    // Wait a bit for categories to load
-                                    setTimeout(() => {
-                                        this.openNewWithCategory(Number(categoryId));
-                                    }, 500);
-                                }
-                            });
-                        },
-                        error: (err) => {
-                            console.error('Error fetching tenant:', err);
+        if (tenantId) {
+            this.tenantService.getTenantById(tenantId).subscribe({
+                next: (tenant) => {
+                    this.tenantId = tenant?.id ?? 0;
+                    this.tenantSlug = tenant?.slug ?? null;
+                    this.loadCategories();
+                    this.loadProducts();
+                    this.loadCrossSellingCatalog();
+                    this.loadInsumos();
+                    this.loadInventory();
+                    this.checkBannerConditions();
+                    this.checkCampaignSetupPrompt();
+
+                    // Check for categoryId query param to auto-open product dialog
+                    this.route.queryParams.subscribe(params => {
+                        const categoryId = params['categoryId'];
+                        if (categoryId) {
+                            // Wait a bit for categories to load
+                            setTimeout(() => {
+                                this.openNewWithCategory(Number(categoryId));
+                            }, 500);
                         }
                     });
+                },
+                error: (err) => {
+                    console.error('Error fetching tenant:', err);
                 }
-            } catch (e) {
-                console.warn('Failed to parse stored usuario:', e);
-            }
+            });
         }
 
+    }
+
+    private getCurrentProductId(): number | null {
+        const rawId = (this.product && (this.product as any).id) || this.productForm?.get('id')?.value;
+        if (rawId === null || rawId === undefined) return null;
+        const idNum = typeof rawId === 'number' ? rawId : Number(rawId);
+        return Number.isNaN(idNum) ? null : idNum;
+    }
+
+    private buildCrossSellingOptions(): TreeNode[] {
+        const currentProductId = this.getCurrentProductId();
+        const formatter = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
+
+        return (this.crossSellingCatalog || [])
+            .map((category) => {
+                const children = (category.products || [])
+                    .filter((product) => (currentProductId ? product.id !== currentProductId : true))
+                    .map((product) => ({
+                        key: String(product.id),
+                        label: product.price != null
+                            ? `${product.name} · ${formatter.format(product.price)}`
+                            : product.name,
+                        selectable: true
+                    }));
+
+                if (!children.length) return null;
+
+                return {
+                    key: `cat-${category.id}`,
+                    label: category.name,
+                    selectable: false,
+                    children
+                } as TreeNode;
+            })
+            .filter(Boolean) as TreeNode[];
+    }
+
+    private refreshCrossSellingOptions(): void {
+        this.crossSellingCatalogOptions = this.buildCrossSellingOptions();
+    }
+
+    private resetCrossSellingState(): void {
+        this.crossSellingItems = [];
+        this.crossSellingLoading = false;
+        this.crossSellingSaving = false;
+        this.refreshCrossSellingOptions();
+    }
+
+    private loadCrossSellingCatalog(): void {
+        if (!this.tenantId) return;
+        this.catalogService.getCategoriesWithProducts(this.tenantId).subscribe({
+            next: (categories) => {
+                this.crossSellingCatalog = categories || [];
+                this.refreshCrossSellingOptions();
+            },
+            error: (err) => {
+                console.error('Error loading cross-selling catalog', err);
+                this.crossSellingCatalog = [];
+                this.refreshCrossSellingOptions();
+            }
+        });
+    }
+
+    private loadInsumos(): void {
+        if (!this.tenantId) return;
+        this.insumosLoading.set(true);
+        this.inventoryService.getInsumos(this.tenantId).subscribe({
+            next: (res) => {
+                this.insumos.set(res?.object || []);
+                this.insumosLoading.set(false);
+            },
+            error: (err) => {
+                console.error('Error loading insumos', err);
+                this.insumos.set([]);
+                this.insumosLoading.set(false);
+            }
+        });
+    }
+
+    private loadInventory(): void {
+        if (!this.tenantId) return;
+        this.inventoryService.getByTenant(this.tenantId).subscribe({
+            next: (res) => {
+                this.inventoryItems.set(res?.object || []);
+            },
+            error: (err) => {
+                console.error('Error loading inventory', err);
+                this.inventoryItems.set([]);
+            }
+        });
+    }
+
+    /** Stock actual de un producto (según inventario del backend) */
+    stockOf(product: any): number {
+        const id = this.normalizeProductId(product?.id);
+        if (id == null) return 0;
+        const item = this.inventoryItems().find((i: any) => Number(i.id) === id);
+        return item?.stock ?? 0;
+    }
+
+    stockBadgeClass(product: any): string {
+        const id = this.normalizeProductId(product?.id);
+        const item = id == null ? null : this.inventoryItems().find((i: any) => Number(i.id) === id);
+        if (!item) return 'p-tag-secondary';
+        if (item.stock <= 0) return 'p-tag-danger';
+        if (item.lowStock) return 'p-tag-warning';
+        return 'p-tag-success';
+    }
+
+    stockBadgeLabel(product: any): string {
+        const id = this.normalizeProductId(product?.id);
+        const item = id == null ? null : this.inventoryItems().find((i: any) => Number(i.id) === id);
+        if (!item || item.stock == null) return '—';
+        return `${item.stock} ${item.unidad ?? ''}`.trim();
+    }
+
+    /* ============ Receta (Ver receta) ============ */
+
+    openRecipe(product: any) {
+        const id = this.normalizeProductId(product?.id);
+        if (id == null) return;
+        this.recipeItem = product;
+        this.recipeIngredients.set([]);
+        this.recipeInsumoId = null;
+        this.recipeCantidad = 0;
+        this.recipeTipoIngrediente = 'BASE';
+        this.recipePrecio = 0;
+        this.recipeVisible = true;
+        this.loadRecipeLines(id);
+    }
+
+    private loadRecipeLines(dishId: number): void {
+        this.loadingRecipes.set(true);
+        const lines: any[] = [];
+        this.inventoryService.getRecipes(dishId).subscribe({
+            next: (res) => {
+                const recipes = (res?.object || []).map((r: any) => ({
+                    ...r,
+                    kind: 'RECIPE',
+                    tipoIngrediente: r.modificable ? 'MODIFICABLE' : 'BASE'
+                }));
+                lines.push(...recipes);
+                this.inventoryService.getAdditionals(dishId).subscribe({
+                    next: (res2) => {
+                        const additionals = (res2?.object || []).map((a: any) => ({
+                            ...a,
+                            kind: 'ADDITIONAL',
+                            tipoIngrediente: 'ADICIONAL'
+                        }));
+                        lines.push(...additionals);
+                        this.recipeIngredients.set(lines);
+                        this.loadingRecipes.set(false);
+                    },
+                    error: () => {
+                        this.recipeIngredients.set(lines);
+                        this.loadingRecipes.set(false);
+                    }
+                });
+            },
+            error: () => {
+                this.recipeIngredients.set(lines);
+                this.loadingRecipes.set(false);
+            }
+        });
+    }
+
+    addRecipeIngredient() {
+        const dishId = this.normalizeProductId(this.recipeItem?.id);
+        if (!dishId || !this.recipeInsumoId || this.recipeCantidad <= 0) return;
+        this.recipeAddLoading.set(true);
+        const finish = () => {
+            this.recipeInsumoId = null;
+            this.recipeCantidad = 0;
+            this.recipePrecio = 0;
+            this.recipeTipoIngrediente = 'BASE';
+            this.loadRecipeLines(dishId);
+            this.loadInventory();
+            this.messageService.add({ severity: 'success', summary: 'Insumo agregado', detail: 'Se actualizó la receta del platillo', life: 3000 });
+        };
+        if (this.recipeTipoIngrediente === 'ADICIONAL') {
+            this.inventoryService.addAdditional(dishId, this.recipeInsumoId, this.recipeCantidad, this.recipePrecio || 0).subscribe({
+                next: () => {
+                    finish();
+                    this.recipeAddLoading.set(false);
+                },
+                error: (err) => {
+                    this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo agregar el adicional', life: 3000 });
+                    this.recipeAddLoading.set(false);
+                }
+            });
+        } else {
+            this.inventoryService.addRecipeIngredient(dishId, this.recipeInsumoId, this.recipeCantidad, this.recipeTipoIngrediente === 'MODIFICABLE').subscribe({
+                next: () => {
+                    finish();
+                    this.recipeAddLoading.set(false);
+                },
+                error: (err) => {
+                    this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo agregar el insumo', life: 3000 });
+                    this.recipeAddLoading.set(false);
+                }
+            });
+        }
+    }
+
+    removeRecipeIngredient(ing: any) {
+        const label = ing.kind === 'ADDITIONAL' ? 'adicional' : 'ingrediente';
+        this.confirmationService.confirm({
+            message: `¿Quitar "${ing.insumoName}" (${label}) de la receta?`,
+            header: 'Confirmar',
+            icon: 'pi pi-exclamation-triangle',
+            accept: () => {
+                const dishId = this.normalizeProductId(this.recipeItem?.id);
+                const action = ing.kind === 'ADDITIONAL'
+                    ? this.inventoryService.removeAdditional(ing.id)
+                    : this.inventoryService.removeRecipeIngredient(ing.id);
+                action.subscribe({
+                    next: () => {
+                        if (dishId) this.loadRecipeLines(dishId);
+                        this.loadInventory();
+                    },
+                    error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: `No se pudo quitar el ${label}`, life: 3000 })
+                });
+            }
+        });
+    }
+
+    startEditIngredient(ing: any) {
+        this.editingRecipe = ing;
+        this.editRecipeCantidad = ing.cantidad;
+        this.editRecipeModificable = !!ing.modificable;
+        this.editRecipePrecio = Number(ing.precio ?? 0);
+    }
+
+    cancelEditIngredient() {
+        this.editingRecipe = null;
+    }
+
+    saveEditIngredient() {
+        if (!this.editingRecipe || this.editRecipeCantidad <= 0) return;
+        const dishId = this.normalizeProductId(this.recipeItem?.id);
+        const ing = this.editingRecipe;
+        const action = ing.kind === 'ADDITIONAL'
+            ? this.inventoryService.updateAdditional(ing.id, this.editRecipeCantidad, this.editRecipePrecio)
+            : this.inventoryService.updateRecipeIngredient(ing.id, this.editRecipeCantidad, this.editRecipeModificable);
+        action.subscribe({
+            next: () => {
+                this.editingRecipe = null;
+                if (dishId) this.loadRecipeLines(dishId);
+                this.loadInventory();
+                this.messageService.add({ severity: 'success', summary: 'Actualizado', detail: 'Insumo de la receta actualizado', life: 3000 });
+            },
+            error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar', life: 3000 })
+        });
+    }
+
+    /* ============ Insumos (crear/editar/almacenar) ============ */
+
+    openNewInsumo() {
+        this.editingInsumo = null;
+        this.insumoNombre = '';
+        this.insumoUnidad = 'pieza';
+        this.insumoStock = 0;
+        this.insumoMin = 0;
+        this.insumoDialogVisible = true;
+    }
+
+    openEditInsumo(insumo: any) {
+        this.editingInsumo = insumo;
+        this.insumoNombre = insumo.nombre;
+        this.insumoUnidad = insumo.unidad || 'pieza';
+        this.insumoStock = insumo.stock;
+        this.insumoMin = insumo.stockMinimo;
+        this.insumoDialogVisible = true;
+    }
+
+    saveInsumo() {
+        if (!this.insumoNombre.trim()) return;
+        const done = () => {
+            this.insumoDialogVisible = false;
+            this.loadInsumos();
+        };
+        if (this.editingInsumo) {
+            this.inventoryService.updateInsumo(
+                this.editingInsumo.id, this.insumoNombre, this.insumoUnidad, this.insumoStock, this.insumoMin
+            ).subscribe({
+                next: () => { this.messageService.add({ severity: 'success', summary: 'Insumo actualizado', detail: 'Listo', life: 3000 }); done(); },
+                error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el insumo', life: 3000 })
+            });
+        } else {
+            this.inventoryService.createInsumo(
+                this.tenantId, this.insumoNombre, this.insumoUnidad, this.insumoStock, this.insumoMin
+            ).subscribe({
+                next: () => { this.messageService.add({ severity: 'success', summary: 'Insumo creado', detail: 'Listo para usar en recetas', life: 3000 }); done(); },
+                error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear el insumo', life: 3000 })
+            });
+        }
+    }
+
+    deleteInsumo(insumo: any) {
+        this.confirmationService.confirm({
+            message: `¿Eliminar el insumo "${insumo.nombre}"?`,
+            header: 'Confirmar',
+            icon: 'pi pi-exclamation-triangle',
+            accept: () => {
+                this.inventoryService.deleteInsumo(insumo.id).subscribe({
+                    next: (res) => {
+                        if (res.code !== 200) {
+                            this.messageService.add({ severity: 'warn', summary: 'Aviso', detail: res.message, life: 3000 });
+                            return;
+                        }
+                        this.messageService.add({ severity: 'success', summary: 'Insumo eliminado', detail: 'Listo', life: 3000 });
+                        this.loadInsumos();
+                    },
+                    error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar el insumo', life: 3000 })
+                });
+            }
+        });
+    }
+
+    openInsumoRestock(insumo: any) {
+        this.insumoRestockTarget = insumo;
+        this.insumoRestockCantidad = 0;
+        this.insumoRestockVisible = true;
+    }
+
+    doInsumoRestock() {
+        if (!this.insumoRestockTarget || this.insumoRestockCantidad <= 0) return;
+        this.inventoryService.restockInsumo(this.insumoRestockTarget.id, this.insumoRestockCantidad).subscribe({
+            next: (res) => {
+                this.messageService.add({ severity: 'success', summary: 'Exitoso', detail: `Stock del insumo: ${res.object}`, life: 3000 });
+                this.insumoRestockVisible = false;
+                this.loadInsumos();
+                this.loadInventory();
+            },
+            error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo reabastecer', life: 3000 })
+        });
+    }
+
+    isLowStock(insumo: any): boolean {
+        return insumo.stock <= insumo.stockMinimo;
+    }
+
+    private loadRecipeForProduct(productId: number | null): void {
+        this.productRecipeLines = [];
+        if (!productId) return;
+        this.recipeLoading = true;
+        this.inventoryService.getRecipes(productId).subscribe({
+            next: (res) => {
+                const items = res?.object || [];
+                this.productRecipeLines = items.map((r: any) => ({
+                    insumoId: r.insumoId,
+                    cantidad: r.cantidad,
+                    modificable: r.modificable
+                }));
+                this.recipeLoading = false;
+            },
+            error: () => {
+                this.productRecipeLines = [];
+                this.recipeLoading = false;
+            }
+        });
+    }
+
+    private resetRecipeState(): void {
+        this.productRecipeLines = [];
+        this.recipeLoading = false;
+    }
+
+    private loadCrossSellingForProduct(productId: number | null): void {
+        if (!productId || !this.tenantId) {
+            this.crossSellingItems = [];
+            this.refreshCrossSellingOptions();
+            return;
+        }
+
+        this.crossSellingLoading = true;
+        this.crossSellingService.getByProduct(productId, this.tenantId).subscribe({
+            next: (items) => {
+                this.crossSellingItems = items || [];
+                this.refreshCrossSellingOptions();
+            },
+            error: (err) => {
+                console.error('Error loading cross-selling items', err);
+                this.crossSellingItems = [];
+                this.refreshCrossSellingOptions();
+            },
+            complete: () => {
+                this.crossSellingLoading = false;
+            }
+        });
     }
 
     openNewCategory() {
@@ -290,6 +744,9 @@ export class ProductMenuComponent implements OnInit {
     exportColumns!: ExportColumn[];
 
     cols!: Column[];
+    tableFirst: number = 0;
+    private editedProductIdToKeepPosition: number | null = null;
+    private editedProductIndexToKeepPosition: number | null = null;
 
     get categoriesArray(): FormArray {
         return this.categoryForm.get('categories') as FormArray;
@@ -688,13 +1145,22 @@ export class ProductMenuComponent implements OnInit {
         this.productService.getProductsByTenantId(this.tenantId).subscribe({
             next: (data) => {
                 // Preserve original image URLs (do not modify Cloudinary URLs here)
-                this.products.set(data.object || []);
+                const reOrderedProducts = this.keepEditedProductPosition((data.object || []) as Product[]);
+                this.products.set(reOrderedProducts);
+
+                const rows = this.dt?.rows || 10;
+                const maxFirst = reOrderedProducts.length > 0 ? Math.floor((reOrderedProducts.length - 1) / rows) * rows : 0;
+                if (this.tableFirst > maxFirst) {
+                    this.tableFirst = maxFirst;
+                }
+
                 // Check if we should show the product setup prompt
                 this.checkProductSetupPrompt();
             },
             error: (err) => {
                 console.error('Failed to load products', err);
                 this.products.set([]);
+                this.clearEditedProductPositionCache();
             },
             complete: () => {
                 this.stopLoading();
@@ -704,6 +1170,53 @@ export class ProductMenuComponent implements OnInit {
 
     onGlobalFilter(table: Table, event: Event) {
         table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
+    }
+
+    onTablePage(event: any) {
+        this.tableFirst = event?.first ?? 0;
+    }
+
+    private normalizeProductId(id: unknown): number | null {
+        if (id === null || id === undefined) return null;
+        const parsed = typeof id === 'number' ? id : Number(id);
+        return Number.isNaN(parsed) ? null : parsed;
+    }
+
+    private captureEditedProductPosition(productId: number): void {
+        const currentProducts = this.products() || [];
+        const index = currentProducts.findIndex((item) => this.normalizeProductId((item as any)?.id) === productId);
+        if (index >= 0) {
+            this.editedProductIdToKeepPosition = productId;
+            this.editedProductIndexToKeepPosition = index;
+            return;
+        }
+        this.clearEditedProductPositionCache();
+    }
+
+    private clearEditedProductPositionCache(): void {
+        this.editedProductIdToKeepPosition = null;
+        this.editedProductIndexToKeepPosition = null;
+    }
+
+    private keepEditedProductPosition(items: Product[]): Product[] {
+        if (this.editedProductIdToKeepPosition === null || this.editedProductIndexToKeepPosition === null) {
+            return items;
+        }
+
+        const productId = this.editedProductIdToKeepPosition;
+        const originalIndex = this.editedProductIndexToKeepPosition;
+        this.clearEditedProductPositionCache();
+
+        const editedIndex = items.findIndex((item) => this.normalizeProductId((item as any)?.id) === productId);
+        if (editedIndex < 0) {
+            return items;
+        }
+
+        const editedProduct = items[editedIndex];
+        const withoutEdited = items.filter((_, index) => index !== editedIndex);
+        const safeIndex = Math.max(0, Math.min(originalIndex, withoutEdited.length));
+        withoutEdited.splice(safeIndex, 0, editedProduct);
+        return withoutEdited;
     }
 
     getOptimizedImage(url: string): string {
@@ -740,6 +1253,8 @@ export class ProductMenuComponent implements OnInit {
         // ensure preview and internal file reference are cleared when creating new
         this.productImagePreview = null;
         this.productForm.get('productImage')?.setValue(null);
+        this.resetCrossSellingState();
+        this.resetRecipeState();
         this.productDialog = true;
     }
 
@@ -761,6 +1276,8 @@ export class ProductMenuComponent implements OnInit {
         // ensure preview and internal file reference are cleared when creating new
         this.productImagePreview = null;
         this.productForm.get('productImage')?.setValue(null);
+        this.resetCrossSellingState();
+        this.resetRecipeState();
         this.productDialog = true;
     }
 
@@ -778,6 +1295,9 @@ export class ProductMenuComponent implements OnInit {
         });
         this.productForm.get('productImage')?.setValue(null);
         this.productImagePreview = product.imageUrl ?? null;
+        const productId = this.getCurrentProductId();
+        this.loadCrossSellingForProduct(productId);
+        this.loadRecipeForProduct(productId);
         this.productDialog = true;
     }
 
@@ -838,6 +1358,7 @@ export class ProductMenuComponent implements OnInit {
             this.productForm.get('productImage')?.setValue(null);
             this.productForm.get('img_url')?.setValue('');
         }
+        this.resetCrossSellingState();
     }
 
     deleteProduct(product: Product) {
@@ -947,6 +1468,16 @@ export class ProductMenuComponent implements OnInit {
         const selectedCategoryId = (this.product as any).categoryId;
 
         const isNewProduct = !prod.id;
+        if (!isNewProduct) {
+            const editId = this.normalizeProductId(prod.id);
+            if (editId !== null) {
+                this.captureEditedProductPosition(editId);
+            } else {
+                this.clearEditedProductPositionCache();
+            }
+        } else {
+            this.clearEditedProductPositionCache();
+        }
 
         const createProductAndClose = (imageUrl?: string) => {
             const newProduct: Product = {
@@ -964,8 +1495,21 @@ export class ProductMenuComponent implements OnInit {
                 next: (resp) => {
                     this.messageService.add({ severity: 'success', summary: 'Producto creado', detail: `${newProduct.name} creado`, life: 3000 });
 
-                    // Trigger event for menu update
-                    window.dispatchEvent(new Event('productsUpdated'));
+                    // Guardar la receta (insumos) del producto
+                    const savedId = resp?.object?.id ?? prod.id;
+                    if (savedId != null) {
+                        this.inventoryService.setRecipes(savedId, this.productRecipeLines).subscribe({
+                            next: () => {
+                                window.dispatchEvent(new Event('productsUpdated'));
+                            },
+                            error: (err) => {
+                                console.error('Error saving recipe', err);
+                                window.dispatchEvent(new Event('productsUpdated'));
+                            }
+                        });
+                    } else {
+                        window.dispatchEvent(new Event('productsUpdated'));
+                    }
 
                     // Check if this is the first product created
                     if (isNewProduct) {
@@ -989,6 +1533,7 @@ export class ProductMenuComponent implements OnInit {
                 },
                 error: (err) => {
                     console.error('Error creating product:', err);
+                    this.clearEditedProductPositionCache();
                     this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear el producto', life: 3000 });
                 },
                 complete: () => {
@@ -1017,6 +1562,110 @@ export class ProductMenuComponent implements OnInit {
         } else {
             createProductAndClose();
         }
+    }
+
+    onCreateCrossSelling(draft: CrossSellingDraft) {
+        const productId = this.getCurrentProductId();
+        if (!productId) {
+            this.messageService.add({ severity: 'warn', summary: 'Validacion', detail: 'Guarda el producto primero', life: 3000 });
+            return;
+        }
+
+        if (!draft?.suggestedProductId) {
+            this.messageService.add({ severity: 'warn', summary: 'Validacion', detail: 'Selecciona un producto sugerido', life: 3000 });
+            return;
+        }
+
+        if ((this.crossSellingItems?.length || 0) >= this.crossSellingMax) {
+            this.messageService.add({ severity: 'warn', summary: 'Limite', detail: 'Solo puedes agregar hasta 3 productos sugeridos', life: 3000 });
+            return;
+        }
+
+        this.crossSellingSaving = true;
+        const payload = {
+            productId,
+            suggestedProductId: draft.suggestedProductId,
+            tenantId: this.tenantId,
+            displayOrder: draft.displayOrder,
+            isActive: draft.isActive
+        };
+
+        this.crossSellingService.create(payload).subscribe({
+            next: () => {
+                this.messageService.add({ severity: 'success', summary: 'Venta cruzada', detail: 'Configuracion creada', life: 3000 });
+                this.loadCrossSellingForProduct(productId);
+            },
+            error: (err) => {
+                console.error('Error creating cross-selling', err);
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo crear', life: 3000 });
+            },
+            complete: () => {
+                this.crossSellingSaving = false;
+            }
+        });
+    }
+
+    onUpdateCrossSelling(draft: CrossSellingDraft) {
+        const productId = this.getCurrentProductId();
+        const crossSellingId = draft?.id ?? null;
+        if (!productId || !crossSellingId) {
+            return;
+        }
+
+        if (!draft?.suggestedProductId) {
+            this.messageService.add({ severity: 'warn', summary: 'Validacion', detail: 'Selecciona un producto sugerido', life: 3000 });
+            return;
+        }
+
+        this.crossSellingSaving = true;
+        const payload = {
+            productId,
+            suggestedProductId: draft.suggestedProductId,
+            tenantId: this.tenantId,
+            displayOrder: draft.displayOrder,
+            isActive: draft.isActive
+        };
+
+        this.crossSellingService.update(crossSellingId, payload).subscribe({
+            next: () => {
+                this.messageService.add({ severity: 'success', summary: 'Venta cruzada', detail: 'Configuracion actualizada', life: 3000 });
+                this.loadCrossSellingForProduct(productId);
+            },
+            error: (err) => {
+                console.error('Error updating cross-selling', err);
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo actualizar', life: 3000 });
+            },
+            complete: () => {
+                this.crossSellingSaving = false;
+            }
+        });
+    }
+
+    confirmDeleteCrossSelling(item: CrossSellingConfig) {
+        if (!item?.id) return;
+        const name = item.suggestedProductName || 'Producto';
+
+        this.confirmationService.confirm({
+            message: `Eliminar venta cruzada para ${name}?`,
+            header: 'Confirmar',
+            icon: 'pi pi-exclamation-triangle',
+            accept: () => {
+                this.crossSellingSaving = true;
+                this.crossSellingService.delete(item.id, this.tenantId).subscribe({
+                    next: () => {
+                        this.messageService.add({ severity: 'success', summary: 'Venta cruzada', detail: 'Configuracion eliminada', life: 3000 });
+                        this.loadCrossSellingForProduct(this.getCurrentProductId());
+                    },
+                    error: (err) => {
+                        console.error('Error deleting cross-selling', err);
+                        this.messageService.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo eliminar', life: 3000 });
+                    },
+                    complete: () => {
+                        this.crossSellingSaving = false;
+                    }
+                });
+            }
+        });
     }
 
     // Create a new category and add it to the categories list
@@ -1149,7 +1798,7 @@ export class ProductMenuComponent implements OnInit {
             return `${window.location.origin}/landing-page`;
         }
 
-        return 'https://lealtix.com.mx/landing-page';
+        return 'https://full-accountability-big-rug.trycloudflare.com/landing-page';
     }
 
     private navigateToLanding() {
@@ -1173,65 +1822,41 @@ export class ProductMenuComponent implements OnInit {
 
         forkJoin({
             products: this.productService.getProductsByTenantId(this.tenantId),
-            welcomeStatus: this.campaignService.getWelcomeCampaignStatus(this.tenantId)
+            campaigns: this.campaignService.getByBusiness(this.tenantId)
         }).subscribe({
-            next: ({ products, welcomeStatus }) => {
+            next: ({ products, campaigns }) => {
                 const productCount = Array.isArray(products) ? products.length : (products?.object?.length ?? 0);
                 const hasProducts = productCount > 0;
-                const campaignExists = welcomeStatus?.exists ?? false;
-                const campaignStatus = welcomeStatus?.status;
+                const welcomeCampaigns = (campaigns || []).filter(c => c.template?.id === 1);
+                const active = welcomeCampaigns.some(c => c.status === 'ACTIVE');
+                const draft = !active && welcomeCampaigns.some(c => c.status === 'DRAFT');
 
-                console.debug('[Banner][products-menu] tenantId=', this.tenantId, 'productCount=', productCount, 'welcomeStatus=', welcomeStatus);
-
-                if (!hasProducts || (campaignExists && campaignStatus === 'ACTIVE')) {
+                if (!hasProducts || active) {
                     this.showWelcomeBanner.set(false);
                     return;
                 }
 
-                if (!campaignExists) {
+                if (welcomeCampaigns.length === 0) {
                     this.showWelcomeBanner.set(true);
                     this.bannerMessage.set({
                         title: 'Tu negocio ya está listo.',
                         description: 'Ahora configura tu campaña de bienvenida para empezar a recibir clientes.',
                         buttonText: 'Configurar campaña de bienvenida'
                     });
-                } else if (campaignStatus === 'DRAFT') {
+                } else if (draft) {
                     this.showWelcomeBanner.set(true);
                     this.bannerMessage.set({
                         title: '¡Ya casi está todo listo!',
                         description: 'Tienes una campaña de bienvenida guardada como borrador. Actívala para comenzar a recibir clientes.',
                         buttonText: 'Activar campaña de bienvenida'
                     });
+                } else {
+                    this.showWelcomeBanner.set(false);
                 }
             },
             error: (err) => {
-                console.warn('[Banner][products-menu] welcome-status failed, falling back to campaigns list', err);
-                this.productService.getProductsByTenantId(this.tenantId).subscribe({
-                    next: (productsResp) => {
-                        const productCount = Array.isArray(productsResp) ? productsResp.length : (productsResp?.object?.length ?? 0);
-                        const hasProducts = productCount > 0;
-
-                        this.campaignService.getByBusiness(this.tenantId).subscribe({
-                            next: (campaigns) => {
-                                const welcomeCampaigns = (campaigns || []).filter(c => c.template?.id === 1);
-                                const active = welcomeCampaigns.some(c => c.status === 'ACTIVE');
-                                const draft = !active && welcomeCampaigns.some(c => c.status === 'DRAFT');
-
-                                if (!hasProducts || active) { this.showWelcomeBanner.set(false); return; }
-
-                                if (welcomeCampaigns.length === 0) {
-                                    this.showWelcomeBanner.set(true);
-                                    this.bannerMessage.set({ title: 'Tu negocio ya está listo.', description: 'Ahora configura tu campaña de bienvenida para empezar a recibir clientes.', buttonText: 'Configurar campaña de bienvenida' });
-                                } else if (draft) {
-                                    this.showWelcomeBanner.set(true);
-                                    this.bannerMessage.set({ title: '¡Ya casi está todo listo!', description: 'Tienes una campaña de bienvenida guardada como borrador. Actívala para comenzar a recibir clientes.', buttonText: 'Activar campaña de bienvenida' });
-                                }
-                            },
-                            error: (e2) => { console.error('[Banner][products-menu] fallback getByBusiness failed', e2); this.showWelcomeBanner.set(false); }
-                        });
-                    },
-                    error: (e3) => { console.error('[Banner][products-menu] fallback getProducts failed', e3); this.showWelcomeBanner.set(false); }
-                });
+                console.error('[Banner][products-menu] campaigns check failed', err);
+                this.showWelcomeBanner.set(false);
             }
         });
     }

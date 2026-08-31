@@ -1,0 +1,142 @@
+<div class="inventario-container">
+  <div class="inventario-header">
+    <div>
+      <h2>Inventario</h2>
+      <p>Control de stock de productos e insumos</p>
+    </div>
+    <button pButton label="Actualizar" icon="pi pi-refresh" severity="secondary" (click)="load(); loadInsumos()"></button>
+  </div>
+
+  <div class="catalog-panel surface-card border-round-lg p-3">
+    <div class="catalog-tabs mb-3">
+      <button type="button" class="catalog-tab"
+        [ngClass]="{ 'catalog-tab-active': activeTab() === 'products' }"
+        (click)="setActiveTab('products')">
+        <i class="pi pi-bars"></i>
+        <span>Productos</span>
+      </button>
+      <button type="button" class="catalog-tab"
+        [ngClass]="{ 'catalog-tab-active': activeTab() === 'insumos' }"
+        (click)="setActiveTab('insumos')">
+        <i class="pi pi-box"></i>
+        <span>Insumos</span>
+      </button>
+    </div>
+
+    <p-table #dt [value]="activeTab() === 'products' ? $any(items()) : $any(insumos())" [loading]="activeTab() === 'products' ? loading() : loadingInsumos()"
+      [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,30,50]"
+      [globalFilterFields]="activeTab() === 'products' ? ['name','categoryName'] : ['nombre']"
+      responsiveLayout="scroll" styleClass="p-datatable-sm catalog-table"
+      [tableStyle]="{ 'width': '100%', 'table-layout': 'fixed' }" [rowHover]="true"
+      [showCurrentPageReport]="true" [currentPageReportTemplate]="activeTab() === 'products' ? 'Mostrando {first} a {last} de {totalRecords} productos' : 'Mostrando {first} a {last} de {totalRecords} insumos'">
+      <ng-template pTemplate="caption">
+        <div class="flex items-center justify-between">
+          <h5 class="m-0">{{ activeTab() === 'products' ? items().length + ' productos' : insumos().length + ' insumos' }}</h5>
+          <p-iconfield>
+            <p-inputicon styleClass="pi pi-search" />
+            <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Buscar..." />
+          </p-iconfield>
+        </div>
+      </ng-template>
+      <ng-template #header>
+        <ng-container *ngIf="activeTab() === 'products'; else insumoHeader">
+          <tr>
+            <th pSortableColumn="name" style="width: 45%">
+              Producto
+              <p-sortIcon field="name" />
+            </th>
+            <th pSortableColumn="categoryName" style="width: 30%">
+              Categoría
+              <p-sortIcon field="categoryName" />
+            </th>
+            <th pSortableColumn="stock" style="width: 25%">
+              Stock
+              <p-sortIcon field="stock" />
+            </th>
+          </tr>
+        </ng-container>
+        <ng-template #insumoHeader>
+          <tr>
+            <th pSortableColumn="nombre" style="width: 35%">
+              Insumo
+              <p-sortIcon field="nombre" />
+            </th>
+            <th pSortableColumn="stock" style="width: 20%">
+              Stock
+              <p-sortIcon field="stock" />
+            </th>
+            <th pSortableColumn="stockMinimo" style="width: 25%">
+              Stock mínimo
+              <p-sortIcon field="stockMinimo" />
+            </th>
+            <th style="width: 20%">Acciones</th>
+          </tr>
+        </ng-template>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <ng-container *ngIf="activeTab() === 'products'; else insumoRow">
+          <tr>
+            <td style="width: 45%">
+              <div class="font-medium text-900">{{ row.name }}</div>
+            </td>
+            <td style="width: 30%">
+              <div class="text-sm text-500">{{ row.categoryName || '—' }}</div>
+            </td>
+            <td style="width: 25%">
+              <span class="stock-badge" [ngClass]="productBadgeClass(row)">{{ productBadgeLabel(row) }}</span>
+            </td>
+          </tr>
+        </ng-container>
+        <ng-template #insumoRow>
+          <tr>
+            <td style="width: 35%">
+              <div class="font-medium text-900">{{ row.nombre }}</div>
+            </td>
+            <td style="width: 20%">
+              <span class="stock-badge" [ngClass]="insumoLowClass(row)">
+                {{ row.stock }} {{ row.unidad || 'pieza' }}
+              </span>
+            </td>
+            <td style="width: 25%">
+              <div class="text-sm text-500">{{ row.stockMinimo }}</div>
+            </td>
+            <td style="width: 20%">
+              <p-button label="Restock" icon="pi pi-refresh" iconPos="left" styleClass="restock-pill-btn"
+                (click)="openInsumoRestock(row)"></p-button>
+            </td>
+          </tr>
+        </ng-template>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td [attr.colspan]="activeTab() === 'products' ? 3 : 4" class="text-center p-8">
+            {{ activeTab() === 'products' ? 'No hay productos en el inventario' : 'Sin insumos registrados' }}
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- ============ DIALOGO RESTOCK DE INSUMO ============ -->
+  <p-dialog header="Restock de insumo" [(visible)]="insumoRestockVisible" [style]="{ width: '400px' }" [modal]="true" [dismissableMask]="true" (onHide)="insumoRestockVisible = false">
+    <div class="flex flex-col gap-3">
+      <p-message severity="info"
+        [text]="'Stock actual: ' + (insumoRestockTarget?.stock ?? 0) + ' ' + (insumoRestockTarget?.unidad || 'pieza')"
+        styleClass="w-full"></p-message>
+      <div>
+        <label class="block text-sm font-medium mb-1">Cantidad que llegó</label>
+        <p-inputNumber [(ngModel)]="insumoRestockCantidad" [min]="0" [step]="0.5" styleClass="w-full" />
+      </div>
+      <div *ngIf="insumoRestockTarget && insumoRestockCantidad > 0" class="text-sm text-600">
+        Nuevo stock: <strong>{{ (insumoRestockTarget.stock ?? 0) + insumoRestockCantidad }} {{ insumoRestockTarget.unidad || 'pieza' }}</strong>
+      </div>
+    </div>
+    <ng-template #footer>
+      <p-button label="Cancelar" severity="secondary" [text]="true" (click)="insumoRestockVisible = false"></p-button>
+      <p-button label="Actualizar stock" icon="pi pi-refresh" severity="success"
+        [disabled]="insumoRestockCantidad <= 0" (click)="doInsumoRestock()"></p-button>
+    </ng-template>
+  </p-dialog>
+
+  <p-toast></p-toast>
+</div>

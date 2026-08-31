@@ -137,44 +137,21 @@ export class RedeemPageComponent implements OnInit, OnDestroy {
     // Obtener usuario usando el servicio de autenticación
     const currentUser = this.authService.getCurrentUser();
 
-    if (currentUser && currentUser.email) {
+    if (currentUser && currentUser.tenantId) {
       this.email = currentUser.email;
+      this.tenantId = currentUser.tenantId ?? 0;
+      this.hasValidSession = true;
 
-      // Obtener tenant por email
-      this.tenantService.getTenantByEmail(this.email).subscribe({
-        next: (tenant: any) => {
-          if (tenant && tenant.object && tenant.object.id) {
-            this.tenantId = tenant.object.id ?? 0;
-            this.hasValidSession = true;
-
-            // Si tiene tenantId válido, es vista de staff
-            this.isStaffView = !!this.tenantId && this.tenantId > 0;
-          } else {
-            // No hay tenant válido, es cliente
-            this.isStaffView = false;
-            this.hasValidSession = false;
-            this.tenantId = null;
-          }
-          // Validar cupón después de determinar el tipo de usuario
-          this.validateCoupon();
-        },
-        error: (error: any) => {
-          console.warn('No tenant found for email:', this.email);
-          // Si hay error obteniendo tenant, es cliente
-          this.isStaffView = false;
-          this.hasValidSession = false;
-          this.tenantId = null;
-          // Validar cupón como cliente
-          this.validateCoupon();
-        }
-      });
+      // Si tiene tenantId válido, es vista de staff
+      this.isStaffView = !!this.tenantId && this.tenantId > 0;
     } else {
-      // No hay usuario en storage, es cliente
+      // No hay tenant válido, es cliente
       this.isStaffView = false;
       this.hasValidSession = false;
-      // Validar cupón como cliente
-      this.validateCoupon();
+      this.tenantId = null;
     }
+    // Validar cupón después de determinar el tipo de usuario
+    this.validateCoupon();
   }
 
   ngOnDestroy(): void {
@@ -441,7 +418,7 @@ export class RedeemPageComponent implements OnInit, OnDestroy {
     const currentUser = this.authService.getCurrentUser();
 
     const request: RedemptionRequest = {
-      redeemedBy: currentUser?.email || currentUser?.userEmail || 'unknown',
+      redeemedBy: currentUser?.email || 'unknown',
       channel: RedemptionChannel.QR_WEB,
       originalAmount: this.originalAmount ?? undefined,
       location: 'Web Dashboard',
@@ -449,7 +426,7 @@ export class RedeemPageComponent implements OnInit, OnDestroy {
         device: this.getDeviceType(),
         browser: this.getBrowserName(),
         timestamp: new Date().toISOString(),
-        userId: currentUser?.userId || null
+        userId: currentUser?.id || null
       })
     };
 

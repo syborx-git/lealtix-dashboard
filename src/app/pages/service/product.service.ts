@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '../commons/environment';
 
 interface InventoryStatus {
     label: string;
@@ -25,7 +26,7 @@ export class ProductService {
 
 
     getCategoriesByTenantId(tenantId: string) {
-        const url = `http://localhost:8080/api/tenant-menu-categories/categories/${tenantId}`;
+        const url = `${environment.apiUrl}/tenant-menu-categories/categories/${tenantId}`;
 
         // backend returns { code, message, object: [ { categoryId, categoryName }, ... ] }
         // map to { label, value }

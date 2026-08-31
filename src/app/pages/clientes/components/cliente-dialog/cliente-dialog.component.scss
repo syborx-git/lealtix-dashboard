@@ -1,0 +1,269 @@
+/* ============================================================================
+   CLIENTE DIALOG - Estilos de componente
+   Alineados con el sistema de diseño Lealtix
+   ============================================================================ */
+
+:host ::ng-deep {
+  /* === DIÁLOGO === */
+  .cliente-dialog {
+    border-radius: var(--lealtix-radius-xl);
+    overflow: hidden;
+    box-shadow: var(--lealtix-shadow-2xl);
+    border: 1px solid var(--lealtix-slate-200);
+
+    .p-dialog-header {
+      background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%);
+      color: white;
+      padding: 1.25rem 1.5rem;
+      border: none;
+
+      .p-dialog-title {
+        font-weight: 700;
+        font-size: 1.125rem;
+      }
+
+      .flex {
+        i {
+          color: white;
+          font-size: 1.5rem;
+        }
+
+        h2 {
+          color: white;
+          font-weight: 600;
+          font-size: 1.125rem;
+          margin: 0;
+        }
+      }
+
+      .p-dialog-header-icon {
+        color: white;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+      }
+    }
+
+    .p-dialog-content {
+      padding: 0 !important;
+      background: white;
+    }
+  }
+
+  /* === CONTENEDOR DEL FORMULARIO === */
+  .cliente-form-container {
+    padding: 2rem;
+  }
+
+  /* === GRID Y CAMPOS === */
+  .grid {
+    display: grid;
+
+    &.grid-cols-2 {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+
+    .col-span-full {
+      grid-column: 1 / -1;
+    }
+  }
+
+  /* === LABELS === */
+  label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--lealtix-slate-800);
+    margin-bottom: 0.5rem;
+
+    .text-red-500 {
+      color: #dc2626;
+    }
+
+    .text-gray-500 {
+      color: var(--lealtix-slate-500);
+      font-weight: 400;
+    }
+  }
+
+  /* === INPUTS === */
+  .p-inputtext,
+  .p-datepicker,
+  .p-select {
+    width: 100%;
+    border-radius: var(--lealtix-radius-md) !important;
+    border: 1px solid var(--lealtix-slate-300) !important;
+    transition: all 0.2s ease !important;
+    font-size: 0.9375rem !important;
+
+    &:focus,
+    &:focus-visible {
+      outline: none !important;
+      border-color: var(--lealtix-primary-500) !important;
+      box-shadow: 0 0 0 3px var(--lealtix-primary-50) !important;
+    }
+
+    &::placeholder {
+      color: var(--lealtix-slate-400);
+    }
+  }
+
+  .p-datepicker {
+    .p-datepicker-input-icon {
+      color: var(--lealtix-slate-500);
+    }
+  }
+
+  .p-select {
+    .p-select-label {
+      color: var(--lealtix-slate-700);
+    }
+
+    .p-select-dropdown {
+      color: var(--lealtix-slate-500);
+    }
+
+    &:hover {
+      border-color: var(--lealtix-slate-400) !important;
+    }
+  }
+
+  /* === MENSAJES DE ERROR === */
+  .p-message {
+    margin-top: 0.5rem;
+    border-radius: var(--lealtix-radius-md);
+    font-size: 0.8125rem;
+
+    &.p-message-error {
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+
+      .p-message-icon {
+        color: #dc2626;
+      }
+    }
+  }
+
+  /* === FOOTER === */
+  .cliente-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    background: var(--lealtix-slate-50);
+    border-top: 1px solid var(--lealtix-slate-200);
+  }
+
+  /* === BOTONES === */
+  .p-button {
+    border-radius: var(--lealtix-radius-md);
+    font-weight: 500;
+    padding: 0.625rem 1.25rem;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: var(--lealtix-shadow-md);
+    }
+
+    &.p-button-text {
+      color: var(--lealtix-slate-600);
+
+      &:hover {
+        background: var(--lealtix-slate-200);
+        color: var(--lealtix-slate-700);
+      }
+    }
+
+    &.p-button-danger {
+      background: #dc2626 !important;
+      border-color: #dc2626 !important;
+      color: white !important;
+
+      &:hover:not(:disabled) {
+        background: #b91c1c !important;
+        border-color: #b91c1c !important;
+        box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3) !important;
+      }
+
+      &:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2) !important;
+      }
+
+      &.p-button-outlined {
+        color: #dc2626 !important;
+        border-color: #fca5a5 !important;
+        background: transparent !important;
+
+        &:hover:not(:disabled) {
+          background-color: #fee2e2 !important;
+          border-color: #f87171 !important;
+          color: #b91c1c !important;
+          box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2) !important;
+        }
+
+        &:active {
+          background-color: #fecaca !important;
+          transform: translateY(0);
+        }
+      }
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+  }
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+  :host ::ng-deep {
+    .cliente-dialog {
+      .p-dialog-header {
+        padding: 1rem 1.25rem;
+
+        .flex h2 {
+          font-size: 1rem;
+        }
+
+        .flex i {
+          font-size: 1.25rem;
+        }
+      }
+    }
+
+    .cliente-form-container {
+      padding: 1.25rem;
+    }
+
+    .grid.grid-cols-2 {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    label {
+      font-size: 0.8125rem;
+    }
+
+    .p-inputtext,
+    .p-datepicker,
+    .p-select {
+      font-size: 0.875rem !important;
+    }
+
+    .cliente-dialog-footer {
+      padding: 0.875rem 1.25rem;
+      flex-direction: column-reverse;
+
+      .p-button {
+        width: 100%;
+      }
+    }
+  }
+}

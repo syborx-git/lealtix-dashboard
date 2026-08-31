@@ -1,0 +1,520 @@
+/* ============================================================================
+   MANUAL CODE INPUT - Estilos de componente
+   Alineados con el sistema de diseño Lealtix
+   ============================================================================ */
+
+:host ::ng-deep {
+  /* === CONTENEDOR PRINCIPAL === */
+  .manual-input-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+
+  /* === CARD === */
+  .input-card {
+    width: 100%;
+    max-width: 650px;
+    border: 1px solid var(--lealtix-slate-200);
+    transition: all 0.3s ease;
+
+    .p-card-body {
+      padding: 0 !important;
+    }
+
+    .p-card-content {
+      padding: 2rem !important;
+    }
+  }
+
+  /* === HEADER === */
+  .card-header {
+    background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%);
+    padding: 2rem;
+    text-align: center;
+    color: white;
+    border-radius: var(--lealtix-radius-lg) var(--lealtix-radius-lg) 0 0;
+
+    i {
+      font-size: 3rem;
+      margin-bottom: 0.75rem;
+      display: block;
+      opacity: 0.95;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+  }
+
+  /* === CONTENIDO === */
+  .input-content {
+    padding: 2rem;
+  }
+
+  .description {
+    color: var(--lealtix-slate-600);
+    text-align: center;
+    margin-bottom: 1.5rem;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+
+  /* === FORMULARIO === */
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-label {
+    display: block;
+    font-weight: 600;
+    color: var(--lealtix-slate-800);
+    margin-bottom: 0.5rem;
+    font-size: 0.9375rem;
+  }
+
+  .code-input,
+  .p-inputnumber {
+    width: 100%;
+  }
+
+  .p-inputtext,
+  .p-inputnumber-input {
+    width: 100%;
+    height: 48px;
+    font-size: 1rem;
+    padding: 0 1rem;
+    border: 1px solid var(--lealtix-slate-300) !important;
+    border-radius: var(--lealtix-radius-md) !important;
+    transition: all 0.2s ease;
+
+    &:focus,
+    &:focus-visible {
+      outline: none !important;
+      border-color: var(--lealtix-primary-500) !important;
+      box-shadow: 0 0 0 3px var(--lealtix-primary-50) !important;
+    }
+
+    &::placeholder {
+      color: var(--lealtix-slate-400);
+    }
+
+    &:disabled {
+      background: var(--lealtix-slate-100);
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+  }
+
+  /* Mensaje de error bajo campo */
+  .text-red-600 {
+    color: #dc2626;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.375rem;
+    margin-top: 0.5rem;
+
+    i {
+      font-size: 0.875rem;
+      margin-top: 0.125rem;
+      flex-shrink: 0;
+    }
+  }
+
+  /* === BOTONES === */
+  .button-group {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .validate-button {
+    height: 54px !important;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    border-radius: var(--lealtix-radius-md) !important;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: var(--lealtix-shadow-md) !important;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  /* === MENSAJES === */
+  .error-message {
+    margin-top: 1rem;
+
+    .p-message-wrapper {
+      padding: 0.875rem 1.25rem;
+      border-radius: var(--lealtix-radius-md);
+    }
+
+    .p-message-text {
+      font-size: 0.9375rem;
+    }
+  }
+
+  /* === SECCIÓN DE RESULTADOS === */
+  .result-section {
+    margin-top: 1.5rem;
+    animation: fadeIn 0.4s ease-in;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .result-title {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    color: #10b981;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+
+    i {
+      font-size: 1.5rem;
+    }
+  }
+
+  /* === INFORMACIÓN DEL REWARD === */
+  .reward-info {
+    background: linear-gradient(135deg, var(--lealtix-slate-50) 0%, white 100%);
+    border: 1px solid var(--lealtix-slate-200);
+    border-radius: var(--lealtix-radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .reward-description {
+    color: var(--lealtix-slate-700);
+    font-size: 0.9375rem;
+    margin-bottom: 1.25rem;
+    font-style: italic;
+    line-height: 1.6;
+  }
+
+  /* Requisitos */
+  .info-requirements {
+    margin-bottom: 1.25rem;
+  }
+
+  .requirement-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: white;
+    border-radius: var(--lealtix-radius-md);
+    border: 1px solid var(--lealtix-slate-200);
+
+    i {
+      font-size: 1.125rem;
+      color: var(--lealtix-primary-500);
+      flex-shrink: 0;
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .requirement-content {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .requirement-label {
+    color: var(--lealtix-slate-600);
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .requirement-value {
+    color: var(--lealtix-slate-900);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  /* === DETALLES DE CÁLCULO === */
+  .calculation-details {
+    background: white;
+    border: 1px solid var(--lealtix-slate-200);
+    border-radius: var(--lealtix-radius-md);
+    padding: 1.25rem;
+  }
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.625rem 0;
+    font-size: 0.9375rem;
+
+    &:not(:last-child) {
+      border-bottom: 1px solid var(--lealtix-slate-100);
+    }
+  }
+
+  .detail-label {
+    color: var(--lealtix-slate-600);
+    font-weight: 500;
+  }
+
+  .detail-value {
+    font-weight: 600;
+    color: var(--lealtix-slate-900);
+  }
+
+  .discount-row {
+    .detail-label,
+    .detail-value {
+      color: #10b981;
+    }
+  }
+
+  .discount-value {
+    color: #10b981 !important;
+    font-weight: 700 !important;
+    font-size: 1.0625rem;
+  }
+
+  .total-row {
+    font-size: 1.125rem;
+    padding-top: 1rem !important;
+    margin-top: 0.5rem;
+    border-top: 2px solid var(--lealtix-slate-200) !important;
+  }
+
+  .total-value {
+    color: var(--lealtix-primary-600) !important;
+    font-size: 1.375rem !important;
+    font-weight: 700 !important;
+  }
+
+  /* === INFORMACIÓN DE USO === */
+  .usage-info {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--lealtix-slate-200);
+    text-align: center;
+    color: var(--lealtix-slate-600);
+    font-size: 0.8125rem;
+
+    i {
+      margin-right: 0.375rem;
+      color: var(--lealtix-primary-500);
+    }
+  }
+
+  /* === BOTONES DE ACCIÓN === */
+  .action-buttons {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+
+    .p-button {
+      height: 48px;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: var(--lealtix-radius-md) !important;
+      transition: all 0.2s ease;
+
+      &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: var(--lealtix-shadow-md);
+      }
+    }
+  }
+
+  /* === DIVIDER === */
+  .p-divider {
+    margin: 1.5rem 0 !important;
+    border-color: var(--lealtix-slate-200);
+  }
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+  :host ::ng-deep {
+    .manual-input-container {
+      padding: 1rem;
+      align-items: flex-start;
+      padding-top: 2rem;
+    }
+
+    .input-card {
+      max-width: 100%;
+    }
+
+    .input-content,
+    .card-header {
+      padding: 1.5rem;
+    }
+
+    .card-header {
+      h2 {
+        font-size: 1.25rem;
+      }
+
+      i {
+        font-size: 2.5rem;
+      }
+    }
+
+    .result-title {
+      font-size: 1.125rem;
+
+      i {
+        font-size: 1.25rem;
+      }
+    }
+
+    .reward-info {
+      padding: 1.25rem;
+    }
+
+    .calculation-details {
+      padding: 1rem;
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  :host ::ng-deep {
+    .manual-input-container {
+      padding: 0.75rem;
+      padding-top: 1.5rem;
+    }
+
+    .input-content,
+    .card-header {
+      padding: 1.25rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .detail-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.25rem;
+      padding: 0.75rem 0;
+    }
+
+    .total-row {
+      flex-direction: row;
+      justify-content: space-between;
+    }
+  }
+}
+
+:root[class*='app-dark'],
+.app-dark {
+  :host ::ng-deep {
+    .input-card {
+      background: var(--surface-card) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .description {
+      color: var(--text-color-secondary) !important;
+    }
+
+    .form-label {
+      color: #cbd2e0 !important;
+    }
+
+    .p-inputtext,
+    .p-inputnumber-input {
+      border-color: rgba(255, 255, 255, 0.15) !important;
+
+      &::placeholder {
+        color: var(--text-color-secondary) !important;
+      }
+
+      &:disabled {
+        background: rgba(255, 255, 255, 0.03) !important;
+      }
+    }
+
+    .reward-info {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.06) 100%) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .reward-description {
+      color: #cbd2e0 !important;
+    }
+
+    .requirement-item {
+      background: rgba(255, 255, 255, 0.03) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .requirement-label {
+      color: var(--text-color-secondary) !important;
+    }
+
+    .requirement-value {
+      color: #e6e8ef !important;
+    }
+
+    .calculation-details {
+      background: rgba(255, 255, 255, 0.03) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .detail-row:not(:last-child) {
+      border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .detail-label {
+      color: var(--text-color-secondary) !important;
+    }
+
+    .detail-value {
+      color: #cbd2e0 !important;
+    }
+
+    .total-row {
+      border-top-color: rgba(255, 255, 255, 0.15) !important;
+    }
+
+    .usage-info {
+      border-top-color: rgba(255, 255, 255, 0.08) !important;
+      color: var(--text-color-secondary) !important;
+    }
+
+    .p-divider {
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+  }
+}

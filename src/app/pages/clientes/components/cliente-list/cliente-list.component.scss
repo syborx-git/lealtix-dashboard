@@ -1,0 +1,799 @@
+/* ============================================================================
+   CLIENTE LIST - Estilos de componente
+   Alineados con el sistema de diseño Lealtix
+   ============================================================================ */
+
+:host {
+  display: block;
+}
+
+:host ::ng-deep {
+  /* === TOOLBAR === */
+  .p-toolbar {
+    background: linear-gradient(135deg, var(--lealtix-slate-50) 0%, var(--lealtix-slate-100) 100%);
+    border: 1px solid var(--lealtix-slate-200);
+    border-radius: var(--lealtix-radius-lg);
+    padding: 1rem 1.25rem;
+    box-shadow: var(--lealtix-shadow-sm);
+    margin-bottom: 1.5rem;
+    width: 100%;
+
+    .p-toolbar-start,
+    .p-toolbar-end {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .p-button {
+      border-radius: var(--lealtix-radius-md);
+      font-weight: 500;
+      transition: all 0.2s ease;
+
+      &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: var(--lealtix-shadow-md);
+      }
+
+      &.p-button-outlined {
+        border: 2px solid var(--lealtix-slate-300);
+        color: var(--lealtix-slate-700);
+
+        &:hover:not(:disabled) {
+          background: var(--lealtix-slate-50);
+          border-color: var(--lealtix-primary-500);
+          color: var(--lealtix-primary-600);
+        }
+      }
+    }
+  }
+
+  /* === TOOLBAR: GRID DE 3 BOTONES QUE OCUPAN TODO EL ANCHO === */
+  .p-toolbar .p-toolbar-start {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  .toolbar-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .toolbar-actions .p-button {
+    width: 100% !important;
+  }
+
+  /* === TOOLBAR: BOTÓN INDIGO "NUEVO CLIENTE" === */
+  .p-toolbar .add-btn {
+    padding: 1.35rem 1.4rem !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.012em;
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+    border: none !important;
+    color: #fff !important;
+    border-radius: var(--lealtix-radius-lg) !important;
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.28) !important;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.4, 1) !important;
+
+    .p-button-icon {
+      font-size: 1.15rem !important;
+      transition: transform 0.3s ease !important;
+    }
+
+    &:hover {
+      background: linear-gradient(135deg, #f472b6 0%, #db2777 100%) !important;
+      color: #fff !important;
+      transform: translateY(-3px) scale(1.05) !important;
+      box-shadow: 0 10px 26px rgba(219, 39, 119, 0.42) !important;
+
+      .p-button-icon {
+        transform: scale(1.18) rotate(-6deg);
+      }
+    }
+
+    &:active {
+      transform: translateY(-1px) scale(0.99) !important;
+      box-shadow: 0 5px 14px rgba(219, 39, 119, 0.35) !important;
+    }
+  }
+
+  /* === TOOLBAR: BOTÓN AZUL "DESCARGAR PLANTILLA" === */
+  .p-toolbar .download-btn {
+    padding: 1.35rem 1.4rem !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.012em;
+    background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%) !important;
+    border: none !important;
+    color: #fff !important;
+    border-radius: var(--lealtix-radius-lg) !important;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.28) !important;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.4, 1) !important;
+
+    .p-button-icon {
+      font-size: 1.15rem !important;
+      transition: transform 0.3s ease !important;
+    }
+
+    &:hover {
+      background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%) !important;
+      color: #fff !important;
+      transform: translateY(-3px) scale(1.05) !important;
+      box-shadow: 0 10px 26px rgba(14, 165, 233, 0.45) !important;
+
+      .p-button-icon {
+        transform: scale(1.18) translateY(-2px);
+      }
+    }
+
+    &:active {
+      transform: translateY(-1px) scale(0.99) !important;
+      box-shadow: 0 5px 14px rgba(2, 132, 199, 0.35) !important;
+    }
+  }
+
+  /* === TOOLBAR: BOTÓN VERDE "CARGAR PLANTILLA" === */
+  .p-toolbar .upload-btn {
+    padding: 1.35rem 1.4rem !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.012em;
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
+    border: none !important;
+    color: #fff !important;
+    border-radius: var(--lealtix-radius-lg) !important;
+    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.28) !important;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.4, 1) !important;
+
+    .p-button-icon {
+      font-size: 1.15rem !important;
+      transition: transform 0.3s ease !important;
+    }
+
+    &:hover {
+      background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%) !important;
+      color: #fff !important;
+      transform: translateY(-3px) scale(1.05) !important;
+      box-shadow: 0 10px 26px rgba(34, 197, 94, 0.42) !important;
+
+      .p-button-icon {
+        transform: scale(1.18) rotate(-6deg);
+      }
+    }
+
+    &:active {
+      transform: translateY(-1px) scale(0.99) !important;
+      box-shadow: 0 5px 14px rgba(34, 197, 94, 0.35) !important;
+    }
+  }
+
+  /* === TABLA === */
+  .p-datatable {
+    border-radius: var(--lealtix-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--lealtix-shadow-sm);
+    border: 1px solid var(--lealtix-slate-200);
+
+    .p-datatable-header {
+      background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%);
+      border: none;
+      padding: 1.25rem 1.5rem;
+      border-radius: var(--lealtix-radius-lg) var(--lealtix-radius-lg) 0 0;
+
+      h5 {
+        color: white;
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin: 0;
+      }
+
+      .p-iconfield {
+        .p-inputtext {
+          background: rgba(255, 255, 255, 0.95);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          border-radius: var(--lealtix-radius-md);
+          padding: 0.625rem 1rem;
+          padding-left: 2.5rem;
+          color: var(--lealtix-slate-900);
+          font-size: 0.875rem;
+
+          &::placeholder {
+            color: var(--lealtix-slate-400);
+          }
+
+          &:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+          }
+        }
+
+        .p-inputicon {
+          color: var(--lealtix-slate-400);
+        }
+      }
+
+      .flex {
+        align-items: center;
+        gap: 1rem;
+      }
+    }
+
+    .p-datatable-thead > tr > th {
+      background: var(--lealtix-slate-100);
+      color: var(--lealtix-slate-800);
+      font-weight: 600;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 1rem 1.25rem;
+      border-bottom: 2px solid var(--lealtix-slate-200);
+
+      .p-sortable-column-icon {
+        color: var(--lealtix-slate-600);
+        margin-left: 0.5rem;
+      }
+
+      &:hover {
+        background: var(--lealtix-slate-200);
+      }
+    }
+
+    .p-datatable-tbody > tr {
+      transition: all 0.2s ease;
+
+      &.fixed-row {
+        &:hover {
+          background: var(--lealtix-primary-50);
+        }
+      }
+
+      > td {
+        padding: 1rem 1.25rem;
+        color: var(--lealtix-slate-700);
+        font-size: 0.9375rem;
+        border-bottom: 1px solid var(--lealtix-slate-200);
+
+        .p-tag {
+          font-weight: 600;
+          padding: 0.375rem 0.75rem;
+          border-radius: var(--lealtix-radius-md);
+          font-size: 0.8125rem;
+        }
+
+        .p-button {
+          &.p-button-rounded {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: var(--lealtix-radius-full);
+            transition: all 0.2s ease;
+
+            &:hover {
+              transform: scale(1.1);
+            }
+
+            &.p-button-outlined {
+              border: 1.5px solid var(--lealtix-slate-300);
+
+              &:hover {
+                background: var(--lealtix-slate-50);
+                border-color: var(--lealtix-primary-500);
+              }
+            }
+
+            &.p-button-danger {
+              &.p-button-outlined {
+                color: #dc2626 !important;
+                border-color: #fca5a5 !important;
+                background: transparent !important;
+
+                &:hover {
+                  background-color: #fee2e2 !important;
+                  border-color: #f87171 !important;
+                  color: #b91c1c !important;
+                  transform: scale(1.1) translateY(-1px) !important;
+                  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2) !important;
+                }
+
+                &:active {
+                  background-color: #fecaca !important;
+                  transform: scale(1.05) translateY(0) !important;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .p-datatable-emptymessage > td {
+      padding: 3rem 1.5rem;
+      text-align: center;
+
+      .flex-column {
+        i {
+          color: var(--lealtix-slate-300);
+        }
+
+        h3 {
+          color: var(--lealtix-slate-700);
+          margin: 1rem 0 0.5rem;
+        }
+
+        p {
+          color: var(--lealtix-slate-500);
+        }
+      }
+    }
+  }
+
+  /* === PAGINADOR === */
+  .p-paginator {
+    background: var(--lealtix-slate-50);
+    border-top: 1px solid var(--lealtix-slate-200);
+    padding: 0.75rem 1rem;
+    border-radius: 0 0 var(--lealtix-radius-lg) var(--lealtix-radius-lg);
+
+    .p-paginator-rpp {
+      display: inline-flex !important;
+      align-items: center;
+      gap: 0.5rem;
+      margin-right: 1rem;
+
+      .p-paginator-rpp-label {
+        font-size: 0.875rem;
+        color: var(--lealtix-slate-600);
+        white-space: nowrap;
+        font-weight: 500;
+      }
+
+      .p-select {
+        width: auto !important;
+        min-width: 70px;
+        border-radius: var(--lealtix-radius-md);
+        border-color: var(--lealtix-slate-300);
+
+        .p-select-label {
+          padding: 0.375rem 0.75rem;
+          font-size: 0.875rem;
+          color: var(--lealtix-slate-700);
+        }
+      }
+    }
+
+    .p-paginator-current {
+      margin: 0 0.5rem;
+      font-size: 0.875rem;
+      color: var(--lealtix-slate-600);
+      white-space: nowrap;
+      font-weight: 500;
+    }
+
+    .p-paginator-pages {
+      .p-paginator-page {
+        min-width: 2.25rem;
+        height: 2.25rem;
+        border-radius: var(--lealtix-radius-md);
+        color: var(--lealtix-slate-700);
+        font-weight: 500;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: var(--lealtix-primary-50);
+          color: var(--lealtix-primary-600);
+        }
+
+        &.p-paginator-page-selected {
+          background: var(--lealtix-primary-500);
+          color: white;
+          box-shadow: var(--lealtix-shadow-sm);
+        }
+      }
+    }
+
+    .p-paginator-first,
+    .p-paginator-prev,
+    .p-paginator-next,
+    .p-paginator-last {
+      min-width: 2.25rem;
+      height: 2.25rem;
+      border-radius: var(--lealtix-radius-md);
+      color: var(--lealtix-slate-600);
+      transition: all 0.2s ease;
+
+      &:hover:not(:disabled) {
+        background: var(--lealtix-primary-50);
+        color: var(--lealtix-primary-600);
+      }
+
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  /* === LOADING OVERLAY === */
+  .global-loading-overlay {
+    position: relative;
+  }
+
+  .global-loading-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(4px);
+    z-index: 10;
+    border-radius: var(--lealtix-radius-lg);
+  }
+
+  .global-loading-spinner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 11;
+    pointer-events: none;
+
+    .p-progress-spinner {
+      width: 60px;
+      height: 60px;
+    }
+  }
+
+  /* === DIÁLOGO DE CONFIRMACIÓN === */
+  .p-confirmdialog {
+    border-radius: var(--lealtix-radius-xl);
+    box-shadow: var(--lealtix-shadow-2xl);
+    overflow: hidden;
+    border: 1px solid var(--lealtix-slate-200);
+
+    .p-dialog-header {
+      background: linear-gradient(135deg, var(--lealtix-slate-50) 0%, var(--lealtix-slate-100) 100%);
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--lealtix-slate-200);
+
+      .p-dialog-title {
+        color: var(--lealtix-slate-900);
+        font-weight: 700;
+        font-size: 1.125rem;
+      }
+
+      .p-dialog-header-icon {
+        color: var(--lealtix-slate-500);
+
+        &:hover {
+          background: var(--lealtix-slate-200);
+          color: var(--lealtix-slate-700);
+        }
+      }
+    }
+
+    .p-dialog-content {
+      padding: 1.5rem;
+      color: var(--lealtix-slate-700);
+
+      .p-confirm-dialog-icon {
+        color: #f59e0b;
+        font-size: 2rem;
+      }
+
+      .p-confirm-dialog-message {
+        margin-left: 1rem;
+        font-size: 0.9375rem;
+      }
+    }
+
+    .p-dialog-footer {
+      padding: 1rem 1.5rem;
+      background: var(--lealtix-slate-50);
+      border-top: 1px solid var(--lealtix-slate-200);
+
+      .p-button {
+        border-radius: var(--lealtix-radius-md);
+        font-weight: 500;
+        padding: 0.625rem 1.25rem;
+        transition: all 0.2s ease;
+
+        &.p-button-text {
+          color: var(--lealtix-slate-600);
+
+          &:hover {
+            background: var(--lealtix-slate-200);
+            color: var(--lealtix-slate-700);
+          }
+        }
+
+        &.p-button-danger {
+          background: #dc2626 !important;
+          border-color: #dc2626 !important;
+          color: white !important;
+
+          &:hover {
+            background: #b91c1c !important;
+            border-color: #b91c1c !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3) !important;
+          }
+
+          &:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2) !important;
+          }
+        }
+      }
+    }
+  }
+
+  /* === MODAL DE CARGA DE ARCHIVO === */
+  .p-dialog {
+    border-radius: var(--lealtix-radius-xl);
+    overflow: hidden;
+    box-shadow: var(--lealtix-shadow-2xl);
+    border: 1px solid var(--lealtix-slate-200);
+
+    .p-dialog-header {
+      background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%);
+      color: white;
+      padding: 1.25rem 1.5rem;
+
+      .p-dialog-title {
+        font-weight: 700;
+        font-size: 1.125rem;
+      }
+
+      .p-dialog-header-icon {
+        color: white;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+      }
+    }
+
+    .p-dialog-content {
+      padding: 1.5rem;
+
+      .flex-column {
+        i {
+          color: var(--lealtix-primary-500);
+        }
+
+        .font-medium {
+          color: var(--lealtix-slate-900);
+          font-weight: 600;
+        }
+
+        small {
+          color: var(--lealtix-slate-500);
+        }
+
+        p {
+          color: var(--lealtix-slate-600);
+          line-height: 1.5;
+        }
+      }
+    }
+
+    .p-dialog-footer {
+      padding: 1rem 1.5rem;
+      background: var(--lealtix-slate-50);
+      border-top: 1px solid var(--lealtix-slate-200);
+
+      .p-button {
+        border-radius: var(--lealtix-radius-md);
+        font-weight: 500;
+        transition: all 0.2s ease;
+
+        &:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: var(--lealtix-shadow-md);
+        }
+
+        &.p-button-danger {
+          background: #dc2626 !important;
+          border-color: #dc2626 !important;
+          color: white !important;
+
+          &:hover {
+            background: #b91c1c !important;
+            border-color: #b91c1c !important;
+            box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3) !important;
+          }
+
+          &:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2) !important;
+          }
+        }
+      }
+    }
+  }
+
+  /* === TOAST === */
+  .p-toast {
+    .p-toast-message {
+      border-radius: var(--lealtix-radius-lg);
+      box-shadow: var(--lealtix-shadow-xl);
+      border: 1px solid var(--lealtix-slate-200);
+
+      .p-toast-message-content {
+        .p-toast-message-icon {
+          font-size: 1.5rem;
+        }
+
+        .p-toast-summary {
+          font-weight: 600;
+          font-size: 1rem;
+        }
+
+        .p-toast-detail {
+          font-size: 0.875rem;
+        }
+      }
+    }
+  }
+}
+
+:root[class*='app-dark'],
+.app-dark {
+  .p-toolbar {
+    background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.015) 100%) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+
+    .p-button-outlined {
+      background: rgba(255,255,255,0.04) !important;
+      border-color: rgba(255,255,255,0.2) !important;
+      color: #cbd2e0 !important;
+
+      &:hover:not(:disabled) {
+        background: rgba(255,255,255,0.08) !important;
+        border-color: var(--lealtix-primary-400) !important;
+        color: var(--lealtix-primary-300) !important;
+      }
+    }
+  }
+
+  .p-datatable {
+    border-color: rgba(255,255,255,0.08) !important;
+
+    .p-datatable-thead > tr > th {
+      background: rgba(255,255,255,0.03) !important;
+      color: #a8b0c0 !important;
+      border-bottom-color: rgba(255,255,255,0.1) !important;
+
+      .p-sortable-column-icon {
+        color: #9aa3b5 !important;
+      }
+
+      &:hover {
+        background: rgba(255,255,255,0.06) !important;
+      }
+    }
+
+    .p-datatable-tbody > tr {
+      &.fixed-row:hover {
+        background: rgba(99,102,241,0.08) !important;
+      }
+
+      > td {
+        color: #cbd2e0 !important;
+        border-bottom-color: rgba(255,255,255,0.05) !important;
+
+        .p-button.p-button-rounded.p-button-outlined {
+          border-color: rgba(255,255,255,0.2) !important;
+
+          &:hover {
+            background: rgba(255,255,255,0.06) !important;
+            border-color: var(--lealtix-primary-400) !important;
+          }
+        }
+
+        .p-button.p-button-rounded.p-button-outlined.p-button-danger {
+          color: #f87171 !important;
+          border-color: #fca5a5 !important;
+
+          &:hover {
+            background-color: rgba(239,68,68,0.15) !important;
+            border-color: #f87171 !important;
+            color: #fca5a5 !important;
+          }
+
+          &:active {
+            background-color: rgba(239,68,68,0.25) !important;
+            color: #fecaca !important;
+          }
+        }
+      }
+    }
+
+    .p-datatable-emptymessage > td {
+      .flex-column {
+        h3 {
+          color: #e6e8ef !important;
+        }
+
+        p {
+          color: #9aa3b5 !important;
+        }
+      }
+    }
+  }
+
+  .p-paginator {
+    .p-paginator-rpp {
+      .p-paginator-rpp-label {
+        color: #9aa3b5 !important;
+      }
+
+      .p-select {
+        border-color: rgba(255,255,255,0.15) !important;
+
+        .p-select-label {
+          color: #cbd2e0 !important;
+        }
+      }
+    }
+  }
+
+  .global-loading-backdrop {
+    background: rgba(9,9,14,0.7) !important;
+  }
+
+  .p-confirmdialog {
+    border-color: rgba(255,255,255,0.1) !important;
+
+    .p-dialog-header {
+      background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.015) 100%) !important;
+      border-bottom-color: rgba(255,255,255,0.08) !important;
+
+      .p-dialog-header-icon {
+        color: #9aa3b5 !important;
+
+        &:hover {
+          background: rgba(255,255,255,0.06) !important;
+          color: #ffffff !important;
+        }
+      }
+    }
+
+    .p-dialog-content {
+      color: #cbd2e0 !important;
+    }
+
+    .p-dialog-footer {
+      background: rgba(255,255,255,0.02) !important;
+      border-top-color: rgba(255,255,255,0.08) !important;
+
+      .p-button.p-button-text {
+        color: #9aa3b5 !important;
+
+        &:hover {
+          background: rgba(255,255,255,0.06) !important;
+          color: #ffffff !important;
+        }
+      }
+    }
+  }
+
+  .p-dialog {
+    border-color: rgba(255,255,255,0.1) !important;
+
+    .p-dialog-content {
+      .flex-column {
+        small {
+          color: #9aa3b5 !important;
+        }
+      }
+    }
+
+    .p-dialog-footer {
+      background: rgba(255,255,255,0.02) !important;
+      border-top-color: rgba(255,255,255,0.08) !important;
+    }
+  }
+}

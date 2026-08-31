@@ -1,0 +1,127 @@
+<p-dialog
+  [visible]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true"
+  [closable]="!loading"
+  [header]="'Cerrar Comanda'"
+  [style]="{ width: '100%', 'max-width': '640px' }"
+  styleClass="close-order-dialog"
+  (onHide)="onClose()"
+>
+  <ng-container *ngIf="order as currentOrder">
+    <div class="close-order-header-summary">
+      <div class="summary-grid">
+        <div>
+          <div class="summary-label">ID de orden</div>
+          <div class="summary-value">#{{ currentOrder.id.slice(0, 8).toUpperCase() }}</div>
+        </div>
+        <div>
+          <div class="summary-label">Cliente</div>
+          <div class="summary-value">{{ currentOrder.customerName ?? currentOrder.nombre ?? 'Cliente General' }}</div>
+        </div>
+      </div>
+
+      <div class="summary-status-and-total">
+        <p-tag [value]="getStatusLabel(currentOrder.estado)" [styleClass]="getStatusClass(currentOrder.estado)"></p-tag>
+        <div>
+          <div class="summary-label">Total a pagar</div>
+          <div class="summary-total">${{ totalToPay | number:'1.2-2' }}</div>
+        </div>
+      </div>
+    </div>
+
+    <p-divider></p-divider>
+
+    <div class="items-wrapper">
+      <div class="summary-label mb-2">Items de la orden</div>
+      <div *ngIf="currentOrder.items?.length; else noItemsTemplate" class="items-list">
+        <div *ngFor="let item of currentOrder.items; trackBy: trackByOrderItem" class="item-row">
+          <div class="item-main">
+            <span class="item-name">{{ item.productName ?? item.prod ?? ('Producto #' + item.productId) }}</span>
+            <span class="item-qty">x{{ item.cantidad }}</span>
+          </div>
+          <span class="item-price">${{ (((item.precioUnitario || item.precio || 0)) * item.cantidad) | number:'1.2-2' }}</span>
+        </div>
+      </div>
+      <ng-template #noItemsTemplate>
+        <div class="no-items">No hay items disponibles en esta orden.</div>
+      </ng-template>
+    </div>
+
+    <p-divider></p-divider>
+
+    <form [formGroup]="form" class="payment-form" (ngSubmit)="onConfirmPayment()">
+      <div class="summary-label mb-2">Método de pago</div>
+      <div class="payment-method-grid">
+        <button
+          *ngFor="let method of paymentMethods"
+          type="button"
+          class="payment-method-btn"
+          [class.active]="selectedMethod === method.value"
+          (click)="form.get('method')?.setValue(method.value)"
+          [disabled]="loading"
+        >
+          <i [class]="method.icon"></i>
+          <div class="method-meta">
+            <span class="method-title">{{ method.label }}</span>
+            <span class="method-hint">{{ method.hint }}</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="mt-3">
+        <label for="payment-reference" class="summary-label">Referencia de pago</label>
+        <input
+          id="payment-reference"
+          pInputText
+          formControlName="reference"
+          class="w-full mt-1"
+          [placeholder]="selectedMethod === 'CARD' ? 'AUTH-12345' : selectedMethod === 'TRANSFER' ? 'UUID / referencia bancaria' : selectedMethod === 'MIXED' ? 'Ej: 50 CASH + 50 CARD' : 'No requerida para CASH'"
+          [disabled]="loading || !isReferenceRequired"
+        />
+
+        <small
+          *ngIf="form.get('reference')?.invalid && (form.get('reference')?.dirty || form.get('reference')?.touched)"
+          class="field-error"
+        >
+          <ng-container *ngIf="form.get('reference')?.errors?.['required']">
+            La referencia es obligatoria para este método de pago.
+          </ng-container>
+          <ng-container *ngIf="form.get('reference')?.errors?.['pattern']">
+            Para CARD usa formato AUTH-xxxxx.
+          </ng-container>
+          <ng-container *ngIf="form.get('reference')?.errors?.['minlength']">
+            La referencia debe tener al menos 6 caracteres.
+          </ng-container>
+        </small>
+      </div>
+
+      <p-message *ngIf="errorMessage" severity="error" [text]="errorMessage" styleClass="mt-3"></p-message>
+      <p-message *ngIf="successMessage" severity="success" [text]="successMessage" styleClass="mt-3"></p-message>
+
+      <div class="footer-actions mt-4">
+        <p-button
+          label="Cancelar"
+          icon="pi pi-times"
+          severity="secondary"
+          [outlined]="true"
+          [disabled]="loading"
+          (onClick)="onClose()"
+        ></p-button>
+
+        <p-button
+          type="submit"
+          label="Confirmar Pago"
+          icon="pi pi-check"
+          severity="success"
+          [disabled]="loading || form.invalid"
+        ></p-button>
+      </div>
+
+      <div *ngIf="loading" class="loading-overlay">
+        <p-progressSpinner strokeWidth="4" [style]="{ width: '42px', height: '42px' }"></p-progressSpinner>
+        <span>Procesando pago...</span>
+      </div>
+    </form>
+  </ng-container>
+</p-dialog>

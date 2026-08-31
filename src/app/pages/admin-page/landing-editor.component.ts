@@ -12,6 +12,7 @@ import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputGroupModule } from 'primeng/inputgroup';
 import { TextareaModule } from 'primeng/textarea';
+import { ToggleSwitch } from 'primeng/toggleswitch';
 import { StepperModule } from 'primeng/stepper';
 import { MessageModule } from 'primeng/message';
 import { Tenant } from '../model/tenat.component';
@@ -29,7 +30,7 @@ import { TouchTooltipDirective } from '@/shared/directives/touch-tooltip.directi
 @Component({
     selector: 'app-landing-editor',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, FileUploadModule, InputTextModule, TextareaModule, EditorModule, CardModule, ButtonModule, InputGroupModule, StepperModule, MessageModule, DialogModule, TooltipModule, PanelModule, ConfettiComponent, TouchTooltipDirective ],
+    imports: [CommonModule, ReactiveFormsModule, FileUploadModule, InputTextModule, TextareaModule, EditorModule, CardModule, ButtonModule, InputGroupModule, ToggleSwitch, StepperModule, MessageModule, DialogModule, TooltipModule, PanelModule, ConfettiComponent, TouchTooltipDirective ],
     templateUrl: './landing-editor.component.html',
     styleUrls: ['./landing-editor.component.scss']
 })
@@ -83,6 +84,7 @@ export class LandingEditorComponent implements OnInit {
             phone: ['', Validators.required],
             email: ['', [Validators.email]],
             schedule: ['', Validators.required],
+            kitchenModuleEnabled: [false],
             facebook: [''],
             instagram: [''],
             tiktok: [''],
@@ -115,21 +117,20 @@ export class LandingEditorComponent implements OnInit {
         }
 
         this.email = currentUser.email;
-        this.userId = currentUser.userId;
+        this.userId = currentUser.id;
 
-        this.loadTenantInformation();
+        this.loadTenantInformation(currentUser.tenantId);
     }
 
-    private loadTenantInformation(): void {
-        if (!this.email) {
+    private loadTenantInformation(tenantId?: number): void {
+        if (!tenantId) {
             this.openSetupPrompt();
             return;
         }
 
-        this.tenantService.getTenantByEmail(this.email).subscribe({
-            next: (response: any) => {
-                const tenant = response?.object;
-                const notFound = response?.code === 404 || !tenant;
+        this.tenantService.getTenantById(tenantId).subscribe({
+            next: (tenant: any) => {
+                const notFound = !tenant;
 
                 if (notFound) {
                     this.openSetupPrompt();
@@ -164,6 +165,7 @@ export class LandingEditorComponent implements OnInit {
             phone: tenantData.telefono,
             email: tenantData.bussinessEmail,
             schedule: tenantData.schedules,
+            kitchenModuleEnabled: this.resolveKitchenModuleValue(tenantData),
             facebook: tenantData.facebook,
             instagram: tenantData.instagram,
             tiktok: tenantData.tiktok,
@@ -303,6 +305,7 @@ export class LandingEditorComponent implements OnInit {
             telefono: form.phone,
             bussinessEmail: form.email,
             schedules: form.schedule,
+            kitchenModuleEnabled: !!form.kitchenModuleEnabled,
             facebook: form.facebook,
             instagram: form.instagram,
             tiktok: form.tiktok,
@@ -388,6 +391,7 @@ export class LandingEditorComponent implements OnInit {
         this.tenantService.createTenant(tenantData).subscribe({
             next: (response) => {
                 console.log('Tenant created successfully:', response);
+                this.tenantService.invalidateTenantByEmailCache(this.email);
                 // If backend returns created/updated tenant id, keep it for future updates
                 try {
                     const created = response?.object || response;
@@ -412,6 +416,29 @@ export class LandingEditorComponent implements OnInit {
                 console.error('Error creating tenant:', error);
             }
         });
+    }
+
+    private resolveKitchenModuleValue(tenantData: any): boolean {
+        const candidate =
+            tenantData?.kitchenModuleEnabled ??
+            tenantData?.has_kitchen_module ??
+            tenantData?.hasKitchenModule ??
+            tenantData?.kitchenEnabled;
+
+        if (typeof candidate === 'boolean') {
+            return candidate;
+        }
+
+        if (typeof candidate === 'number') {
+            return candidate === 1;
+        }
+
+        if (typeof candidate === 'string') {
+            const normalized = candidate.trim().toLowerCase();
+            return normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'si';
+        }
+
+        return false;
     }
 
     onFileSelect(event: any) {
@@ -462,8 +489,104 @@ export class LandingEditorComponent implements OnInit {
 
 
     save() {
-        this.confettiService.trigger({ action: 'burst' });
-        this.showCongrats = true;
+        if (this.landingForm.invalid) {
+            this.landingForm.markAllAsTouched();
+            return;
+        }
+
+        const form = this.landingForm.value;
+        const logoFile = this.landingForm.get('logo')?.value;
+
+        const tenantData: any = {
+            id: this.tenantId,
+            userId: this.userId,
+            nombreNegocio: form.businessName,
+            slogan: form.slogan,
+            history: form.history,
+            vision: form.vision,
+            direccion: form.address,
+            telefono: form.phone,
+            bussinessEmail: form.email,
+            schedules: form.schedule,
+            kitchenModuleEnabled: !!form.kitchenModuleEnabled,
+            facebook: form.facebook,
+            instagram: form.instagram,
+            tiktok: form.tiktok,
+            linkedin: form.linkedin,
+            x: form.x
+        };
+
+        if (typeof form.logo === 'string' && form.logo) {
+            tenantData.logoUrl = form.logo;
+        }
+
+        const persist = () => {
+            const request = this.tenantService.createTenant(tenantData);
+
+            request.subscribe({
+                next: (response: any) => {
+                    this.tenantService.invalidateTenantByEmailCache(this.email);
+                    try {
+                        const saved = response?.object || response;
+                        if (saved?.id) {
+                            this.tenantId = saved.id;
+                        }
+                        const returnedLogo = saved?.logoUrl || saved?.logo;
+                        if (returnedLogo) {
+                            this.landingForm.patchValue({ logo: returnedLogo });
+                            if (this.logoObjectUrl) {
+                                URL.revokeObjectURL(this.logoObjectUrl);
+                                this.logoObjectUrl = null;
+                            }
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+                    this.confettiService.trigger({ action: 'burst' });
+                    this.showCongrats = true;
+                },
+                error: (error) => {
+                    console.error('Error guardando la landing:', error);
+                }
+            });
+        };
+
+        const isFileLogo = !!logoFile && (logoFile instanceof File || logoFile instanceof Blob);
+        if (isFileLogo) {
+            this.imageService.uploadImage(logoFile as File, 'logo', this.email, form.businessName, form.slogan).subscribe({
+                next: (res: any) => {
+                    let logoUrl: string | undefined;
+                    try {
+                        if (res && typeof res === 'object') {
+                            logoUrl = res.logoUrl || res.url || (res.object && (res.object.logoUrl || res.object.url));
+                        } else if (typeof res === 'string') {
+                            if (/^https?:\/\//.test(res)) {
+                                logoUrl = res;
+                            } else {
+                                try {
+                                    const parsed = JSON.parse(res);
+                                    logoUrl = parsed.logoUrl || parsed.url;
+                                } catch (e) {
+                                    // not JSON
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+                    if (logoUrl) {
+                        tenantData.logoUrl = logoUrl;
+                    }
+                    persist();
+                },
+                error: (error) => {
+                    console.error('Error subiendo el logo:', error);
+                    persist();
+                }
+            });
+        } else {
+            persist();
+        }
     }
 
     goToMenuConfig() {
@@ -490,65 +613,41 @@ export class LandingEditorComponent implements OnInit {
 
         forkJoin({
             products: this.productService.getProductsByTenantId(this.tenantId),
-            welcomeStatus: this.campaignService.getWelcomeCampaignStatus(this.tenantId)
+            campaigns: this.campaignService.getByBusiness(this.tenantId)
         }).subscribe({
-            next: ({ products, welcomeStatus }) => {
+            next: ({ products, campaigns }) => {
                 const productCount = Array.isArray(products) ? products.length : (products?.object?.length ?? 0);
                 const hasProducts = productCount > 0;
-                const campaignExists = welcomeStatus?.exists ?? false;
-                const campaignStatus = welcomeStatus?.status;
+                const welcomeCampaigns = (campaigns || []).filter(c => c.template?.id === 1);
+                const active = welcomeCampaigns.some(c => c.status === 'ACTIVE');
+                const draft = !active && welcomeCampaigns.some(c => c.status === 'DRAFT');
 
-                console.debug('[Banner] tenantId=', this.tenantId, 'productCount=', productCount, 'welcomeStatus=', welcomeStatus);
-
-                if (!hasProducts || (campaignExists && campaignStatus === 'ACTIVE')) {
+                if (!hasProducts || active) {
                     this.showWelcomeBanner.set(false);
                     return;
                 }
 
-                if (!campaignExists) {
+                if (welcomeCampaigns.length === 0) {
                     this.showWelcomeBanner.set(true);
                     this.bannerMessage.set({
                         title: 'Tu negocio ya está listo.',
                         description: 'Ahora configura tu campaña de bienvenida para empezar a recibir clientes.',
                         buttonText: 'Configurar campaña de bienvenida'
                     });
-                } else if (campaignStatus === 'DRAFT') {
+                } else if (draft) {
                     this.showWelcomeBanner.set(true);
                     this.bannerMessage.set({
                         title: '¡Ya casi está todo listo!',
                         description: 'Tienes una campaña de bienvenida guardada como borrador. Actívala para comenzar a recibir clientes.',
                         buttonText: 'Activar campaña de bienvenida'
                     });
+                } else {
+                    this.showWelcomeBanner.set(false);
                 }
             },
             error: (err) => {
-                console.warn('[Banner][landing-editor] welcome-status failed, falling back to campaigns list', err);
-                this.productService.getProductsByTenantId(this.tenantId).subscribe({
-                    next: (productsResp) => {
-                        const productCount = Array.isArray(productsResp) ? productsResp.length : (productsResp?.object?.length ?? 0);
-                        const hasProducts = productCount > 0;
-
-                        this.campaignService.getByBusiness(this.tenantId).subscribe({
-                            next: (campaigns) => {
-                                const welcomeCampaigns = (campaigns || []).filter(c => c.template?.id === 1);
-                                const active = welcomeCampaigns.some(c => c.status === 'ACTIVE');
-                                const draft = !active && welcomeCampaigns.some(c => c.status === 'DRAFT');
-
-                                if (!hasProducts || active) { this.showWelcomeBanner.set(false); return; }
-
-                                if (welcomeCampaigns.length === 0) {
-                                    this.showWelcomeBanner.set(true);
-                                    this.bannerMessage.set({ title: 'Tu negocio ya está listo.', description: 'Ahora configura tu campaña de bienvenida para empezar a recibir clientes.', buttonText: 'Configurar campaña de bienvenida' });
-                                } else if (draft) {
-                                    this.showWelcomeBanner.set(true);
-                                    this.bannerMessage.set({ title: '¡Ya casi está todo listo!', description: 'Tienes una campaña de bienvenida guardada como borrador. Actívala para comenzar a recibir clientes.', buttonText: 'Activar campaña de bienvenida' });
-                                }
-                            },
-                            error: (e2) => { console.error('[Banner][landing-editor] fallback getByBusiness failed', e2); this.showWelcomeBanner.set(false); }
-                        });
-                    },
-                    error: (e3) => { console.error('[Banner][landing-editor] fallback getProducts failed', e3); this.showWelcomeBanner.set(false); }
-                });
+                console.error('[Banner][landing-editor] campaigns check failed', err);
+                this.showWelcomeBanner.set(false);
             }
         });
     }

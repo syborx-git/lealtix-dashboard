@@ -22,6 +22,7 @@ import { CampaignResponse, CreateCampaignRequest, UpdateCampaignRequest, Campaig
 import { CampaignStatus } from '@/models/enums';
 import { CampaignService } from '../../services/campaign.service';
 import { TenantService } from '@/pages/admin-page/service/tenant.service';
+import { AuthService } from '@/auth/auth.service';
 import { CampaignDialogComponent } from '../campaign-dialog/campaign-dialog.component';
 import { ProductService } from '@/pages/products-menu/service/product.service';
 import { CampaignFormatters } from '../../utils/formatters';
@@ -57,77 +58,7 @@ interface TableColumn {
     ],
     providers: [ConfirmationService, MessageService],
     templateUrl: './campaign-list.component.html',
-    styles: [
-        `
-            :host {
-                display: block;
-            }
-
-            .min-w-200 {
-                min-width: 200px;
-            }
-
-            .w-200 {
-                width: 200px;
-            }
-
-            /* Estilos para badges de validación */
-            .validation-badge {
-                display: inline-flex;
-                align-items: center;
-                gap: 0.375rem;
-                padding: 0.25rem 0.625rem;
-                border-radius: 0.375rem;
-                font-size: 0.75rem;
-                font-weight: 600;
-                white-space: nowrap;
-                transition: all 0.2s ease;
-            }
-
-            .validation-badge i {
-                font-size: 0.875rem;
-            }
-
-            .badge-text {
-                line-height: 1;
-            }
-
-            /* Badge completa - Verde */
-            .badge-complete {
-                background-color: #10b981;
-                color: white;
-            }
-
-            .badge-complete:hover {
-                background-color: #059669;
-                transform: translateY(-1px);
-                box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
-            }
-
-            /* Badge incompleta - Naranja/Advertencia */
-            .badge-incomplete {
-                background-color: #f59e0b;
-                color: white;
-            }
-
-            .badge-incomplete:hover {
-                background-color: #d97706;
-                transform: translateY(-1px);
-                box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
-            }
-
-            /* Estilos para tooltip personalizado */
-            ::ng-deep .p-tooltip {
-                max-width: 300px;
-            }
-
-            ::ng-deep .p-tooltip .p-tooltip-text {
-                white-space: pre-line;
-                line-height: 1.5;
-                font-size: 0.875rem;
-            }
-        `
-    ]
+    styleUrls: ['./campaign-list.component.scss']
 })
 export class CampaignListComponent implements OnInit {
     campaigns = signal<CampaignResponse[]>([]);
@@ -212,38 +143,35 @@ export class CampaignListComponent implements OnInit {
         private messageService: MessageService,
         private router: Router,
         private tenantService: TenantService,
+        private authService: AuthService,
         private productService: ProductService,
         private confettiService: ConfettiService
     ) {}
 
     ngOnInit(): void {
-        const userStr = sessionStorage.getItem('usuario') ?? localStorage.getItem('usuario');
-        if (userStr) {
-            try {
-                const userObj = JSON.parse(userStr);
-                if (userObj && userObj.userEmail) {
-                    this.email = String(userObj.userEmail || '').trim();
-                    this.userId = userObj.userId;
-                }
-            } catch (e) {
-                console.warn('Failed to parse stored usuario:', e);
-            }
+        const currentUser = this.authService.getCurrentUser();
+        if (currentUser) {
+            this.email = currentUser.email;
+            this.userId = currentUser.id;
         }
-        this.tenantService.getTenantByEmail(this.email).subscribe({
-            next: (tenant: any) => {
-                if (tenant) {
-                    this.tenantId = tenant.object.id ?? 0;
-                    this.businessId = this.tenantId;
+        const tenantId = currentUser?.tenantId;
+        if (tenantId) {
+            this.tenantService.getTenantById(tenantId).subscribe({
+                next: (tenant: any) => {
+                    if (tenant) {
+                        this.tenantId = tenant.id ?? 0;
+                        this.businessId = this.tenantId;
+                    }
+                    this.loadCampaigns();
+                    this.checkBannerConditions();
+                    // Check if we should show welcome confetti after data loads
+                    setTimeout(() => this.checkForWelcomeConfetti(), 500);
+                },
+                error: (error) => {
+                    console.error('No tenant found:');
                 }
-                this.loadCampaigns();
-                this.checkBannerConditions();
-                // Check if we should show welcome confetti after data loads
-                setTimeout(() => this.checkForWelcomeConfetti(), 500);
-            },
-            error: (error) => {
-                console.error('No tenant found:');
-            }
-        });
+            });
+        }
     }
 
     private loadCampaigns(): void {
@@ -544,65 +472,41 @@ export class CampaignListComponent implements OnInit {
 
         forkJoin({
             products: this.productService.getProductsByTenantId(this.tenantId),
-            welcomeStatus: this.campaignService.getWelcomeCampaignStatus(this.tenantId)
+            campaigns: this.campaignService.getByBusiness(this.tenantId)
         }).subscribe({
-            next: ({ products, welcomeStatus }) => {
+            next: ({ products, campaigns }) => {
                 const productCount = Array.isArray(products) ? products.length : (products?.object?.length ?? 0);
                 const hasProducts = productCount > 0;
-                const campaignExists = welcomeStatus?.exists ?? false;
-                const campaignStatus = welcomeStatus?.status;
+                const welcomeCampaigns = (campaigns || []).filter(c => c.template?.id === 1);
+                const active = welcomeCampaigns.some(c => c.status === 'ACTIVE');
+                const draft = !active && welcomeCampaigns.some(c => c.status === 'DRAFT');
 
-                console.debug('[Banner][campaign-list] tenantId=', this.tenantId, 'productCount=', productCount, 'welcomeStatus=', welcomeStatus);
-
-                if (!hasProducts || (campaignExists && campaignStatus === 'ACTIVE')) {
+                if (!hasProducts || active) {
                     this.showWelcomeBanner.set(false);
                     return;
                 }
 
-                if (!campaignExists) {
+                if (welcomeCampaigns.length === 0) {
                     this.showWelcomeBanner.set(true);
                     this.bannerMessage.set({
                         title: 'Tu negocio ya está listo.',
                         description: 'Ahora configura tu campaña de bienvenida para empezar a recibir clientes.',
                         buttonText: 'Configurar campaña de bienvenida'
                     });
-                } else if (campaignStatus === 'DRAFT') {
+                } else if (draft) {
                     this.showWelcomeBanner.set(true);
                     this.bannerMessage.set({
                         title: '¡Ya casi está todo listo!',
                         description: 'Tienes una campaña de bienvenida guardada como borrador. Actívala para comenzar a recibir clientes.',
                         buttonText: 'Activar campaña de bienvenida'
                     });
+                } else {
+                    this.showWelcomeBanner.set(false);
                 }
             },
             error: (err) => {
-                console.warn('[Banner][campaign-list] welcome-status failed, falling back to campaigns list', err);
-                this.productService.getProductsByTenantId(this.tenantId).subscribe({
-                    next: (productsResp) => {
-                        const productCount = Array.isArray(productsResp) ? productsResp.length : (productsResp?.object?.length ?? 0);
-                        const hasProducts = productCount > 0;
-
-                        this.campaignService.getByBusiness(this.tenantId).subscribe({
-                            next: (campaigns) => {
-                                const welcomeCampaigns = (campaigns || []).filter(c => c.template?.id === 1);
-                                const active = welcomeCampaigns.some(c => c.status === 'ACTIVE');
-                                const draft = !active && welcomeCampaigns.some(c => c.status === 'DRAFT');
-
-                                if (!hasProducts || active) { this.showWelcomeBanner.set(false); return; }
-
-                                if (welcomeCampaigns.length === 0) {
-                                    this.showWelcomeBanner.set(true);
-                                    this.bannerMessage.set({ title: 'Tu negocio ya está listo.', description: 'Ahora configura tu campaña de bienvenida para empezar a recibir clientes.', buttonText: 'Configurar campaña de bienvenida' });
-                                } else if (draft) {
-                                    this.showWelcomeBanner.set(true);
-                                    this.bannerMessage.set({ title: '¡Ya casi está todo listo!', description: 'Tienes una campaña de bienvenida guardada como borrador. Actívala para comenzar a recibir clientes.', buttonText: 'Activar campaña de bienvenida' });
-                                }
-                            },
-                            error: (e2) => { console.error('[Banner][campaign-list] fallback getByBusiness failed', e2); this.showWelcomeBanner.set(false); }
-                        });
-                    },
-                    error: (e3) => { console.error('[Banner][campaign-list] fallback getProducts failed', e3); this.showWelcomeBanner.set(false); }
-                });
+                console.error('[Banner][campaign-list] campaigns check failed', err);
+                this.showWelcomeBanner.set(false);
             }
         });
     }
