@@ -4,7 +4,7 @@
   <div class="kpi-section">
     <div class="kpi-grid">
 
-      <p-card class="kpi-card kpi-blue animate-fade-in-up animate-delay-1">
+      <p-card class="kpi-card kpi-blue kpi-clickable animate-fade-in-up animate-delay-1" (click)="irAClientes()">
         <ng-container *ngIf="!loading(); else kpiSkeleton">
           <div class="kpi-content">
             <div class="kpi-top">
@@ -17,7 +17,7 @@
         </ng-container>
       </p-card>
 
-      <p-card class="kpi-card kpi-green animate-fade-in-up animate-delay-2">
+      <p-card class="kpi-card kpi-green kpi-clickable animate-fade-in-up animate-delay-2" (click)="openVentasModal()">
         <ng-container *ngIf="!loading(); else kpiSkeleton">
           <div class="kpi-content">
             <div class="kpi-top">
@@ -30,7 +30,7 @@
         </ng-container>
       </p-card>
 
-      <p-card class="kpi-card kpi-amber animate-fade-in-up animate-delay-3">
+      <p-card class="kpi-card kpi-amber kpi-clickable animate-fade-in-up animate-delay-3" (click)="openCostosModal()">
         <ng-container *ngIf="!loading(); else kpiSkeleton">
           <div class="kpi-content">
             <div class="kpi-top">
@@ -38,12 +38,12 @@
               <div class="kpi-icon-badge"><i class="pi pi-wallet"></i></div>
             </div>
             <div class="kpi-value">{{ costos() | currency:'USD':'symbol':'1.0-0' }}</div>
-            <div class="kpi-sub"><i class="pi pi-percentage"></i> ~55% de ventas</div>
+            <div class="kpi-sub"><i class="pi pi-percentage"></i> ~{{ porcentajeCostoTotal() }}% de ventas</div>
           </div>
         </ng-container>
       </p-card>
 
-      <p-card class="kpi-card kpi-violet animate-fade-in-up animate-delay-4">
+      <p-card class="kpi-card kpi-violet kpi-clickable animate-fade-in-up animate-delay-4" (click)="openGananciasModal()">
         <ng-container *ngIf="!loading(); else kpiSkeleton">
           <div class="kpi-content">
             <div class="kpi-top">
@@ -52,6 +52,19 @@
             </div>
             <div class="kpi-value">{{ ganancias() | currency:'USD':'symbol':'1.0-0' }}</div>
             <div class="kpi-sub"><i class="pi pi-trending-up"></i> Ventas - Costos</div>
+          </div>
+        </ng-container>
+      </p-card>
+
+      <p-card class="kpi-card kpi-red kpi-clickable animate-fade-in-up animate-delay-5" (click)="openStockModal()">
+        <ng-container *ngIf="!loading() && !insumosStockMinimoLoading(); else kpiSkeleton">
+          <div class="kpi-content">
+            <div class="kpi-top">
+              <span class="kpi-label">Insumos en Stock mínimo</span>
+              <div class="kpi-icon-badge"><i class="pi pi-exclamation-triangle"></i></div>
+            </div>
+            <div class="kpi-value">{{ insumosEnStockMinimo().length | number }}</div>
+            <div class="kpi-sub"><i class="pi pi-box"></i> Necesario hacer restock</div>
           </div>
         </ng-container>
       </p-card>
@@ -163,5 +176,197 @@
       <span>{{ error() }}</span>
     </div>
   </p-card>
+
+  <!-- Modal: Insumos en stock mínimo -->
+  <p-dialog header="Insumos en Stock mínimo" [visible]="stockModalVisible()" [style]="{ width: '720px' }" [modal]="true" [dismissableMask]="true" (visibleChange)="stockModalVisible.set($event)">
+    <ng-container *ngIf="insumosEnStockMinimo().length > 0; else sinInsumos">
+      <p-table [value]="insumosEnStockMinimo()" [paginator]="true" [rows]="6" [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} insumos" styleClass="p-datatable-sm stock-table">
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Insumo</th>
+            <th style="width: 16%">Stock actual</th>
+            <th style="width: 16%">Stock mínimo</th>
+            <th style="width: 20%">Acción</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-insumo>
+          <tr>
+            <td>
+              <div class="font-medium text-900">{{ insumo.nombre }}</div>
+              <div class="text-sm text-500">{{ insumo.unidad || 'pieza' }}</div>
+            </td>
+            <td>
+              <span class="stock-badge stock-low">{{ insumo.stock }}</span>
+            </td>
+            <td>
+              <div class="text-sm text-600">{{ insumo.stockMinimo }}</div>
+            </td>
+            <td>
+              <p-button label="Restock" icon="pi pi-refresh" iconPos="left" styleClass="restock-pill-btn"
+                (click)="openRestock(insumo)"></p-button>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </ng-container>
+    <ng-template #sinInsumos>
+      <div class="no-stock-empty">
+        <i class="pi pi-check-circle"></i>
+        <span>No hay insumos en stock mínimo.</span>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal: Restock de insumo -->
+  <p-dialog header="Restock de insumo" [visible]="restockVisible()" [style]="{ width: '400px' }" [modal]="true" [dismissableMask]="true" (visibleChange)="restockVisible.set($event)">
+    <div class="flex flex-col gap-3">
+      <p-message severity="info"
+        [text]="'Stock actual: ' + (restockTarget()?.stock ?? 0) + ' ' + (restockTarget()?.unidad || 'pieza')"
+        styleClass="w-full"></p-message>
+      <div>
+        <label class="block text-sm font-medium mb-1">Cantidad que llegó</label>
+        <p-inputNumber [ngModel]="restockCantidad()" (ngModelChange)="restockCantidad.set($event)" [min]="0" [step]="0.5" styleClass="w-full" />
+      </div>
+      <div *ngIf="restockTarget() && restockCantidad() > 0" class="text-sm text-600">
+        Nuevo stock: <strong>{{ (restockTarget()?.stock ?? 0) + restockCantidad() }} {{ restockTarget()?.unidad || 'pieza' }}</strong>
+      </div>
+    </div>
+    <ng-template #footer>
+      <p-button label="Cancelar" severity="secondary" [text]="true" (click)="closeRestock()"></p-button>
+      <p-button label="Actualizar stock" icon="pi pi-refresh" severity="success"
+        [disabled]="restockCantidad() <= 0" (click)="doRestock()"></p-button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal: Costos (configuraciones de porcentaje + contexto) -->
+  <p-dialog header="Costos" [visible]="costosModalVisible()" [style]="{ width: '560px' }" [modal]="true" [dismissableMask]="true" (visibleChange)="costosModalVisible.set($event)">
+    <div class="flex flex-col gap-4">
+      <div class="costs-context">
+        <i class="pi pi-info-circle"></i>
+        <span>
+          Los <strong>Costos</strong> se calculan como un porcentaje de tus <strong>ventas totales</strong>.
+          Aquí puedes configurar cuánto destinas a <strong>materia prima</strong> y a <strong>recurso humano</strong>.
+          El porcentaje restante ({{ gananciasPct() }}%) corresponde a tus ganancias.
+        </span>
+      </div>
+
+      <div class="costs-period-summary">
+        <div class="costs-line"><span>Ventas (total del periodo)</span><strong>{{ formatoMoneda(ventasBase()) }}</strong></div>
+      </div>
+
+      <div class="costs-config">
+        <div class="costs-config-row">
+          <div class="flex-1">
+            <label class="costs-label">Materia prima (%)</label>
+            <p-inputNumber [ngModel]="porcentajeMateriaPrima()" (ngModelChange)="porcentajeMateriaPrima.set($event ?? 0)"
+              [min]="0" [max]="100" [suffix]="'%'" styleClass="w-full"></p-inputNumber>
+          </div>
+          <div class="costs-result">
+            <span class="costs-result-label">Importe</span>
+            <strong>{{ formatoMoneda(costosMateriaPrima()) }}</strong>
+          </div>
+        </div>
+
+        <div class="costs-config-row">
+          <div class="flex-1">
+            <label class="costs-label">Recurso humano (%)</label>
+            <p-inputNumber [ngModel]="porcentajeRecursoHumano()" (ngModelChange)="porcentajeRecursoHumano.set($event ?? 0)"
+              [min]="0" [max]="100" [suffix]="'%'" styleClass="w-full"></p-inputNumber>
+          </div>
+          <div class="costs-result">
+            <span class="costs-result-label">Importe</span>
+            <strong>{{ formatoMoneda(costosRecursoHumano()) }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="costs-total">
+        <div><span>Total de costos</span><small>{{ porcentajeCostoTotal() }}% de ventas</small></div>
+        <strong>{{ formatoMoneda(costos()) }}</strong>
+      </div>
+
+      <p-message *ngIf="porcentajeCostoTotal() >= 100" severity="warn" text="El costo total no puede llegar a 100%; se recortará el mayor al guardar."></p-message>
+
+      <p-message severity="info" text="Nota: los porcentajes se guardan en este navegador y se aplican a la card de Costos y Ganancias."></p-message>
+    </div>
+    <ng-template #footer>
+      <p-button label="Reiniciar" severity="secondary" [text]="true" icon="pi pi-refresh" (click)="reiniciarPorcentajes()"></p-button>
+      <p-button label="Cancelar" severity="secondary" (click)="closeCostosModal()"></p-button>
+      <p-button label="Guardar" icon="pi pi-check" severity="success" (click)="guardarPorcentajes(); closeCostosModal()"></p-button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal: Ganancias (contexto de dónde sale el valor) -->
+  <p-dialog header="Ganancias" [visible]="gananciasModalVisible()" [style]="{ width: '520px' }" [modal]="true" [dismissableMask]="true" (visibleChange)="gananciasModalVisible.set($event)">
+    <div class="flex flex-col gap-4">
+      <div class="costs-context">
+        <i class="pi pi-info-circle"></i>
+        <span>
+          Las <strong>Ganancias</strong> son lo que queda de tus <strong>ventas totales</strong> después de restar los
+          <strong>costos</strong> (materia prima {{ porcentajeMateriaPrima() }}% + recurso humano {{ porcentajeRecursoHumano() }}%).
+          Si deseas ajustar estos porcentajes, configúralos en la card de <strong>Costos</strong>.
+        </span>
+      </div>
+
+      <div class="ganancias-breakdown">
+        <div class="ganancias-row"><span>Ventas totales</span><strong>{{ formatoMoneda(ventasBase()) }}</strong></div>
+        <div class="ganancias-row"><span>Costos ({{ porcentajeCostoTotal() }}%)</span><strong class="text-red-500">{{ formatoMoneda(costos()) }}</strong></div>
+        <div class="ganancias-row ganancias-result">
+          <span>Ganancias ({{ gananciasPct() }}%)</span>
+          <strong class="text-green-600">{{ formatoMoneda(ganancias()) }}</strong>
+        </div>
+      </div>
+
+      <p-message severity="info" text="Las ganancias se recalculan automáticamente según los porcentajes configurados."></p-message>
+    </div>
+    <ng-template #footer>
+      <p-button label="Cerrar" (click)="closeGananciasModal()"></p-button>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal: Ventas totales (tickets de los últimos 2 meses) -->
+  <p-dialog header="Ventas Totales — Tickets" [visible]="ventasModalVisible()" [style]="{ width: '760px' }" [modal]="true" [dismissableMask]="true" (visibleChange)="ventasModalVisible.set($event)">
+    <ng-container *ngIf="ventasTicketsLoading(); else ticketsLoaded">
+      <div class="p-3">
+        <p-skeleton width="100%" height="40px" styleClass="mb-2"></p-skeleton>
+        <p-skeleton width="100%" height="40px" styleClass="mb-2"></p-skeleton>
+        <p-skeleton width="100%" height="40px"></p-skeleton>
+      </div>
+    </ng-container>
+    <ng-template #ticketsLoaded>
+      <ng-container *ngIf="ventasTickets().length > 0; else sinTickets">
+        <p-table [value]="ventasTickets()" [paginator]="true" [rows]="8" [showCurrentPageReport]="true"
+          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} tickets" styleClass="p-datatable-sm stock-table">
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="width: 38%">Folio</th>
+              <th style="width: 37%">Fecha</th>
+              <th style="width: 25%">Total</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-ticket>
+            <tr>
+              <td>
+                <span class="folio-chip">{{ ticket.id }}</span>
+              </td>
+              <td class="text-sm text-600">{{ formatoTicketFecha(ticket.fecha) }}</td>
+              <td>
+                <span class="ticket-total">{{ formatoTicketTotal(ticket.total) }}</span>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </ng-container>
+      <ng-template #sinTickets>
+        <div class="no-stock-empty">
+          <i class="pi pi-receipt"></i>
+          <span>No hay tickets registrados en los últimos 2 meses.</span>
+        </div>
+      </ng-template>
+    </ng-template>
+  </p-dialog>
+
+  <p-toast></p-toast>
 
 </div>

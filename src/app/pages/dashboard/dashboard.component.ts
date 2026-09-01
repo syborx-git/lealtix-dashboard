@@ -1,5 +1,7 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ChartModule } from 'primeng/chart';
 import { TableModule } from 'primeng/table';
@@ -8,12 +10,18 @@ import { BadgeModule } from 'primeng/badge';
 import { PaginatorModule } from 'primeng/paginator';
 import { MessageModule } from 'primeng/message';
 import { TooltipModule } from 'primeng/tooltip';
+import { DialogModule } from 'primeng/dialog';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { ButtonModule } from 'primeng/button';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
 import { forkJoin } from 'rxjs';
 import { DashboardService } from './dashboard.service';
 import { DashboardLoyaltyService } from './dashboard-loyalty.service';
 import { TenantService } from '@/pages/admin-page/service/tenant.service';
 import { AuthService } from '@/auth/auth.service';
 import { LayoutService } from '@/layout/service/layout.service';
+import { InventoryService } from '@/pages/inventario/service/inventory.service';
 import {
   TimeSeriesCountDTO,
   CouponStatsDTO,
@@ -36,11 +44,20 @@ interface Insight {
   message: string;
 }
 
+interface Insumo {
+  id: number;
+  nombre: string;
+  unidad: string;
+  stock: number;
+  stockMinimo: number;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     CardModule,
     ChartModule,
     TableModule,
@@ -48,8 +65,13 @@ interface Insight {
     BadgeModule,
     PaginatorModule,
     MessageModule,
-    TooltipModule
+    TooltipModule,
+    DialogModule,
+    InputNumberModule,
+    ButtonModule,
+    ToastModule
   ],
+  providers: [MessageService],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
@@ -72,10 +94,51 @@ export class DashboardComponent implements OnInit {
   ventasResumen = signal<SalesSummaryDTO | null>(null);
   campanasPerformance = signal<CampaignPerformanceDTO[]>([]);
 
-  // Costos y Ganancias (simulados por ahora; después se conectan datos reales)
-  private static readonly COST_PERCENTAGE = 0.55;
-  costos = computed(() => (this.ventasResumen()?.totalSales ?? 0) * DashboardComponent.COST_PERCENTAGE);
-  ganancias = computed(() => (this.ventasResumen()?.totalSales ?? 0) - this.costos());
+  // Insumos en stock mínimo
+  insumos = signal<Insumo[]>([]);
+  insumosEnStockMinimo = computed(() =>
+    this.insumos().filter(i => i.stock <= i.stockMinimo)
+  );
+  insumosStockMinimoLoading = signal(false);
+
+  // Modal listado de insumos en stock mínimo
+  stockModalVisible = signal(false);
+
+  // Ventas totales: tickets/comandas de los últimos 2 meses
+  ventasTickets = signal<any[]>([]);
+  ventasTicketsLoading = signal(false);
+  ventasModalVisible = signal(false);
+
+  // Modal de restock de insumo
+  restockVisible = signal(false);
+  restockTarget = signal<Insumo | null>(null);
+  restockCantidad = signal(0);
+
+  private router = inject(Router);
+
+  // Costos y Ganancias (porcentajes configurables por el usuario)
+  private static readonly STORAGE_KEY = 'lealtix_costos_porcentajes';
+  private static readonly DEFAULT_MP = 35;   // % materia prima
+  private static readonly DEFAULT_RH = 20;   // % recurso humano
+  porcentajeMateriaPrima = signal<number>(DashboardComponent.DEFAULT_MP);
+  porcentajeRecursoHumano = signal<number>(DashboardComponent.DEFAULT_RH);
+
+  porcentajeCostoTotal = computed(() =>
+    Math.min(100, this.porcentajeMateriaPrima() + this.porcentajeRecursoHumano())
+  );
+
+  ventasBase = computed(() => this.ventasResumen()?.totalSales ?? 0);
+  costosMateriaPrima = computed(() => this.ventasBase() * (this.porcentajeMateriaPrima() / 100));
+  costosRecursoHumano = computed(() => this.ventasBase() * (this.porcentajeRecursoHumano() / 100));
+  costos = computed(() => this.ventasBase() * (this.porcentajeCostoTotal() / 100));
+  ganancias = computed(() => this.ventasBase() - this.costos());
+  gananciasPct = computed(() => (this.porcentajeCostoTotal() >= 100)
+    ? 0
+    : Math.round((100 - this.porcentajeCostoTotal()) * 100) / 100);
+
+  // Modales de Costos y Ganancias
+  costosModalVisible = signal(false);
+  gananciasModalVisible = signal(false);
 
   // Loyalty Metrics Signals
   repeatPurchaseRate = signal<RepeatPurchaseRateDTO | null>(null);
@@ -119,13 +182,29 @@ export class DashboardComponent implements OnInit {
     private dashboardLoyaltyService: DashboardLoyaltyService,
     private tenantService: TenantService,
     private authService: AuthService,
-    private layoutService: LayoutService
+    private layoutService: LayoutService,
+    private inventoryService: InventoryService,
+    private messageService: MessageService
   ) {}
 
   ngOnInit(): void {
     this.setupChartOptions();
     this.layoutService.configUpdate$.subscribe(() => this.setupChartOptions());
+    this.loadPorcentajes();
     this.readTenantId();
+  }
+
+  private loadPorcentajes(): void {
+    try {
+      const raw = localStorage.getItem(DashboardComponent.STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed?.materiaPrima === 'number') this.porcentajeMateriaPrima.set(parsed.materiaPrima);
+        if (typeof parsed?.recursoHumano === 'number') this.porcentajeRecursoHumano.set(parsed.recursoHumano);
+      }
+    } catch {
+      // ignorar configuraciones corruptas y usar valores por defecto
+    }
   }
 
   private readTenantId(): void {
@@ -163,8 +242,8 @@ export class DashboardComponent implements OnInit {
   private setupChartOptions(): void {
     const dark = this.layoutService.isDarkTheme();
     const gridColor = dark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.07)';
-    const tickColor = dark ? '#9aa3b5' : '#64748b';
-    const legendColor = dark ? '#cbd2e0' : '#334155';
+    const tickColor = dark ? '#ffffff' : '#64748b';
+    const legendColor = dark ? '#ffffff' : '#334155';
 
     const baseOptions = {
       responsive: true,
@@ -185,7 +264,7 @@ export class DashboardComponent implements OnInit {
           }
         },
         tooltip: {
-          backgroundColor: dark ? 'rgba(20,20,28,0.95)' : 'rgba(15,23,42,0.9)',
+          backgroundColor: dark ? 'rgba(36,44,64,0.95)' : 'rgba(15,23,42,0.9)',
           padding: 12,
           cornerRadius: 8,
           titleFont: { size: 13, weight: 'bold' },
@@ -267,7 +346,7 @@ export class DashboardComponent implements OnInit {
           }
         },
         tooltip: {
-          backgroundColor: dark ? 'rgba(20,20,28,0.95)' : 'rgba(15,23,42,0.9)',
+          backgroundColor: dark ? 'rgba(36,44,64,0.95)' : 'rgba(15,23,42,0.9)',
           padding: 12,
           cornerRadius: 8,
           titleFont: { size: 13, weight: 'bold' },
@@ -282,9 +361,23 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  private isDark(): boolean {
+    return !!this.layoutService.isDarkTheme();
+  }
+
+  private tickTextColor(): string {
+    return this.isDark() ? '#ffffff' : '#64748b';
+  }
+
+  private gridLineColor(): string {
+    return this.isDark() ? 'rgba(255,255,255,0.08)' : '#f1f5f9';
+  }
+
   private cargarDatos(): void {
     this.loading.set(true);
     this.error.set(null);
+    this.cargarInsumosStockMinimo();
+    this.cargarVentasTickets();
 
     const today = new Date();
     // Desde el primer día del mes anterior hasta hoy
@@ -512,12 +605,12 @@ export class DashboardComponent implements OnInit {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { font: { size: 11 }, color: '#64748b' }
+          ticks: { font: { size: 11 }, color: this.tickTextColor() }
         },
         y: {
           beginAtZero: true,
-          grid: { color: '#f1f5f9' },
-          ticks: { font: { size: 11 }, color: '#64748b', callback: (value: any) => '$' + Number(value).toLocaleString() }
+          grid: { color: this.gridLineColor() },
+          ticks: { font: { size: 11 }, color: this.tickTextColor(), callback: (value: any) => '$' + Number(value).toLocaleString() }
         }
       }
     });
@@ -593,12 +686,12 @@ export class DashboardComponent implements OnInit {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { maxRotation: 45, minRotation: 0, font: { size: 11, weight: '500' }, color: '#64748b' }
+          ticks: { maxRotation: 45, minRotation: 0, font: { size: 11, weight: '500' }, color: this.tickTextColor() }
         },
         y: {
           beginAtZero: true,
-          grid: { color: '#f1f5f9' },
-          ticks: { font: { size: 11 }, color: '#64748b', callback: (value: any) => '$' + Number(value).toLocaleString() }
+          grid: { color: this.gridLineColor() },
+          ticks: { font: { size: 11 }, color: this.tickTextColor(), callback: (value: any) => '$' + Number(value).toLocaleString() }
         }
       }
     });
@@ -655,8 +748,8 @@ export class DashboardComponent implements OnInit {
           ticks: { display: false }
         },
         y: {
-          grid: { color: '#f1f5f9' },
-          ticks: { font: { size: 11 }, color: '#64748b' }
+          grid: { color: this.gridLineColor() },
+          ticks: { font: { size: 11 }, color: this.tickTextColor() }
         }
       }
     });
@@ -902,6 +995,163 @@ export class DashboardComponent implements OnInit {
     if (data.identifiedPercentage > 70) return 'success';
     if (data.identifiedPercentage >= 50) return 'warn';
     return 'danger';
+  }
+
+  /* ============ Costos y Ganancias (configurables) ============ */
+
+  openCostosModal(): void {
+    this.costosModalVisible.set(true);
+  }
+
+  closeCostosModal(): void {
+    this.costosModalVisible.set(false);
+  }
+
+  openGananciasModal(): void {
+    this.gananciasModalVisible.set(true);
+  }
+
+  closeGananciasModal(): void {
+    this.gananciasModalVisible.set(false);
+  }
+
+  guardarPorcentajes(): void {
+    let mp = Math.max(0, Math.min(100, this.porcentajeMateriaPrima() || 0));
+    let rh = Math.max(0, Math.min(100, this.porcentajeRecursoHumano() || 0));
+    // Si el total supera 100, recortar el de mayor peso para respetar el tope
+    if (mp + rh > 100) {
+      if (mp >= rh) mp = 100 - rh;
+      else rh = 100 - mp;
+    }
+    this.porcentajeMateriaPrima.set(mp);
+    this.porcentajeRecursoHumano.set(rh);
+    try {
+      localStorage.setItem(
+        DashboardComponent.STORAGE_KEY,
+        JSON.stringify({ materiaPrima: mp, recursoHumano: rh })
+      );
+    } catch {
+      // almacenamiento no disponible, se omite la persistencia
+    }
+    this.messageService.add({ severity: 'success', summary: 'Guardado', detail: 'Porcentajes de costos actualizados' });
+  }
+
+  reiniciarPorcentajes(): void {
+    this.porcentajeMateriaPrima.set(DashboardComponent.DEFAULT_MP);
+    this.porcentajeRecursoHumano.set(DashboardComponent.DEFAULT_RH);
+    this.guardarPorcentajes();
+  }
+
+  formatoMoneda(valor: any): string {
+    const n = Number(valor ?? 0);
+    return n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+  }
+
+  /* ============ Insumos en stock mínimo ============ */
+
+  private cargarInsumosStockMinimo(): void {
+    this.insumosStockMinimoLoading.set(true);
+    this.inventoryService.getInsumos(this.tenantId).subscribe({
+      next: (res) => {
+        this.insumos.set(Array.isArray(res?.object) ? res.object : (res || []));
+        this.insumosStockMinimoLoading.set(false);
+      },
+      error: () => {
+        this.insumos.set([]);
+        this.insumosStockMinimoLoading.set(false);
+      }
+    });
+  }
+
+  /* ============ Ventas totales: tickets de los últimos 2 meses ============ */
+
+  private cargarVentasTickets(): void {
+    this.ventasTicketsLoading.set(true);
+    this.dashboardService.ventasTickets(this.tenantId).subscribe({
+      next: (res) => {
+        const page = res?.object ?? res;
+        const content = Array.isArray(page?.content) ? page.content : [];
+        const cutoff = new Date();
+        cutoff.setMonth(cutoff.getMonth() - 2);
+        this.ventasTickets.set(
+          content.filter((o: any) => o && o.fecha && new Date(o.fecha) >= cutoff)
+        );
+        this.ventasTicketsLoading.set(false);
+      },
+      error: () => {
+        this.ventasTickets.set([]);
+        this.ventasTicketsLoading.set(false);
+      }
+    });
+  }
+
+  openVentasModal(): void {
+    this.ventasModalVisible.set(true);
+  }
+
+  closeVentasModal(): void {
+    this.ventasModalVisible.set(false);
+  }
+
+  formatoTicketTotal(total: any): string {
+    const n = Number(total ?? 0);
+    return n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+  }
+
+  formatoTicketFecha(fecha: any): string {
+    if (!fecha) return '—';
+    return new Date(fecha).toLocaleString('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  openStockModal(): void {
+    this.stockModalVisible.set(true);
+  }
+
+  closeStockModal(): void {
+    this.stockModalVisible.set(false);
+  }
+
+  insumoLowClass(insumo: Insumo): string {
+    return insumo.stock <= insumo.stockMinimo ? 'stock-low' : 'stock-ok';
+  }
+
+  /* ============ Restock de insumo ============ */
+
+  openRestock(insumo: Insumo): void {
+    this.restockTarget.set(insumo);
+    this.restockCantidad.set(0);
+    this.restockVisible.set(true);
+  }
+
+  closeRestock(): void {
+    this.restockVisible.set(false);
+  }
+
+  doRestock(): void {
+    const target = this.restockTarget();
+    if (!target || this.restockCantidad() <= 0) return;
+    this.inventoryService.restockInsumo(target.id, this.restockCantidad()).subscribe({
+      next: (res) => {
+        this.messageService.add({ severity: 'success', summary: 'Exitoso', detail: `Stock actualizado: ${res?.object}` });
+        this.closeRestock();
+        this.cargarInsumosStockMinimo();
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo reabastecer el insumo' });
+      }
+    });
+  }
+
+  /* ============ Navegación ============ */
+
+  irAClientes(): void {
+    this.router.navigate(['/dashboard/clientes']);
   }
 }
 

@@ -186,3 +186,66 @@
     box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4) !important;
   }
 }
+
+/* === MODO OSCURO: tablas y buscador homologueados (gris oscuro, no blanco) === */
+:root[class*='app-dark'],
+.app-dark {
+  ::ng-deep .catalog-panel {
+    border-color: var(--surface-border) !important;
+  }
+
+  ::ng-deep .catalog-panel .p-datatable {
+    background: var(--surface-card) !important;
+
+    .p-datatable-thead > tr > th {
+      background: rgba(255, 255, 255, 0.05) !important;
+      color: #cbd2e0 !important;
+      border-bottom: 1px solid var(--surface-border) !important;
+    }
+
+    .p-datatable-tbody > tr {
+      background: transparent !important;
+
+      &:nth-child(even) {
+        background: rgba(255, 255, 255, 0.02) !important;
+      }
+
+      &:hover {
+        background-color: rgba(99, 102, 241, 0.08) !important;
+      }
+
+      > td {
+        color: var(--text-color) !important;
+        border-bottom: 1px solid var(--surface-border) !important;
+      }
+    }
+  }
+
+  /* Buscador dentro del encabezado morado -> oscuro legible */
+  ::ng-deep .catalog-panel .p-datatable-header .p-iconfield .p-inputtext {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.7) !important;
+    }
+  }
+
+  ::ng-deep .catalog-panel .p-datatable-header .p-iconfield .p-inputicon {
+    color: rgba(255, 255, 255, 0.8) !important;
+  }
+
+  .catalog-tabs {
+    background: #303950 !important;
+  }
+
+  .catalog-tab {
+    color: #b6bdcc !important;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06) !important;
+      color: #ffffff !important;
+    }
+  }
+}

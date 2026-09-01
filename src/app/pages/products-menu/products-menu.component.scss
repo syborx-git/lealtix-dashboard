@@ -341,19 +341,58 @@
     box-shadow: var(--lealtix-shadow-sm) !important;
   }
 
+  .catalog-panel {
+    border-color: var(--surface-border) !important;
+  }
+
+  .catalog-tabs {
+    background: #303950 !important;
+  }
+
+  .catalog-tab {
+    color: #b6bdcc !important;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06) !important;
+      color: #ffffff !important;
+    }
+  }
+
   ::ng-deep .p-datatable {
+    background: var(--surface-card) !important;
+
+    /* Buscador dentro del encabezado morado -> oscuro legible */
+    .p-datatable-header {
+      input {
+        background: rgba(255, 255, 255, 0.12) !important;
+        border-color: rgba(255, 255, 255, 0.25) !important;
+        color: #ffffff !important;
+
+        &::placeholder {
+          color: rgba(255, 255, 255, 0.7) !important;
+        }
+      }
+    }
+
     .p-datatable-thead > tr > th {
-      background: rgba(255, 255, 255, 0.03) !important;
+      background: rgba(255, 255, 255, 0.05) !important;
       color: #cbd2e0 !important;
       border-color: var(--surface-border) !important;
     }
 
     .p-datatable-tbody > tr {
+      background: transparent !important;
+
+      &:nth-child(even) {
+        background: rgba(255, 255, 255, 0.02) !important;
+      }
+
       &:hover {
-        background-color: rgba(255, 255, 255, 0.04) !important;
+        background-color: rgba(99, 102, 241, 0.08) !important;
       }
 
       > td {
+        color: var(--text-color) !important;
         border-color: var(--surface-border) !important;
       }
     }
@@ -414,7 +453,7 @@
     }
 
     .p-dropdown {
-      background: #14141c !important;
+      background: #303950 !important;
       border-color: rgba(255, 255, 255, 0.12) !important;
     }
   }
