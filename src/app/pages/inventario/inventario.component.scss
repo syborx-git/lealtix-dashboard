@@ -153,6 +153,21 @@
   animation: pulseLow 2s ease-in-out infinite;
 }
 
+/* === CHIPS DE CATEGORÍAS (mini-cards) === */
+.cat-chip-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--lealtix-primary-50, #eef2ff);
+  border: 1px solid var(--lealtix-primary-200, #c7d2fe);
+  color: var(--lealtix-primary-700, #4338ca);
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem 0.2rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 @keyframes pulseLow {
   0%, 100% {
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.35);

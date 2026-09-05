@@ -10,4 +10,6 @@ export interface Product {
     categoryName?: string;
     categoryDescription?: string;
     tenantId?: number;
+    categoryIds?: number[];
+    categories?: { id: number; name: string }[];
 }

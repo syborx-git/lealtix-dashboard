@@ -101,6 +101,9 @@
           <tr>
             <td style="width: 45%">
               <div class="font-medium text-900">{{ row.name }}</div>
+              <div class="flex flex-wrap gap-1 mt-1" *ngIf="rowCategories(row).length">
+                <span class="cat-chip-mini" *ngFor="let c of rowCategories(row)">{{ c.name }}</span>
+              </div>
             </td>
             <td style="width: 30%">
               <div class="text-sm text-500">{{ row.categoryName || '—' }}</div>

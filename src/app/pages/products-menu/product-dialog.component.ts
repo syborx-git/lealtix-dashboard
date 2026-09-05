@@ -27,16 +27,22 @@ import { TreeNode } from 'primeng/api';
                 <!-- Categories Row -->
                 <div class="mb-4">
                     <div class="flex align-items-center justify-between mb-2">
-                        <label class="field-label">Categoria</label>
-                        <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Selecciona la categoría donde quieres ubicar este producto. Si aún no existe, debes crear una nueva categoría." tooltipPosition="top" appTouchTooltip></button>
+                        <label class="field-label">Categorías</label>
+                        <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Asigna una o varias categorías a este producto. Aparecerá en todas las seleccionadas; la primera será la categoría principal." tooltipPosition="top" appTouchTooltip></button>
                     </div>
                     <div class="flex items-center gap-3">
                         <div class="flex-1">
-                            <p-select [(ngModel)]="product.categoryId" (ngModelChange)="categoryChange.emit($event)" [options]="categoriesArrayValue" optionLabel="label" optionValue="value" placeholder="Seleccione..." styleClass="w-full"></p-select>
+                            <p-select [(ngModel)]="categoryPicker" (ngModelChange)="addCategory($event)" [options]="availableCategories" optionLabel="label" optionValue="value" placeholder="+ Agregar categoría..." styleClass="w-full"></p-select>
                         </div>
                     </div>
+                    <div class="mt-2 flex flex-wrap gap-2" *ngIf="selectedCategories().length">
+                        <span class="cat-chip" *ngFor="let c of selectedCategories()">
+                            <span class="cat-chip-label">{{ c.name }}</span>
+                            <button type="button" class="cat-chip-x" (click)="removeCategory(c.id)" pTooltip="Quitar" tooltipPosition="top"><i class="pi pi-times"></i></button>
+                        </span>
+                    </div>
                     <div class="mt-2">
-                        <p-message *ngIf="(!product || product.categoryId === null || product.categoryId === undefined) && submitted" severity="error" [text]="'Categoria es requerida'"></p-message>
+                        <p-message *ngIf="(!selectedCategories().length) && submitted" severity="error" [text]="'Selecciona al menos una categoría'"></p-message>
                     </div>
                 </div>
 
@@ -262,6 +268,35 @@ import { TreeNode } from 'primeng/api';
 
         .product-dialog-footer { display:flex; justify-content:flex-end; gap:0.75rem; padding:1.25rem 2rem; border-top:1px solid var(--lealtix-slate-200); background:var(--lealtix-slate-50); }
 
+        /* === CHIPS DE CATEGORÍAS === */
+        .cat-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--lealtix-primary-50, #eef2ff);
+            border: 1px solid var(--lealtix-primary-200, #c7d2fe);
+            color: var(--lealtix-primary-700, #4338ca);
+            border-radius: 999px;
+            padding: 0.35rem 0.6rem 0.35rem 0.85rem;
+            font-size: 0.8125rem;
+            font-weight: 600;
+        }
+        .cat-chip-x {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: none;
+            background: transparent;
+            color: var(--lealtix-primary-700, #4338ca);
+            border-radius: 999px;
+            cursor: pointer;
+            padding: 0;
+            font-size: 0.75rem;
+        }
+        .cat-chip-x:hover { background: var(--lealtix-primary-200, #c7d2fe); color: #b91c1c; }
+
         .product-dialog-footer .p-button {
             padding: 0.85rem 1.75rem !important;
             font-size: 0.9375rem !important;
@@ -358,6 +393,100 @@ export class ProductDialogComponent implements OnChanges {
     @Output() categoryChange = new EventEmitter<any>();
     @Output() activeChange = new EventEmitter<boolean>();
     @Output() removeImage = new EventEmitter<void>();
+
+    categoryPicker: any = null;
+
+    get availableCategories(): any[] {
+        const selected = new Set(this.selectedCategoryIds());
+        return (this.categoriesArrayValue || []).filter((c) => !selected.has(Number(c.value)));
+    }
+
+    selectedCategoryIds(): number[] {
+        const product = this.product || {};
+        if (!Array.isArray(product.categoryIds)) return [];
+        return product.categoryIds
+            .map((id: any) => Number(id))
+            .filter((n: number) => !Number.isNaN(n));
+    }
+
+    selectedCategories(): { id: number; name: string }[] {
+        const ids = this.selectedCategoryIds();
+        if (!ids.length) return [];
+
+        const map = new Map<number, { id: number; name: string }>();
+        const product = this.product || {};
+        if (Array.isArray(product.categories)) {
+            product.categories.forEach((c: any) => {
+                if (c && c.id !== null && c.id !== undefined && !map.has(Number(c.id))) {
+                    map.set(Number(c.id), { id: Number(c.id), name: c.name || '' });
+                }
+            });
+        }
+        (this.categoriesArrayValue || []).forEach((c) => {
+            const id = Number(c.value);
+            if (!Number.isNaN(id) && c.label && !map.has(id)) {
+                map.set(id, { id, name: c.label });
+            }
+        });
+
+        return ids
+            .map((id) => map.get(id))
+            .filter((c): c is { id: number; name: string } => !!c && !!c.name);
+    }
+
+    addCategory(value: any) {
+        this.categoryPicker = null;
+        if (value === null || value === undefined) return;
+
+        const id = Number(value);
+        if (Number.isNaN(id)) return;
+
+        const product = this.product = this.product || {};
+        if (!Array.isArray(product.categoryIds)) {
+            product.categoryIds = [];
+        }
+
+        const ids = product.categoryIds.map((v: any) => Number(v)).filter((n: number) => !Number.isNaN(n));
+        if (ids.includes(id)) return;
+
+        product.categoryIds.push(id);
+
+        // La primera categoría agregada se convierte en la categoría principal
+        if (product.categoryId === null || product.categoryId === undefined) {
+            product.categoryId = id;
+            const cat = (this.categoriesArrayValue || []).find((c) => String(c.value) === String(id));
+            product.categoryName = cat?.label ?? product.categoryName;
+        }
+
+        if (!Array.isArray(product.categories)) {
+            product.categories = [];
+        }
+        product.categories = this.selectedCategories();
+    }
+
+    removeCategory(idValue: number) {
+        const id = Number(idValue);
+        const product = this.product = this.product || {};
+
+        if (Array.isArray(product.categoryIds)) {
+            product.categoryIds = product.categoryIds.filter((v: any) => Number(v) !== id);
+        }
+        if (Array.isArray(product.categories)) {
+            product.categories = product.categories.filter((c: any) => Number(c?.id) !== id);
+        }
+
+        // Si se quitó la categoría principal, promover la siguiente
+        if (Number(product.categoryId) === id) {
+            const nextId = Array.isArray(product.categoryIds) && product.categoryIds.length
+                ? Number(product.categoryIds[0])
+                : null;
+            product.categoryId = nextId;
+            const cat = nextId != null
+                ? (this.categoriesArrayValue || []).find((c) => String(c.value) === String(nextId))
+                : null;
+            product.categoryName = cat?.label ?? null;
+        }
+    }
 
     crossSellingDraft: CrossSellingDraft = {
         suggestedProductId: null,

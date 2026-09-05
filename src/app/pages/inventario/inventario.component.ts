@@ -19,6 +19,7 @@ interface InvItem {
   id: number;
   name: string;
   categoryName?: string;
+  categories?: { id: number; name: string }[];
   stock: number;
   lowStock: boolean;
   outOfStock: boolean;
@@ -152,6 +153,20 @@ export class InventarioComponent implements OnInit {
 
   insumoLowClass(insumo: Insumo): string {
     return insumo.stock <= insumo.stockMinimo ? 'stock-low' : 'stock-ok';
+  }
+
+  rowCategories(row: any): { id: number; name: string }[] {
+    const cats: { id: number; name: string }[] = [];
+    if (row && Array.isArray(row.categories)) {
+      row.categories.forEach((c: any) => {
+        if (c && c.id != null && c.name) {
+          const id = Number(c.id);
+          if (!Number.isNaN(id) && !cats.some((x) => x.id === id)) cats.push({ id, name: c.name });
+        }
+      });
+    }
+    if (!cats.length && row && row.categoryId != null && row.categoryName) cats.push({ id: Number(row.categoryId), name: row.categoryName });
+    return cats;
   }
 
   /* ============ Restock de insumo ============ */

@@ -875,19 +875,19 @@ export class ComandixComponent implements OnInit, OnDestroy {
     const categoriesMap = new Map<string, MenuCategory>();
     let autoId = 1;
 
-    activeProducts.forEach((product) => {
-      const categoryName = product.categoryName || product.category?.name || product.category || 'Sin Categoría';
-      const categoryId = product.categoryId || product.category?.id || categoryName;
-      const categoryKey = String(categoryId ?? categoryName);
-
-      if (!categoriesMap.has(categoryKey)) {
-        categoriesMap.set(categoryKey, {
-          id: typeof categoryId === 'number' ? categoryId : autoId++,
-          name: categoryName,
+    const ensureCategory = (name: string, id: number | string): MenuCategory => {
+      const key = String(id ?? name);
+      if (!categoriesMap.has(key)) {
+        categoriesMap.set(key, {
+          id: typeof id === 'number' ? id : autoId++,
+          name: name,
           products: []
         });
       }
+      return categoriesMap.get(key)!;
+    };
 
+    activeProducts.forEach((product) => {
       const imageUrl: string | null = product.imageUrl && typeof product.imageUrl === 'string'
         ? product.imageUrl.trim() || null
         : (product.img_url?.trim() || null) || (product.image?.trim() || null) || null;
@@ -906,7 +906,22 @@ export class ComandixComponent implements OnInit, OnDestroy {
         additionals: Array.isArray(product.additionals) ? product.additionals as IngredientOption[] : []
       };
 
-      categoriesMap.get(categoryKey)!.products.push(mappedProduct);
+      // Multicategoría: el producto aparece en TODAS sus categorías (principal + extras).
+      const productCategories = (Array.isArray(product.categories) && product.categories.length > 0)
+        ? product.categories
+        : null;
+
+      if (productCategories) {
+        productCategories.forEach((cat: any) => {
+          const name = cat?.name || product.categoryName || 'Sin Categoría';
+          const id = cat?.id ?? product.categoryId ?? name;
+          ensureCategory(name, id).products.push(mappedProduct);
+        });
+      } else {
+        const categoryName = product.categoryName || product.category?.name || product.category || 'Sin Categoría';
+        const categoryId = product.categoryId || product.category?.id || categoryName;
+        ensureCategory(categoryName, categoryId).products.push(mappedProduct);
+      }
     });
 
     return Array.from(categoriesMap.values());

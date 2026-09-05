@@ -182,6 +182,8 @@ export class ProductMenuComponent implements OnInit {
     insumoUnidad = 'pieza';
     insumoStock = 0;
     insumoMin = 0;
+    insumoCategoryIds: number[] = [];
+    insumoCategoryPicker: any = null;
     insumoRestockVisible = false;
     insumoRestockTarget: any | null = null;
     insumoRestockCantidad = 0;
@@ -197,6 +199,8 @@ export class ProductMenuComponent implements OnInit {
     bebidaStock = 0;
     bebidaMin = 0;
     bebidaPrecioVenta = 0;
+    bebidaCategoryIds: number[] = [];
+    bebidaCategoryPicker: any = null;
 
     newCategory: { name?: string; description?: string; tenantId?: string; active: boolean } = {
         name: '',
@@ -404,6 +408,29 @@ export class ProductMenuComponent implements OnInit {
         return item?.stock ?? 0;
     }
 
+    /** Categorías completas de una fila (producto/insumo/bebida) para mostrar chips */
+    rowCategories(row: any): { id: number; name: string }[] {
+        const cats: { id: number; name: string }[] = [];
+
+        if (row && Array.isArray(row.categories)) {
+            row.categories.forEach((c: any) => {
+                if (c && c.id !== null && c.id !== undefined && c.name) {
+                    const id = Number(c.id);
+                    if (!Number.isNaN(id) && !cats.some((x) => x.id === id)) {
+                        cats.push({ id, name: c.name });
+                    }
+                }
+            });
+        }
+
+        if (!cats.length && row && row.categoryId != null && row.categoryName) {
+            const id = Number(row.categoryId);
+            if (!Number.isNaN(id)) cats.push({ id, name: row.categoryName });
+        }
+
+        return cats;
+    }
+
     stockBadgeClass(product: any): string {
         const id = this.normalizeProductId(product?.id);
         const item = id == null ? null : this.inventoryItems().find((i: any) => Number(i.id) === id);
@@ -567,6 +594,8 @@ export class ProductMenuComponent implements OnInit {
         this.insumoUnidad = 'pieza';
         this.insumoStock = 0;
         this.insumoMin = 0;
+        this.insumoCategoryIds = [];
+        this.insumoCategoryPicker = null;
         this.insumoDialogVisible = true;
     }
 
@@ -576,7 +605,32 @@ export class ProductMenuComponent implements OnInit {
         this.insumoUnidad = insumo.unidad || 'pieza';
         this.insumoStock = insumo.stock;
         this.insumoMin = insumo.stockMinimo;
+        this.insumoCategoryIds = Array.isArray(insumo.categoryIds)
+            ? insumo.categoryIds.map((n: any) => Number(n)).filter((n: number) => !Number.isNaN(n))
+            : [];
+        this.insumoCategoryPicker = null;
         this.insumoDialogVisible = true;
+    }
+
+    addInsumoCategory(value: any) {
+        this.insumoCategoryPicker = null;
+        if (value === null || value === undefined) return;
+        const id = Number(value);
+        if (Number.isNaN(id)) return;
+        if (!this.insumoCategoryIds.includes(id)) this.insumoCategoryIds.push(id);
+    }
+
+    removeInsumoCategory(id: number) {
+        this.insumoCategoryIds = this.insumoCategoryIds.filter((v) => v !== Number(id));
+    }
+
+    insumoAvailableCategories(): any[] {
+        return (this.categoriesArray.value || []).filter((c: any) => !this.insumoCategoryIds.includes(Number(c.value)));
+    }
+
+    insumoCategoryName(id: number): string {
+        const cat = (this.categoriesArray.value || []).find((c: any) => String(c.value) === String(id));
+        return cat?.label ?? '';
     }
 
     saveInsumo() {
@@ -587,14 +641,14 @@ export class ProductMenuComponent implements OnInit {
         };
         if (this.editingInsumo) {
             this.inventoryService.updateInsumo(
-                this.editingInsumo.id, this.insumoNombre, this.insumoUnidad, this.insumoStock, this.insumoMin
+                this.editingInsumo.id, this.insumoNombre, this.insumoUnidad, this.insumoStock, this.insumoMin, this.insumoCategoryIds
             ).subscribe({
                 next: () => { this.messageService.add({ severity: 'success', summary: 'Insumo actualizado', detail: 'Listo', life: 3000 }); done(); },
                 error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el insumo', life: 3000 })
             });
         } else {
             this.inventoryService.createInsumo(
-                this.tenantId, this.insumoNombre, this.insumoUnidad, this.insumoStock, this.insumoMin
+                this.tenantId, this.insumoNombre, this.insumoUnidad, this.insumoStock, this.insumoMin, this.insumoCategoryIds
             ).subscribe({
                 next: () => { this.messageService.add({ severity: 'success', summary: 'Insumo creado', detail: 'Listo para usar en recetas', life: 3000 }); done(); },
                 error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear el insumo', life: 3000 })
@@ -657,6 +711,8 @@ export class ProductMenuComponent implements OnInit {
         this.bebidaStock = 0;
         this.bebidaMin = 0;
         this.bebidaPrecioVenta = 0;
+        this.bebidaCategoryIds = [];
+        this.bebidaCategoryPicker = null;
         this.bebidaDialogVisible = true;
         this.cdr.detectChanges();
     }
@@ -668,8 +724,33 @@ export class ProductMenuComponent implements OnInit {
         this.bebidaStock = bebida.stock;
         this.bebidaMin = bebida.stockMinimo;
         this.bebidaPrecioVenta = bebida.precioVenta ?? 0;
+        this.bebidaCategoryIds = Array.isArray(bebida.categoryIds)
+            ? bebida.categoryIds.map((n: any) => Number(n)).filter((n: number) => !Number.isNaN(n))
+            : [];
+        this.bebidaCategoryPicker = null;
         this.bebidaDialogVisible = true;
         this.cdr.detectChanges();
+    }
+
+    addBebidaCategory(value: any) {
+        this.bebidaCategoryPicker = null;
+        if (value === null || value === undefined) return;
+        const id = Number(value);
+        if (Number.isNaN(id)) return;
+        if (!this.bebidaCategoryIds.includes(id)) this.bebidaCategoryIds.push(id);
+    }
+
+    removeBebidaCategory(id: number) {
+        this.bebidaCategoryIds = this.bebidaCategoryIds.filter((v) => v !== Number(id));
+    }
+
+    bebidaAvailableCategories(): any[] {
+        return (this.categoriesArray.value || []).filter((c: any) => !this.bebidaCategoryIds.includes(Number(c.value)));
+    }
+
+    bebidaCategoryName(id: number): string {
+        const cat = (this.categoriesArray.value || []).find((c: any) => String(c.value) === String(id));
+        return cat?.label ?? '';
     }
 
     saveBebida() {
@@ -683,14 +764,14 @@ export class ProductMenuComponent implements OnInit {
         };
         if (this.editingBebida) {
             this.inventoryService.updateBebida(
-                this.editingBebida.id, this.bebidaNombre, this.bebidaUnidad, this.bebidaStock, this.bebidaMin, this.bebidaPrecioVenta
+                this.editingBebida.id, this.bebidaNombre, this.bebidaUnidad, this.bebidaStock, this.bebidaMin, this.bebidaPrecioVenta, this.bebidaCategoryIds
             ).subscribe({
                 next: () => { this.messageService.add({ severity: 'success', summary: 'Bebida actualizada', detail: 'Listo', life: 3000 }); done(); },
                 error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar la bebida', life: 3000 })
             });
         } else {
             this.inventoryService.createBebida(
-                this.tenantId, this.bebidaNombre, this.bebidaUnidad, this.bebidaStock, this.bebidaMin, this.bebidaPrecioVenta
+                this.tenantId, this.bebidaNombre, this.bebidaUnidad, this.bebidaStock, this.bebidaMin, this.bebidaPrecioVenta, this.bebidaCategoryIds
             ).subscribe({
                 next: () => { this.messageService.add({ severity: 'success', summary: 'Bebida creada', detail: 'Aparecerá en el menú y en Comandix', life: 3000 }); done(); },
                 error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear la bebida', life: 3000 })
@@ -1359,6 +1440,8 @@ export class ProductMenuComponent implements OnInit {
         this.product = {};
         // default category selection should be the placeholder (null)
         (this.product as any).categoryId = null;
+        (this.product as any).categoryIds = [];
+        (this.product as any).categories = [];
         this.submitted = false;
         // reset product form (clear productImage as well)
         this.productForm.reset({ id: null, name: '', description: '', price: null, img_url: '', productImage: null, isActive: true });
@@ -1372,8 +1455,10 @@ export class ProductMenuComponent implements OnInit {
 
     openNewWithCategory(categoryId: number) {
         this.product = {};
-        // Preselect the category
+        // Preselect the category (as principal)
         (this.product as any).categoryId = categoryId;
+        (this.product as any).categoryIds = [categoryId];
+        (this.product as any).categories = [];
         this.submitted = false;
         // reset product form with preselected category
         this.productForm.reset({
@@ -1395,6 +1480,14 @@ export class ProductMenuComponent implements OnInit {
 
     editProduct(product: Product) {
         this.product = { ...product };
+        // populate categoryIds/categories from the product (backend provides them)
+        if (!Array.isArray(this.product.categoryIds)) {
+            const baseId = (product as any).categoryId;
+            (this.product as any).categoryIds = baseId != null ? [baseId] : [];
+        }
+        if (!Array.isArray(this.product.categories)) {
+            (this.product as any).categories = [];
+        }
         // populate productForm
         this.productForm.patchValue({
             id: product.id ?? null,
@@ -1563,8 +1656,11 @@ export class ProductMenuComponent implements OnInit {
     saveProduct() {
 
         this.submitted = true;
-        if (!this.product || (this.product as any).categoryId === null || (this.product as any).categoryId === undefined) {
-            this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'Seleccione una categoría', life: 3000 });
+        const categoryIds = Array.isArray((this.product as any)?.categoryIds)
+            ? ((this.product as any).categoryIds as number[]).map((n) => Number(n)).filter((n) => !Number.isNaN(n))
+            : [];
+        if (!this.product || categoryIds.length === 0) {
+            this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'Seleccione al menos una categoría', life: 3000 });
             return;
         }
 
@@ -1577,7 +1673,7 @@ export class ProductMenuComponent implements OnInit {
         const prod = this.productForm.value;
         const imgFile: File | Blob | null = this.productForm.get('productImage')?.value || null;
 
-        const selectedCategoryId = (this.product as any).categoryId;
+        const selectedCategoryId = categoryIds[0];
 
         const isNewProduct = !prod.id;
         if (!isNewProduct) {
@@ -1595,6 +1691,7 @@ export class ProductMenuComponent implements OnInit {
             const newProduct: Product = {
                 id: prod.id,
                 categoryId: selectedCategoryId,
+                categoryIds: categoryIds,
                 tenantId: this.tenantId,
                 name: prod.name,
                 description: prod.description,
