@@ -223,6 +223,107 @@ body {
   --lealtix-shadow-2xl: 0 32px 64px rgba(0,0,0,0.6);
 }
 
+/* ----------------------------------------------------------------------------
+   MODO OSCURO GLOBAL: ningún texto negro/oscuro debe permanecer oscuro.
+   Convierte los tonos oscuros hardcodeados (slate-900, #0f172a, #111827,
+   #1e293b, #1a1a1a, etc.) en texto claro legible en toda la aplicación.
+   ---------------------------------------------------------------------------- */
+:root[class*='app-dark'],
+.app-dark {
+
+  /* LOGIN */
+  .form-side h2,
+  .form-side .input-wrapper input {
+    color: #e6e8ef !important;
+  }
+
+  /* LANDING / CAMPAÑAS */
+  .preview-value,
+  .template-title,
+  .create-campaign .title,
+  .create-campaign .value,
+  .create-campaign .info-text,
+  .create-campaign .campaign-header,
+  .create-campaign .section-title,
+  .create-campaign .preview-title,
+  .campaign-form .card,
+  .section-title {
+    color: #e6e8ef !important;
+  }
+
+  /* DASHBOARD - modal de costos/ganancias */
+  .costs-line,
+  .costs-result-label,
+  .ganancias-result {
+    color: #e6e8ef !important;
+  }
+
+  /* KITCHEN */
+  .hero-title,
+  .dish-name,
+  .fidelity-message,
+  .cta-content h3 {
+    color: #e6e8ef !important;
+  }
+
+  /* MI PÁGINA */
+  .header-title,
+  .status-title,
+  .tips-title,
+  .tip-title {
+    color: #e6e8ef !important;
+  }
+
+  /* REDENCIÓN */
+  .page-title,
+  .benefit-title,
+  .info-value,
+  .amount-header h3,
+  .amount-label,
+  .amount-preview .preview-value,
+  .summary-header h3,
+  .summary-value,
+  .summary-label {
+    color: #e6e8ef !important;
+  }
+
+  /* REDEEM (QR / código manual) */
+  .redeem-header,
+  .redeem-page .secondary-button,
+  .requirement-value,
+  .detail-value {
+    color: #e6e8ef !important;
+  }
+
+  /* CLIENTES / USUARIOS - títulos de diálogo y body de tablas */
+  .p-dialog-title,
+  .field,
+  .cliente-list .font-medium {
+    color: #e6e8ef !important;
+  }
+
+  /* Inputs dentro de encabezados morados se mantienen oscuros legibles
+     (el input usa fondo claro; el texto debe seguir siendo oscuro) */
+  .p-datatable-header .p-inputtext,
+  .catalog-panel .p-datatable-header .p-inputtext {
+    color: var(--lealtix-slate-900) !important;
+  }
+}
+
+/* Header de tablas/primes con fondo morado: texto siempre blanco */
+:root[class*='app-dark'] .p-datatable-header,
+.app-dark .p-datatable-header,
+:root[class*='app-dark'] .p-card-header,
+.app-dark .p-card-header {
+  color: #ffffff;
+}
+:root[class*='app-dark'] .p-datatable-header *,
+.app-dark .p-datatable-header *,
+:root[class*='app-dark'] .p-card-header *,
+.app-dark .p-card-header * {
+  color: #ffffff;
+}
+
 /* Fondo premium tipo Linear: gradientes radiales índigo/violeta + rejilla sutil */
 :root[class*='app-dark'] body,
 .app-dark body {

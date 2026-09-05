@@ -3,6 +3,11 @@
    Alineados con el sistema de diseño Lealtix
    ============================================================================ */
 
+:host {
+  display: block;
+  width: 100%;
+}
+
 /* === TABLA: ESTILOS DE FILAS === */
 .fixed-row {
   height: auto;
@@ -89,21 +94,31 @@
   max-width: none !important;
 }
 
-/* === TOOLBAR: GRID DE 3 BOTONES QUE OCUPAN TODO EL ANCHO === */
+/* === TOOLBAR: BOTONES DEL MISMO TAMAÑO QUE OCUPAN EL 100% DEL ANCHO === */
+::ng-deep .p-toolbar {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
 ::ng-deep .p-toolbar .p-toolbar-start {
-  flex: 1 1 auto;
-  width: 100%;
+  display: flex !important;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
 }
 
 .toolbar-actions {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
   width: 100%;
+  min-width: 0;
 }
 
 ::ng-deep .toolbar-actions .p-button {
   width: 100% !important;
+  min-width: 0 !important;
+  justify-content: center !important;
 }
 
 /* === TABLA === */
@@ -835,4 +850,14 @@
   font-size: 1rem !important;
   padding: 0.9rem 1.1rem !important;
   width: 100% !important;
+}
+
+/* Título del encabezado del modal de bebida siempre en blanco */
+::ng-deep .bebida-dialog .bebida-dialog-title {
+  color: #ffffff !important;
+}
+
+::ng-deep .bebida-dialog .p-dialog-header {
+  background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%);
+  color: #ffffff;
 }

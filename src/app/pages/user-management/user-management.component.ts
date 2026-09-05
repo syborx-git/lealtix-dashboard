@@ -117,7 +117,8 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       nombre: ['', [Validators.required, Validators.minLength(2)]],
       email: ['', [Validators.required, Validators.email]],
       contrasena: ['', [Validators.required, Validators.minLength(6)]],
-      rol: [null as UserRole | null, Validators.required]
+      rol: [null as UserRole | null, Validators.required],
+      sueldoMensual: [100, [Validators.required, Validators.min(0)]]
     });
   }
 
@@ -211,7 +212,8 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       nombre: [usuario.nombre, [Validators.required, Validators.minLength(2)]],
       email: [usuario.email, [Validators.required, Validators.email]],
       contrasena: [''], // Opcional en edición
-      rol: [usuario.rol, Validators.required]
+      rol: [usuario.rol, Validators.required],
+      sueldoMensual: [usuario.sueldoMensual ?? 100, [Validators.required, Validators.min(0)]]
     });
 
     this.usuarioForm = formGroup;
@@ -251,6 +253,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
         nombre: this.usuarioForm.get('nombre')?.value,
         email: this.usuarioForm.get('email')?.value,
         rol: this.usuarioForm.get('rol')?.value,
+        sueldoMensual: this.usuarioForm.get('sueldoMensual')?.value,
         ...(this.usuarioForm.get('contrasena')?.value && {
           contrasena: this.usuarioForm.get('contrasena')?.value
         })
@@ -289,7 +292,8 @@ export class UserManagementComponent implements OnInit, OnDestroy {
         email: this.usuarioForm.get('email')?.value,
         contrasena: this.usuarioForm.get('contrasena')?.value,
         rol: this.usuarioForm.get('rol')?.value,
-        tenantId: this.tenantId
+        tenantId: this.tenantId,
+        sueldoMensual: this.usuarioForm.get('sueldoMensual')?.value
       };
 
       this.userService
@@ -429,5 +433,13 @@ export class UserManagementComponent implements OnInit, OnDestroy {
    */
   formatRolName(rol: UserRole): string {
     return this.formatRoleName(rol);
+  }
+
+  /**
+   * Formatea un valor como moneda para mostrar en la tabla
+   */
+  formatoMoneda(valor: any): string {
+    const n = Number(valor ?? 0);
+    return n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
   }
 }

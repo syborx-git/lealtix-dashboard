@@ -58,14 +58,16 @@ export class InventarioComponent implements OnInit {
 
   items = signal<InvItem[]>([]);
   insumos = signal<Insumo[]>([]);
+  bebidas = signal<any[]>([]);
   loading = signal(false);
   loadingInsumos = signal(false);
+  loadingBebidas = signal(false);
   tenantId = 0;
 
-  // Pestaña activa de la tabla unificada: 'products' | 'insumos'
-  activeTab = signal<'products' | 'insumos'>('products');
+  // Pestaña activa de la tabla unificada: 'products' | 'insumos' | 'bebidas'
+  activeTab = signal<'products' | 'insumos' | 'bebidas'>('products');
 
-  setActiveTab(tab: 'products' | 'insumos') {
+  setActiveTab(tab: 'products' | 'insumos' | 'bebidas') {
     this.activeTab.set(tab);
     this.dt?.reset();
   }
@@ -77,6 +79,7 @@ export class InventarioComponent implements OnInit {
   insumoRestockVisible = false;
   insumoRestockTarget: Insumo | null = null;
   insumoRestockCantidad = 0;
+  insumoRestockCostoTotal = 0;
 
   constructor(
     private inventoryService: InventoryService,
@@ -90,6 +93,7 @@ export class InventarioComponent implements OnInit {
     if (this.tenantId) {
       this.load();
       this.loadInsumos();
+      this.loadBebidas();
     }
   }
 
@@ -121,6 +125,20 @@ export class InventarioComponent implements OnInit {
     });
   }
 
+  loadBebidas() {
+    this.loadingBebidas.set(true);
+    this.inventoryService.getBebidas(this.tenantId).subscribe({
+      next: (res) => {
+        this.bebidas.set(res.object || []);
+        this.loadingBebidas.set(false);
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las bebidas' });
+        this.loadingBebidas.set(false);
+      }
+    });
+  }
+
   /* ============ Badges de stock (estilo products-menu) ============ */
 
   productBadgeClass(item: InvItem): string {
@@ -141,16 +159,18 @@ export class InventarioComponent implements OnInit {
   openInsumoRestock(insumo: Insumo) {
     this.insumoRestockTarget = insumo;
     this.insumoRestockCantidad = 0;
+    this.insumoRestockCostoTotal = 0;
     this.insumoRestockVisible = true;
   }
 
   doInsumoRestock() {
     if (!this.insumoRestockTarget || this.insumoRestockCantidad <= 0) return;
-    this.inventoryService.restockInsumo(this.insumoRestockTarget.id, this.insumoRestockCantidad).subscribe({
+    this.inventoryService.restockInsumo(this.insumoRestockTarget.id, this.insumoRestockCantidad, this.insumoRestockCostoTotal).subscribe({
       next: (res) => {
         this.messageService.add({ severity: 'success', summary: 'Exitoso', detail: `Stock del insumo: ${res.object}` });
         this.insumoRestockVisible = false;
         this.loadInsumos();
+        this.loadBebidas();
         this.load();
       },
       error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo reabastecer' })

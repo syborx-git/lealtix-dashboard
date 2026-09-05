@@ -593,6 +593,35 @@
       }
     }
   }
+
+  .item-options {
+    margin-top: 0.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+
+    .option-line {
+      display: flex;
+      align-items: center;
+      font-size: 0.75rem;
+    }
+
+    .option-excluded {
+      color: var(--red-500);
+
+      i {
+        font-size: 0.7rem;
+      }
+    }
+
+    .option-additional {
+      color: var(--green-600);
+
+      i {
+        font-size: 0.7rem;
+      }
+    }
+  }
 }
 
 // ==================== COUPON ====================
@@ -1608,6 +1637,197 @@
     .order-detail-totals {
       background: rgba(255, 255, 255, 0.03);
       border-color: rgba(218, 159, 91, 0.2);
+    }
+  }
+}
+
+// ==================== CONFIGURACIÓN DE INGREDIENTES (modificables / adicionales) ====================
+.cfg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.cfg-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.cfg-panel {
+  position: relative;
+  width: 420px;
+  max-width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--surface-card, #ffffff);
+  color: var(--text-color);
+  border-radius: 14px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--surface-200);
+  z-index: 2;
+}
+
+.cfg-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--surface-200);
+
+  .cfg-product-name {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-color);
+  }
+
+  .cfg-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    background: var(--surface-100);
+    color: var(--text-color-secondary);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s ease;
+
+    &:hover {
+      background: var(--surface-200);
+      color: var(--text-color);
+    }
+  }
+}
+
+.cfg-panel-body {
+  padding: 1rem 1.25rem;
+
+  .cfg-product-base {
+    display: block;
+    font-size: 0.8125rem;
+    color: var(--text-color-secondary);
+    margin-bottom: 0.6rem;
+  }
+}
+
+.cfg-total-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+  background: var(--green-50);
+  border: 1px dashed var(--green-400);
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  color: var(--text-color);
+
+  strong {
+    font-size: 1rem;
+    color: var(--green-600);
+  }
+}
+
+.cfg-section {
+  margin-bottom: 1rem;
+  margin-top: 0.5rem;
+
+  .cfg-section-title {
+    display: block;
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: var(--text-color);
+    margin-bottom: 0.15rem;
+  }
+
+  .cfg-section-hint {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-color-secondary);
+    margin-bottom: 0.5rem;
+  }
+}
+
+.cfg-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--surface-100);
+  }
+
+  .cfg-item-name {
+    flex: 1;
+    font-size: 0.875rem;
+    color: var(--text-color);
+  }
+
+  .cfg-item-extra {
+    font-size: 0.75rem;
+    color: var(--text-color-secondary);
+  }
+
+  .cfg-item-price {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--green-600);
+  }
+}
+
+.cfg-actions {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--surface-200);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  .cfg-confirm-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.7rem;
+    border: none;
+    border-radius: 8px;
+    background: var(--green-600, #10b981);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+
+    &:hover {
+      background: var(--green-700, #059669);
+    }
+  }
+
+  .cfg-cancel-btn {
+    width: 100%;
+    padding: 0.6rem;
+    border: 1px solid var(--surface-300);
+    border-radius: 8px;
+    background: var(--surface-100);
+    color: var(--text-color-secondary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-weight: 500;
+
+    &:hover {
+      background: var(--surface-200);
+      color: var(--text-color);
     }
   }
 }

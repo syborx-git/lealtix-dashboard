@@ -49,8 +49,8 @@
     }
 
     .p-card-header {
-      background: #ffffff;
-      border-bottom: 1px solid #e5e7eb;
+      background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
       padding: 1.25rem 1.5rem;
     }
 
@@ -77,14 +77,14 @@
 
     i {
       font-size: 1.5rem;
-      color: var(--primary-color);
+      color: rgba(255, 255, 255, 0.95);
     }
 
     h2 {
       margin: 0;
       font-size: 1.25rem;
       font-weight: 700;
-      color: #0f172a;
+      color: #ffffff;
     }
   }
 
@@ -95,7 +95,7 @@
 
     .success-icon {
       font-size: 2rem;
-      color: #10b981;
+      color: rgba(255, 255, 255, 0.95);
 
       &.large {
         font-size: 2.5rem;
@@ -106,12 +106,12 @@
       margin: 0;
       font-size: 1.25rem;
       font-weight: 700;
-      color: #0f172a;
+      color: #ffffff;
     }
 
     .header-subtitle {
       margin: 0.25rem 0 0 0;
-      color: #64748b;
+      color: rgba(255, 255, 255, 0.85);
       font-size: 0.875rem;
     }
   }
@@ -123,19 +123,19 @@
 
     .error-icon {
       font-size: 2rem;
-      color: #ef4444;
+      color: rgba(255, 255, 255, 0.95);
     }
 
     h2 {
       margin: 0;
       font-size: 1.25rem;
       font-weight: 700;
-      color: #0f172a;
+      color: #ffffff;
     }
 
     .header-subtitle {
       margin: 0.25rem 0 0 0;
-      color: #64748b;
+      color: rgba(255, 255, 255, 0.85);
       font-size: 0.875rem;
     }
   }
@@ -647,8 +647,8 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
 
       .p-card-header {
-        background: rgba(255, 255, 255, 0.03) !important;
-        border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+        background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%) !important;
+        border-bottom-color: rgba(0, 0, 0, 0.15) !important;
       }
 
       .p-card-footer {
@@ -660,12 +660,18 @@
     .card-header-simple h2,
     .card-header-success h2,
     .card-header-error h2 {
-      color: #e6e8ef !important;
+      color: #ffffff !important;
+    }
+
+    .card-header-simple i,
+    .card-header-success .success-icon,
+    .card-header-error .error-icon {
+      color: rgba(255, 255, 255, 0.95) !important;
     }
 
     .card-header-success .header-subtitle,
     .card-header-error .header-subtitle {
-      color: var(--text-color-secondary) !important;
+      color: rgba(255, 255, 255, 0.85) !important;
     }
   }
 

@@ -99,4 +99,13 @@ export class DashboardService {
       .get<any>(url, { params })
       .pipe(catchError((e) => throwError(() => e)));
   }
+
+  costosAutomaticos(tenantId: number, months: number = 2): Observable<any> {
+    const params = new HttpParams()
+      .set('tenantId', String(tenantId))
+      .set('months', String(months));
+    return this.http
+      .get<any>(`${this.base}/costs/automatic`, { params })
+      .pipe(catchError((e) => throwError(() => e)));
+  }
 }

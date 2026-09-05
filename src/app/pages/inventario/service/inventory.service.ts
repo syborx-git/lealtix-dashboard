@@ -29,8 +29,24 @@ export class InventoryService {
     return this.http.delete<any>(`${this.baseUrl}/insumos/${insumoId}`);
   }
 
-  restockInsumo(insumoId: number, cantidad: number): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/insumos/${insumoId}/restock`, { cantidad });
+  restockInsumo(insumoId: number, cantidad: number, costoTotal?: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/insumos/${insumoId}/restock`, { cantidad, costoTotal: costoTotal ?? 0 });
+  }
+
+  getBebidas(tenantId: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/bebidas/tenant/${tenantId}`);
+  }
+
+  createBebida(tenantId: number, nombre: string, unidad: string, stock: number, stockMinimo: number, precioVenta: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/bebidas`, { tenantId, nombre, unidad, stock, stockMinimo, precioVenta });
+  }
+
+  updateBebida(insumoId: number, nombre: string, unidad: string, stock: number, stockMinimo: number, precioVenta: number): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/bebidas/${insumoId}`, { nombre, unidad, stock, stockMinimo, precioVenta });
+  }
+
+  deleteBebida(insumoId: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/bebidas/${insumoId}`);
   }
 
   updateStock(productId: number, stock: number, stockMinimo: number, unidad: string): Observable<any> {

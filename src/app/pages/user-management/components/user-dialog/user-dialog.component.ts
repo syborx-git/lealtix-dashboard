@@ -8,6 +8,7 @@ import { PasswordModule } from 'primeng/password';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
 import { MessageModule } from 'primeng/message';
+import { InputNumberModule } from 'primeng/inputnumber';
 import { UserRole, ROLE_PERMISSIONS } from '@/models/user.model';
 
 @Component({
@@ -23,7 +24,8 @@ import { UserRole, ROLE_PERMISSIONS } from '@/models/user.model';
     PasswordModule,
     SelectModule,
     TagModule,
-    MessageModule
+    MessageModule,
+    InputNumberModule
   ],
   styleUrls: ['./user-dialog.component.scss'],
   template: `
@@ -145,6 +147,29 @@ import { UserRole, ROLE_PERMISSIONS } from '@/models/user.model';
               *ngIf="usuarioForm.get('rol')?.invalid && (usuarioForm.get('rol')?.touched || submitted)"
               severity="error"
               text="Rol es requerido"
+            ></p-message>
+          </div>
+
+          <!-- Sueldo Mensual -->
+          <div class="col-span-full">
+            <label for="sueldoMensual">
+              Sueldo Mensual (USD)
+              <span class="text-red-500">*</span>
+            </label>
+            <p-inputNumber
+              id="sueldoMensual"
+              formControlName="sueldoMensual"
+              [min]="0"
+              mode="currency"
+              currency="USD"
+              locale="en-US"
+              placeholder="Ej: 100"
+              styleClass="w-full"
+            ></p-inputNumber>
+            <p-message
+              *ngIf="usuarioForm.get('sueldoMensual')?.invalid && (usuarioForm.get('sueldoMensual')?.touched || submitted)"
+              severity="error"
+              text="El sueldo mensual es requerido y no puede ser negativo"
             ></p-message>
           </div>
 

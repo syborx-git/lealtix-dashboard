@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, signal, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormArray, FormControl } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -36,7 +36,7 @@ import { TenantService } from '../admin-page/service/tenant.service';
 import { AuthService } from '@/auth/auth.service';
 import { ConfettiService } from '@/confetti/confetti.service';
 import { ConfettiComponent } from '@/confetti/confetti.component';
-import { environment } from '../commons/environment.dev';
+import { environment } from '../commons/environment';
 import { CampaignService } from '@/pages/campaigns/services/campaign.service';
 import { CatalogService, CatalogCategory } from '@/pages/campaigns/services/catalog.service';
 import { TreeNode } from 'primeng/api';
@@ -129,10 +129,10 @@ export class ProductMenuComponent implements OnInit {
 
     products = signal<Product[]>([]);
 
-    // Pestaña activa de la tabla unificada: 'products' | 'insumos'
-    activeTab = signal<'products' | 'insumos'>('products');
+    // Pestaña activa de la tabla unificada: 'products' | 'insumos' | 'bebidas'
+    activeTab = signal<'products' | 'insumos' | 'bebidas'>('products');
 
-    setActiveTab(tab: 'products' | 'insumos') {
+    setActiveTab(tab: 'products' | 'insumos' | 'bebidas') {
         this.activeTab.set(tab);
         this.tableFirst = 0;
         this.dt?.reset();
@@ -150,6 +150,7 @@ export class ProductMenuComponent implements OnInit {
     productRecipeLines: any[] = [];
     recipeLoading: boolean = false;
     unidades = ['pieza', 'gramos', 'mililitros'];
+    bebidaUnidades = ['pieza', 'mililitros'];
     tipoIngredienteOptions = [
         { label: 'Base (siempre en la receta)', value: 'BASE' },
         { label: 'Modificable (puede retirarse)', value: 'MODIFICABLE' },
@@ -184,6 +185,18 @@ export class ProductMenuComponent implements OnInit {
     insumoRestockVisible = false;
     insumoRestockTarget: any | null = null;
     insumoRestockCantidad = 0;
+    insumoRestockCostoTotal = 0;
+
+    // Bebidas (insumos marcados como bebida, vendibles en Comandix)
+    bebidas = signal<any[]>([]);
+    bebidasLoading = signal<boolean>(false);
+    bebidaDialogVisible = false;
+    editingBebida: any | null = null;
+    bebidaNombre = '';
+    bebidaUnidad = 'pieza';
+    bebidaStock = 0;
+    bebidaMin = 0;
+    bebidaPrecioVenta = 0;
 
     newCategory: { name?: string; description?: string; tenantId?: string; active: boolean } = {
         name: '',
@@ -212,7 +225,8 @@ export class ProductMenuComponent implements OnInit {
         private confettiService: ConfettiService,
         private campaignService: CampaignService,
         private inventoryService: InventoryService,
-        private router: Router
+        private router: Router,
+        private cdr: ChangeDetectorRef
     ) {
         this.categoryForm = this.fb.group({
             id: [0],
@@ -252,6 +266,7 @@ export class ProductMenuComponent implements OnInit {
                     this.loadProducts();
                     this.loadCrossSellingCatalog();
                     this.loadInsumos();
+                    this.loadBebidas();
                     this.loadInventory();
                     this.checkBannerConditions();
                     this.checkCampaignSetupPrompt();
@@ -348,6 +363,22 @@ export class ProductMenuComponent implements OnInit {
                 console.error('Error loading insumos', err);
                 this.insumos.set([]);
                 this.insumosLoading.set(false);
+            }
+        });
+    }
+
+    private loadBebidas(): void {
+        if (!this.tenantId) return;
+        this.bebidasLoading.set(true);
+        this.inventoryService.getBebidas(this.tenantId).subscribe({
+            next: (res) => {
+                this.bebidas.set(res?.object || []);
+                this.bebidasLoading.set(false);
+            },
+            error: (err) => {
+                console.error('Error loading bebidas', err);
+                this.bebidas.set([]);
+                this.bebidasLoading.set(false);
             }
         });
     }
@@ -595,16 +626,18 @@ export class ProductMenuComponent implements OnInit {
     openInsumoRestock(insumo: any) {
         this.insumoRestockTarget = insumo;
         this.insumoRestockCantidad = 0;
+        this.insumoRestockCostoTotal = 0;
         this.insumoRestockVisible = true;
     }
 
     doInsumoRestock() {
         if (!this.insumoRestockTarget || this.insumoRestockCantidad <= 0) return;
-        this.inventoryService.restockInsumo(this.insumoRestockTarget.id, this.insumoRestockCantidad).subscribe({
+        this.inventoryService.restockInsumo(this.insumoRestockTarget.id, this.insumoRestockCantidad, this.insumoRestockCostoTotal).subscribe({
             next: (res) => {
                 this.messageService.add({ severity: 'success', summary: 'Exitoso', detail: `Stock del insumo: ${res.object}`, life: 3000 });
                 this.insumoRestockVisible = false;
                 this.loadInsumos();
+                this.loadBebidas();
                 this.loadInventory();
             },
             error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo reabastecer', life: 3000 })
@@ -613,6 +646,85 @@ export class ProductMenuComponent implements OnInit {
 
     isLowStock(insumo: any): boolean {
         return insumo.stock <= insumo.stockMinimo;
+    }
+
+    /* ============ Bebidas (crear/editar/almacenar, vendibles en Comandix) ============ */
+
+    openNewBebida() {
+        this.editingBebida = null;
+        this.bebidaNombre = '';
+        this.bebidaUnidad = 'pieza';
+        this.bebidaStock = 0;
+        this.bebidaMin = 0;
+        this.bebidaPrecioVenta = 0;
+        this.bebidaDialogVisible = true;
+        this.cdr.detectChanges();
+    }
+
+    openEditBebida(bebida: any) {
+        this.editingBebida = bebida;
+        this.bebidaNombre = bebida.nombre;
+        this.bebidaUnidad = bebida.unidad || 'pieza';
+        this.bebidaStock = bebida.stock;
+        this.bebidaMin = bebida.stockMinimo;
+        this.bebidaPrecioVenta = bebida.precioVenta ?? 0;
+        this.bebidaDialogVisible = true;
+        this.cdr.detectChanges();
+    }
+
+    saveBebida() {
+        if (!this.bebidaNombre?.trim()) {
+            this.messageService.add({ severity: 'warn', summary: 'Aviso', detail: 'Escribe el nombre de la bebida', life: 3000 });
+            return;
+        }
+        const done = () => {
+            this.bebidaDialogVisible = false;
+            this.loadBebidas();
+        };
+        if (this.editingBebida) {
+            this.inventoryService.updateBebida(
+                this.editingBebida.id, this.bebidaNombre, this.bebidaUnidad, this.bebidaStock, this.bebidaMin, this.bebidaPrecioVenta
+            ).subscribe({
+                next: () => { this.messageService.add({ severity: 'success', summary: 'Bebida actualizada', detail: 'Listo', life: 3000 }); done(); },
+                error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar la bebida', life: 3000 })
+            });
+        } else {
+            this.inventoryService.createBebida(
+                this.tenantId, this.bebidaNombre, this.bebidaUnidad, this.bebidaStock, this.bebidaMin, this.bebidaPrecioVenta
+            ).subscribe({
+                next: () => { this.messageService.add({ severity: 'success', summary: 'Bebida creada', detail: 'Aparecerá en el menú y en Comandix', life: 3000 }); done(); },
+                error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear la bebida', life: 3000 })
+            });
+        }
+    }
+
+    deleteBebida(bebida: any) {
+        this.confirmationService.confirm({
+            message: `¿Eliminar la bebida "${bebida.nombre}"?`,
+            header: 'Confirmar',
+            icon: 'pi pi-exclamation-triangle',
+            accept: () => {
+                this.inventoryService.deleteBebida(bebida.id).subscribe({
+                    next: (res) => {
+                        if (res.code !== 200) {
+                            this.messageService.add({ severity: 'warn', summary: 'Aviso', detail: res.message, life: 3000 });
+                            return;
+                        }
+                        this.messageService.add({ severity: 'success', summary: 'Bebida eliminada', detail: 'Listo', life: 3000 });
+                        this.loadBebidas();
+                        this.loadInventory();
+                    },
+                    error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar la bebida', life: 3000 })
+                });
+            }
+        });
+    }
+
+    openBebidaRestock(bebida: any) {
+        this.insumoRestockTarget = bebida;
+        this.insumoRestockCantidad = 0;
+        this.insumoRestockCostoTotal = 0;
+        this.insumoRestockVisible = true;
     }
 
     private loadRecipeForProduct(productId: number | null): void {

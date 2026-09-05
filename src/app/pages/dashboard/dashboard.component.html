@@ -38,7 +38,8 @@
               <div class="kpi-icon-badge"><i class="pi pi-wallet"></i></div>
             </div>
             <div class="kpi-value">{{ costos() | currency:'USD':'symbol':'1.0-0' }}</div>
-            <div class="kpi-sub"><i class="pi pi-percentage"></i> ~{{ porcentajeCostoTotal() }}% de ventas</div>
+            <div class="kpi-sub" *ngIf="costosModo() === 'porcentaje'"><i class="pi pi-percentage"></i> ~{{ porcentajeCostoTotal() }}% de ventas</div>
+            <div class="kpi-sub" *ngIf="costosModo() === 'automatico'"><i class="pi pi-calculator"></i> Gastos reales (2 meses)</div>
           </div>
         </ng-container>
       </p-card>
@@ -51,7 +52,8 @@
               <div class="kpi-icon-badge"><i class="pi pi-chart-line"></i></div>
             </div>
             <div class="kpi-value">{{ ganancias() | currency:'USD':'symbol':'1.0-0' }}</div>
-            <div class="kpi-sub"><i class="pi pi-trending-up"></i> Ventas - Costos</div>
+            <div class="kpi-sub" *ngIf="costosModo() === 'porcentaje'"><i class="pi pi-trending-up"></i> Ventas - Costos</div>
+            <div class="kpi-sub" *ngIf="costosModo() === 'automatico'"><i class="pi pi-trending-up"></i> Ventas - gastos reales</div>
           </div>
         </ng-container>
       </p-card>
@@ -228,6 +230,11 @@
         <label class="block text-sm font-medium mb-1">Cantidad que llegó</label>
         <p-inputNumber [ngModel]="restockCantidad()" (ngModelChange)="restockCantidad.set($event)" [min]="0" [step]="0.5" styleClass="w-full" />
       </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Costo total usado (USD)</label>
+        <p-inputNumber [ngModel]="restockCostoTotal()" (ngModelChange)="restockCostoTotal.set($event)" [min]="0" [step]="1" [mode]="'currency'" [currency]="'USD'" [locale]="'en-US'" styleClass="w-full" />
+        <small class="block text-xs text-600 mt-1">Importe invertido en este restock (se usará en el cálculo automático de costos).</small>
+      </div>
       <div *ngIf="restockTarget() && restockCantidad() > 0" class="text-sm text-600">
         Nuevo stock: <strong>{{ (restockTarget()?.stock ?? 0) + restockCantidad() }} {{ restockTarget()?.unidad || 'pieza' }}</strong>
       </div>
@@ -242,65 +249,147 @@
   <!-- Modal: Costos (configuraciones de porcentaje + contexto) -->
   <p-dialog header="Costos" [visible]="costosModalVisible()" [style]="{ width: '560px' }" [modal]="true" [dismissableMask]="true" (visibleChange)="costosModalVisible.set($event)">
     <div class="flex flex-col gap-4">
-      <div class="costs-context">
-        <i class="pi pi-info-circle"></i>
-        <span>
-          Los <strong>Costos</strong> se calculan como un porcentaje de tus <strong>ventas totales</strong>.
-          Aquí puedes configurar cuánto destinas a <strong>materia prima</strong> y a <strong>recurso humano</strong>.
-          El porcentaje restante ({{ gananciasPct() }}%) corresponde a tus ganancias.
-        </span>
+      <div>
+        <label class="costs-label mb-1">Modo de cálculo</label>
+        <p-selectButton [options]="costosModoOptions" optionLabel="label" optionValue="value" [ngModel]="costosModo()" (ngModelChange)="cambiarModoCostos($event)" styleClass="w-full"></p-selectButton>
+        <small class="block text-xs text-600 mt-1">Porcentajes: estimación manual sobre ventas. Automático: usa gastos reales (restocks + sueldos) de los últimos 2 meses.</small>
       </div>
 
-      <div class="costs-period-summary">
-        <div class="costs-line"><span>Ventas (total del periodo)</span><strong>{{ formatoMoneda(ventasBase()) }}</strong></div>
-      </div>
+      <!-- ====== MODO PORCENTAJES ====== -->
+      <ng-container *ngIf="costosModo() === 'porcentaje'; else modoAutomatico">
+        <div class="costs-context">
+          <i class="pi pi-info-circle"></i>
+          <span>
+            Los <strong>Costos</strong> se calculan como un porcentaje de tus <strong>ventas totales</strong>.
+            Aquí puedes configurar cuánto destinas a <strong>materia prima</strong> y a <strong>recurso humano</strong>.
+            El porcentaje restante ({{ gananciasPct() }}%) corresponde a tus ganancias.
+          </span>
+        </div>
 
-      <div class="costs-config">
-        <div class="costs-config-row">
-          <div class="flex-1">
-            <label class="costs-label">Materia prima (%)</label>
-            <p-inputNumber [ngModel]="porcentajeMateriaPrima()" (ngModelChange)="porcentajeMateriaPrima.set($event ?? 0)"
-              [min]="0" [max]="100" [suffix]="'%'" styleClass="w-full"></p-inputNumber>
+        <div class="costs-period-summary">
+          <div class="costs-line"><span>Ventas (total del periodo)</span><strong>{{ formatoMoneda(ventasBase()) }}</strong></div>
+        </div>
+
+        <div class="costs-config">
+          <div class="costs-config-row">
+            <div class="flex-1">
+              <label class="costs-label">Materia prima (%)</label>
+              <p-inputNumber [ngModel]="porcentajeMateriaPrima()" (ngModelChange)="porcentajeMateriaPrima.set($event ?? 0)"
+                [min]="0" [max]="100" [suffix]="'%'" styleClass="w-full"></p-inputNumber>
+            </div>
+            <div class="costs-result">
+              <span class="costs-result-label">Importe</span>
+              <strong>{{ formatoMoneda(costosMateriaPrima()) }}</strong>
+            </div>
           </div>
-          <div class="costs-result">
-            <span class="costs-result-label">Importe</span>
-            <strong>{{ formatoMoneda(costosMateriaPrima()) }}</strong>
+
+          <div class="costs-config-row">
+            <div class="flex-1">
+              <label class="costs-label">Recurso humano (%)</label>
+              <p-inputNumber [ngModel]="porcentajeRecursoHumano()" (ngModelChange)="porcentajeRecursoHumano.set($event ?? 0)"
+                [min]="0" [max]="100" [suffix]="'%'" styleClass="w-full"></p-inputNumber>
+            </div>
+            <div class="costs-result">
+              <span class="costs-result-label">Importe</span>
+              <strong>{{ formatoMoneda(costosRecursoHumano()) }}</strong>
+            </div>
           </div>
         </div>
 
-        <div class="costs-config-row">
-          <div class="flex-1">
-            <label class="costs-label">Recurso humano (%)</label>
-            <p-inputNumber [ngModel]="porcentajeRecursoHumano()" (ngModelChange)="porcentajeRecursoHumano.set($event ?? 0)"
-              [min]="0" [max]="100" [suffix]="'%'" styleClass="w-full"></p-inputNumber>
-          </div>
-          <div class="costs-result">
-            <span class="costs-result-label">Importe</span>
-            <strong>{{ formatoMoneda(costosRecursoHumano()) }}</strong>
-          </div>
+        <div class="costs-total">
+          <div><span>Total de costos</span><small>{{ porcentajeCostoTotal() }}% de ventas</small></div>
+          <strong>{{ formatoMoneda(costos()) }}</strong>
         </div>
-      </div>
 
-      <div class="costs-total">
-        <div><span>Total de costos</span><small>{{ porcentajeCostoTotal() }}% de ventas</small></div>
-        <strong>{{ formatoMoneda(costos()) }}</strong>
-      </div>
+        <p-message *ngIf="porcentajeCostoTotal() >= 100" severity="warn" text="El costo total no puede llegar a 100%; se recortará el mayor al guardar."></p-message>
 
-      <p-message *ngIf="porcentajeCostoTotal() >= 100" severity="warn" text="El costo total no puede llegar a 100%; se recortará el mayor al guardar."></p-message>
+        <p-message severity="info" text="Nota: los porcentajes se guardan en este navegador y se aplican a la card de Costos y Ganancias."></p-message>
+      </ng-container>
 
-      <p-message severity="info" text="Nota: los porcentajes se guardan en este navegador y se aplican a la card de Costos y Ganancias."></p-message>
+      <!-- ====== MODO AUTOMÁTICO ====== -->
+      <ng-template #modoAutomatico>
+        <ng-container *ngIf="costosAutomaticosLoading(); else autoCargado">
+          <div class="flex flex-col gap-2">
+            <label class="costs-label">Calculando con datos reales...</label>
+            <p-skeleton width="60%" height="1rem"></p-skeleton>
+            <p-skeleton width="80%" height="1rem"></p-skeleton>
+            <p-skeleton width="70%" height="1rem"></p-skeleton>
+          </div>
+        </ng-container>
+        <ng-template #autoCargado>
+          <ng-container *ngIf="costosAutomaticos(); else autoSinDatos">
+            <div class="costs-context">
+              <i class="pi pi-calculator"></i>
+              <span>
+                Los <strong>Costos</strong> se calculan con los <strong>gastos reales</strong> del periodo
+                <strong>{{ formatoPeriodo(costosPeriodoDesde()) }} — {{ formatoPeriodo(costosPeriodoHasta()) }}</strong>
+                (últimos 2 meses), sin usar porcentajes estimados.
+              </span>
+            </div>
+
+            <div class="costs-period-summary">
+              <div class="costs-line"><span>Ventas del periodo</span><strong>{{ formatoMoneda(costosAutomaticos()?.ventasTotales ?? 0) }}</strong></div>
+              <div class="costs-line"><span>Restocks registrados</span><strong>{{ costosAutomaticos()?.cantidadRestocks ?? 0 }}</strong></div>
+            </div>
+
+            <div class="costs-config">
+              <div class="costs-config-row">
+                <div class="flex-1">
+                  <span class="costs-result-label">Materiales (restocks)</span>
+                  <div class="text-sm text-600">{{ materiaPrimaPct() }}% de ventas</div>
+                </div>
+                <div class="costs-result">
+                  <span class="costs-result-label">Importe</span>
+                  <strong>{{ formatoMoneda(costosMateriaPrima()) }}</strong>
+                </div>
+              </div>
+
+              <div class="costs-config-row">
+                <div class="flex-1">
+                  <span class="costs-result-label">Sueldos del personal</span>
+                  <div class="text-sm text-600">{{ recursoHumanoPct() }}% de ventas</div>
+                </div>
+                <div class="costs-result">
+                  <span class="costs-result-label">Importe</span>
+                  <strong>{{ formatoMoneda(costosRecursoHumano()) }}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="costs-total">
+              <div><span>Total de costos</span><small>{{ costoTotalPct() }}% de ventas</small></div>
+              <strong>{{ formatoMoneda(costos()) }}</strong>
+            </div>
+
+            <div class="ganancias-breakdown">
+              <div class="ganancias-row"><span>Ganancias estimadas</span><strong class="text-green-600">{{ formatoMoneda(ganancias()) }}</strong></div>
+            </div>
+
+            <p-message severity="info" text="Gastos tomados de los restocks y sueldos registrados. Si falta algún restock, regístralo en la página de Insumos."></p-message>
+          </ng-container>
+          <ng-template #autoSinDatos>
+            <p-message severity="warn" text="No hay suficientes datos para el cálculo automático. Registra restocks con su costo y sueldos de los miembros."></p-message>
+          </ng-template>
+        </ng-template>
+      </ng-template>
     </div>
     <ng-template #footer>
-      <p-button label="Reiniciar" severity="secondary" [text]="true" icon="pi pi-refresh" (click)="reiniciarPorcentajes()"></p-button>
-      <p-button label="Cancelar" severity="secondary" (click)="closeCostosModal()"></p-button>
-      <p-button label="Guardar" icon="pi pi-check" severity="success" (click)="guardarPorcentajes(); closeCostosModal()"></p-button>
+      <ng-container *ngIf="costosModo() === 'porcentaje'; else footerAuto">
+        <p-button label="Reiniciar" severity="secondary" [text]="true" icon="pi pi-refresh" (click)="reiniciarPorcentajes()"></p-button>
+        <p-button label="Cancelar" severity="secondary" (click)="closeCostosModal()"></p-button>
+        <p-button label="Guardar" icon="pi pi-check" severity="success" (click)="guardarPorcentajes(); closeCostosModal()"></p-button>
+      </ng-container>
+      <ng-template #footerAuto>
+        <p-button *ngIf="!costosAutomaticos() && !costosAutomaticosLoading()" label="Reintentar" severity="secondary" icon="pi pi-refresh" (click)="cargarCostosAutomaticos()"></p-button>
+        <p-button label="Cerrar" (click)="closeCostosModal()"></p-button>
+      </ng-template>
     </ng-template>
   </p-dialog>
 
   <!-- Modal: Ganancias (contexto de dónde sale el valor) -->
   <p-dialog header="Ganancias" [visible]="gananciasModalVisible()" [style]="{ width: '520px' }" [modal]="true" [dismissableMask]="true" (visibleChange)="gananciasModalVisible.set($event)">
     <div class="flex flex-col gap-4">
-      <div class="costs-context">
+      <div class="costs-context" *ngIf="costosModo() === 'porcentaje'">
         <i class="pi pi-info-circle"></i>
         <span>
           Las <strong>Ganancias</strong> son lo que queda de tus <strong>ventas totales</strong> después de restar los
@@ -308,17 +397,27 @@
           Si deseas ajustar estos porcentajes, configúralos en la card de <strong>Costos</strong>.
         </span>
       </div>
+      <div class="costs-context" *ngIf="costosModo() === 'automatico'">
+        <i class="pi pi-calculator"></i>
+        <span>
+          Las <strong>Ganancias</strong> se calculan con los <strong>gastos reales</strong> del periodo
+          <strong>{{ formatoPeriodo(costosPeriodoDesde()) }} — {{ formatoPeriodo(costosPeriodoHasta()) }}</strong>
+          (restocks + sueldos de los últimos 2 meses).
+        </span>
+      </div>
 
       <div class="ganancias-breakdown">
         <div class="ganancias-row"><span>Ventas totales</span><strong>{{ formatoMoneda(ventasBase()) }}</strong></div>
-        <div class="ganancias-row"><span>Costos ({{ porcentajeCostoTotal() }}%)</span><strong class="text-red-500">{{ formatoMoneda(costos()) }}</strong></div>
+        <div class="ganancias-row" *ngIf="costosModo() === 'porcentaje'"><span>Costos ({{ porcentajeCostoTotal() }}%)</span><strong class="text-red-500">{{ formatoMoneda(costos()) }}</strong></div>
+        <div class="ganancias-row" *ngIf="costosModo() === 'automatico'"><span>Costos registrados ({{ costoTotalPct() }}%)</span><strong class="text-red-500">{{ formatoMoneda(costos()) }}</strong></div>
         <div class="ganancias-row ganancias-result">
           <span>Ganancias ({{ gananciasPct() }}%)</span>
           <strong class="text-green-600">{{ formatoMoneda(ganancias()) }}</strong>
         </div>
       </div>
 
-      <p-message severity="info" text="Las ganancias se recalculan automáticamente según los porcentajes configurados."></p-message>
+      <p-message *ngIf="costosModo() === 'porcentaje'" severity="info" text="Las ganancias se recalculan automáticamente según los porcentajes configurados."></p-message>
+      <p-message *ngIf="costosModo() === 'automatico'" severity="info" text="Gastos tomados de los restocks y sueldos registrados. Configura el modo en la card de Costos."></p-message>
     </div>
     <ng-template #footer>
       <p-button label="Cerrar" (click)="closeGananciasModal()"></p-button>

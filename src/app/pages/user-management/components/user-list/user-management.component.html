@@ -18,9 +18,9 @@
   #dt
   [value]="usuarios()"
   [rows]="rows"
-  [columns]="['nombre', 'email', 'rol']"
+  [columns]="['nombre', 'email', 'rol', 'sueldoMensual']"
   [paginator]="true"
-  [globalFilterFields]="['nombre', 'email', 'rol']"
+  [globalFilterFields]="['nombre', 'email', 'rol', 'sueldoMensual']"
   [loading]="loading()"
   [totalRecords]="totalRecords()"
   [rowsPerPageOptions]="[5, 10, 20]"
@@ -61,6 +61,10 @@
         Rol
         <p-sortIcon field="rol"></p-sortIcon>
       </th>
+      <th pSortableColumn="sueldoMensual" style="min-width: 10rem">
+        Sueldo Mensual
+        <p-sortIcon field="sueldoMensual"></p-sortIcon>
+      </th>
       <th style="min-width: 10rem"></th>
     </tr>
   </ng-template>
@@ -74,6 +78,9 @@
         <p-tag
           [value]="formatRolName(usuario.rol)"
           [severity]="getColorForRole(usuario.rol)"></p-tag>
+      </td>
+      <td style="min-width: 10rem">
+        <span class="font-medium">{{ formatoMoneda(usuario.sueldoMensual ?? 100) }}</span>
       </td>
       <td>
         <p-button
@@ -95,7 +102,7 @@
   <!-- Empty State -->
   <ng-template pTemplate="emptymessage">
     <tr>
-      <td colspan="4" class="text-center py-6">
+      <td colspan="5" class="text-center py-6">
         <div class="flex flex-column align-items-center gap-3">
           <i class="pi pi-users text-6xl text-surface-400"></i>
           <h3 class="text-xl font-medium m-0">No se encontraron miembros</h3>

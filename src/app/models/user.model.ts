@@ -16,6 +16,7 @@ export interface UserDTO {
   activo?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
+  sueldoMensual?: number;
 }
 
 export interface CreateUserRequest {
@@ -24,6 +25,7 @@ export interface CreateUserRequest {
   contrasena: string;
   rol: UserRole;
   tenantId: number;
+  sueldoMensual: number;
 }
 
 export interface UpdateUserRequest {
@@ -31,6 +33,7 @@ export interface UpdateUserRequest {
   email?: string;
   contrasena?: string;
   rol?: UserRole;
+  sueldoMensual?: number;
 }
 
 export interface UserListResponse {

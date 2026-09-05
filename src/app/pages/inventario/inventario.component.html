@@ -4,7 +4,7 @@
       <h2>Inventario</h2>
       <p>Control de stock de productos e insumos</p>
     </div>
-    <button pButton label="Actualizar" icon="pi pi-refresh" severity="secondary" (click)="load(); loadInsumos()"></button>
+    <button pButton label="Actualizar" icon="pi pi-refresh" severity="secondary" (click)="load(); loadInsumos(); loadBebidas()"></button>
   </div>
 
   <div class="catalog-panel surface-card border-round-lg p-3">
@@ -21,17 +21,23 @@
         <i class="pi pi-box"></i>
         <span>Insumos</span>
       </button>
+      <button type="button" class="catalog-tab"
+        [ngClass]="{ 'catalog-tab-active': activeTab() === 'bebidas' }"
+        (click)="setActiveTab('bebidas')">
+        <i class="pi pi-glass"></i>
+        <span>Bebidas</span>
+      </button>
     </div>
 
-    <p-table #dt [value]="activeTab() === 'products' ? $any(items()) : $any(insumos())" [loading]="activeTab() === 'products' ? loading() : loadingInsumos()"
+    <p-table #dt [value]="activeTab() === 'products' ? $any(items()) : (activeTab() === 'bebidas' ? $any(bebidas()) : $any(insumos()))" [loading]="activeTab() === 'products' ? loading() : (activeTab() === 'bebidas' ? loadingBebidas() : loadingInsumos())"
       [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,30,50]"
       [globalFilterFields]="activeTab() === 'products' ? ['name','categoryName'] : ['nombre']"
       responsiveLayout="scroll" styleClass="p-datatable-sm catalog-table"
       [tableStyle]="{ 'width': '100%', 'table-layout': 'fixed' }" [rowHover]="true"
-      [showCurrentPageReport]="true" [currentPageReportTemplate]="activeTab() === 'products' ? 'Mostrando {first} a {last} de {totalRecords} productos' : 'Mostrando {first} a {last} de {totalRecords} insumos'">
+      [showCurrentPageReport]="true" [currentPageReportTemplate]="activeTab() === 'products' ? 'Mostrando {first} a {last} de {totalRecords} productos' : (activeTab() === 'bebidas' ? 'Mostrando {first} a {last} de {totalRecords} bebidas' : 'Mostrando {first} a {last} de {totalRecords} insumos')">
       <ng-template pTemplate="caption">
         <div class="flex items-center justify-between">
-          <h5 class="m-0">{{ activeTab() === 'products' ? items().length + ' productos' : insumos().length + ' insumos' }}</h5>
+          <h5 class="m-0">{{ activeTab() === 'products' ? items().length + ' productos' : (activeTab() === 'bebidas' ? bebidas().length + ' bebidas' : insumos().length + ' insumos') }}</h5>
           <p-iconfield>
             <p-inputicon styleClass="pi pi-search" />
             <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Buscar..." />
@@ -39,7 +45,7 @@
         </div>
       </ng-template>
       <ng-template #header>
-        <ng-container *ngIf="activeTab() === 'products'; else insumoHeader">
+        <ng-container *ngIf="activeTab() === 'products'">
           <tr>
             <th pSortableColumn="name" style="width: 45%">
               Producto
@@ -55,7 +61,24 @@
             </th>
           </tr>
         </ng-container>
-        <ng-template #insumoHeader>
+        <ng-container *ngIf="activeTab() === 'bebidas'">
+          <tr>
+            <th pSortableColumn="nombre" style="width: 30%">
+              Bebida
+              <p-sortIcon field="nombre" />
+            </th>
+            <th pSortableColumn="stock" style="width: 20%">
+              Stock
+              <p-sortIcon field="stock" />
+            </th>
+            <th pSortableColumn="precioVenta" style="width: 25%">
+              Precio venta
+              <p-sortIcon field="precioVenta" />
+            </th>
+            <th style="width: 25%">Acciones</th>
+          </tr>
+        </ng-container>
+        <ng-container *ngIf="activeTab() === 'insumos'">
           <tr>
             <th pSortableColumn="nombre" style="width: 35%">
               Insumo
@@ -71,10 +94,10 @@
             </th>
             <th style="width: 20%">Acciones</th>
           </tr>
-        </ng-template>
+        </ng-container>
       </ng-template>
       <ng-template pTemplate="body" let-row>
-        <ng-container *ngIf="activeTab() === 'products'; else insumoRow">
+        <ng-container *ngIf="activeTab() === 'products'">
           <tr>
             <td style="width: 45%">
               <div class="font-medium text-900">{{ row.name }}</div>
@@ -87,7 +110,27 @@
             </td>
           </tr>
         </ng-container>
-        <ng-template #insumoRow>
+        <ng-container *ngIf="activeTab() === 'bebidas'">
+          <tr>
+            <td style="width: 30%">
+              <div class="font-medium text-900">{{ row.nombre }}</div>
+              <div class="text-xs text-500">{{ row.unidad || 'pieza' }}</div>
+            </td>
+            <td style="width: 20%">
+              <span class="stock-badge" [ngClass]="insumoLowClass(row)">
+                {{ row.stock }} {{ row.unidad || 'pieza' }}
+              </span>
+            </td>
+            <td style="width: 25%">
+              <div class="text-sm text-500">{{ row.precioVenta | currency: 'MXN' }}</div>
+            </td>
+            <td style="width: 25%">
+              <p-button label="Restock" icon="pi pi-refresh" iconPos="left" styleClass="restock-pill-btn"
+                (click)="openInsumoRestock(row)"></p-button>
+            </td>
+          </tr>
+        </ng-container>
+        <ng-container *ngIf="activeTab() === 'insumos'">
           <tr>
             <td style="width: 35%">
               <div class="font-medium text-900">{{ row.nombre }}</div>
@@ -105,12 +148,12 @@
                 (click)="openInsumoRestock(row)"></p-button>
             </td>
           </tr>
-        </ng-template>
+        </ng-container>
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
           <td [attr.colspan]="activeTab() === 'products' ? 3 : 4" class="text-center p-8">
-            {{ activeTab() === 'products' ? 'No hay productos en el inventario' : 'Sin insumos registrados' }}
+            {{ activeTab() === 'products' ? 'No hay productos en el inventario' : (activeTab() === 'bebidas' ? 'Sin bebidas registradas' : 'Sin insumos registrados') }}
           </td>
         </tr>
       </ng-template>
@@ -126,6 +169,11 @@
       <div>
         <label class="block text-sm font-medium mb-1">Cantidad que llegó</label>
         <p-inputNumber [(ngModel)]="insumoRestockCantidad" [min]="0" [step]="0.5" styleClass="w-full" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Costo total usado (en este restock)</label>
+        <p-inputNumber [(ngModel)]="insumoRestockCostoTotal" [min]="0" [step]="1" [mode]="'currency'" [currency]="'USD'" [locale]="'en-US'" styleClass="w-full" />
+        <small class="block text-xs text-600 mt-1">Importe invertido en este restock (se usará en el cálculo automático de costos).</small>
       </div>
       <div *ngIf="insumoRestockTarget && insumoRestockCantidad > 0" class="text-sm text-600">
         Nuevo stock: <strong>{{ insumoRestockTarget.stock + insumoRestockCantidad }} {{ insumoRestockTarget.unidad || 'pieza' }}</strong>

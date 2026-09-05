@@ -114,7 +114,7 @@
   </div>
 
   <!-- ==================== VISTA: NUEVA VENTA (POS) ==================== -->
-  <div *ngIf="!loading() && activeView() === 'pos'" class="comandix-main-content">
+  <div *ngIf="activeView() === 'pos'" class="comandix-main-content">
 
     <div *ngIf="editingPendingOrder() as order" class="col-12 mb-3">
       <div class="p-3" style="background: linear-gradient(135deg, #fff7ed 0%, #fffbf2 100%); border: 1px solid #f0d7b8; border-radius: 16px;">
@@ -244,7 +244,7 @@
                             [rounded]="true"
                             severity="success"
                             size="small"
-                            (onClick)="addToCart(product); $event.stopPropagation()"
+                            (click)="$event.stopPropagation(); addToCart(product)"
                           ></p-button>
                         </div>
                       </div>
@@ -261,7 +261,99 @@
     <!-- COLUMNA DERECHA: CARRITO DESKTOP -->
     <div class="comandix-right-column">
       <div class="cart-sticky-container">
-        <ng-container *ngTemplateOutlet="carritoTemplate"></ng-container>
+        <p-card styleClass="cart-card">
+          <ng-template #header>
+            <div class="cart-header">
+              <div class="flex align-items-center gap-2">
+                <i class="pi pi-shopping-cart"></i>
+                <h3 class="text-lg font-semibold m-0">Comanda</h3>
+              </div>
+              <p-tag
+                [value]="cart().length.toString() + ' items'"
+                [styleClass]="cart().length > 0 ? 'p-tag-success' : 'p-tag-secondary'"
+              ></p-tag>
+            </div>
+          </ng-template>
+
+          <div *ngIf="cart().length === 0" class="empty-cart">
+            <i class="pi pi-shopping-cart"></i>
+            <p class="font-semibold text-color-secondary mb-1">Carrito vacío</p>
+            <p class="text-xs text-color-secondary text-center">Comienza seleccionando un cliente o agrega productos</p>
+          </div>
+
+          <div *ngIf="cart().length > 0" class="cart-content">
+            <div class="cart-items">
+              <div *ngFor="let item of cart(); trackBy: trackByProductId" class="cart-item">
+                <div class="cart-item-header">
+                  <div class="item-info">
+                    <h4 class="item-name">{{ item.product.name }}</h4>
+                    <span class="item-unit-price">${{ getCartItemUnitPrice(item) | number:'1.2-2' }} c/u</span>
+                  </div>
+                  <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" size="small" (onClick)="removeFromCart(item)"></p-button>
+                </div>
+
+                <div class="quantity-control">
+                  <div class="quantity-buttons">
+                    <p-button icon="pi pi-minus" [rounded]="true" severity="secondary" size="small" (onClick)="updateQuantity(item, item.cantidad - 1)"></p-button>
+                    <span class="quantity-value">{{ item.cantidad }}</span>
+                    <p-button icon="pi pi-plus" [rounded]="true" severity="secondary" size="small" (onClick)="updateQuantity(item, item.cantidad + 1)"></p-button>
+                  </div>
+                  <span class="item-total">${{ (getCartItemUnitPrice(item) * item.cantidad) | number:'1.2-2' }}</span>
+                </div>
+
+                <div class="item-notes">
+                  <input pInputText [(ngModel)]="item.comentarios" placeholder="Sin cebolla, extra salsa..." class="w-full" />
+                </div>
+
+                <div *ngIf="getCartExcludedNames(item) || getCartAdditionalNames(item)" class="item-options">
+                  <span *ngIf="getCartExcludedNames(item)" class="option-line option-excluded">
+                    <i class="pi pi-minus-circle mr-1"></i>{{ getCartExcludedNames(item) }}
+                  </span>
+                  <span *ngIf="getCartAdditionalNames(item)" class="option-line option-additional">
+                    <i class="pi pi-plus-circle mr-1"></i>{{ getCartAdditionalNames(item) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <p-divider></p-divider>
+
+            <div *ngIf="selectedCliente" class="coupon-section">
+              <label class="section-label">
+                <i class="pi pi-ticket mr-2"></i>Cupón
+              </label>
+              <div class="flex gap-2">
+                <input pInputText [(ngModel)]="codigoCupon" placeholder="Código" class="flex-1" [disabled]="validatingCoupon()" />
+                <p-button icon="pi pi-check" [loading]="validatingCoupon()" [disabled]="!codigoCupon.trim() || validatingCoupon()" size="small" (onClick)="validarCupon()"></p-button>
+              </div>
+            </div>
+
+            <p-divider></p-divider>
+
+            <div class="totals-section">
+              <div class="total-row">
+                <span class="total-label">Subtotal:</span>
+                <span class="total-value">${{ subtotal() | number:'1.2-2' }}</span>
+              </div>
+              <div *ngIf="descuentoAplicado() > 0" class="total-row discount-row">
+                <span class="total-label"><i class="pi pi-tag mr-1"></i>Descuento:</span>
+                <span class="total-value">-${{ descuentoAplicado() | number:'1.2-2' }}</span>
+              </div>
+              <p-divider></p-divider>
+              <div class="total-row final-total">
+                <span class="total-label">Total:</span>
+                <span class="total-value">${{ totalFinal() | number:'1.2-2' }}</span>
+              </div>
+            </div>
+
+            <p-divider></p-divider>
+
+            <div class="action-buttons">
+              <p-button icon="pi pi-check-circle" [label]="editingPendingOrder() ? 'Guardar Cambios' : 'Finalizar Venta'" severity="success" [loading]="processingOrder()" [disabled]="processingOrder()" styleClass="w-full" (onClick)="finalizarVenta()"></p-button>
+              <p-button icon="pi pi-times" [label]="editingPendingOrder() ? 'Cancelar edición' : 'Limpiar'" severity="secondary" [outlined]="true" styleClass="w-full" [disabled]="processingOrder()" (onClick)="editingPendingOrder() ? cancelPendingOrderEdition() : limpiarCarrito()"></p-button>
+            </div>
+          </div>
+        </p-card>
       </div>
     </div>
   </div>
@@ -529,6 +621,15 @@
 
             <div class="item-notes">
               <input pInputText [(ngModel)]="item.comentarios" placeholder="Sin cebolla, extra salsa..." class="w-full" />
+            </div>
+
+            <div *ngIf="getCartExcludedNames(item) || getCartAdditionalNames(item)" class="item-options">
+              <span *ngIf="getCartExcludedNames(item)" class="option-line option-excluded">
+                <i class="pi pi-minus-circle mr-1"></i>{{ getCartExcludedNames(item) }}
+              </span>
+              <span *ngIf="getCartAdditionalNames(item)" class="option-line option-additional">
+                <i class="pi pi-plus-circle mr-1"></i>{{ getCartAdditionalNames(item) }}
+              </span>
             </div>
           </div>
         </div>
@@ -844,4 +945,65 @@
     (save)="guardarNuevoCliente()"
     (hide)="hideDialogoNuevoCliente()"
   ></app-cliente-dialog>
+
+  <!-- Panel de configuración de ingredientes (modificables / adicionales) -->
+  <div *ngIf="ingredientConfigVisible" class="cfg-overlay">
+    <div class="cfg-backdrop" (click)="cancelIngredientConfig()"></div>
+    <div class="cfg-panel" *ngIf="configProduct">
+      <div class="cfg-panel-header">
+        <h3 class="cfg-product-name">{{ configProduct.name }}</h3>
+        <button type="button" class="cfg-close-btn" (click)="cancelIngredientConfig()" aria-label="Cerrar">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="cfg-panel-body">
+        <span class="cfg-product-base">Precio base: ${{ configProduct.price | number:'1.2-2' }}</span>
+
+        <div *ngIf="getConfigExtraPrice() > 0" class="cfg-total-line">
+          <span>Total actualizado</span>
+          <strong>${{ getConfigUnitPrice() | number:'1.2-2' }}</strong>
+        </div>
+
+        <ng-container *ngIf="configModificables.length > 0">
+          <div class="cfg-section">
+            <span class="cfg-section-title">Modificables</span>
+            <span class="cfg-section-hint">Desmarca lo que NO quieras (sin costo)</span>
+            <label class="cfg-item" *ngFor="let m of configModificables">
+              <p-checkbox
+                [binary]="true"
+                [ngModel]="!isExcluded(m.insumoId)"
+                (ngModelChange)="toggleExcluded(m.insumoId, $event)"
+              ></p-checkbox>
+              <span class="cfg-item-name">{{ m.insumoName }}</span>
+              <span class="cfg-item-extra" *ngIf="m.cantidad">(×{{ m.cantidad }} {{ m.unidad || 'pieza' }})</span>
+            </label>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="configAdicionales.length > 0">
+          <div class="cfg-section">
+            <span class="cfg-section-title">Adicionales</span>
+            <span class="cfg-section-hint">Marca los que quieras agregar</span>
+            <label class="cfg-item" *ngFor="let a of configAdicionales">
+              <p-checkbox
+                [binary]="true"
+                [ngModel]="isAdditional(a.insumoId)"
+                (ngModelChange)="toggleAdditional(a.insumoId, $event)"
+              ></p-checkbox>
+              <span class="cfg-item-name">{{ a.insumoName }}</span>
+              <span class="cfg-item-price">+${{ a.precio || 0 }}</span>
+            </label>
+          </div>
+        </ng-container>
+      </div>
+
+      <div class="cfg-actions">
+        <button type="button" class="cfg-confirm-btn" (click)="confirmIngredientConfig()">
+          <i class="pi pi-shopping-cart"></i> Agregar al carrito
+        </button>
+        <button type="button" class="cfg-cancel-btn" (click)="cancelIngredientConfig()">Cancelar</button>
+      </div>
+    </div>
+  </div>
 </div>

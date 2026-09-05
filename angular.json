@@ -89,7 +89,7 @@
               "buildTarget": "lealtix_dashboard:build:local"
             }
           },
-          "defaultConfiguration": "development"
+          "defaultConfiguration": "dev"
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n"

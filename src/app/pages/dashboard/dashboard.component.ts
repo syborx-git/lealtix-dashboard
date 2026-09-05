@@ -14,6 +14,7 @@ import { DialogModule } from 'primeng/dialog';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
+import { SelectButtonModule } from 'primeng/selectbutton';
 import { MessageService } from 'primeng/api';
 import { forkJoin } from 'rxjs';
 import { DashboardService } from './dashboard.service';
@@ -69,7 +70,8 @@ interface Insumo {
     DialogModule,
     InputNumberModule,
     ButtonModule,
-    ToastModule
+    ToastModule,
+    SelectButtonModule
   ],
   providers: [MessageService],
   templateUrl: './dashboard.component.html',
@@ -113,28 +115,90 @@ export class DashboardComponent implements OnInit {
   restockVisible = signal(false);
   restockTarget = signal<Insumo | null>(null);
   restockCantidad = signal(0);
+  restockCostoTotal = signal(0);
 
   private router = inject(Router);
 
-  // Costos y Ganancias (porcentajes configurables por el usuario)
+  // Costos y Ganancias (dos modos: porcentajes manuales o cálculo automático con datos reales)
   private static readonly STORAGE_KEY = 'lealtix_costos_porcentajes';
+  private static readonly MODE_KEY = 'lealtix_costos_modo';
   private static readonly DEFAULT_MP = 35;   // % materia prima
   private static readonly DEFAULT_RH = 20;   // % recurso humano
   porcentajeMateriaPrima = signal<number>(DashboardComponent.DEFAULT_MP);
   porcentajeRecursoHumano = signal<number>(DashboardComponent.DEFAULT_RH);
+
+  costosModo = signal<'porcentaje' | 'automatico'>('porcentaje');
+  costosModoOptions = [
+    { label: 'Porcentajes', value: 'porcentaje', icon: 'pi pi-sliders-h' },
+    { label: 'Automático', value: 'automatico', icon: 'pi pi-calculator' }
+  ];
+  costosAutomaticos = signal<any | null>(null);
+  costosAutomaticosLoading = signal(false);
 
   porcentajeCostoTotal = computed(() =>
     Math.min(100, this.porcentajeMateriaPrima() + this.porcentajeRecursoHumano())
   );
 
   ventasBase = computed(() => this.ventasResumen()?.totalSales ?? 0);
-  costosMateriaPrima = computed(() => this.ventasBase() * (this.porcentajeMateriaPrima() / 100));
-  costosRecursoHumano = computed(() => this.ventasBase() * (this.porcentajeRecursoHumano() / 100));
-  costos = computed(() => this.ventasBase() * (this.porcentajeCostoTotal() / 100));
-  ganancias = computed(() => this.ventasBase() - this.costos());
-  gananciasPct = computed(() => (this.porcentajeCostoTotal() >= 100)
-    ? 0
-    : Math.round((100 - this.porcentajeCostoTotal()) * 100) / 100);
+
+  private autoUsando = computed(() =>
+    this.costosModo() === 'automatico' && !!this.costosAutomaticos()
+  );
+
+  costosMateriaPrima = computed(() =>
+    this.autoUsando()
+      ? Number(this.costosAutomaticos()?.costoMateriaPrima ?? 0)
+      : this.ventasBase() * (this.porcentajeMateriaPrima() / 100)
+  );
+  costosRecursoHumano = computed(() =>
+    this.autoUsando()
+      ? Number(this.costosAutomaticos()?.costoSueldos ?? 0)
+      : this.ventasBase() * (this.porcentajeRecursoHumano() / 100)
+  );
+  costos = computed(() =>
+    this.autoUsando()
+      ? Number(this.costosAutomaticos()?.costoTotal ?? 0)
+      : this.ventasBase() * (this.porcentajeCostoTotal() / 100)
+  );
+  ganancias = computed(() =>
+    this.autoUsando()
+      ? Number(this.costosAutomaticos()?.ganancias ?? 0)
+      : this.ventasBase() - this.costos()
+  );
+  gananciasPct = computed(() => {
+    if (this.autoUsando()) {
+      return Number(this.costosAutomaticos()?.porcentajeGanancias ?? 0);
+    }
+    return (this.porcentajeCostoTotal() >= 100)
+      ? 0
+      : Math.round((100 - this.porcentajeCostoTotal()) * 100) / 100;
+  });
+  costoTotalPct = computed(() => {
+    if (this.autoUsando()) {
+      return Number(this.costosAutomaticos()?.porcentajeCostoTotal ?? 0);
+    }
+    return this.porcentajeCostoTotal();
+  });
+  materiaPrimaPct = computed(() => {
+    if (this.autoUsando()) {
+      return Number(this.costosAutomaticos()?.porcentajeMateriaPrima ?? 0);
+    }
+    return this.porcentajeMateriaPrima();
+  });
+  recursoHumanoPct = computed(() => {
+    if (this.autoUsando()) {
+      return Number(this.costosAutomaticos()?.porcentajeRecursoHumano ?? 0);
+    }
+    return this.porcentajeRecursoHumano();
+  });
+  costosPeriodoDesde = computed(() => {
+    if (this.autoUsando()) return this.costosAutomaticos()?.desde ?? null;
+    return null;
+  });
+  costosPeriodoHasta = computed(() => {
+    if (this.autoUsando()) return this.costosAutomaticos()?.hasta ?? null;
+    return null;
+  });
 
   // Modales de Costos y Ganancias
   costosModalVisible = signal(false);
@@ -202,6 +266,8 @@ export class DashboardComponent implements OnInit {
         if (typeof parsed?.materiaPrima === 'number') this.porcentajeMateriaPrima.set(parsed.materiaPrima);
         if (typeof parsed?.recursoHumano === 'number') this.porcentajeRecursoHumano.set(parsed.recursoHumano);
       }
+      const modo = localStorage.getItem(DashboardComponent.MODE_KEY);
+      if (modo === 'automatico') this.costosModo.set('automatico');
     } catch {
       // ignorar configuraciones corruptas y usar valores por defecto
     }
@@ -1001,6 +1067,9 @@ export class DashboardComponent implements OnInit {
 
   openCostosModal(): void {
     this.costosModalVisible.set(true);
+    if (this.costosModo() === 'automatico' && !this.costosAutomaticos()) {
+      this.cargarCostosAutomaticos();
+    }
   }
 
   closeCostosModal(): void {
@@ -1009,10 +1078,50 @@ export class DashboardComponent implements OnInit {
 
   openGananciasModal(): void {
     this.gananciasModalVisible.set(true);
+    if (this.costosModo() === 'automatico' && !this.costosAutomaticos()) {
+      this.cargarCostosAutomaticos();
+    }
   }
 
   closeGananciasModal(): void {
     this.gananciasModalVisible.set(false);
+  }
+
+  cargarCostosAutomaticos(): void {
+    if (!this.tenantId) return;
+    this.costosAutomaticosLoading.set(true);
+    this.dashboardService.costosAutomaticos(this.tenantId, 2).subscribe({
+      next: (res) => {
+        this.costosAutomaticos.set(res?.object ?? res);
+        this.costosAutomaticosLoading.set(false);
+      },
+      error: () => {
+        this.costosAutomaticos.set(null);
+        this.costosAutomaticosLoading.set(false);
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Costos automáticos',
+          detail: 'No se pudieron calcular los costos con datos reales. Revisa que haya restocks y sueldos registrados.'
+        });
+      }
+    });
+  }
+
+  cambiarModoCostos(modo: 'porcentaje' | 'automatico'): void {
+    this.costosModo.set(modo);
+    try {
+      localStorage.setItem(DashboardComponent.MODE_KEY, modo);
+    } catch {
+      // almacenamiento no disponible
+    }
+    if (modo === 'automatico' && !this.costosAutomaticos() && this.tenantId) {
+      this.cargarCostosAutomaticos();
+    }
+  }
+
+  formatoPeriodo(fecha: any): string {
+    if (!fecha) return '—';
+    return new Date(fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
   guardarPorcentajes(): void {
@@ -1025,6 +1134,8 @@ export class DashboardComponent implements OnInit {
     }
     this.porcentajeMateriaPrima.set(mp);
     this.porcentajeRecursoHumano.set(rh);
+    // Guardar porcentajes implica volver al modo manual
+    this.cambiarModoCostos('porcentaje');
     try {
       localStorage.setItem(
         DashboardComponent.STORAGE_KEY,
@@ -1126,6 +1237,7 @@ export class DashboardComponent implements OnInit {
   openRestock(insumo: Insumo): void {
     this.restockTarget.set(insumo);
     this.restockCantidad.set(0);
+    this.restockCostoTotal.set(0);
     this.restockVisible.set(true);
   }
 
@@ -1136,7 +1248,7 @@ export class DashboardComponent implements OnInit {
   doRestock(): void {
     const target = this.restockTarget();
     if (!target || this.restockCantidad() <= 0) return;
-    this.inventoryService.restockInsumo(target.id, this.restockCantidad()).subscribe({
+    this.inventoryService.restockInsumo(target.id, this.restockCantidad(), this.restockCostoTotal()).subscribe({
       next: (res) => {
         this.messageService.add({ severity: 'success', summary: 'Exitoso', detail: `Stock actualizado: ${res?.object}` });
         this.closeRestock();

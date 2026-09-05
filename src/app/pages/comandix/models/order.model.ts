@@ -7,6 +7,10 @@ export interface OrderItem {
   cantidad: number;
   precioUnitario: number;
   comentarios?: string;
+  /** Ingredientes modificables que el cliente pidió quitar (no se descuentan) */
+  excludedIngredientIds?: number[];
+  /** Insumos adicionales seleccionados por el cliente (se descuentan) */
+  additionalIngredientIds?: number[];
 }
 
 export type OrderStatus =
@@ -92,6 +96,8 @@ export interface PendingOrderItem {
   precioUnitario: number;
   precio?: number;
   comentarios?: string;
+  excludedIngredientIds?: number[];
+  additionalIngredientIds?: number[];
 }
 
 export interface PendingOrder {
