@@ -9,6 +9,27 @@
   (onHide)="onClose()"
 >
   <ng-container *ngIf="order as currentOrder">
+    <div class="split-mode-tabs">
+      <button
+        type="button"
+        class="split-mode-tab"
+        [class.split-mode-active]="splitMode === 'items'"
+        (click)="splitMode = 'items'"
+      >
+        <i class="pi pi-list"></i>
+        <span>Crear otras comandas</span>
+      </button>
+      <button
+        type="button"
+        class="split-mode-tab"
+        [class.split-mode-active]="splitMode === 'equal'"
+        (click)="splitMode = 'equal'"
+      >
+        <i class="pi pi-percentage"></i>
+        <span>Dividir equitativamente</span>
+      </button>
+    </div>
+
     <div class="split-header-summary">
       <div class="summary-grid">
         <div>
@@ -20,67 +41,122 @@
           <div class="summary-value">{{ clienteLabel }}</div>
         </div>
       </div>
-      <div class="split-hint">
+      <div class="split-hint" *ngIf="splitMode === 'items'">
         <i class="pi pi-info-circle mr-2"></i>
         Marca los artículos que irán a la nueva cuenta. Se quitarán de esta comanda
         y la nueva comanda quedará lista para pagar.
       </div>
+      <div class="split-hint" *ngIf="splitMode === 'equal'">
+        <i class="pi pi-info-circle mr-2"></i>
+        Reparte los artículos en N comandas con montos lo más balanceados posible.
+      </div>
     </div>
 
     <p-divider></p-divider>
 
-    <div class="items-wrapper">
-      <div class="summary-label mb-2">Artículos de la comanda</div>
+    <ng-container *ngIf="splitMode === 'items'">
+      <div class="items-wrapper">
+        <div class="summary-label mb-2">Artículos de la comanda</div>
 
-      <div *ngIf="items.length === 0" class="no-items">
-        No hay artículos disponibles en esta comanda.
-      </div>
+        <div *ngIf="items.length === 0" class="no-items">
+          No hay artículos disponibles en esta comanda.
+        </div>
 
-      <div *ngIf="items.length > 0" class="split-items-list">
-        <div
-          *ngFor="let item of items; let i = index; trackBy: trackByItem"
-          class="split-item-row"
-          [class.selected]="item.seleccionado"
-        >
-          <p-checkbox
-            [binary]="true"
-            [(ngModel)]="item.seleccionado"
-            inputId="split-item-{{ i }}"
-          ></p-checkbox>
-          <div class="split-item-main">
-            <span class="split-item-name">{{ item.productName }}</span>
-            <span *ngIf="getComentarios(item)" class="split-item-coment">
-              📝 {{ getComentarios(item) }}
-            </span>
-            <span class="split-item-meta">
-              x{{ item.cantidad }}
-              <ng-container *ngIf="item.additionalIngredientIds?.length">
-                &middot; con extras
-              </ng-container>
-              <ng-container *ngIf="item.excludedIngredientIds?.length">
-                &middot; sin modificables
-              </ng-container>
+        <div *ngIf="items.length > 0" class="split-items-list">
+          <div
+            *ngFor="let item of items; let i = index; trackBy: trackByItem"
+            class="split-item-row"
+            [class.selected]="item.seleccionado"
+          >
+            <p-checkbox
+              [binary]="true"
+              [(ngModel)]="item.seleccionado"
+              inputId="split-item-{{ i }}"
+            ></p-checkbox>
+            <div class="split-item-main">
+              <span class="split-item-name">{{ item.productName }}</span>
+              <span *ngIf="getComentarios(item)" class="split-item-coment">
+                📝 {{ getComentarios(item) }}
+              </span>
+              <span class="split-item-meta">
+                x{{ item.cantidad }}
+                <ng-container *ngIf="item.additionalIngredientIds?.length">
+                  &middot; con extras
+                </ng-container>
+                <ng-container *ngIf="item.excludedIngredientIds?.length">
+                  &middot; sin modificables
+                </ng-container>
+              </span>
+            </div>
+            <span class="split-item-price">
+              ${{ (item.precioUnitario * item.cantidad) | number:'1.2-2' }}
             </span>
           </div>
-          <span class="split-item-price">
-            ${{ (item.precioUnitario * item.cantidad) | number:'1.2-2' }}
-          </span>
         </div>
       </div>
-    </div>
 
-    <p-divider></p-divider>
+      <p-divider></p-divider>
 
-    <div class="split-footer-info">
-      <div>
-        <div class="summary-label">Artículos seleccionados</div>
-        <div class="summary-value">{{ seleccionTotal }} ({{ seleccionCantidad }} pzas)</div>
+      <div class="split-footer-info">
+        <div>
+          <div class="summary-label">Artículos seleccionados</div>
+          <div class="summary-value">{{ seleccionTotal }} ({{ seleccionCantidad }} pzas)</div>
+        </div>
+        <div>
+          <div class="summary-label">Monto de la nueva cuenta</div>
+          <div class="summary-total">${{ seleccionMonto | number:'1.2-2' }}</div>
+        </div>
+        <div *ngIf="tip && seleccionMonto > 0" class="split-tip-info">
+          <i class="pi pi-percentage mr-1"></i>
+          Mantiene la propina seleccionada (+${{ (tip.percent ? seleccionMonto * tip.percent / 100 : tip.amount ?? 0) | number:'1.2-2' }})
+        </div>
       </div>
-      <div>
-        <div class="summary-label">Monto de la nueva cuenta</div>
-        <div class="summary-total">${{ seleccionMonto | number:'1.2-2' }}</div>
+    </ng-container>
+
+    <ng-container *ngIf="splitMode === 'equal'">
+      <div class="equal-panel">
+        <div class="summary-label mb-2">¿Entre cuántas personas?</div>
+        <div class="people-stepper">
+          <button
+            type="button"
+            class="stepper-btn"
+            (click)="decrementarPersonas()"
+            [disabled]="numPersonas <= 2 || loading"
+          >−</button>
+          <p-inputNumber
+            [(ngModel)]="numPersonas"
+            [min]="2"
+            [max]="maxPersonas"
+            [useGrouping]="false"
+            inputId="split-personas"
+            styleClass="w-full"
+            class="people-input"
+          ></p-inputNumber>
+          <button
+            type="button"
+            class="stepper-btn"
+            (click)="incrementarPersonas()"
+            [disabled]="numPersonas >= maxPersonas || loading"
+          >+</button>
+        </div>
+        <small class="people-hint">Máximo {{ maxPersonas }} (una por artículo).</small>
+
+        <div class="split-footer-info mt-3">
+          <div>
+            <div class="summary-label">Total de la cuenta</div>
+            <div class="summary-total">${{ totalCuenta | number:'1.2-2' }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Monto por persona</div>
+            <div class="summary-total">${{ montoPorPersona | number:'1.2-2' }}</div>
+          </div>
+          <div *ngIf="tip" class="split-tip-info">
+            <i class="pi pi-percentage mr-1"></i>
+            Incluye propina (+${{ propinaPorPersona | number:'1.2-2' }} c/u)
+          </div>
+        </div>
       </div>
-    </div>
+    </ng-container>
 
     <p-divider></p-divider>
 
@@ -98,6 +174,7 @@
       ></p-button>
 
       <p-button
+        *ngIf="splitMode === 'items'"
         label="Crear nueva cuenta"
         icon="pi pi-plus"
         severity="help"
@@ -105,11 +182,21 @@
         [disabled]="loading || !tieneSeleccion || items.length === 0"
         (onClick)="onCrearCuenta()"
       ></p-button>
+
+      <p-button
+        *ngIf="splitMode === 'equal'"
+        [label]="'Dividir en ' + numPersonas + ' comandas'"
+        icon="pi pi-percentage"
+        severity="help"
+        styleClass="minimal-submit"
+        [disabled]="loading || numPersonas < 2 || numPersonas > maxPersonas"
+        (onClick)="onDividirEquitativamente()"
+      ></p-button>
     </div>
 
     <div *ngIf="loading" class="loading-overlay">
       <p-progressSpinner strokeWidth="4" [style]="{ width: '42px', height: '42px' }"></p-progressSpinner>
-      <span>Creando nueva cuenta...</span>
+      <span>Procesando división...</span>
     </div>
   </ng-container>
 </p-dialog>

@@ -30,6 +30,63 @@
       </div>
     </div>
 
+    <div class="tip-section">
+      <div class="summary-label mb-2">
+        Propina
+        <span *ngIf="tipAmount > 0" class="tip-amount">+${{ tipAmount | number:'1.2-2' }}</span>
+      </div>
+      <div class="tip-options">
+        <button
+          *ngFor="let opt of tipOptions"
+          type="button"
+          class="tip-option"
+          [class.active]="selectedTipPercent === opt"
+          (click)="selectedTipPercent = selectedTipPercent === opt ? 0 : opt"
+        >{{ opt }}%</button>
+        <button
+          type="button"
+          class="tip-option"
+          [class.active]="selectedTipPercent === 0 && customTipMode === 'amount'"
+          (click)="selectedTipPercent = 0; customTipMode = 'amount'; customTipValue = 0"
+        >Otro</button>
+      </div>
+      <div
+        *ngIf="selectedTipPercent === 0"
+        class="custom-tip-row"
+        [class.visible]="customTipMode === 'amount' || customTipValue != null"
+      >
+        <div class="custom-tip-mode">
+          <button
+            type="button"
+            class="mode-option"
+            [class.active]="customTipMode === 'percent'"
+            (click)="customTipMode = 'percent'; customTipValue = 0"
+          >%</button>
+          <button
+            type="button"
+            class="mode-option"
+            [class.active]="customTipMode === 'amount'"
+            (click)="customTipMode = 'amount'; customTipValue = 0"
+          >$</button>
+        </div>
+        <div class="custom-tip-input">
+          <span *ngIf="customTipMode === 'percent'" class="custom-tip-suffix">%</span>
+          <span *ngIf="customTipMode === 'amount'" class="custom-tip-suffix">$</span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            [(ngModel)]="customTipValue"
+            (input)="selectedTipPercent = 0"
+            placeholder="0"
+          />
+        </div>
+      </div>
+      <div *ngIf="tipAmount > 0" class="summary-total-with-tip">
+        Total a cobrar: <strong>${{ totalWithTip | number:'1.2-2' }}</strong>
+      </div>
+    </div>
+
     <p-divider></p-divider>
 
     <div class="items-wrapper">

@@ -2,6 +2,42 @@
   padding: 1.25rem;
 }
 
+.split-mode-tabs {
+  display: flex;
+  gap: 0.4rem;
+  background: #f3e9dc;
+  border-radius: 10px;
+  padding: 0.3rem;
+  margin-bottom: 1rem;
+
+  .split-mode-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #8a6a52;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+
+    i {
+      font-size: 0.9rem;
+    }
+
+    &.split-mode-active {
+      background: #ffffff;
+      color: #33211d;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    }
+  }
+}
+
 .split-header-summary .summary-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -112,6 +148,64 @@
   font-weight: 700;
   color: var(--primary-color);
   margin-top: 0.2rem;
+}
+
+.split-tip-info {
+  grid-column: 1 / -1;
+  font-size: 0.8rem;
+  color: #9a6f42;
+  background: rgba(218, 159, 91, 0.08);
+  border: 1px solid rgba(218, 159, 91, 0.25);
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+}
+
+.equal-panel {
+  .people-hint {
+    font-size: 0.78rem;
+    color: var(--text-color-secondary);
+  }
+
+  .people-stepper {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    max-width: 220px;
+
+    .stepper-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid #e8d5be;
+      background: #fff;
+      color: #33211d;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s ease, border-color 0.15s ease;
+
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      &:hover:not(:disabled) {
+        background: #fff9f1;
+        border-color: #da9f5b;
+      }
+    }
+
+    .people-input {
+      flex: 1;
+    }
+  }
+
+  .split-footer-info {
+    .summary-total {
+      color: #2f855a;
+    }
+  }
 }
 
 .footer-actions {

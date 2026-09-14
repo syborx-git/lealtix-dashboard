@@ -51,7 +51,8 @@ import {
   PendingOrder,
   PendingOrderItem,
   OrderStatus,
-  PaymentMethod
+  PaymentMethod,
+  TipInfo
 } from './models/order.model';
 import { Cliente, GENERO_OPTIONS, CreateClienteRequest } from '@/models/cliente.model';
 import { RedemptionRequest, RedemptionChannel } from '@/pages/redeem/models/redemption-request.model';
@@ -110,16 +111,20 @@ export class ComandixComponent implements OnInit, OnDestroy {
   // ==================== SIGNALS POS (existente) ====================
   categories = signal<MenuCategory[]>([]);
 
+  // Ids de sub-recetas: NO se venden solas y se ocultan del catálogo
+  subRecetaIds = signal<Set<number>>(new Set());
+
   // Filtro de categoría para el catálogo (0 = todas las categorías)
   selectedCategoryId = signal<number>(0);
 
   // Lista plana y deduplicada de productos de todas las categorías
   allProducts = computed<Product[]>(() => {
     const seen = new Set<number>();
+    const subRecetaIds = this.subRecetaIds();
     const list: Product[] = [];
     for (const cat of this.categories()) {
       for (const p of cat.products) {
-        if (p?.id && !seen.has(p.id)) {
+        if (p?.id && !seen.has(p.id) && !subRecetaIds.has(p.id)) {
           seen.add(p.id);
           list.push(p);
         }
@@ -236,6 +241,8 @@ configEditingItem: CartItem | null = null;
   selectedOrderForMerma = signal<PendingOrder | null>(null);
   showSplitModal = signal<boolean>(false);
   selectedOrderForSplit = signal<PendingOrder | null>(null);
+  // Propina de cierre que se mantiene al dividir comandas
+  splitOrderTip = signal<TipInfo | null>(null);
 
   // Computed: Órdenes activas (excluyendo PAGADA y CANCELADA)
   activeOrders = computed(() => {
@@ -718,9 +725,10 @@ configEditingItem: CartItem | null = null;
 
   // ==================== DIVISIÓN DE CUENTA (pagar por separado) ====================
 
-  onCobroSeparado(order: PendingOrder): void {
+  onCobroSeparado(event: { order: PendingOrder; tip?: TipInfo | null }): void {
     this.closeCloseOrderModal();
-    this.selectedOrderForSplit.set(order);
+    this.selectedOrderForSplit.set(event.order);
+    this.splitOrderTip.set(event.tip ?? null);
     this.showSplitModal.set(true);
   }
 
@@ -728,14 +736,19 @@ configEditingItem: CartItem | null = null;
     this.showSplitModal.set(visible);
     if (!visible) {
       this.selectedOrderForSplit.set(null);
+      this.splitOrderTip.set(null);
     }
   }
 
-  async onCuentaCreada(event: { originalOrderId: string; newOrderId: string }): Promise<void> {
+  async onCuentaCreada(event: { originalOrderId: string; newOrderId: string; newOrderIds?: string[] }): Promise<void> {
+    const totalComandas = event.newOrderIds?.length ?? 1;
     this.messageService.add({
       severity: 'success',
-      summary: 'Cuenta dividida',
-      detail: `La cuenta #${event.originalOrderId.slice(0, 8)} se separó y se creó la comanda #${event.newOrderId.slice(0, 8)}`,
+      summary: totalComandas > 1 ? 'Cuenta dividida equitativamente' : 'Cuenta dividida',
+      detail:
+        totalComandas > 1
+          ? `La cuenta #${event.originalOrderId.slice(0, 8)} se repartió en ${totalComandas + 1} comandas de monto balanceado`
+          : `La cuenta #${event.originalOrderId.slice(0, 8)} se separó y se creó la comanda #${event.newOrderId.slice(0, 8)}`,
       life: 4500
     });
 
@@ -1108,7 +1121,40 @@ configEditingItem: CartItem | null = null;
 
   private loadCatalog(): void {
     this.loading.set(true);
+    this.loadSubRecetaIds();
     this.loadCatalogFromProducts();
+  }
+
+  // Las sub-recetas no se venden solas: se cargan sus ids para ocultarlas del menú
+  private loadSubRecetaIds(): void {
+    this.inventoryService
+      .getSubRecetas(this.tenantId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res) => {
+          const list = res?.object ?? [];
+          const ids = new Set<number>();
+          list.forEach((sr: any) => {
+            const sid = this.normalizeProductId(sr.id);
+            if (sid != null) {
+              ids.add(sid);
+            }
+          });
+          this.subRecetaIds.set(ids);
+        },
+        error: (err) => {
+          console.error('Error cargando sub-recetas para el menú:', err);
+          this.subRecetaIds.set(new Set());
+        }
+      });
+  }
+
+  private normalizeProductId(id: unknown): number | null {
+    if (id === null || id === undefined) {
+      return null;
+    }
+    const parsed = typeof id === 'number' ? id : Number(id);
+    return Number.isNaN(parsed) ? null : parsed;
   }
 
   private loadCatalogFromProducts(): void {
