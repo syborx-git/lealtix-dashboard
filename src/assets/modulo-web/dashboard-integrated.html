@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LEALTIX Dashboard - Mi Página (Integración Web Studio)</title>
+
+  <!-- Google Fonts Preconnect -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  
+  <!-- 7 Curated Google Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  
+  <!-- PrimeIcons & Tailwind for utility classes -->
+  <link rel="stylesheet" href="https://unpkg.com/primeicons/primeicons.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Studio & Dynamic Preview CSS -->
+  <link rel="stylesheet" href="css/builder.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/preview.css">
+
+  <style>
+    /* Estilos específicos de la integración con el Dashboard de Lealtix */
+    body.lealtix-dashboard-layout {
+      background-color: #F8F9FA;
+      color: #1E293B;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: row;
+      overflow: hidden;
+    }
+
+    /* Sidebar del Dashboard Lealtix */
+    .dashboard-sidebar {
+      width: 250px;
+      background: #FFFFFF;
+      border-right: 1px solid #E2E8F0;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      z-index: 40;
+    }
+
+    .dashboard-brand-header {
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      border-bottom: 1px solid #F1F5F9;
+    }
+
+    .dashboard-logo-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dashboard-menu-nav {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem 0.75rem;
+    }
+
+    .menu-group-label {
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: #94A3B8;
+      letter-spacing: 0.08em;
+      padding: 0.5rem 0.75rem 0.25rem;
+      text-transform: uppercase;
+    }
+
+    .dashboard-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0.85rem;
+      border-radius: 10px;
+      color: #64748B;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      margin-bottom: 0.2rem;
+    }
+
+    .dashboard-nav-item:hover {
+      background: #F1F5F9;
+      color: #0F172A;
+    }
+
+    .dashboard-nav-item.active {
+      background: #EFF6FF;
+      color: #2563EB;
+      font-weight: 700;
+    }
+
+    .dashboard-nav-item.active i {
+      color: #2563EB;
+    }
+
+    /* Main Dashboard Workspace con Scroll Natural de Página Completa */
+    .dashboard-main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      background: #F8FAFC;
+    }
+
+    /* Top Dashboard Header Bar */
+    .dashboard-topbar {
+      height: 60px;
+      background: #FFFFFF;
+      border-bottom: 1px solid #E2E8F0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    .dashboard-search-box {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #F1F5F9;
+      border: 1px solid #E2E8F0;
+      border-radius: 10px;
+      padding: 0.4rem 0.9rem;
+      width: 300px;
+      font-size: 0.82rem;
+      color: #64748B;
+    }
+
+    .dashboard-user-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Dashboard Body sin bloqueo de overflow */
+    .dashboard-body-scroll {
+      padding: 1.25rem 1.5rem 3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      overflow: visible;
+    }
+
+    /* Cards Header / Status */
+    .mi-pagina-title-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .mi-pagina-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: #EFF6FF;
+      color: #2563EB;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+
+    .card-dashboard {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 14px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      padding: 1rem 1.25rem;
+    }
+
+    /* Integrated Web Studio Box - Expansión fluida completa */
+    .integrated-studio-wrapper {
+      background: #0B1C30;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      overflow: visible;
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 2rem;
+    }
+
+    .integrated-studio-header {
+      background: rgba(7, 18, 32, 0.98);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-radius: 16px 16px 0 0;
+      position: sticky;
+      top: 60px;
+      z-index: 25;
+      backdrop-filter: blur(12px);
+    }
+
+    .integrated-studio-wrapper .studio-workspace {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      overflow: visible;
+      min-height: 800px;
+      height: auto !important;
+    }
+
+    .integrated-studio-wrapper .studio-sidebar {
+      background: #0B1C30;
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 140px);
+      position: sticky;
+      top: 120px;
+      overflow: hidden;
+      border-radius: 0 0 0 16px;
+    }
+
+    .integrated-studio-wrapper .sidebar-content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.25rem;
+    }
+
+    .integrated-studio-wrapper .studio-canvas-area {
+      overflow: visible;
+      height: auto;
+      min-height: 100%;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #050B14;
+      border-radius: 0 0 16px 0;
+    }
+
+    .integrated-studio-wrapper .preview-device-frame {
+      min-height: auto;
+      height: auto;
+      margin-bottom: 2rem;
+      overflow: visible;
+    }
+  </style>
+</head>
+<body class="lealtix-dashboard-layout">
+
+  <!-- =========================================================================
+       1. SIDEBAR DASHBOARD LEALTIX (TAL COMO EN TU CAPTURA)
+       ========================================================================= -->
+  <aside class="dashboard-sidebar">
+    <!-- Brand Header -->
+    <div class="dashboard-brand-header">
+      <div class="dashboard-logo-icon">
+        <svg class="w-5 h-5" viewBox="0 0 100 100" fill="none">
+          <polygon points="50,6 94,50 50,94 6,50" stroke="#d4af37" stroke-width="8.5" fill="none" />
+          <polygon points="50,28 72,50 50,72 28,50" stroke="#fced96" stroke-width="7.5" fill="none" />
+        </svg>
+      </div>
+      <div>
+        <span class="font-extrabold text-sm tracking-wider text-slate-800">LEALTIX</span>
+        <span class="block text-[10px] text-[#2563eb] font-mono font-bold tracking-widest -mt-0.5">ADMIN</span>
+      </div>
+    </div>
+
+    <!-- Navigation Menu -->
+    <nav class="dashboard-menu-nav">
+      <span class="menu-group-label">• HOME</span>
+      <a href="#" class="dashboard-nav-item">
+        <i class="pi pi-home"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="#" class="dashboard-nav-item">
+        <i class="pi pi-globe"></i>
+        <span>Admin Page</span>
+      </a>
+      <a href="#" class="dashboard-nav-item">
+        <i class="pi pi-tags"></i>
+        <span>Categorías</span>
+      </a>
+      <a href="#" class="dashboard-nav-item">
+        <i class="pi pi-list"></i>
+        <span>Productos</span>
+      </a>
+      <a href="#" class="dashboard-nav-item">
+        <i class="pi pi-megaphone"></i>
+        <span>Campañas</span>
+      </a>
+      <a href="#" class="dashboard-nav-item">
+        <i class="pi pi-file"></i>
+        <span>Plantillas</span>
+      </a>
+      <a href="#" class="dashboard-nav-item">
+        <i class="pi pi-ticket"></i>
+        <span>Redención</span>
+      </a>
+      <a href="#" class="dashboard-nav-item">
+        <i class="pi pi-box"></i>
+        <span>Inventario</span>
+      </a>
+      <a href="#" class="dashboard-nav-item">
+        <i class="pi pi-users"></i>
+        <span>Gestión de Clientes</span>
+      </a>
+      <a href="#" class="dashboard-nav-item">
+        <i class="pi pi-id-card"></i>
+        <span>Gestión de Equipo</span>
+      </a>
+
+      <!-- MI PÁGINA (ACTIVA) -->
+      <a href="#" class="dashboard-nav-item active">
+        <i class="pi pi-desktop"></i>
+        <span>Mi Página</span>
+        <span class="w-2 h-2 rounded-full bg-blue-600 ml-auto"></span>
+      </a>
+
+      <a href="#" class="dashboard-nav-item">
+        <i class="pi pi-shopping-cart"></i>
+        <span>Mi Comanda</span>
+      </a>
+      <a href="#" class="dashboard-nav-item">
+        <i class="pi pi-calendar"></i>
+        <span>Cocina</span>
+      </a>
+    </nav>
+
+    <div class="p-3 border-t border-slate-200">
+      <a href="index.html" class="flex items-center justify-center gap-2 py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-all">
+        <i class="pi pi-arrows-alt"></i>
+        <span>Ver Modo Studio Completo</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- =========================================================================
+       2. CONTENIDO PRINCIPAL: SECCIÓN "MI PÁGINA" INTEGRADA
+       ========================================================================= -->
+  <main class="dashboard-main-content">
+    
+    <!-- Topbar -->
+    <header class="dashboard-topbar">
+      <div class="dashboard-search-box">
+        <i class="pi pi-search text-slate-400"></i>
+        <span>Search [CTRL + K]</span>
+      </div>
+
+      <div class="dashboard-user-actions">
+        <button class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200" title="Modo Claro/Oscuro">
+          <i class="pi pi-sun"></i>
+        </button>
+        <button class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 relative" title="Notificaciones">
+          <i class="pi pi-bell"></i>
+          <span class="w-2 h-2 rounded-full bg-red-500 absolute top-2 right-2"></span>
+        </button>
+        <div class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs" title="Perfil de Usuario">
+          CV
+        </div>
+      </div>
+    </header>
+
+    <!-- Body Scrollable -->
+    <div class="dashboard-body-scroll">
+      
+      <!-- Encabezado de Sección -->
+      <div class="mi-pagina-title-row">
+        <div class="mi-pagina-icon">
+          <i class="pi pi-globe"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-extrabold text-slate-800">Mi Página</h1>
+          <p class="text-xs text-slate-500">Diseña, personaliza y comparte el sitio web de tu restaurante con tus clientes</p>
+        </div>
+      </div>
+
+      <!-- Tarjeta de Estado y URL Pública (Como en tu captura) -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        <!-- Estado -->
+        <div class="card-dashboard flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+            <i class="pi pi-check-circle text-xl"></i>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</div>
+            <div class="text-sm font-extrabold text-emerald-600 flex items-center gap-1.5">
+              <span>Publicada</span>
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            </div>
+            <p class="text-[11px] text-slate-400">Lista para tus comensales</p>
+          </div>
+        </div>
+
+        <!-- URL Pública -->
+        <div class="card-dashboard md:col-span-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-3 flex-1 min-w-0">
+            <div class="w-10 h-10 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 flex-shrink-0">
+              <i class="pi pi-link text-lg"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Dirección de tu página</div>
+              <div class="text-xs font-mono font-bold text-blue-700 truncate bg-slate-50 p-1.5 rounded border border-slate-200 mt-0.5">
+                https://lealtix.com.mx/landing-page/aura-demo
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 self-end sm:self-center">
+            <button class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all" onclick="alert('URL copiada al portapapeles')">
+              <i class="pi pi-copy"></i>
+              <span>Copiar</span>
+            </button>
+            <button class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all" id="btn-preview-fullscreen">
+              <i class="pi pi-external-link"></i>
+              <span>Ver Pantalla Completa</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- =========================================================================
+           3. MÓDULO INTEGRADO: WEB STUDIO & CONSTRUCTOR MODULAR (ROMPECABEZAS)
+           ========================================================================= -->
+      <div class="integrated-studio-wrapper">
+        
+        <!-- Header del Módulo Integrado -->
+        <div class="integrated-studio-header">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#2dd4bf] animate-pulse"></span>
+            <span class="text-xs font-bold text-white tracking-wider">LEALTIX WEB STUDIO &bull; CONSTRUCTOR MODULAR</span>
+          </div>
+
+          <!-- Selector de Dispositivos -->
+          <div class="viewport-switcher">
+            <button class="btn-viewport active" data-device="desktop" title="Vista Escritorio">
+              <i class="pi pi-desktop"></i>
+              <span class="hidden sm:inline">Escritorio</span>
+            </button>
+            <button class="btn-viewport" data-device="tablet" title="Vista Tablet">
+              <i class="pi pi-tablet"></i>
+              <span class="hidden sm:inline">Tablet</span>
+            </button>
+            <button class="btn-viewport" data-device="mobile" title="Vista Móvil">
+              <i class="pi pi-mobile"></i>
+              <span class="hidden sm:inline">Móvil</span>
+            </button>
+          </div>
+
+          <!-- Acciones -->
+          <div class="flex items-center gap-2">
+            <button class="btn-builder-ghost btn-sm" id="btn-reset-defaults" title="Restablecer">
+              <i class="pi pi-refresh"></i>
+            </button>
+            <button class="btn-builder-primary btn-sm" id="btn-save-site">
+              <i class="pi pi-save"></i>
+              <span>Guardar Cambios</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Área de Trabajo Dividida: Controles Izquierda + Canvas Derecha -->
+        <div class="studio-workspace">
+          
+          <!-- Panel Izquierdo: Pestañas de Personalización -->
+          <aside class="studio-sidebar">
+            <nav class="sidebar-tabs">
+              <button class="sidebar-tab-btn active" data-tab="tab-pieces">
+                <i class="pi pi-th-large"></i>
+                <span>Piezas</span>
+              </button>
+              <button class="sidebar-tab-btn" data-tab="tab-colors">
+                <i class="pi pi-palette"></i>
+                <span>7 Colores</span>
+              </button>
+              <button class="sidebar-tab-btn" data-tab="tab-fonts">
+                <i class="pi pi-font"></i>
+                <span>7 Tipografías</span>
+              </button>
+              <button class="sidebar-tab-btn" data-tab="tab-content">
+                <i class="pi pi-images"></i>
+                <span>Imágenes & Textos</span>
+              </button>
+              <button class="sidebar-tab-btn" data-tab="tab-menu">
+                <i class="pi pi-book"></i>
+                <span>Menú</span>
+              </button>
+            </nav>
+
+            <div class="sidebar-content-area" id="sidebar-content-area">
+              <!-- Renderizado por JS -->
+            </div>
+          </aside>
+
+          <!-- Panel Derecho: Canvas en Vivo -->
+          <section class="studio-canvas-area" id="studio-canvas-area" style="background: #060e18;">
+            
+            <button class="btn-exit-fullscreen" id="btn-exit-fullscreen">
+              <i class="pi pi-times"></i>
+              <span>Salir de Vista Previa</span>
+            </button>
+
+            <div class="preview-device-frame mode-desktop" id="preview-device-frame">
+              <div class="device-notch">
+                <div class="device-notch-bar"></div>
+              </div>
+              <div class="site-preview-canvas" id="site-preview-canvas">
+                <!-- Piezas renderizadas en vivo -->
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Modales & Toasts -->
+  <div class="builder-modal-backdrop hidden" id="builder-modal-backdrop">
+    <div class="builder-modal-box" id="builder-modal-content"></div>
+  </div>
+
+  <div class="builder-toast" id="builder-toast">
+    <i class="pi pi-check-circle"></i>
+    <span id="toast-message">Operación exitosa</span>
+  </div>
+
+  <!-- Script Principal -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

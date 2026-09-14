@@ -1,0 +1,12 @@
+{
+  "name": "lealtix-site-builder",
+  "version": "1.0.0",
+  "description": "Lealtix Site Builder - Creador de páginas web modular para clientes",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["lealtix", "site-builder", "website-creator", "puzzle"],
+  "author": "Lealtix",
+  "license": "ISC"
+}
