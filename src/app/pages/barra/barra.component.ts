@@ -14,19 +14,19 @@ import { TenantService } from '@/pages/admin-page/service/tenant.service';
 import { ProductService } from '@/pages/products-menu/service/product.service';
 import { InventoryService } from '@/pages/inventario/service/inventory.service';
 import { IngredientOption } from '@/pages/comandix/models/menu.model';
-import { KitchenOrder, KitchenOrderItem } from './models/kitchen-order.model';
-import { KitchenOrderFacadeService } from './services/kitchen-order-facade.service';
-import { buildBeverageProductIds, isBeverageProduct } from './services/order-beverage-utils';
+import { KitchenOrder, KitchenOrderItem } from '../kitchen/models/kitchen-order.model';
+import { KitchenOrderFacadeService } from '../kitchen/services/kitchen-order-facade.service';
+import { buildBeverageProductIds, isBeverageProduct } from '../kitchen/services/order-beverage-utils';
 
 @Component({
-    selector: 'app-kitchen',
+    selector: 'app-barra',
     standalone: true,
     imports: [CommonModule, CardModule, ButtonModule, TagModule, ProgressSpinnerModule, ToastModule, DialogModule, DividerModule],
     providers: [MessageService],
-    templateUrl: './kitchen.component.html',
-    styleUrl: './kitchen.component.scss'
+    templateUrl: './barra.component.html',
+    styleUrl: './barra.component.scss'
 })
-export class KitchenComponent implements OnInit, OnDestroy {
+export class BarraComponent implements OnInit, OnDestroy {
     orders: KitchenOrder[] = [];
     loading = false;
     connectionStatus: 'connected' | 'disconnected' | 'error' = 'disconnected';
@@ -64,7 +64,7 @@ export class KitchenComponent implements OnInit, OnDestroy {
         if (tenantId <= 0) {
             this.messageService.add({
                 severity: 'error',
-                summary: 'Cocina no disponible',
+                summary: 'Barra no disponible',
                 detail: 'No se pudo resolver el tenant actual.',
                 life: 3500
             });
@@ -76,12 +76,12 @@ export class KitchenComponent implements OnInit, OnDestroy {
         await this.loadRecipeCatalog(tenantId);
 
         this.kitchenOrderFacadeService.orders$.pipe(takeUntil(this.destroy$)).subscribe((orders) => {
-            // La comanda llega completa desde Comandix; Cocina solo prepara platillos,
-            // así que se descartan los items que son bebidas (van a Barra).
+            // La comanda llega completa desde Comandix; Barra solo prepara bebidas,
+            // así que se conservan únicamente los items que son bebidas.
             this.orders = orders
                 .map((order) => ({
                     ...order,
-                    items: order.items.filter((item) => !this.isBeverageItem(item.productId))
+                    items: order.items.filter((item) => this.isBeverageItem(item.productId))
                 }))
                 .filter((order) => order.items.length > 0);
 
@@ -318,7 +318,7 @@ export class KitchenComponent implements OnInit, OnDestroy {
         return `item-${itemIndex}`;
     }
 
-    /** IDs de productos de menú que son bebidas (para ocultarlas del tablero de Cocina) */
+    /** IDs de productos de menú que son bebidas (son los que prepara Barra) */
     private beverageProductIds = new Set<number>();
 
     private isBeverageItem(productId: number | undefined): boolean {
@@ -331,7 +331,7 @@ export class KitchenComponent implements OnInit, OnDestroy {
             const response = await firstValueFrom(this.inventoryService.getBebidas(tenantId));
             this.beverageProductIds = buildBeverageProductIds(Array.isArray(response?.object) ? response.object : []);
         } catch (error) {
-            console.warn('Cocina: no se pudo cargar el catálogo de bebidas:', error);
+            console.warn('Barra: no se pudo cargar el catálogo de bebidas:', error);
         }
     }
 
@@ -347,7 +347,7 @@ export class KitchenComponent implements OnInit, OnDestroy {
                 });
             }
         } catch (error) {
-            console.error('Cocina: no se pudo cargar el catálogo de recetas:', error);
+            console.error('Barra: no se pudo cargar el catálogo de recetas:', error);
         } finally {
             this.recipeCatalogReady.set(true);
         }

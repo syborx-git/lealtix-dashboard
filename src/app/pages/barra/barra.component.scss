@@ -2,53 +2,53 @@
     display: block;
 }
 
-.kitchen-shell {
+.barra-shell {
     padding: 1rem;
 }
 
-.kitchen-header {
+.barra-header {
     align-items: center;
     display: flex;
     justify-content: space-between;
     margin-bottom: 1rem;
 }
 
-.kitchen-header h2 {
+.barra-header h2 {
     font-size: 1.7rem;
     font-weight: 700;
     margin: 0;
 }
 
-.kitchen-subtitle {
+.barra-subtitle {
     color: var(--text-color-secondary);
     margin: 0.15rem 0 0;
 }
 
-.kitchen-status-group {
+.barra-status-group {
     display: flex;
     gap: 0.5rem;
 }
 
-.kitchen-loading {
+.barra-loading {
     display: grid;
     min-height: 280px;
     place-items: center;
 }
 
-.kitchen-grid {
+.barra-grid {
     display: grid;
     gap: 1rem;
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.kitchen-column {
+.barra-column {
     background: color-mix(in srgb, var(--surface-card) 88%, #ffffff 12%);
     border: 1px solid var(--surface-border);
     border-radius: 1rem;
     padding: 0.75rem;
 }
 
-.kitchen-column h3 {
+.barra-column h3 {
     font-size: 1rem;
     font-weight: 700;
     margin: 0 0 0.65rem;
@@ -589,7 +589,7 @@
 }
 
 @media (max-width: 1200px) {
-    .kitchen-grid {
+    .barra-grid {
         grid-template-columns: 1fr;
     }
 }
@@ -597,7 +597,7 @@
 ::ng-deep {
   :root[class*='app-dark'],
   .app-dark {
-    .kitchen-column {
+    .barra-column {
       background: rgba(255, 255, 255, 0.03);
       border-color: rgba(255, 255, 255, 0.08);
     }
@@ -727,4 +727,40 @@
       background: rgba(255, 255, 255, 0.02);
     }
   }
+}
+
+// Identidad visual de Barra (bebidas): acento índigo/violeta
+:host ::ng-deep .freshness-ok .p-card {
+    border-color: #7c3aed;
+}
+
+.freshness-ok .order-timer {
+    background: #f5f3ff;
+    color: #6d28d9;
+}
+
+.freshness-warning .order-timer {
+    background: #fff3db;
+    color: #c26b00;
+}
+
+.freshness-critical .order-timer {
+    background: #ffe3e3;
+    color: #d62828;
+}
+
+.ready-note {
+    color: #5b21b6;
+}
+
+.item-detail {
+    border-left-color: #7c3aed;
+}
+
+.item-quantity {
+    background: #7c3aed;
+}
+
+:host ::ng-deep .ready-card .p-card {
+    border-color: #7c3aed;
 }

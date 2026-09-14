@@ -39,7 +39,7 @@
 
             <!-- Items de la orden -->
             <div class="detail-section">
-                <h4>Productos</h4>
+                <h4>Bebidas</h4>
                 <div *ngIf="order.status === 'EN_PREPARACION'" class="delivery-progress">
                     <span class="progress-label">Control de entrega:</span>
                     <span class="progress-value">{{ getDeliveredItemsCount(order) }}/{{ order.items.length }} items marcados</span>
@@ -186,23 +186,23 @@
     </ng-container>
 </p-dialog>
 
-<section class="kitchen-shell">
-    <header class="kitchen-header">
+<section class="barra-shell">
+    <header class="barra-header">
         <div>
-            <h2>Cocina</h2>
-            <p class="kitchen-subtitle">Tablero operativo en tiempo real por tenant</p>
+            <h2>Barra</h2>
+            <p class="barra-subtitle">Tablero operativo de bebidas en tiempo real por tenant</p>
         </div>
-        <div class="kitchen-status-group">
+        <div class="barra-status-group">
             <p-tag [value]="connectionStatus" [severity]="connectionStatus === 'connected' ? 'success' : 'warn'"></p-tag>
         </div>
     </header>
 
-    <div *ngIf="loading" class="kitchen-loading">
+    <div *ngIf="loading" class="barra-loading">
         <p-progressSpinner strokeWidth="4" ariaLabel="loading"></p-progressSpinner>
     </div>
 
-    <div *ngIf="!loading" class="kitchen-grid">
-        <section class="kitchen-column">
+    <div *ngIf="!loading" class="barra-grid">
+        <section class="barra-column">
             <h3>Confirmada ({{ getPendingOrders().length }})</h3>
             <article *ngFor="let order of getPendingOrders()" class="order-card" [ngClass]="freshnessClass(order)">
                 <p-card>
@@ -244,7 +244,7 @@
             </article>
         </section>
 
-        <section class="kitchen-column">
+        <section class="barra-column">
             <h3>En Preparacion ({{ getInProgressOrders().length }})</h3>
             <article *ngFor="let order of getInProgressOrders()" class="order-card" [ngClass]="freshnessClass(order)">
                 <p-card>
@@ -286,7 +286,7 @@
             </article>
         </section>
 
-        <section class="kitchen-column">
+        <section class="barra-column">
             <h3>
                 Listo / Despachado
                 <span class="orders-counter">({{ getReadyOrdersCount().shown }} / {{ getReadyOrdersCount().total }})</span>

@@ -34,6 +34,7 @@ import { ClienteListComponent } from '@/pages/clientes/components/cliente-list/c
 import { ComandixComponent } from '@/pages/comandix/comandix.component';
 import { KitchenComponent } from '@/pages/kitchen/kitchen.component';
 import { KitchenDashboardComponent } from '@/pages/kitchen/kitchen-dashboard.component';
+import { BarraComponent } from '@/pages/barra/barra.component';
 
 // User Management component
 import { UserManagementComponent } from '@/pages/user-management/components/user-list/user-management.component';
@@ -81,7 +82,9 @@ export const appRoutes: Routes = [
                     { path: 'campaigns/:id', component: CampaignDetailsComponent, title: 'Detalles de Campaña', canActivate: [PermissionGuard], data: { permission: 'manage_campaigns' } },
                     { path: 'campaign-templates', component: CampaignTemplatesListComponent, title: 'Plantillas de Campañas', canActivate: [PermissionGuard], data: { permission: 'view_campaign_templates' } },
                     { path: 'manual-redemption', component: ManualRedemptionComponent, canActivate: [PermissionGuard], data: { permission: 'process_redemption' } },
-                    { path: 'inventario', component: InventarioComponent, title: 'Inventario', canActivate: [PermissionGuard], data: { permission: 'view_products' } },
+                    { path: 'inventario', component: InventarioComponent, title: 'Inventario', canActivate: [PermissionGuard], data: { permission: 'view_products', mode: 'cocina' } },
+                    { path: 'inventario-cocina', component: InventarioComponent, title: 'Inventario de Cocina', canActivate: [PermissionGuard], data: { permission: 'view_products', mode: 'cocina' } },
+                    { path: 'inventario-barra', component: InventarioComponent, title: 'Inventario de Barra', canActivate: [PermissionGuard], data: { permission: 'view_products', mode: 'barra' } },
                     { path: 'recetas', component: RecetasComponent, title: 'Recetas', canActivate: [PermissionGuard], data: { permission: 'manage_recetas' } },
                     { path: 'mermas', component: MermasComponent, title: 'Mermas', canActivate: [PermissionGuard], data: { permission: 'manage_mermas' } },
                     { path: 'horarios', component: HorariosComponent, title: 'Horarios', canActivate: [PermissionGuard], data: { permission: 'manage_horarios' } },
@@ -90,9 +93,10 @@ export const appRoutes: Routes = [
                     { path: 'users', component: UserManagementComponent, title: 'Gestión de Equipo', canActivate: [PermissionGuard], data: { permission: 'view_users' } },
                     // Admin Roles & Permissions
                     { path: 'admin/roles-permissions', component: AdminRolesPermissionsComponent, title: 'Administración de Roles y Permisos', canActivate: [PermissionGuard], data: { permission: 'manage_roles' } },
-                    { path: 'comandix', component: ComandixComponent, title: 'Comandix - Comanda Inteligente', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['MESERO'], permission: 'create_order' } },
-                    { path: 'cocina-dashboard', component: KitchenDashboardComponent, title: 'Kitchndix - Dashboard Cocina', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['COCINA'], permission: 'dashboard_kitchen' } },
-                    { path: 'cocina', component: KitchenComponent, title: 'Kitchndix - Cocina', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['COCINA'], permission: 'view_kitchen_orders' } },
+                    { path: 'comandix', component: ComandixComponent, title: 'Comandix - Comanda Inteligente', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'MESERO'], permission: 'create_order' } },
+                    { path: 'cocina-dashboard', component: KitchenDashboardComponent, title: 'Kitchndix - Dashboard Cocina', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'COCINA'], permission: 'dashboard_kitchen' } },
+                    { path: 'cocina', component: KitchenComponent, title: 'Kitchndix - Cocina', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'COCINA'], permission: 'view_kitchen_orders' } },
+                    { path: 'barra', component: BarraComponent, title: 'Kitchndix - Barra', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'COCINA'], permission: 'view_kitchen_orders' } },
                     // Hostess
                     { path: 'mesas', component: MapeoMesasComponent, title: 'Mapeo de Mesas', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['HOSTESS', 'ADMIN'], permission: 'view_mesas' } },
                     { path: 'reservaciones', component: ReservacionesComponent, title: 'Reservaciones', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['HOSTESS', 'ADMIN'], permission: 'view_reservaciones' } },

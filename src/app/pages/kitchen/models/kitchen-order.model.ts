@@ -6,6 +6,10 @@ export interface KitchenOrderItem {
     quantity: number;
     unitPrice: number;
     comments?: string;
+    /** IDs de ingredientes modificables que el cliente NO quiere */
+    excludedIngredientIds?: number[];
+    /** IDs de adicionales que el cliente pidió */
+    additionalIngredientIds?: number[];
 }
 
 export interface KitchenOrder {

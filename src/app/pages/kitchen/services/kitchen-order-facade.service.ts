@@ -236,7 +236,9 @@ export class KitchenOrderFacadeService implements OnDestroy {
             productName: item?.productName ?? item?.prod ?? `Producto #${item?.productId ?? '-'}`,
             quantity: Number(item?.cantidad ?? 0),
             unitPrice: Number(item?.precioUnitario ?? item?.precio ?? 0),
-            comments: item?.comentarios ?? ''
+            comments: item?.comentarios ?? '',
+            excludedIngredientIds: Array.isArray(item?.excludedIngredientIds) ? item.excludedIngredientIds.map(Number) : [],
+            additionalIngredientIds: Array.isArray(item?.additionalIngredientIds) ? item.additionalIngredientIds.map(Number) : []
         };
     }
 

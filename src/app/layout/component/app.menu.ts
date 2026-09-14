@@ -65,7 +65,8 @@ export class AppMenu implements OnInit {
             { label: 'Campañas', icon: 'pi pi-fw pi-id-card', routerLink: ['/dashboard/campaigns'], roles: ['ADMIN', 'MARKETING'], requiredPermissions: ['manage_campaigns'] },
             { label: 'Plantillas', icon: 'pi pi-fw pi-file', routerLink: ['/dashboard/campaign-templates'], roles: ['ADMIN', 'MARKETING'], requiredPermissions: ['manage_campaign_templates'] },
             { label: 'Redención', icon: 'pi pi-fw pi-ticket', routerLink: ['/dashboard/manual-redemption'], roles: ['ADMIN', 'MARKETING', 'CAJA'], requiredPermissions: ['process_redemption'] },
-            { label: 'Inventario', icon: 'pi pi-fw pi-box', routerLink: ['/dashboard/inventario'], roles: ['ADMIN'], requiredPermissions: ['view_products'] },
+            { label: 'Inventario de Cocina', icon: 'pi pi-fw pi-box', routerLink: ['/dashboard/inventario-cocina'], roles: ['ADMIN'], requiredPermissions: ['view_products'] },
+            { label: 'Inventario de Barra', icon: 'pi pi-fw pi-glass', routerLink: ['/dashboard/inventario-barra'], roles: ['ADMIN'], requiredPermissions: ['view_products'] },
             { label: 'Recetas', icon: 'pi pi-fw pi-book', routerLink: ['/dashboard/recetas'], roles: ['ADMIN'], requiredPermissions: ['manage_recetas'] },
             { label: 'Mermas', icon: 'pi pi-fw pi-trash', routerLink: ['/dashboard/mermas'], roles: ['ADMIN'], requiredPermissions: ['manage_mermas'] },
             { label: 'Horarios', icon: 'pi pi-fw pi-clock', routerLink: ['/dashboard/horarios'], roles: ['ADMIN'], requiredPermissions: ['manage_horarios'] },
@@ -84,23 +85,29 @@ export class AppMenu implements OnInit {
                 icon: 'pi pi-fw pi-shopping-cart',
                 routerLink: ['/dashboard/comandix'],
                 visible: false,
-                roles: ['MESERO'],
+                roles: ['ADMIN', 'MESERO'],
                 requiredPermissions: ['create_order']
             },
             {
                 label: 'Cocina',
                 icon: 'pi pi-fw pi-box',
                 routerLink: ['/dashboard/cocina'],
-                roles: ['COCINA'],
+                roles: ['ADMIN', 'COCINA'],
+                requiredPermissions: ['view_kitchen_orders', 'update_order_status']
+            },
+            {
+                label: 'Barra',
+                icon: 'pi pi-fw pi-glass',
+                routerLink: ['/dashboard/barra'],
+                roles: ['ADMIN', 'COCINA'],
                 requiredPermissions: ['view_kitchen_orders', 'update_order_status']
             },
             {
                 label: 'Dashboard Cocina',
                 icon: 'pi pi-fw pi-chart-line',
                 routerLink: ['/dashboard/cocina-dashboard'],
-                roles: ['COCINA'],
-                requiredPermissions: ['dashboard_kitchen'],
-                requiredRole: 'COCINA'
+                roles: ['ADMIN', 'COCINA'],
+                requiredPermissions: ['dashboard_kitchen']
             },
             { label: 'Mesas', icon: 'pi pi-fw pi-table', routerLink: ['/dashboard/mesas'], roles: ['HOSTESS', 'ADMIN'], requiredPermissions: ['view_mesas'] },
             { label: 'Reservaciones', icon: 'pi pi-fw pi-calendar', routerLink: ['/dashboard/reservaciones'], roles: ['HOSTESS', 'ADMIN'], requiredPermissions: ['view_reservaciones'] },

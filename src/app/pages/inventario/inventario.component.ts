@@ -1,4 +1,5 @@
 import { Component, OnInit, signal, ViewChild } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Table, TableModule } from 'primeng/table';
@@ -23,6 +24,7 @@ interface InvItem {
   stock: number;
   lowStock: boolean;
   outOfStock: boolean;
+  esSubReceta?: boolean;
 }
 
 interface Insumo {
@@ -32,6 +34,8 @@ interface Insumo {
   stock: number;
   stockMinimo: number;
 }
+
+type TabKey = 'products' | 'insumos' | 'bebidas' | 'insumos-bebida';
 
 @Component({
   selector: 'app-inventario',
@@ -65,10 +69,28 @@ export class InventarioComponent implements OnInit {
   loadingBebidas = signal(false);
   tenantId = 0;
 
-  // Pestaña activa de la tabla unificada: 'products' | 'insumos' | 'bebidas'
-  activeTab = signal<'products' | 'insumos' | 'bebidas'>('products');
+  // Modo de la página: 'cocina' (platillos + insumos) o 'barra' (bebidas + insumos de bebida)
+  mode: 'cocina' | 'barra' = 'cocina';
 
-  setActiveTab(tab: 'products' | 'insumos' | 'bebidas') {
+  // IDs de productos de menú que son bebidas (para excluirlos de los platillos de cocina)
+  private beverageProductIds = new Set<number>();
+
+  tabs(): { key: TabKey; label: string; icon: string }[] {
+    return this.mode === 'cocina'
+      ? [
+          { key: 'products', label: 'Platillos', icon: 'pi pi-bars' },
+          { key: 'insumos', label: 'Insumos', icon: 'pi pi-box' }
+        ]
+      : [
+          { key: 'bebidas', label: 'Bebidas', icon: 'pi pi-glass' },
+          { key: 'insumos-bebida', label: 'Insumos de bebida', icon: 'pi pi-box' }
+        ];
+  }
+
+  // Pestaña activa de la tabla unificada
+  activeTab = signal<TabKey>('products');
+
+  setActiveTab(tab: TabKey) {
     this.activeTab.set(tab);
     this.dt?.reset();
   }
@@ -85,10 +107,14 @@ export class InventarioComponent implements OnInit {
   constructor(
     private inventoryService: InventoryService,
     private authService: AuthService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit() {
+    this.mode = this.route.snapshot.data['mode'] === 'barra' ? 'barra' : 'cocina';
+    this.activeTab.set(this.mode === 'cocina' ? 'products' : 'bebidas');
+
     const user = this.authService.getCurrentUser();
     this.tenantId = user?.tenantId || 0;
     if (this.tenantId) {
@@ -130,7 +156,13 @@ export class InventarioComponent implements OnInit {
     this.loadingBebidas.set(true);
     this.inventoryService.getBebidas(this.tenantId).subscribe({
       next: (res) => {
-        this.bebidas.set(res.object || []);
+        const bebidas = res.object || [];
+        this.bebidas.set(bebidas);
+        this.beverageProductIds = new Set<number>();
+        for (const b of bebidas) {
+          const pid = Number(b?.productoId);
+          if (Number.isFinite(pid) && pid > 0) this.beverageProductIds.add(pid);
+        }
         this.loadingBebidas.set(false);
       },
       error: () => {
@@ -138,6 +170,83 @@ export class InventarioComponent implements OnInit {
         this.loadingBebidas.set(false);
       }
     });
+  }
+
+  /* ============ Helpers de la tabla según modo/pestaña ============ */
+
+  // Platillos visibles en Cocina: productos de menú que no son bebidas ni sub-recetas
+  platillos(): InvItem[] {
+    return this.items().filter(
+      (p) => p.id != null && !this.beverageProductIds.has(Number(p.id)) && p.esSubReceta !== true
+    );
+  }
+
+  // Filas según la pestaña activa: bebidas también alimentan la pestaña "Insumos de bebida"
+  tableRows(): any[] {
+    switch (this.activeTab()) {
+      case 'products':
+        return this.platillos();
+      case 'bebidas':
+        return this.bebidas();
+      case 'insumos-bebida':
+        return this.bebidas();
+      case 'insumos':
+      default:
+        return this.insumos();
+    }
+  }
+
+  tableLoading(): boolean {
+    switch (this.activeTab()) {
+      case 'products':
+        return this.loading();
+      case 'bebidas':
+      case 'insumos-bebida':
+        return this.loadingBebidas();
+      case 'insumos':
+      default:
+        return this.loadingInsumos();
+    }
+  }
+
+  tableRowsLabel(): string {
+    switch (this.activeTab()) {
+      case 'products':
+        return 'platillos';
+      case 'bebidas':
+        return 'bebidas';
+      case 'insumos-bebida':
+        return 'insumos de bebida';
+      case 'insumos':
+      default:
+        return 'insumos';
+    }
+  }
+
+  currentPageReport(): string {
+    return `Mostrando {first} a {last} de {totalRecords} ${this.tableRowsLabel()}`;
+  }
+
+  globalFilterFields(): string[] {
+    return this.activeTab() === 'products' ? ['name', 'categoryName'] : ['nombre'];
+  }
+
+  emptyMessage(): string {
+    switch (this.activeTab()) {
+      case 'products':
+        return 'No hay platillos en el inventario';
+      case 'bebidas':
+        return 'Sin bebidas registradas';
+      case 'insumos-bebida':
+        return 'Sin insumos de bebida registrados';
+      case 'insumos':
+      default:
+        return 'Sin insumos registrados';
+    }
+  }
+
+  tableColspan(): number {
+    return this.activeTab() === 'products' ? 3 : 4;
   }
 
   /* ============ Badges de stock (estilo products-menu) ============ */

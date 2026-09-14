@@ -1,43 +1,31 @@
 <div class="inventario-container">
   <div class="inventario-header">
     <div>
-      <h2>Inventario</h2>
-      <p>Control de stock de productos e insumos</p>
+      <h2>{{ mode === 'cocina' ? 'Inventario de Cocina' : 'Inventario de Barra' }}</h2>
+      <p>{{ mode === 'cocina' ? 'Control de stock de platillos e insumos de cocina' : 'Control de stock de bebidas e insumos para bebidas' }}</p>
     </div>
     <button pButton label="Actualizar" icon="pi pi-refresh" severity="secondary" (click)="load(); loadInsumos(); loadBebidas()"></button>
   </div>
 
   <div class="catalog-panel surface-card border-round-lg p-3">
     <div class="catalog-tabs mb-3">
-      <button type="button" class="catalog-tab"
-        [ngClass]="{ 'catalog-tab-active': activeTab() === 'products' }"
-        (click)="setActiveTab('products')">
-        <i class="pi pi-bars"></i>
-        <span>Productos</span>
-      </button>
-      <button type="button" class="catalog-tab"
-        [ngClass]="{ 'catalog-tab-active': activeTab() === 'insumos' }"
-        (click)="setActiveTab('insumos')">
-        <i class="pi pi-box"></i>
-        <span>Insumos</span>
-      </button>
-      <button type="button" class="catalog-tab"
-        [ngClass]="{ 'catalog-tab-active': activeTab() === 'bebidas' }"
-        (click)="setActiveTab('bebidas')">
-        <i class="pi pi-glass"></i>
-        <span>Bebidas</span>
+      <button type="button" class="catalog-tab" *ngFor="let tab of tabs()"
+        [ngClass]="{ 'catalog-tab-active': activeTab() === tab.key }"
+        (click)="setActiveTab(tab.key)">
+        <i [class]="tab.icon"></i>
+        <span>{{ tab.label }}</span>
       </button>
     </div>
 
-    <p-table #dt [value]="activeTab() === 'products' ? $any(items()) : (activeTab() === 'bebidas' ? $any(bebidas()) : $any(insumos()))" [loading]="activeTab() === 'products' ? loading() : (activeTab() === 'bebidas' ? loadingBebidas() : loadingInsumos())"
+    <p-table #dt [value]="tableRows()" [loading]="tableLoading()"
       [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,30,50]"
-      [globalFilterFields]="activeTab() === 'products' ? ['name','categoryName'] : ['nombre']"
+      [globalFilterFields]="globalFilterFields()"
       responsiveLayout="scroll" styleClass="p-datatable-sm catalog-table"
       [tableStyle]="{ 'width': '100%', 'table-layout': 'fixed' }" [rowHover]="true"
-      [showCurrentPageReport]="true" [currentPageReportTemplate]="activeTab() === 'products' ? 'Mostrando {first} a {last} de {totalRecords} productos' : (activeTab() === 'bebidas' ? 'Mostrando {first} a {last} de {totalRecords} bebidas' : 'Mostrando {first} a {last} de {totalRecords} insumos')">
+      [showCurrentPageReport]="true" [currentPageReportTemplate]="currentPageReport()">
       <ng-template pTemplate="caption">
         <div class="flex items-center justify-between">
-          <h5 class="m-0">{{ activeTab() === 'products' ? items().length + ' productos' : (activeTab() === 'bebidas' ? bebidas().length + ' bebidas' : insumos().length + ' insumos') }}</h5>
+          <h5 class="m-0">{{ tableRows().length }} {{ tableRowsLabel() }}</h5>
           <p-iconfield>
             <p-inputicon styleClass="pi pi-search" />
             <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Buscar..." />
@@ -48,7 +36,7 @@
         <ng-container *ngIf="activeTab() === 'products'">
           <tr>
             <th pSortableColumn="name" style="width: 45%">
-              Producto
+              Platillo
               <p-sortIcon field="name" />
             </th>
             <th pSortableColumn="categoryName" style="width: 30%">
@@ -78,10 +66,10 @@
             <th style="width: 25%">Acciones</th>
           </tr>
         </ng-container>
-        <ng-container *ngIf="activeTab() === 'insumos'">
+        <ng-container *ngIf="activeTab() === 'insumos' || activeTab() === 'insumos-bebida'">
           <tr>
             <th pSortableColumn="nombre" style="width: 35%">
-              Insumo
+              {{ activeTab() === 'insumos-bebida' ? 'Insumo de bebida' : 'Insumo' }}
               <p-sortIcon field="nombre" />
             </th>
             <th pSortableColumn="stock" style="width: 20%">
@@ -148,7 +136,7 @@
             </td>
           </tr>
         </ng-container>
-        <ng-container *ngIf="activeTab() === 'insumos'">
+        <ng-container *ngIf="activeTab() === 'insumos' || activeTab() === 'insumos-bebida'">
           <tr>
             <td style="width: 35%">
               <div class="font-medium text-900">{{ row.nombre }}</div>
@@ -179,8 +167,8 @@
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td [attr.colspan]="activeTab() === 'products' ? 3 : 4" class="text-center p-8">
-            {{ activeTab() === 'products' ? 'No hay productos en el inventario' : (activeTab() === 'bebidas' ? 'Sin bebidas registradas' : 'Sin insumos registrados') }}
+          <td [attr.colspan]="tableColspan()" class="text-center p-8">
+            {{ emptyMessage() }}
           </td>
         </tr>
       </ng-template>

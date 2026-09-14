@@ -83,6 +83,8 @@
 
   .recetas-recipe-dialog .p-dialog-content {
     max-height: calc(90vh - 9rem);
+    display: flex;
+    flex-direction: column;
   }
 
   .recetas-picker-dialog .p-dialog-content,
@@ -164,6 +166,46 @@
 
 .recipe-add-row {
   margin-bottom: 0.25rem;
+}
+
+/* ===== Apartados apilados en columna (modal de receta) ===== */
+.recipe-dialog-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.apartado {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.apartado-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 0.7rem;
+  background: linear-gradient(135deg, var(--primary-50), var(--surface-card));
+}
+
+.apartado-header .font-semibold {
+  color: var(--text-color);
+}
+
+.recipe-add-form {
+  border: 1px solid var(--surface-border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-1);
 }
 
 .recipe-line {
@@ -571,5 +613,16 @@
       background: rgba(255, 255, 255, 0.06) !important;
       color: #ffffff !important;
     }
+  }
+
+  .apartado-header {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--surface-border);
+  }
+
+  .recipe-add-form {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--surface-border);
+    box-shadow: none;
   }
 }
