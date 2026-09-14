@@ -93,9 +93,7 @@ export class MiPaginaComponent implements OnInit {
 
             // Construir URL
             const baseUrl = this.getBaseUrl();
-            // Preview con el tenant demo que sí tiene los productos/publicación
-            const previewSlug = 'la-taqueria-demo';
-            const landingUrl = `${baseUrl}/${previewSlug}`;
+            const landingUrl = `${baseUrl}/${tenantSlug}`;
 
             // Actualizar estado
             this.tenantSlug.set(tenantSlug);

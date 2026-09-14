@@ -48,6 +48,10 @@ export class TenantService {
     return this.http.put<any>(`${this.apiUrl}/${tenantId}`, tenant);
   }
 
+  saveCustomSite(tenantId: number, html: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/${tenantId}/custom-site`, { html });
+  }
+
   invalidateTenantByEmailCache(email: string): void {
     const normalizedEmail = String(email || '').trim().toLowerCase();
     if (!normalizedEmail) {
