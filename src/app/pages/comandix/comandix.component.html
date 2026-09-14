@@ -926,6 +926,7 @@
   <app-split-order-modal
     [visible]="showSplitModal()"
     [order]="selectedOrderForSplit()"
+    [tip]="splitOrderTip()"
     (visibleChange)="onSplitModalVisibilityChange($event)"
     (cuentaCreada)="onCuentaCreada($event)"
   ></app-split-order-modal>

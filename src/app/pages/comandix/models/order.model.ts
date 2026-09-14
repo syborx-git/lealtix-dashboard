@@ -165,3 +165,12 @@ export interface SplitOrderResponse {
     newOrder?: TenantClientOrderResponse;
   };
 }
+
+// ==================== PROPINA (capa visual) ====================
+
+export interface TipInfo {
+  /** Propina como porcentaje del total (10, 15, 20...) */
+  percent?: number | null;
+  /** Propina como monto fijo (modo "Otro") */
+  amount?: number | null;
+}
