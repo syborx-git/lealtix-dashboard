@@ -1,0 +1,82 @@
+<p-toast></p-toast>
+
+<div class="inventario-container">
+  <div class="inventario-header">
+    <div>
+      <h2>Reportes</h2>
+      <p>Historial de salidas no-venta: mermas por comanda y mermas administrativas directas de bodega, cocina o barra.</p>
+    </div>
+    <div class="header-actions">
+      <button pButton type="button" icon="pi pi-refresh" label="Actualizar" class="p-button-outlined" (click)="load()"></button>
+    </div>
+  </div>
+
+  <div class="catalog-panel">
+    <p-table
+      #dt
+      [value]="items()"
+      [loading]="loading()"
+      styleClass="p-datatable-sm catalog-table"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[5, 10, 25, 50]"
+      [globalFilterFields]="['usuarioNombre', 'insumoNombre', 'productoNombre', 'motivo', 'ticket']"
+      dataKey="id"
+      [showCurrentPageReport]="true"
+      [currentPageReportTemplate]="'Mostrando {first} a {last} de {totalRecords} registros de merma'"
+      [tableStyle]="{ 'table-layout': 'fixed', 'min-width': '64rem' }"
+    >
+      <ng-template pTemplate="header">
+        <div class="table-header-bar">
+          <div class="table-title">
+            <h5>{{ items().length }} mermas registradas</h5>
+            <span class="table-title-sub">Salidas no-venta del negocio</span>
+          </div>
+          <p-iconfield>
+            <p-inputicon styleClass="pi pi-search" />
+            <input pInputText type="text" placeholder="Buscar merma..." (input)="onGlobalFilter(dt, $event)" />
+          </p-iconfield>
+        </div>
+      </ng-template>
+      <ng-template pTemplate="headerrow">
+        <tr>
+          <th pSortableColumn="fecha" style="width: 16%">Fecha <p-sortIcon field="fecha" /></th>
+          <th pSortableColumn="usuarioNombre" style="width: 14%">Usuario <p-sortIcon field="usuarioNombre" /></th>
+          <th pSortableColumn="categoriaMerma" style="width: 13%">Tipo <p-sortIcon field="categoriaMerma" /></th>
+          <th pSortableColumn="insumoNombre" style="width: 24%">Insumo / Producto <p-sortIcon field="insumoNombre" /></th>
+          <th pSortableColumn="cantidad" class="col-num" style="width: 11%">Cantidad <p-sortIcon field="cantidad" /></th>
+          <th style="width: 22%">Motivo</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td class="fecha-cell">{{ formatFecha(row.fecha) }}</td>
+          <td>
+            <span class="usuario-cell">
+              <i class="pi pi-user mr-1"></i>{{ usuario(row) }}
+              <span class="usuario-origen" *ngIf="origenLabel(row)"> · {{ origenLabel(row) }}</span>
+            </span>
+          </td>
+          <td>
+            <p-tag [value]="tipoLabel(row)" [severity]="tipoColor(row)" styleClass="tipo-tag"></p-tag>
+          </td>
+          <td>
+            <span class="item-name">{{ nombre(row) }}</span>
+            <span class="item-sub">{{ row.cantidad }} {{ row.unidad || 'pieza' }}</span>
+          </td>
+          <td class="col-num">
+            <strong class="stock-bodega-val">{{ row.cantidad }} {{ row.unidad || 'pieza' }}</strong>
+          </td>
+          <td>
+            <span class="motivo-cell">{{ motivo(row) }}</span>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="empty-cell">Aún no hay mermas registradas. Regístralas desde el módulo Mermas.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

@@ -20,6 +20,7 @@ import { AuthService } from '@/auth/auth.service';
 import { MermaRecord, MermaService, TIPOS_MERMA } from '@/pages/comandix/services/merma.service';
 import { OrderService } from '@/pages/comandix/services/order.service';
 import { PendingOrder } from '@/pages/comandix/models/order.model';
+import { InventoryService } from '@/pages/inventario/service/inventory.service';
 
 @Component({
   selector: 'app-mermas',
@@ -60,15 +61,30 @@ export class MermasComponent implements OnInit {
   mermaOrderId = signal<string | null>(null);
   orderIngredients = signal<any[]>([]);
   loadingIngredients = signal<boolean>(false);
+  busquedaComanda = signal<string>('');
   seleccionados: Record<number, boolean> = {};
   cantidades: Record<number, number> = {};
   registeringMerma = signal<boolean>(false);
+
+  // ===== Merma administrativa (transfer list de dos columnas) =====
+  adminVisible = false;
+  adminInsumos = signal<any[]>([]);
+  adminBusqueda = signal<string>('');
+  adminFiltrados = signal<any[]>([]);
+  adminLoading = signal<boolean>(false);
+  adminSeleccionados = signal<{ insumo: any; cantidad: number }[]>([]);
+  adminMotivo: string | null = null;
+  adminMotivoCustom = '';
+  adminOrigen = 'BODEGA';
+  adminTipo = 'OPERATIVA';
+  registeringAdmin = signal<boolean>(false);
 
   constructor(
     private mermaService: MermaService,
     private authService: AuthService,
     private messageService: MessageService,
-    private orderService: OrderService
+    private orderService: OrderService,
+    private inventoryService: InventoryService
   ) {}
 
   ngOnInit(): void {
@@ -146,6 +162,7 @@ export class MermasComponent implements OnInit {
   openMermaModal(order: PendingOrder): void {
     this.mermaOrderId.set(order.id);
     this.mermaDialogVisible = true;
+    this.busquedaComanda.set('');
     this.loadingIngredients.set(true);
     this.seleccionados = {};
     this.cantidades = {};
@@ -178,8 +195,25 @@ export class MermasComponent implements OnInit {
     this.mermaDialogVisible = false;
     this.mermaOrderId.set(null);
     this.orderIngredients.set([]);
+    this.busquedaComanda.set('');
     this.seleccionados = {};
     this.cantidades = {};
+  }
+
+  getIngredientesFiltrados(): { i: number; insumo: any }[] {
+    const term = this.busquedaComanda().trim().toLowerCase();
+    const all = this.orderIngredients();
+    const filtered = !term
+      ? all
+      : all.filter((insumo) =>
+          (insumo.insumoNombre ?? insumo.productoNombre ?? '')
+            .toLowerCase()
+            .includes(term)
+        );
+    return filtered.map((insumo, idx) => {
+      const original = term ? all.indexOf(insumo) : idx;
+      return { i: original, insumo };
+    });
   }
 
   isNewOrder(order: PendingOrder): boolean {
@@ -278,10 +312,13 @@ export class MermasComponent implements OnInit {
     }
 
     this.registeringMerma.set(true);
+    const user = this.authService.getCurrentUser();
     this.mermaService.registrarMerma({
       tenantId: this.tenantId,
       orderId: currentId,
       tipoMerma: this.tipoMermaSeleccionado,
+      usuarioId: user?.id,
+      usuarioNombre: user?.nombre,
       items
     }).subscribe({
       next: (res) => {
@@ -313,6 +350,188 @@ export class MermasComponent implements OnInit {
           life: 4000
         });
         this.registeringMerma.set(false);
+      }
+    });
+  }
+
+  /* ==================== Merma administrativa ==================== */
+
+  openAdminModal(): void {
+    this.adminVisible = true;
+    this.adminBusqueda.set('');
+    this.adminSeleccionados.set([]);
+    this.adminMotivo = null;
+    this.adminMotivoCustom = '';
+    this.adminOrigen = 'BODEGA';
+
+    if (this.adminInsumos().length === 0) {
+      this.loadAdminInsumos();
+    } else {
+      this.filterAdminInsumos();
+    }
+  }
+
+  loadAdminInsumos(): void {
+    this.adminLoading.set(true);
+    this.inventoryService.getBodega(this.tenantId).subscribe({
+      next: (res) => {
+        this.adminInsumos.set(res?.object ?? []);
+        this.filterAdminInsumos();
+        this.adminLoading.set(false);
+      },
+      error: () => {
+        this.adminInsumos.set([]);
+        this.adminLoading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los insumos', life: 4000 });
+      }
+    });
+  }
+
+  onBusquedaInput(event: Event): void {
+    this.busquedaComanda.set((event.target as HTMLInputElement).value ?? '');
+  }
+
+  onAdminBusquedaInput(event: Event): void {
+    this.adminBusqueda.set((event.target as HTMLInputElement).value ?? '');
+    this.filterAdminInsumos();
+  }
+
+  filterAdminInsumos(): void {
+    const term = this.adminBusqueda().trim().toLowerCase();
+    const all = this.adminInsumos();
+    if (!term) {
+      this.adminFiltrados.set(all);
+      return;
+    }
+    this.adminFiltrados.set(
+      all.filter((i) => (i.nombre ?? '').toLowerCase().includes(term) || (i.unidad ?? '').toLowerCase().includes(term))
+    );
+  }
+
+  adminStockEn(insumo: any, origen: string): number {
+    switch (origen) {
+      case 'COCINA': return insumo.stockCocina ?? 0;
+      case 'BARRA': return insumo.stockBarra ?? 0;
+      default: return insumo.stockBodega ?? 0;
+    }
+  }
+
+  adminLabelOrigen(origen: string): string {
+    switch (origen) {
+      case 'COCINA': return 'Cocina';
+      case 'BARRA': return 'Barra';
+      default: return 'Bodega';
+    }
+  }
+
+  adminDisponibles(): any[] {
+    const selected = this.adminSeleccionados();
+    return this.adminFiltrados().filter(
+      (i) => !selected.some((s) => s.insumo.id === i.id)
+    );
+  }
+
+  adminDisponibleDe(insumo: any): number {
+    return this.adminStockEn(insumo, this.adminOrigen);
+  }
+
+  moverADerecha(insumo: any): void {
+    if (this.adminSeleccionados().some((s) => s.insumo.id === insumo.id)) return;
+    this.adminSeleccionados.update((prev) => [...prev, { insumo, cantidad: 0 }]);
+  }
+
+  moverAIzquierda(index: number): void {
+    this.adminSeleccionados.update((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  onCantidadAdminInput(index: number, event: Event): void {
+    const cantidad = Number((event.target as HTMLInputElement).value);
+    this.adminSeleccionados.update((prev) =>
+      prev.map((s, i) => (i === index ? { ...s, cantidad } : s))
+    );
+  }
+
+  onMotivoCustomInput(event: Event): void {
+    this.adminMotivoCustom = (event.target as HTMLInputElement).value ?? '';
+  }
+
+  adminMotivoFinal(): string {
+    return this.adminMotivo === 'OTRO'
+      ? this.adminMotivoCustom.trim()
+      : (this.adminMotivo ?? '').trim();
+  }
+
+  adminPuedeRegistrar(): boolean {
+    const items = this.adminSeleccionados();
+    return (
+      items.length > 0 &&
+      items.every((s) => s.cantidad > 0) &&
+      !!this.adminMotivo &&
+      !!this.adminMotivoFinal()
+    );
+  }
+
+  closeAdminModal(): void {
+    this.adminVisible = false;
+    this.adminSeleccionados.set([]);
+    this.adminBusqueda.set('');
+    this.adminMotivo = null;
+    this.adminMotivoCustom = '';
+  }
+
+  registroAdmin(): void {
+    if (!this.adminPuedeRegistrar() || this.registeringAdmin()) return;
+
+    const items = this.adminSeleccionados();
+    for (const { insumo, cantidad } of items) {
+      const disp = this.adminDisponibleDe(insumo);
+      if (cantidad > disp) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Stock insuficiente',
+          detail: `Solo hay ${disp} ${insumo.unidad || 'pieza'} de ${insumo.nombre} en ${this.adminLabelOrigen(this.adminOrigen)}`,
+          life: 4000
+        });
+        return;
+      }
+    }
+
+    const user = this.authService.getCurrentUser();
+    const motivoFinal = this.adminMotivoFinal();
+    this.registeringAdmin.set(true);
+    this.mermaService.registrarMermaAdministrativa({
+      tenantId: this.tenantId,
+      origen: this.adminOrigen,
+      motivo: motivoFinal,
+      tipoMerma: this.adminTipo,
+      usuarioId: user?.id,
+      usuarioNombre: user?.nombre,
+      items: items.map(({ insumo, cantidad }) => ({
+        insumoId: insumo.id,
+        insumoNombre: insumo.nombre,
+        cantidad,
+        unidad: insumo.unidad || 'pieza'
+      }))
+    }).subscribe({
+      next: (res) => {
+        if (res?.code !== 200) {
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: res?.message || 'No se pudo registrar la merma administrativa', life: 4000 });
+          this.registeringAdmin.set(false);
+          return;
+        }
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Merma administrativa registrada',
+          detail: `${items.length} insumo(s) mermado(s) en ${this.adminLabelOrigen(this.adminOrigen)} (${motivoFinal})`,
+          life: 4000
+        });
+        this.closeAdminModal();
+        this.loadMermas();
+        this.registeringAdmin.set(false);
+      },
+      error: (err) => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo registrar la merma administrativa', life: 4000 });
+        this.registeringAdmin.set(false);
       }
     });
   }

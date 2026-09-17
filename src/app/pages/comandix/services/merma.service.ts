@@ -30,6 +30,11 @@ export interface MermaRecord {
   orderId?: string | null;
   registroId?: string;
   tipoMerma?: string;
+  categoriaMerma?: string;
+  origen?: string;
+  motivo?: string;
+  usuarioId?: number | null;
+  usuarioNombre?: string | null;
   insumoId?: number | null;
   insumoNombre?: string | null;
   productoId?: number | null;
@@ -63,9 +68,23 @@ export class MermaService {
     tenantId: number;
     orderId: string;
     tipoMerma?: string;
+    usuarioId?: number;
+    usuarioNombre?: string;
     items: MermaItem[];
   }): Observable<any> {
     return this.http.post<any>(this.baseUrl, request);
+  }
+
+  registrarMermaAdministrativa(request: {
+    tenantId: number;
+    origen: string;
+    motivo: string;
+    tipoMerma?: string;
+    usuarioId?: number;
+    usuarioNombre?: string;
+    items: MermaItem[];
+  }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/administrativa`, request);
   }
 
   listarPorTenant(tenantId: number): Observable<any> {

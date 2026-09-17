@@ -93,9 +93,18 @@ export class AppMenu implements OnInit {
                 label: 'Almacén',
                 icon: 'pi pi-fw pi-box',
                 items: [
+                    { label: 'Bodega', icon: 'pi pi-fw pi-database', routerLink: ['/dashboard/bodega'], roles: ['ADMIN'], requiredPermissions: ['view_products'] },
                     { label: 'Inventario de Cocina', icon: 'pi pi-fw pi-box', routerLink: ['/dashboard/inventario-cocina'], roles: ['ADMIN'], requiredPermissions: ['view_products'] },
                     { label: 'Inventario de Barra', icon: 'pi pi-fw pi-warehouse', routerLink: ['/dashboard/inventario-barra'], roles: ['ADMIN'], requiredPermissions: ['view_products'] },
                     { label: 'Mermas', icon: 'pi pi-fw pi-trash', routerLink: ['/dashboard/mermas'], roles: ['ADMIN'], requiredPermissions: ['manage_mermas'] }
+                ]
+            },
+            {
+                label: 'Reportes',
+                icon: 'pi pi-fw pi-chart-bar',
+                items: [
+                    { label: 'Transferencias de Bodega', icon: 'pi pi-fw pi-arrows-alt', routerLink: ['/dashboard/reportes/transferencias'], roles: ['ADMIN'], requiredPermissions: ['view_products'] },
+                    { label: 'Reportes de Mermas', icon: 'pi pi-fw pi-database', routerLink: ['/dashboard/reportes/mermas'], roles: ['ADMIN'], requiredPermissions: ['manage_mermas'] }
                 ]
             },
             {

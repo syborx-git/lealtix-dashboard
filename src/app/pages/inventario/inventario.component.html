@@ -63,24 +63,25 @@
               Precio venta
               <p-sortIcon field="precioVenta" />
             </th>
-            <th style="width: 25%">Acciones</th>
+            <th style="width: 25%">Ubicación</th>
           </tr>
         </ng-container>
         <ng-container *ngIf="activeTab() === 'insumos' || activeTab() === 'insumos-bebida'">
           <tr>
-            <th pSortableColumn="nombre" style="width: 35%">
+            <th pSortableColumn="nombre" style="width: 28%">
               {{ activeTab() === 'insumos-bebida' ? 'Insumo de bebida' : 'Insumo' }}
               <p-sortIcon field="nombre" />
             </th>
-            <th pSortableColumn="stock" style="width: 20%">
+            <th pSortableColumn="stock" style="width: 14%">
               Stock
               <p-sortIcon field="stock" />
             </th>
-            <th pSortableColumn="stockMinimo" style="width: 25%">
+            <th pSortableColumn="stockMinimo" style="width: 15%">
               Stock mínimo
               <p-sortIcon field="stockMinimo" />
             </th>
-            <th style="width: 20%">Acciones</th>
+            <th style="width: 12%">Ubicación</th>
+            <th style="width: 31%">Acciones</th>
           </tr>
         </ng-container>
       </ng-template>
@@ -124,21 +125,20 @@
             </td>
             <td style="width: 20%">
               <span class="stock-badge" [ngClass]="insumoLowClass(row)">
-                {{ row.stock }} {{ row.unidad || 'pieza' }}
+                {{ insumoLocalStock(row) }} {{ row.unidad || 'pieza' }}
               </span>
             </td>
             <td style="width: 25%">
               <div class="text-sm text-500">{{ row.precioVenta | currency: 'MXN' }}</div>
             </td>
             <td style="width: 25%">
-              <p-button label="Restock" icon="pi pi-refresh" iconPos="left" styleClass="restock-pill-btn"
-                (click)="openInsumoRestock(row)"></p-button>
+              <span class="text-xs text-500">Barra</span>
             </td>
           </tr>
         </ng-container>
         <ng-container *ngIf="activeTab() === 'insumos' || activeTab() === 'insumos-bebida'">
           <tr>
-            <td style="width: 35%">
+            <td style="width: 28%">
               <div class="font-medium text-900">{{ row.nombre }}</div>
               <div class="flex flex-wrap gap-1 mt-1" *ngIf="rowCategories(row).length">
                 <span class="cat-chip-mini" *ngFor="let c of visibleRowCategories(row)">{{ c.name }}</span>
@@ -150,17 +150,20 @@
                 </button>
               </div>
             </td>
-            <td style="width: 20%">
+            <td style="width: 14%">
               <span class="stock-badge" [ngClass]="insumoLowClass(row)">
-                {{ row.stock }} {{ row.unidad || 'pieza' }}
+                {{ insumoLocalStock(row) }} {{ row.unidad || 'pieza' }}
               </span>
             </td>
-            <td style="width: 25%">
+            <td style="width: 15%">
               <div class="text-sm text-500">{{ row.stockMinimo }}</div>
             </td>
-            <td style="width: 20%">
-              <p-button label="Restock" icon="pi pi-refresh" iconPos="left" styleClass="restock-pill-btn"
-                (click)="openInsumoRestock(row)"></p-button>
+            <td style="width: 12%">
+              <span class="text-xs text-500">{{ mode === 'cocina' ? 'Cocina' : 'Barra' }}</span>
+            </td>
+            <td style="width: 31%">
+              <button pButton label="Solicitar stock" icon="pi pi-send" size="small" severity="secondary"
+                class="solicitar-stock-btn" (click)="openSolicitud(row)"></button>
             </td>
           </tr>
         </ng-container>
@@ -175,29 +178,63 @@
     </p-table>
   </div>
 
-  <!-- ============ DIALOGO RESTOCK DE INSUMO ============ -->
-  <p-dialog header="Restock de insumo" [(visible)]="insumoRestockVisible" [style]="{ width: '400px' }" [modal]="true" [dismissableMask]="true" styleClass="minimal-modal" (onHide)="insumoRestockVisible = false">
-    <div class="flex flex-col gap-3">
-      <p-message severity="info"
-        [text]="'Stock actual: ' + (insumoRestockTarget?.stock ?? 0) + ' ' + (insumoRestockTarget?.unidad || 'pieza')"
-        styleClass="w-full"></p-message>
-      <div>
-        <label class="block text-sm font-medium mb-1">Cantidad que llegó</label>
-        <p-inputNumber [(ngModel)]="insumoRestockCantidad" [min]="0" [step]="0.5" styleClass="w-full" />
+  <p-dialog header="Solicitar stock" [style]="{ width: '26rem' }" [(visible)]="solicitudVisible"
+    styleClass="solicitud-dialog" [modal]="true" [closable]="!enviandoSolicitud"
+    [closeOnEscape]="!enviandoSolicitud" [dismissableMask]="!enviandoSolicitud" (onHide)="cerrarSolicitud()">
+    <ng-template pTemplate="header">
+      <div class="solicitud-header">
+        <div class="solicitud-header-icon"><i class="pi pi-send"></i></div>
+        <div>
+          <div class="solicitud-header-title">Solicitar stock</div>
+          <div class="solicitud-header-sub">Pedido a Bodega central</div>
+        </div>
       </div>
-      <div>
-        <label class="block text-sm font-medium mb-1">Costo total usado (en este restock)</label>
-        <p-inputNumber [(ngModel)]="insumoRestockCostoTotal" [min]="0" [step]="1" [mode]="'currency'" [currency]="'USD'" [locale]="'en-US'" styleClass="w-full" />
-        <small class="block text-xs text-600 mt-1">Importe invertido en este restock (se usará en el cálculo automático de costos).</small>
+    </ng-template>
+
+    <div class="solicitud-body">
+      <div class="solicitud-insumo-card" *ngIf="solicitudInsumo">
+        <div class="solicitud-insumo-nombre">{{ solicitudInsumo.nombre }}</div>
+        <div class="solicitud-insumo-meta">
+          <span *ngIf="insumoLocalStock(solicitudInsumo) > 0">
+            Disponible: {{ insumoLocalStock(solicitudInsumo) }} {{ solicitudInsumo.unidad || 'pieza' }}
+          </span>
+          <span *ngIf="insumoLocalStock(solicitudInsumo) <= 0" class="solicitud-sin-stock">Agotado en {{ mode === 'cocina' ? 'cocina' : 'barra' }}</span>
+        </div>
       </div>
-      <div *ngIf="insumoRestockTarget && insumoRestockCantidad > 0" class="text-sm text-600">
-        Nuevo stock: <strong>{{ insumoRestockTarget.stock + insumoRestockCantidad }} {{ insumoRestockTarget.unidad || 'pieza' }}</strong>
+
+      <div class="solicitud-field">
+        <label>Stock mínimo</label>
+        <p-inputNumber inputId="solicitudStock"
+          class="solicitud-stock-minimo"
+          [ngModel]="solicitudInsumo?.stockMinimo"
+          [style]="{ 'pointer-events': 'none' }"
+          [readonly]="true"
+          [inputStyleClass]="'solicitud-stock-minimo-input'" />
+      </div>
+
+      <div class="solicitud-field">
+        <label>Cantidad a solicitar</label>
+        <p-inputNumber inputId="solicitudCantidad" [(ngModel)]="solicitudCantidad"
+          (onInput)="onSolicitudCantidadInput($event.value)"
+          [min]="0" [maxFractionDigits]="3" [showButtons]="true" [buttonLayout]="'horizontal'"
+          inputStyleClass="solicitud-input"
+          class="solicitud-qty" />
+      </div>
+
+      <div class="solicitud-field">
+        <label>Prioridad</label>
+        <p-select [options]="prioridadOptions" optionLabel="label" optionValue="value"
+          [(ngModel)]="solicitudPrioridad" styleClass="w-full" />
       </div>
     </div>
-    <ng-template #footer>
-      <p-button label="Cancelar" severity="secondary" [text]="true" (click)="insumoRestockVisible = false"></p-button>
-      <p-button label="Actualizar stock" icon="pi pi-refresh" severity="success" styleClass="minimal-submit"
-        [disabled]="insumoRestockCantidad <= 0" (click)="doInsumoRestock()"></p-button>
+
+    <ng-template pTemplate="footer">
+      <div class="solicitud-footer">
+        <button pButton label="Cancelar" severity="secondary" [disabled]="enviandoSolicitud"
+          (click)="cerrarSolicitud()" class="solicitud-cancel"></button>
+        <button pButton label="Enviar solicitud" icon="pi pi-send" [loading]="enviandoSolicitud"
+          [disabled]="!puedeEnviarSolicitud()" (click)="enviarSolicitud()" class="solicitud-submit"></button>
+      </div>
     </ng-template>
   </p-dialog>
 

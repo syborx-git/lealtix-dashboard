@@ -1,0 +1,1406 @@
+.bodega-container {
+  padding: 0.5rem;
+}
+
+.bodega-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  h2 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    margin: 0 0 0.25rem;
+    letter-spacing: -0.02em;
+    color: var(--text-color);
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-color-secondary);
+    font-size: 0.925rem;
+    max-width: 42rem;
+  }
+}
+
+/* === PANEL DE CATÁLOGO (homogéneo con inventario / products-menu) === */
+.catalog-panel {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  box-shadow: var(--lealtix-shadow-sm);
+  border: 1px solid var(--lealtix-slate-200);
+
+  ::ng-deep .p-datatable {
+    table-layout: fixed !important;
+    width: 100% !important;
+
+    .p-datatable-wrapper {
+      overflow-x: auto;
+    }
+  }
+}
+
+/* === BANNER MORADO (caption): total + buscador === */
+::ng-deep .catalog-panel .p-datatable-header {
+  background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%);
+  color: white;
+  border-radius: var(--lealtix-radius-lg) var(--lealtix-radius-lg) 0 0;
+  padding: 1.75rem 2rem;
+  border: none;
+
+  .table-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .table-title {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+
+    h5 {
+      color: white;
+      font-size: 1.375rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .table-title-sub {
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 0.8rem;
+      font-weight: 500;
+      margin: 0;
+    }
+  }
+
+  .table-filters {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: min(100%, 34rem);
+  }
+
+  .p-inputtext {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--lealtix-radius-md);
+    padding: 0.75rem 1rem;
+    color: var(--lealtix-slate-900);
+    font-size: 0.875rem;
+    min-width: 14rem;
+    flex: 1;
+
+    &::placeholder {
+      color: var(--lealtix-slate-400);
+    }
+
+    &:focus {
+      outline: none;
+      border-color: rgba(255, 255, 255, 0.8);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15);
+    }
+  }
+
+  .catalog-filter {
+    min-width: 13rem;
+    color: var(--lealtix-slate-900);
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--lealtix-radius-md);
+
+    .p-select-label {
+      padding: 0.75rem 0.9rem;
+      font-size: 0.875rem;
+    }
+
+    .p-select-dropdown {
+      color: var(--lealtix-slate-500);
+    }
+  }
+}
+
+/* === ENCABEZADOS DE COLUMNA: mayúsculas, pequeñas, grises === */
+::ng-deep .catalog-panel .p-datatable {
+  .p-datatable-thead > tr > th {
+    background: var(--lealtix-slate-50, #f8fafc);
+    color: var(--text-color-secondary);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    border: none;
+    border-bottom: 1px solid var(--lealtix-slate-200);
+    padding: 1rem 1.25rem;
+    vertical-align: middle;
+
+    .th-text {
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .p-sortable-column-icon {
+      color: inherit;
+      opacity: 0.55;
+      font-size: 0.7rem;
+      vertical-align: middle;
+    }
+
+    &:hover {
+      color: var(--lealtix-primary-700, #4338ca);
+    }
+  }
+
+  /* Alineación central de las columnas numéricas */
+  .p-datatable-thead > tr > th.col-num,
+  .p-datatable-tbody > tr > td.col-num {
+    text-align: center !important;
+  }
+
+  /* Columna de acciones: anclada a la derecha */
+  .p-datatable-thead > tr > th.col-actions,
+  .p-datatable-tbody > tr > td.col-actions {
+    text-align: right !important;
+  }
+
+  .p-datatable-tbody > tr {
+    background: transparent;
+
+    &:nth-child(even) {
+      background: rgba(99, 102, 241, 0.025);
+    }
+
+    &:hover {
+      background-color: rgba(99, 102, 241, 0.07) !important;
+      cursor: default;
+    }
+
+    > td {
+      color: var(--text-color);
+      border-bottom: 1px solid var(--lealtix-slate-100);
+      padding: 1.15rem 1.25rem;
+      vertical-align: middle;
+    }
+  }
+}
+
+/* === CELDA INSUMO: nombre + subtítulo a la izquierda === */
+.item-name {
+  display: block;
+  font-weight: 500;
+  font-size: 0.9375rem;
+  color: var(--text-color);
+  line-height: 1.35;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.item-sub {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  color: var(--text-color-secondary);
+}
+
+.unit-text {
+  font-size: 0.85rem;
+  color: var(--text-color-secondary);
+}
+
+/* === BADGES DE STOCK (reservados; se muestran en cocina/barra) === */
+
+/* === NÚMEROS DE STOCK EN CELDAS NUMÉRICAS === */
+.num-plain {
+  font-size: 0.875rem;
+  color: var(--text-color-secondary);
+  font-weight: 500;
+}
+
+.num-bodega {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--lealtix-primary-700, #4338ca);
+}
+
+.stock-value {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.stock-value-alert .num-bodega {
+  color: var(--red-600, #dc2626);
+}
+
+.stock-alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--red-200, #fecaca);
+  border-radius: 999px;
+  background: var(--red-50, #fef2f2);
+  color: var(--red-700, #b91c1c);
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+
+  i {
+    font-size: 0.65rem;
+  }
+}
+
+/* === CHIPS DE CATEGORÍA (limpios y discretos) === */
+.cat-chip-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem 0.2rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+
+  i {
+    font-size: 0.7rem;
+  }
+}
+
+.chip-bebida {
+  background: var(--lealtix-primary-50, #eef2ff);
+  border: 1px solid var(--lealtix-primary-200, #c7d2fe);
+  color: var(--lealtix-primary-700, #4338ca);
+}
+
+.chip-insumo {
+  background: var(--lealtix-slate-100, #f1f5f9);
+  border: 1px solid var(--lealtix-slate-200, #e2e8f0);
+  color: var(--lealtix-slate-600, #475569);
+}
+
+/* === BOTONES DE ACCIÓN: espaciados y anclados a la derecha === */
+.action-btns {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+::ng-deep .btn-entrada {
+  background: transparent !important;
+  color: var(--lealtix-primary-600, #4f46e5) !important;
+  border: 1.5px solid var(--lealtix-primary-400, #a5b4fc) !important;
+  border-radius: 999px !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+  white-space: nowrap;
+
+  &:enabled:hover {
+    background: var(--lealtix-primary-50, #eef2ff) !important;
+    border-color: var(--lealtix-primary-600, #4f46e5) !important;
+  }
+}
+
+::ng-deep .btn-distribuir {
+  background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%) !important;
+  border: none !important;
+  border-radius: 999px !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+  white-space: nowrap;
+
+  &:enabled:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35) !important;
+  }
+
+  &:disabled {
+    opacity: 0.45 !important;
+  }
+}
+
+/* === DIALOG: DISTRIBUIR A INVENTARIO === */
+:host ::ng-deep .distribuir-dialog {
+  .p-dialog-content {
+    padding: 1.5rem;
+  }
+
+  .p-dialog-header {
+    padding: 1.15rem 1.5rem;
+    border-bottom: 1px solid var(--lealtix-slate-200);
+
+    .p-dialog-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-color);
+    }
+  }
+
+  .p-dialog-footer {
+    border-top: 1px solid var(--lealtix-slate-100);
+    padding-top: 1rem;
+  }
+}
+
+/* Tarjeta read-only: insumo + existencias */
+.move-info-card {
+  display: flex;
+  align-items: stretch;
+  gap: 1.1rem;
+  background: var(--lealtix-primary-50, #eef2ff);
+  border: 1px solid var(--lealtix-primary-100, #e0e7ff);
+  border-radius: var(--lealtix-radius-md);
+  padding: 1rem 1.1rem;
+  margin-bottom: 1.4rem;
+}
+
+.move-info-divider {
+  width: 1px;
+  flex-shrink: 0;
+  background: rgba(67, 56, 202, 0.15);
+}
+
+.move-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+
+  &:first-child {
+    flex: 1;
+  }
+
+  .move-info-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--lealtix-slate-500, #64748b);
+  }
+
+  .move-info-value {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-color);
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    .move-info-unit {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--lealtix-slate-500, #64748b);
+      margin-left: 0.2rem;
+    }
+  }
+}
+
+.move-block {
+  margin-bottom: 1.4rem;
+}
+
+.move-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-color-secondary);
+  margin-bottom: 0.5rem;
+}
+
+/* Segmented control: Cocina / Barra */
+:host ::ng-deep .distribuir-dialog .p-selectbutton {
+  display: flex;
+  width: 100%;
+  gap: 0.35rem;
+  padding: 0.35rem;
+  background: var(--lealtix-slate-100, #f1f5f9);
+  border: 1px solid var(--lealtix-slate-200, #e2e8f0);
+  border-radius: var(--lealtix-radius-md);
+
+  .p-button {
+    flex: 1 1 0;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--lealtix-slate-500, #64748b);
+    font-weight: 600;
+    font-size: 0.875rem;
+    border-radius: calc(var(--lealtix-radius-md) - 0.2rem);
+    padding: 0.65rem 1rem;
+    box-shadow: none !important;
+    transition: all 0.15s ease;
+
+    &:hover:not(.p-highlight):not(.p-button-selected) {
+      background: rgba(255, 255, 255, 0.65);
+      color: var(--lealtix-slate-700, #334155);
+    }
+  }
+
+  .p-button-selected,
+  .p-button.p-highlight {
+    background: #ffffff !important;
+    color: var(--lealtix-primary-600, #4f46e5) !important;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12) !important;
+  }
+}
+
+/* Cantidad a mover: input grande + "Mover máximo" */
+.move-qty-input {
+  position: relative;
+
+  input {
+    width: 100%;
+    font-size: 1.35rem;
+    font-weight: 600;
+    text-align: center;
+    padding: 0.85rem 8.5rem 0.85rem 1rem;
+    border: 1px solid var(--lealtix-slate-300, #cbd5e1);
+    border-radius: var(--lealtix-radius-md);
+    color: var(--text-color);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+    &:focus {
+      outline: none;
+      border-color: var(--lealtix-primary-500, #6366f1);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+
+    &::placeholder {
+      color: var(--lealtix-slate-300, #cbd5e1);
+    }
+  }
+
+  .move-max {
+    position: absolute;
+    top: 50%;
+    right: 0.5rem;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.42rem 0.8rem;
+    border: none;
+    border-radius: calc(var(--lealtix-radius-md) - 0.15rem);
+    background: var(--lealtix-primary-50, #eef2ff);
+    color: var(--lealtix-primary-600, #4f46e5);
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+
+    i {
+      font-size: 0.7rem;
+    }
+
+    &:hover {
+      background: var(--lealtix-primary-600, #4f46e5);
+      color: #ffffff;
+    }
+  }
+}
+
+.move-hint {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-color-secondary);
+}
+
+/* Footer: botones a la derecha, secundario gris y principal morado */
+.move-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+:host ::ng-deep .move-cancel {
+  background: transparent !important;
+  color: var(--lealtix-slate-600, #475569) !important;
+  border: 1px solid var(--lealtix-slate-300, #cbd5e1) !important;
+  border-radius: var(--lealtix-radius-md) !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  padding: 0.65rem 1.25rem;
+
+  &:enabled:hover {
+    color: var(--lealtix-slate-900, #0f172a) !important;
+    border-color: var(--lealtix-slate-400, #94a3b8) !important;
+    background: var(--lealtix-slate-50, #f8fafc) !important;
+  }
+}
+
+:host ::ng-deep .move-submit {
+  background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+  border-radius: var(--lealtix-radius-md) !important;
+  font-weight: 700 !important;
+  font-size: 0.875rem !important;
+  padding: 0.65rem 1.6rem;
+
+  &:enabled:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35) !important;
+  }
+
+  &:disabled {
+    opacity: 0.45 !important;
+  }
+}
+
+/* === DIALOG: ENTRADA A BODEGA (restock) === */
+:host ::ng-deep .restock-dialog {
+  .p-dialog-content {
+    padding: 1.5rem;
+  }
+
+  .p-dialog-header {
+    padding: 1.15rem 1.5rem;
+    border-bottom: 1px solid var(--lealtix-slate-200);
+
+    .p-dialog-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-color);
+    }
+  }
+
+  .p-dialog-footer {
+    border-top: 1px solid var(--lealtix-slate-100);
+    padding-top: 1rem;
+  }
+}
+
+/* Tarjeta read-only: insumo */
+.restock-info-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background: #f8fafc;
+  border: 1px solid var(--lealtix-slate-200, #e2e8f0);
+  border-radius: var(--lealtix-radius-md);
+  padding: 1rem 1.1rem;
+  margin-bottom: 1.4rem;
+}
+
+.restock-info-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--lealtix-slate-500, #64748b);
+}
+
+.restock-info-value {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-color);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.restock-block {
+  margin-bottom: 1.4rem;
+}
+
+.restock-block--last {
+  margin-bottom: 0;
+}
+
+.restock-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-color-secondary);
+  margin-bottom: 0.5rem;
+}
+
+/* Inputs unificados: borde gris suave, focus morado, ancho completo */
+:host ::ng-deep .restock-dialog .p-inputtext {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--lealtix-slate-300, #cbd5e1);
+  border-radius: var(--lealtix-radius-md);
+  color: var(--text-color);
+  font-size: 0.95rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &::placeholder {
+    color: var(--lealtix-slate-300, #cbd5e1);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--lealtix-primary-500, #6366f1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  }
+}
+
+/* Costo con prefijo "$": contenedor flex, el símbolo queda junto al borde izquierdo */
+.restock-money-input {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--lealtix-slate-300, #cbd5e1);
+  border-radius: var(--lealtix-radius-md);
+  background: var(--surface-card, #ffffff);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &:focus-within {
+    border-color: var(--lealtix-primary-500, #6366f1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  }
+
+  .restock-currency {
+    padding-left: 0.9rem;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--lealtix-slate-500, #64748b);
+    pointer-events: none;
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0.75rem 0.9rem 0.75rem 0.35rem !important;
+
+    &:focus {
+      box-shadow: none !important;
+    }
+  }
+}
+
+.restock-hint {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-color-secondary);
+}
+
+/* Footer: botones a la derecha, secundario neutro y primario morado */
+.restock-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+:host ::ng-deep .restock-cancel {
+  background: transparent !important;
+  color: var(--lealtix-slate-600, #475569) !important;
+  border: 1px solid var(--lealtix-slate-300, #cbd5e1) !important;
+  border-radius: var(--lealtix-radius-md) !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  padding: 0.65rem 1.25rem;
+
+  .p-button-icon,
+  .p-button-label {
+    color: inherit;
+  }
+
+  &:enabled:hover {
+    color: var(--lealtix-slate-900, #0f172a) !important;
+    border-color: var(--lealtix-slate-400, #94a3b8) !important;
+    background: var(--lealtix-slate-50, #f8fafc) !important;
+  }
+}
+
+:host ::ng-deep .restock-submit {
+  background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+  border-radius: var(--lealtix-radius-md) !important;
+  font-weight: 700 !important;
+  font-size: 0.875rem !important;
+  padding: 0.65rem 1.6rem;
+
+  &:enabled:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35) !important;
+  }
+
+  &:disabled {
+    opacity: 0.45 !important;
+  }
+}
+
+/* === DIALOG: REGISTRAR INSUMO EN BODEGA (alta) === */
+:host ::ng-deep .create-dialog {
+  .p-dialog-content {
+    padding: 1.5rem;
+  }
+
+  .p-dialog-header {
+    padding: 1.15rem 1.5rem;
+    border-bottom: 1px solid var(--lealtix-slate-200);
+
+    .p-dialog-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-color);
+    }
+  }
+
+  .p-dialog-footer {
+    border-top: 1px solid var(--lealtix-slate-100);
+    padding-top: 1rem;
+  }
+}
+
+.create-block {
+  margin-bottom: 1.25rem;
+}
+
+/* Grid 2 columnas: cantidad inicial + stock mínimo */
+.create-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.create-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-color-secondary);
+  margin-bottom: 0.5rem;
+
+  .create-required {
+    color: var(--lealtix-primary-600, #4f46e5);
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+}
+
+/* Inputs y select unificados: borde gris suave, focus morado, ancho completo */
+:host ::ng-deep .create-dialog .p-inputtext,
+.create-select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--lealtix-slate-300, #cbd5e1);
+  border-radius: var(--lealtix-radius-md);
+  color: var(--text-color);
+  font-size: 0.95rem;
+  background: var(--surface-card, #ffffff);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &::placeholder {
+    color: var(--lealtix-slate-300, #cbd5e1);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--lealtix-primary-500, #6366f1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  }
+}
+
+.create-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.6rem;
+  cursor: pointer;
+}
+
+/* Costo con prefijo "$" (contenedor flex) */
+.create-money-input {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--lealtix-slate-300, #cbd5e1);
+  border-radius: var(--lealtix-radius-md);
+  background: var(--surface-card, #ffffff);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &:focus-within {
+    border-color: var(--lealtix-primary-500, #6366f1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  }
+
+  .create-currency {
+    padding-left: 0.9rem;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--lealtix-slate-500, #64748b);
+    pointer-events: none;
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0.75rem 0.9rem 0.75rem 0.35rem !important;
+
+    &:focus {
+      box-shadow: none !important;
+    }
+  }
+}
+
+/* Info box: alerta informativa */
+.create-info-box {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--lealtix-primary-50, #eef2ff);
+  border: 1px solid var(--lealtix-primary-100, #e0e7ff);
+  border-radius: var(--lealtix-radius-md);
+  font-size: 0.78rem;
+  color: var(--lealtix-primary-700, #4338ca);
+  line-height: 1.45;
+
+  i {
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+}
+
+/* Footer: botones a la derecha, secundario neutro y primario morado */
+.create-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+:host ::ng-deep .create-cancel {
+  background: transparent !important;
+  color: var(--lealtix-slate-600, #475569) !important;
+  border: 1px solid var(--lealtix-slate-300, #cbd5e1) !important;
+  border-radius: var(--lealtix-radius-md) !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  padding: 0.65rem 1.25rem;
+
+  .p-button-icon,
+  .p-button-label {
+    color: inherit;
+  }
+
+  &:enabled:hover {
+    color: var(--lealtix-slate-900, #0f172a) !important;
+    border-color: var(--lealtix-slate-400, #94a3b8) !important;
+    background: var(--lealtix-slate-50, #f8fafc) !important;
+  }
+}
+
+:host ::ng-deep .create-submit {
+  background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+  border-radius: var(--lealtix-radius-md) !important;
+  font-weight: 700 !important;
+  font-size: 0.875rem !important;
+  padding: 0.65rem 1.6rem;
+
+  &:enabled:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35) !important;
+  }
+
+  &:disabled {
+    opacity: 0.45 !important;
+  }
+}
+
+/* === MODO OSCURO === */
+:root[class*='app-dark'],
+.app-dark {
+  ::ng-deep .catalog-panel {
+    border-color: var(--surface-border) !important;
+
+    .p-datatable-header .p-inputtext {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+
+      &::placeholder {
+        color: rgba(255, 255, 255, 0.7);
+      }
+    }
+
+    .p-datatable {
+      .p-datatable-thead > tr > th {
+        background: rgba(255, 255, 255, 0.05);
+        color: #cbd2e0;
+        border-bottom: 1px solid var(--surface-border);
+
+        &:hover {
+          color: #ffffff;
+        }
+      }
+
+      .p-datatable-tbody > tr {
+        background: transparent;
+
+        &:nth-child(even) {
+          background: rgba(255, 255, 255, 0.02);
+        }
+
+        &:hover {
+          background-color: rgba(99, 102, 241, 0.12) !important;
+        }
+
+        > td {
+          color: var(--text-color);
+          border-bottom: 1px solid var(--surface-border);
+        }
+      }
+    }
+  }
+
+  .item-name,
+  .num-bodega {
+    color: #ffffff;
+  }
+
+  .cat-chip-insumo {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #cbd2e0;
+  }
+
+  ::ng-deep .distribuir-dialog {
+    .p-dialog-header {
+      border-bottom: 1px solid var(--surface-border);
+
+      .p-dialog-title {
+        color: #ffffff;
+      }
+    }
+
+    .p-selectbutton {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: var(--surface-border);
+
+      .p-button {
+        color: #cbd2e0;
+
+        .p-button-selected,
+        .p-button.p-highlight {
+          background: #ffffff !important;
+          color: var(--lealtix-primary-600, #4f46e5) !important;
+        }
+      }
+    }
+  }
+
+  .move-info-card {
+    background: rgba(99, 102, 241, 0.12);
+    border-color: rgba(99, 102, 241, 0.25);
+
+    .move-info-label {
+      color: #a6b0c3;
+    }
+
+    .move-info-value {
+      color: #ffffff;
+    }
+
+    .move-info-value .move-info-unit {
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    .move-info-divider {
+      background: rgba(99, 102, 241, 0.25);
+    }
+  }
+
+  ::ng-deep .restock-dialog {
+    .p-dialog-header {
+      border-bottom: 1px solid var(--surface-border);
+
+      .p-dialog-title {
+        color: #ffffff;
+      }
+    }
+  }
+
+  .restock-info-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--surface-border);
+
+    .restock-info-label {
+      color: #a6b0c3;
+    }
+
+    .restock-info-value {
+      color: #ffffff;
+    }
+  }
+
+  ::ng-deep .create-dialog {
+    .p-dialog-header {
+      border-bottom: 1px solid var(--surface-border);
+
+      .p-dialog-title {
+        color: #ffffff;
+      }
+    }
+  }
+
+  .create-select {
+    background-color: var(--surface-card);
+    color: #ffffff;
+  }
+
+  .create-info-box {
+    background: rgba(99, 102, 241, 0.12);
+    border-color: rgba(99, 102, 241, 0.25);
+    color: #a5b4fc;
+  }
+}
+
+/* === PANEL DE SOLICITUDES DE STOCK (Cocina / Barra) === */
+.solicitudes-bar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+
+  @media (max-width: 720px) {
+    flex-direction: column;
+  }
+}
+
+.solicitudes-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem 1.25rem;
+  border: none;
+  border-radius: var(--lealtix-radius-lg);
+  color: #ffffff;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.solicitudes-btn-cocina {
+  background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+
+  &:hover {
+    filter: brightness(1.05);
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.45);
+  }
+}
+
+.solicitudes-btn-barra {
+  background: linear-gradient(135deg, var(--lealtix-primary-600) 0%, var(--lealtix-primary-700) 100%);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+
+  &:hover {
+    filter: brightness(1.05);
+    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.5);
+  }
+}
+
+.solicitudes-btn-icon {
+  width: 2.6rem;
+  height: 2.6rem;
+  flex-shrink: 0;
+  border-radius: var(--lealtix-radius-lg);
+  background: rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  i {
+    font-size: 1.15rem;
+    color: #ffffff;
+  }
+}
+
+.solicitudes-btn-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.solicitudes-btn-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.solicitudes-btn-count {
+  font-size: 0.775rem;
+  opacity: 0.85;
+
+  .badge-count {
+    display: inline-block;
+    min-width: 1.5rem;
+    margin-left: 0.4rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.22);
+    font-weight: 700;
+    text-align: center;
+  }
+}
+
+.solicitudes-btn-arrow {
+  font-size: 0.9rem;
+  opacity: 0.7;
+  color: #ffffff;
+}
+
+/* === MODAL DE SOLICITUDES DE STOCK (Cocina/Barra) === */
+::ng-deep .solicitudes-dialog {
+  border-radius: var(--lealtix-radius-xl) !important;
+  overflow: hidden;
+
+  .p-dialog-header {
+    padding: 1.15rem 1.5rem !important;
+    background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%) !important;
+    border-bottom: none !important;
+
+    .solicitudes-dialog-header {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .solicitudes-dialog-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: var(--lealtix-radius-lg);
+      background: rgba(255, 255, 255, 0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      i {
+        color: #ffffff;
+        font-size: 1.15rem;
+      }
+    }
+
+    .solicitudes-dialog-title {
+      color: #ffffff;
+      font-size: 1.05rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .solicitudes-dialog-sub {
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 0.75rem;
+    }
+  }
+
+  .p-dialog-content {
+    padding: 1.25rem 1.5rem !important;
+  }
+
+  .solicitudes-dialog-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .solicitudes-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 2.5rem 1rem;
+    color: var(--lealtix-slate-400);
+    font-size: 0.875rem;
+
+    i {
+      font-size: 2rem;
+      color: var(--lealtix-emerald-500);
+    }
+  }
+
+  .solicitudes-item {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.9rem 1rem;
+    background: var(--lealtix-slate-50);
+    border: 1px solid var(--lealtix-slate-200);
+    border-radius: var(--lealtix-radius-lg);
+  }
+
+  .solicitudes-item-icon {
+    width: 2.4rem;
+    height: 2.4rem;
+    flex-shrink: 0;
+    border-radius: var(--lealtix-radius-md);
+    background: var(--lealtix-primary-50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    i {
+      color: var(--lealtix-primary-600);
+      font-size: 1.05rem;
+    }
+  }
+
+  .solicitudes-item-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .solicitudes-item-name {
+    font-weight: 700;
+    font-size: 0.925rem;
+    color: var(--lealtix-slate-900);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .solicitudes-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .solicitudes-item-qty {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--lealtix-primary-600);
+  }
+
+  .solicitudes-item-prio {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .prio-alta {
+    background: #fef2f2;
+    color: var(--lealtix-red-600);
+  }
+
+  .prio-media {
+    background: #fffbeb;
+    color: #b45309;
+  }
+
+  .prio-baja {
+    background: #ecfdf5;
+    color: var(--lealtix-emerald-600);
+  }
+
+  .solicitudes-item-date {
+    font-size: 0.75rem;
+    color: var(--lealtix-slate-400);
+  }
+
+  .solicitudes-item-accept.p-button {
+    flex-shrink: 0;
+    background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    border-radius: var(--lealtix-radius-md) !important;
+    padding: 0.55rem 1rem !important;
+    font-size: 0.8rem !important;
+    box-shadow: 0 3px 10px rgba(99, 102, 241, 0.3) !important;
+
+    &:hover {
+      filter: brightness(1.05);
+    }
+  }
+
+  .solicitudes-dialog-body-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding-top: 0.5rem;
+
+    .solicitudes-dialog-body-line {
+      flex: 1;
+      height: 1px;
+      background: var(--lealtix-slate-200);
+    }
+
+    .solicitudes-dialog-body-note {
+      font-size: 0.75rem;
+      color: var(--lealtix-slate-400);
+      text-align: center;
+      max-width: 60%;
+    }
+  }
+
+  .p-dialog-footer {
+    padding: 0.9rem 1.5rem 1.1rem !important;
+    border-top: 1px solid var(--lealtix-slate-100) !important;
+
+    .solicitudes-dialog-footer {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .solicitudes-dialog-cancel.p-button {
+      background: transparent !important;
+      border: 1px solid var(--lealtix-slate-200) !important;
+      color: var(--lealtix-slate-600) !important;
+      font-weight: 600 !important;
+      border-radius: var(--lealtix-radius-md) !important;
+
+      &:hover {
+        border-color: var(--lealtix-slate-300) !important;
+        color: var(--lealtix-slate-800) !important;
+      }
+    }
+  }
+}

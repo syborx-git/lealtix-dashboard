@@ -33,6 +33,28 @@ export class InventoryService {
     return this.http.post<any>(`${this.baseUrl}/insumos/${insumoId}/restock`, { cantidad, costoTotal: costoTotal ?? 0 });
   }
 
+  /* ============ Bodega (almacén central que distribuye a cocina/barra) ============ */
+
+  getBodega(tenantId: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/bodega/tenant/${tenantId}`);
+  }
+
+  createInsumoBodega(tenantId: number, nombre: string, unidad: string, cantidad: number, costoTotal: number, stockMinimo: number, categoryIds?: number[]): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/bodega`, { tenantId, nombre, unidad, cantidad, costoTotal, stockMinimo, categoryIds: categoryIds ?? [] });
+  }
+
+  restockBodega(insumoId: number, cantidad: number, costoTotal: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/bodega/${insumoId}/restock`, { cantidad, costoTotal });
+  }
+
+  moverBodega(insumoId: number, cantidad: number, destino: 'cocina' | 'barra'): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/bodega/${insumoId}/move`, { cantidad, destino });
+  }
+
+  getTransferencias(tenantId: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/reportes/transferencias/tenant/${tenantId}`);
+  }
+
   getBebidas(tenantId: number): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/bebidas/tenant/${tenantId}`);
   }
