@@ -10,10 +10,12 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TooltipModule } from 'primeng/tooltip';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
+import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { MessageModule } from 'primeng/message';
 import { InventoryService } from './service/inventory.service';
+import { StockRequestService } from './service/stock-request.service';
 import { AuthService } from '@/auth/auth.service';
 
 interface InvItem {
@@ -33,6 +35,8 @@ interface Insumo {
   unidad: string;
   stock: number;
   stockMinimo: number;
+  stockCocina?: number;
+  stockBarra?: number;
 }
 
 type TabKey = 'products' | 'insumos' | 'bebidas' | 'insumos-bebida';
@@ -51,6 +55,7 @@ type TabKey = 'products' | 'insumos' | 'bebidas' | 'insumos-bebida';
     TooltipModule,
     IconFieldModule,
     InputIconModule,
+    SelectModule,
     ToastModule,
     MessageModule
   ],
@@ -99,13 +104,9 @@ export class InventarioComponent implements OnInit {
     table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
   }
 
-  insumoRestockVisible = false;
-  insumoRestockTarget: Insumo | null = null;
-  insumoRestockCantidad = 0;
-  insumoRestockCostoTotal = 0;
-
   constructor(
     private inventoryService: InventoryService,
+    private stockRequestService: StockRequestService,
     private authService: AuthService,
     private messageService: MessageService,
     private route: ActivatedRoute
@@ -181,7 +182,8 @@ export class InventarioComponent implements OnInit {
     );
   }
 
-  // Filas según la pestaña activa: bebidas también alimentan la pestaña "Insumos de bebida"
+  // Filas según la pestaña activa. Las bebidas NUNCA aparecen en pestañas de insumos
+// (el backend ya excluye es_bebida de /insumos): 'insumos-bebida' muestra materia prima.
   tableRows(): any[] {
     switch (this.activeTab()) {
       case 'products':
@@ -189,7 +191,6 @@ export class InventarioComponent implements OnInit {
       case 'bebidas':
         return this.bebidas();
       case 'insumos-bebida':
-        return this.bebidas();
       case 'insumos':
       default:
         return this.insumos();
@@ -201,8 +202,8 @@ export class InventarioComponent implements OnInit {
       case 'products':
         return this.loading();
       case 'bebidas':
-      case 'insumos-bebida':
         return this.loadingBebidas();
+      case 'insumos-bebida':
       case 'insumos':
       default:
         return this.loadingInsumos();
@@ -246,7 +247,14 @@ export class InventarioComponent implements OnInit {
   }
 
   tableColspan(): number {
-    return this.activeTab() === 'products' ? 3 : 4;
+    switch (this.activeTab()) {
+      case 'products':
+        return 3;
+      case 'bebidas':
+        return 4;
+      default:
+        return 5;
+    }
   }
 
   /* ============ Badges de stock (estilo products-menu) ============ */
@@ -261,7 +269,85 @@ export class InventarioComponent implements OnInit {
   }
 
   insumoLowClass(insumo: Insumo): string {
-    return insumo.stock <= insumo.stockMinimo ? 'stock-low' : 'stock-ok';
+    return this.insumoLocalStock(insumo) <= insumo.stockMinimo ? 'stock-low' : 'stock-ok';
+  }
+
+  // Stock visible según el modo de la página: solo la ubicación local (cocina o barra).
+  // El restock y la distribución central se gestionan en la pestaña Bodega.
+  insumoLocalStock(insumo: Insumo): number {
+    const v = this.mode === 'cocina' ? insumo.stockCocina : insumo.stockBarra;
+    return v ?? insumo.stock ?? 0;
+  }
+
+  /* ============ Solicitud de stock (Restock Request hacia Bodega) ============ */
+
+  solicitudVisible = false;
+  solicitudInsumo: any = null;
+  solicitudCantidad = 0;
+  solicitudPrioridad = 'MEDIA';
+  enviandoSolicitud = false;
+  prioridadOptions = [
+    { label: 'Alta', value: 'ALTA' },
+    { label: 'Media', value: 'MEDIA' },
+    { label: 'Baja', value: 'BAJA' }
+  ];
+
+  openSolicitud(insumo: any): void {
+    this.solicitudInsumo = insumo;
+    this.solicitudCantidad = 0;
+    this.solicitudPrioridad = 'MEDIA';
+    this.solicitudVisible = true;
+  }
+
+  cerrarSolicitud(): void {
+    if (!this.enviandoSolicitud) {
+      this.solicitudVisible = false;
+      this.solicitudInsumo = null;
+    }
+  }
+
+  onSolicitudCantidadInput(value: number | null): void {
+    this.solicitudCantidad = value ?? 0;
+  }
+
+  solicitudArea(): string {
+    return this.mode === 'cocina' ? 'COCINA' : 'BARRA';
+  }
+
+  puedeEnviarSolicitud(): boolean {
+    return !!this.solicitudInsumo && this.solicitudCantidad > 0;
+  }
+
+  enviarSolicitud(): void {
+    if (!this.puedeEnviarSolicitud()) {
+      this.messageService.add({ severity: 'warn', summary: 'Aviso', detail: 'Indica la cantidad a solicitar' });
+      return;
+    }
+    const insumo = this.solicitudInsumo;
+    this.enviandoSolicitud = true;
+    this.stockRequestService.crear({
+      tenantId: this.tenantId,
+      insumoId: Number(insumo?.id) || undefined,
+      insumoNombre: insumo?.nombre || insumo?.name,
+      area: this.solicitudArea(),
+      cantidad: this.solicitudCantidad,
+      prioridad: this.solicitudPrioridad
+    }).subscribe({
+      next: (res) => {
+        this.enviandoSolicitud = false;
+        if (res.code !== 200) {
+          this.messageService.add({ severity: 'warn', summary: 'Aviso', detail: res.message });
+          return;
+        }
+        this.messageService.add({ severity: 'success', summary: 'Solicitud enviada', detail: `La bodega recibirá la solicitud de ${this.solicitudInsumo.nombre}` });
+        this.solicitudVisible = false;
+        this.solicitudInsumo = null;
+      },
+      error: () => {
+        this.enviandoSolicitud = false;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo enviar la solicitud' });
+      }
+    });
   }
 
   rowCategories(row: any): { id: number; name: string }[] {
@@ -310,28 +396,5 @@ export class InventarioComponent implements OnInit {
 
   hiddenCategoryCount(row: any): number {
     return Math.max(0, this.rowCategories(row).length - 3);
-  }
-
-  /* ============ Restock de insumo ============ */
-
-  openInsumoRestock(insumo: Insumo) {
-    this.insumoRestockTarget = insumo;
-    this.insumoRestockCantidad = 0;
-    this.insumoRestockCostoTotal = 0;
-    this.insumoRestockVisible = true;
-  }
-
-  doInsumoRestock() {
-    if (!this.insumoRestockTarget || this.insumoRestockCantidad <= 0) return;
-    this.inventoryService.restockInsumo(this.insumoRestockTarget.id, this.insumoRestockCantidad, this.insumoRestockCostoTotal).subscribe({
-      next: (res) => {
-        this.messageService.add({ severity: 'success', summary: 'Exitoso', detail: `Stock del insumo: ${res.object}` });
-        this.insumoRestockVisible = false;
-        this.loadInsumos();
-        this.loadBebidas();
-        this.load();
-      },
-      error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo reabastecer' })
-    });
   }
 }

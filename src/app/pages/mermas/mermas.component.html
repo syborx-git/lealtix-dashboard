@@ -4,14 +4,23 @@
             <h1 class="page-title">Mermas</h1>
             <p class="text-sm text-500 m-0">Registra insumos desperdiciados o usados sin venta por cada comanda.</p>
         </div>
-        <p-button
-            icon="pi pi-refresh"
-            label="Actualizar"
-            severity="secondary"
-            [outlined]="true"
-            [loading]="loading()"
-            (onClick)="loadMermas(); loadActiveOrders()"
-        ></p-button>
+        <div class="header-actions">
+            <p-button
+                icon="pi pi-database"
+                label="Merma administrativa"
+                severity="secondary"
+                [outlined]="true"
+                (onClick)="openAdminModal()"
+            ></p-button>
+            <p-button
+                icon="pi pi-refresh"
+                label="Actualizar"
+                severity="secondary"
+                [outlined]="true"
+                [loading]="loading()"
+                (onClick)="loadMermas(); loadActiveOrders()"
+            ></p-button>
+        </div>
     </div>
 
     <p-toast></p-toast>
@@ -112,6 +121,19 @@
             </div>
 
             <div *ngIf="!loadingIngredients() && orderIngredients().length > 0">
+                <div class="modal-busqueda">
+                    <p-iconfield>
+                        <p-inputicon styleClass="pi pi-search"></p-inputicon>
+                        <input
+                            pInputText
+                            type="text"
+                            placeholder="Buscar insumo o producto…"
+                            [value]="busquedaComanda()"
+                            (input)="onBusquedaInput($event)"
+                        />
+                    </p-iconfield>
+                </div>
+
                 <div class="merma-tipo-row">
                     <label class="text-sm font-medium">Tipo de merma:</label>
                     <p-select
@@ -125,19 +147,19 @@
                 </div>
 
                 <div class="ingredients-list">
-                    <div *ngFor="let insumo of orderIngredients(); let i = index" class="ingredient-row">
+                    <div *ngFor="let entry of getIngredientesFiltrados(); let pos = index" class="ingredient-row">
                         <p-checkbox
                             [binary]="true"
-                            [(ngModel)]="seleccionados[i]"
-                            (ngModelChange)="onInsumoCheck(i, $event)"
-                            inputId="insumo-{{ i }}"
+                            [(ngModel)]="seleccionados[entry.i]"
+                            (ngModelChange)="onInsumoCheck(entry.i, $event)"
+                            inputId="insumo-{{ entry.i }}"
                         ></p-checkbox>
                         <div class="ingredient-info">
-                            <span class="ingredient-name">{{ getInsumoName(insumo) }}</span>
+                            <span class="ingredient-name">{{ getInsumoName(entry.insumo) }}</span>
                             <span class="ingredient-meta">
-                                × {{ insumo.cantidad }} {{ insumo.unidad || 'pieza' }}
-                                <ng-container *ngIf="insumo.costoUnitario">
-                                    · ${{ insumo.costoUnitario | number:'1.2-2' }}/u
+                                × {{ entry.insumo.cantidad }} {{ entry.insumo.unidad || 'pieza' }}
+                                <ng-container *ngIf="entry.insumo.costoUnitario">
+                                    · ${{ entry.insumo.costoUnitario | number:'1.2-2' }}/u
                                 </ng-container>
                             </span>
                         </div>
@@ -148,14 +170,14 @@
                                 pInputText
                                 min="0"
                                 [step]="0.01"
-                                [value]="cantidades[i] ?? insumo.cantidad ?? 0"
-                                (input)="onCantidadInput(i, $event)"
-                                [disabled]="!seleccionados[i]"
+                                [value]="cantidades[entry.i] ?? entry.insumo.cantidad ?? 0"
+                                (input)="onCantidadInput(entry.i, $event)"
+                                [disabled]="!seleccionados[entry.i]"
                                 class="qty-input"
                             />
                         </div>
-                        <div class="ingredient-subtotal" *ngIf="seleccionados[i]">
-                            ${{ ((cantidades[i] ?? 0) * (insumo.costoUnitario ?? 0)) | number:'1.2-2' }}
+                        <div class="ingredient-subtotal" *ngIf="seleccionados[entry.i]">
+                            ${{ ((cantidades[entry.i] ?? 0) * (entry.insumo.costoUnitario ?? 0)) | number:'1.2-2' }}
                         </div>
                     </div>
                 </div>
@@ -184,6 +206,175 @@
                 </div>
             </div>
         </div>
+    </p-dialog>
+
+    <!-- Modal de merma administrativa: transfer list de dos columnas -->
+    <p-dialog
+        [(visible)]="adminVisible"
+        [modal]="true"
+        [style]="{ width: 'min(72rem, 96vw)' }"
+        styleClass="admin-dialog"
+        [dismissableMask]="true"
+        (onHide)="closeAdminModal()">
+        <ng-template pTemplate="header">
+            <div class="admin-header">
+                <i class="pi pi-database"></i>
+                <span class="admin-title">Merma administrativa</span>
+                <span class="admin-subtitle">Salida directa de almacén</span>
+            </div>
+        </ng-template>
+
+        <div class="admin-body">
+            <!-- Columna izquierda: insumos disponibles -->
+            <div class="admin-col admin-col-left">
+                <div class="admin-col-header">
+                    <span class="admin-col-title">Insumos disponibles</span>
+                    <span class="admin-col-count">{{ adminDisponibles().length }}</span>
+                </div>
+
+                <div class="admin-search">
+                    <p-iconfield styleClass="w-full">
+                        <p-inputicon styleClass="pi pi-search"></p-inputicon>
+                        <input
+                            pInputText
+                            type="text"
+                            class="w-full"
+                            placeholder="Buscar insumo…"
+                            [value]="adminBusqueda()"
+                            (input)="onAdminBusquedaInput($event)"
+                        />
+                    </p-iconfield>
+                </div>
+
+                <div *ngIf="adminLoading()" class="admin-state">
+                    <p-progressSpinner strokeWidth="4" styleClass="w-2rem h-2rem"></p-progressSpinner>
+                    <span>Cargando insumos…</span>
+                </div>
+
+                <div *ngIf="!adminLoading() && adminDisponibles().length === 0" class="admin-state empty">
+                    No hay más insumos disponibles.
+                </div>
+
+                <div *ngIf="!adminLoading()" class="admin-list">
+                    <button
+                        type="button"
+                        class="admin-item"
+                        *ngFor="let insumo of adminDisponibles()"
+                        (click)="moverADerecha(insumo)"
+                    >
+                        <span class="admin-item-icon"><i class="pi pi-plus"></i></span>
+                        <span class="admin-item-main">
+                            <span class="admin-item-name">{{ insumo.nombre }}</span>
+                            <span class="admin-item-meta">
+                                {{ insumo.unidad || 'pieza' }} ·
+                                Disponible: {{ adminDisponibleDe(insumo) }}
+                            </span>
+                        </span>
+                        <i class="pi pi-angle-right admin-item-arrow"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Columna derecha: insumos a mermar -->
+            <div class="admin-col admin-col-right">
+                <div class="admin-col-header">
+                    <span class="admin-col-title">Insumos a mermar</span>
+                    <span class="admin-col-count">{{ adminSeleccionados().length }}</span>
+                </div>
+
+                <div class="admin-list">
+                    <div *ngFor="let item of adminSeleccionados(); let i = index" class="admin-transfer-row">
+                        <div class="admin-item-name">{{ item.insumo.nombre }}</div>
+                        <div class="admin-item-meta">
+                            {{ item.insumo.unidad || 'pieza' }} ·
+                            Disp. {{ adminDisponibleDe(item.insumo) }}
+                        </div>
+                        <div class="admin-row-controls">
+                            <span class="admin-qty-input">
+                                <input
+                                    type="number"
+                                    pInputText
+                                    min="0"
+                                    [step]="0.01"
+                                    [max]="adminDisponibleDe(item.insumo)"
+                                    placeholder="0"
+                                    [class.over-stock]="item.cantidad > 0 && item.cantidad > adminDisponibleDe(item.insumo)"
+                                    [value]="item.cantidad || ''"
+                                    (input)="onCantidadAdminInput(i, $event)"
+                                />
+                                <span class="admin-qty-unit">{{ item.insumo.unidad || 'pieza' }}</span>
+                            </span>
+                            <button
+                                type="button"
+                                class="admin-remove"
+                                title="Quitar"
+                                (click)="moverAIzquierda(i)"
+                            >
+                                <i class="pi pi-times"></i>
+                            </button>
+                        </div>
+                        <div *ngIf="item.cantidad > 0 && item.cantidad > adminDisponibleDe(item.insumo)" class="admin-over-warn">
+                            Supera el stock disponible ({{ adminDisponibleDe(item.insumo) }})
+                        </div>
+                    </div>
+
+                    <div *ngIf="adminSeleccionados().length === 0" class="admin-state empty">
+                        Haz clic en un insumo de la izquierda para agregarlo aquí.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer (ambas columnas): origen + motivo + registrar -->
+        <ng-template pTemplate="footer">
+            <div class="admin-footer">
+                <div class="admin-footer-fields">
+                    <div class="admin-footer-field">
+                        <label for="adminOrigen">Almacén de origen</label>
+                        <p-select
+                            id="adminOrigen"
+                            [options]="[{'codigo':'BODEGA','label':'Bodega'},{'codigo':'COCINA','label':'Cocina'},{'codigo':'BARRA','label':'Barra'}]"
+                            optionLabel="label"
+                            optionValue="codigo"
+                            [(ngModel)]="adminOrigen"
+                            styleClass="w-full"
+                            [appendTo]="'body'"
+                        ></p-select>
+                    </div>
+                    <div class="admin-footer-field">
+                        <label for="adminMotivo">Motivo de la merma</label>
+                        <p-select
+                            id="adminMotivo"
+                            [options]="[{'codigo':'CADUCIDAD','label':'Caducidad'},{'codigo':'ACCIDENTE','label':'Accidente'},{'codigo':'ROTURA','label':'Rotura'},{'codigo':'CALIDAD','label':'Calidad'},{'codigo':'OTRO','label':'Otro'}]"
+                            optionLabel="label"
+                            optionValue="codigo"
+                            [(ngModel)]="adminMotivo"
+                            placeholder="Selecciona un motivo…"
+                            [showClear]="true"
+                            styleClass="w-full"
+                            [appendTo]="'body'"
+                        ></p-select>
+                        <input
+                            *ngIf="adminMotivo === 'OTRO'"
+                            pInputText
+                            type="text"
+                            class="admin-motivo-custom"
+                            placeholder="Escribe el motivo de la merma…"
+                            [value]="adminMotivoCustom"
+                            (input)="onMotivoCustomInput($event)"
+                        />
+                    </div>
+                </div>
+                <p-button
+                    label="Registrar Merma"
+                    icon="pi pi-check"
+                    styleClass="admin-submit"
+                    [loading]="registeringAdmin()"
+                    [disabled]="registeringAdmin() || !adminPuedeRegistrar()"
+                    (onClick)="registroAdmin()"
+                ></p-button>
+            </div>
+        </ng-template>
     </p-dialog>
 
     <!-- Sección: Historial de mermas -->

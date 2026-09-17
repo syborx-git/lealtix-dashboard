@@ -431,6 +431,353 @@
   overflow-y: auto;
 }
 
+/* === BUSCADOR DEL MODAL DE COMANDAS === */
+.modal-busqueda {
+  margin-bottom: 0.85rem;
+
+  .p-inputtext {
+    width: 100%;
+    border-radius: var(--lealtix-radius-md);
+  }
+
+  .p-inputicon {
+    color: var(--lealtix-slate-400);
+  }
+}
+
+/* === MODAL MERMA ADMINISTRATIVA (transfer list de dos columnas) === */
+:host ::ng-deep .admin-dialog {
+  .p-dialog-content {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .p-dialog-footer {
+    padding: 0;
+    background: var(--surface-card);
+    border-top: 1px solid var(--surface-200);
+  }
+}
+
+:host ::ng-deep .admin-dialog .p-dialog-header,
+:host ::ng-deep .admin-dialog .admin-header {
+  background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%);
+  color: #ffffff;
+  padding: 1rem 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+
+  .admin-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  .admin-subtitle {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.72);
+    font-weight: 500;
+    margin-left: 0.25rem;
+  }
+}
+
+.admin-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--surface-200);
+  min-height: 26rem;
+}
+
+.admin-col {
+  background: var(--surface-card);
+  display: flex;
+  flex-direction: column;
+  min-height: 26rem;
+  overflow: hidden;
+}
+
+.admin-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.15rem;
+  border-bottom: 1px solid var(--surface-200);
+
+  .admin-col-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--lealtix-primary-700, #4338ca);
+  }
+
+  .admin-col-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.6rem;
+    height: 1.6rem;
+    padding: 0 0.45rem;
+    background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%);
+    color: #ffffff;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+}
+
+.admin-search {
+  padding: 0.75rem 1.15rem;
+  border-bottom: 1px solid var(--surface-200);
+
+  .p-inputtext {
+    border-radius: var(--lealtix-radius-md);
+    width: 100%;
+  }
+
+  .p-inputicon {
+    color: var(--lealtix-slate-400);
+  }
+}
+
+.admin-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 22rem;
+}
+
+.admin-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  color: var(--text-color-secondary);
+  font-size: 0.85rem;
+  padding: 2rem;
+}
+
+.admin-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid transparent;
+  border-radius: var(--lealtix-radius-md);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+
+  &:hover {
+    background: rgba(99, 102, 241, 0.08);
+    border-color: var(--lealtix-primary-200, #c7d2fe);
+
+    .admin-item-arrow {
+      transform: translateX(2px);
+      color: var(--lealtix-primary-600);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--lealtix-primary-500);
+    outline-offset: 1px;
+  }
+}
+
+.admin-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: var(--lealtix-primary-50, #eef2ff);
+  color: var(--lealtix-primary-600);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.admin-item-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.admin-item-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-item-meta {
+  font-size: 0.75rem;
+  color: var(--text-color-secondary);
+}
+
+.admin-item-arrow {
+  color: var(--lealtix-slate-300);
+  transition: all 0.15s ease;
+  font-size: 0.95rem;
+}
+
+.admin-transfer-row {
+  padding: 0.65rem 0.7rem;
+  border: 1px solid var(--surface-200);
+  border-radius: var(--lealtix-radius-md);
+  background: var(--surface-50, #fafafa);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.admin-row-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.admin-qty-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 1;
+
+  input {
+    width: 5.5rem;
+    padding: 0.35rem 0.55rem;
+    border-radius: var(--lealtix-radius-md);
+    border: 1px solid var(--surface-300);
+    background: var(--surface-card);
+    color: var(--text-color);
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+    &:focus {
+      outline: none;
+      border-color: var(--lealtix-primary-500);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+  }
+
+  input.over-stock {
+    border-color: var(--red-400, #f87171);
+    color: var(--red-600, #dc2626);
+    background: var(--red-50, #fef2f2);
+  }
+
+  .admin-qty-unit {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-color-secondary);
+    text-transform: lowercase;
+  }
+}
+
+.admin-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--surface-200);
+  background: var(--surface-card);
+  color: var(--danger-color, #dc2626);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+
+  &:hover {
+    background: var(--red-50, #fef2f2);
+    border-color: var(--red-300, #fca5a5);
+    color: var(--red-600, #dc2626);
+  }
+}
+
+.admin-over-warn {
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--red-600, #dc2626);
+}
+
+/* Footer del modal: origen + motivo + botón (ambas columnas) */
+.admin-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1rem 1.25rem;
+  flex-wrap: wrap;
+}
+
+.admin-footer-fields {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 1rem;
+  flex: 1;
+  min-width: 22rem;
+}
+
+.admin-footer-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-color-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .p-select-label {
+    font-size: 0.9rem;
+  }
+
+  .admin-motivo-custom {
+    margin-top: 0.25rem;
+    border-radius: var(--lealtix-radius-md);
+    width: 100%;
+
+    &:focus {
+      border-color: var(--lealtix-primary-500);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+  }
+}
+
+:host ::ng-deep .admin-submit {
+  background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%) !important;
+  border: none !important;
+  color: #ffffff;
+  border-radius: var(--lealtix-radius-md) !important;
+  font-weight: 700 !important;
+  padding: 0.65rem 1.6rem;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.05);
+  }
+}
+
 /* === MODO OSCURO: tablas y buscador homologueados === */
 :root[class*='app-dark'],
 .app-dark {

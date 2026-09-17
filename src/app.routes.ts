@@ -24,6 +24,9 @@ import { CreateCampaignComponent } from '@/pages/campaigns/components/create-cam
 import { ManualRedemptionComponent } from '@/pages/manual-redemption/manual-redemption.component';
 import { MiPaginaComponent } from '@/pages/mi-pagina/mi-pagina.component';
 import { InventarioComponent } from '@/pages/inventario/inventario.component';
+import { BodegaComponent } from '@/pages/bodega/bodega.component';
+import { TransferenciasReportComponent } from '@/pages/reportes/transferencias-report.component';
+import { MermasReportComponent } from '@/pages/reportes/mermas-report.component';
 // import eliminado: MenuPrintComponent
 import { MenuClassicPrintComponent } from '@/pages/menu-classic-print/menu-classic-print.component';
 
@@ -85,6 +88,9 @@ export const appRoutes: Routes = [
                     { path: 'inventario', component: InventarioComponent, title: 'Inventario', canActivate: [PermissionGuard], data: { permission: 'view_products', mode: 'cocina' } },
                     { path: 'inventario-cocina', component: InventarioComponent, title: 'Inventario de Cocina', canActivate: [PermissionGuard], data: { permission: 'view_products', mode: 'cocina' } },
                     { path: 'inventario-barra', component: InventarioComponent, title: 'Inventario de Barra', canActivate: [PermissionGuard], data: { permission: 'view_products', mode: 'barra' } },
+                    { path: 'bodega', component: BodegaComponent, title: 'Bodega', canActivate: [PermissionGuard], data: { permission: 'view_products' } },
+                    { path: 'reportes/transferencias', component: TransferenciasReportComponent, title: 'Reportes - Transferencias de Bodega', canActivate: [PermissionGuard], data: { permission: 'view_products' } },
+                    { path: 'reportes/mermas', component: MermasReportComponent, title: 'Reportes - Mermas', canActivate: [PermissionGuard], data: { permission: 'manage_mermas' } },
                     { path: 'recetas', component: RecetasComponent, title: 'Recetas', canActivate: [PermissionGuard], data: { permission: 'manage_recetas' } },
                     { path: 'mermas', component: MermasComponent, title: 'Mermas', canActivate: [PermissionGuard], data: { permission: 'manage_mermas' } },
                     { path: 'horarios', component: HorariosComponent, title: 'Horarios', canActivate: [PermissionGuard], data: { permission: 'manage_horarios' } },

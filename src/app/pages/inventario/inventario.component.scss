@@ -284,3 +284,192 @@
     }
   }
 }
+
+/* === BOTÓN "SOLICITAR STOCK" DE LAS FILAS === */
+::ng-deep .catalog-table .solicitar-stock-btn.p-button.p-button-secondary {
+  background: var(--lealtix-primary-50) !important;
+  border: 1px solid rgba(99, 102, 241, 0.35) !important;
+  color: var(--lealtix-primary-600) !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+  padding: 0.45rem 0.8rem !important;
+  border-radius: var(--lealtix-radius-md) !important;
+
+  &:hover {
+    background: var(--lealtix-primary-100) !important;
+    border-color: rgba(99, 102, 241, 0.5) !important;
+  }
+}
+
+/* === MODAL "SOLICITAR STOCK" === */
+::ng-deep .solicitud-dialog {
+  border-radius: var(--lealtix-radius-xl) !important;
+  overflow: hidden;
+
+  .p-dialog-header {
+    padding: 1.15rem 1.5rem !important;
+    background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%) !important;
+    border-bottom: none !important;
+
+    .solicitud-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .solicitud-header-icon {
+      width: 2.4rem;
+      height: 2.4rem;
+      border-radius: var(--lealtix-radius-lg);
+      background: rgba(255, 255, 255, 0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      i {
+        color: #ffffff;
+        font-size: 1.15rem;
+      }
+    }
+
+    .solicitud-header-title {
+      color: #ffffff;
+      font-size: 1.05rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .solicitud-header-sub {
+      color: rgba(255, 255, 255, 0.75);
+      font-size: 0.75rem;
+    }
+  }
+
+  .p-dialog-content {
+    padding: 1.5rem !important;
+    overflow: visible !important;
+  }
+
+  .solicitud-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+  }
+
+  .solicitud-insumo-card {
+    background: var(--lealtix-slate-50);
+    border: 1px solid var(--lealtix-slate-200);
+    border-radius: var(--lealtix-radius-lg);
+    padding: 0.9rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .solicitud-insumo-nombre {
+    font-weight: 700;
+    font-size: 0.975rem;
+    color: var(--lealtix-slate-900);
+  }
+
+  .solicitud-insumo-meta {
+    font-size: 0.8rem;
+    color: var(--lealtix-slate-500);
+    text-align: right;
+  }
+
+  .solicitud-sin-stock {
+    color: var(--lealtix-red-500);
+    font-weight: 600;
+  }
+
+  .solicitud-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+
+    > label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--lealtix-slate-500);
+    }
+  }
+
+  .solicitud-stock-minimo {
+    width: 100% !important;
+  }
+
+  .solicitud-stock-minimo-input,
+  .solicitud-input {
+    background: var(--lealtix-slate-50) !important;
+    border: 1px solid var(--lealtix-slate-200) !important;
+    border-radius: var(--lealtix-radius-md) !important;
+    width: 100% !important;
+    color: var(--lealtix-slate-600) !important;
+  }
+
+  .solicitud-stock-minimo-input {
+    color: var(--lealtix-slate-400) !important;
+  }
+
+  .solicitud-qty {
+    width: 100% !important;
+
+    .p-inputnumber-button {
+      background: var(--lealtix-slate-200) !important;
+      color: var(--lealtix-slate-700) !important;
+      border: none !important;
+
+      &:hover {
+        background: var(--lealtix-slate-300) !important;
+      }
+    }
+  }
+
+  .p-select,
+  .p-select-label,
+  .p-select-trigger {
+    min-height: 2.7rem !important;
+  }
+
+  .p-select {
+    border: 1px solid var(--lealtix-slate-200);
+    border-radius: var(--lealtix-radius-md);
+  }
+
+  .p-dialog-footer {
+    padding: 1rem 1.5rem 1.25rem !important;
+    border-top: 1px solid var(--lealtix-slate-100) !important;
+
+    .solicitud-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.6rem;
+    }
+
+    .solicitud-cancel.p-button {
+      background: transparent !important;
+      border: 1px solid var(--lealtix-slate-200) !important;
+      color: var(--lealtix-slate-600) !important;
+      font-weight: 600 !important;
+      border-radius: var(--lealtix-radius-md) !important;
+
+      &:hover {
+        border-color: var(--lealtix-slate-300) !important;
+        color: var(--lealtix-slate-800) !important;
+      }
+    }
+
+    .solicitud-submit.p-button {
+      background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%) !important;
+      border: none !important;
+      color: #ffffff !important;
+      font-weight: 600 !important;
+      border-radius: var(--lealtix-radius-md) !important;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35) !important;
+    }
+  }
+}
