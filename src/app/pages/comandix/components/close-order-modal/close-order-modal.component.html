@@ -96,6 +96,34 @@
         </small>
       </div>
 
+      <div class="mt-3">
+        <label class="factura-toggle">
+          <input type="checkbox" formControlName="facturaRequired" [disabled]="loading" />
+          <span class="summary-label">¿Requiere factura?</span>
+        </label>
+      </div>
+
+      <div *ngIf="facturaRequired" class="mt-3 factura-fields">
+        <div class="mb-2">
+          <label class="summary-label">RFC</label>
+          <input pInputText formControlName="facturaRfc" class="w-full mt-1" placeholder="XAXX010101000" [disabled]="loading" />
+        </div>
+        <div class="mb-2">
+          <label class="summary-label">Razón social</label>
+          <input pInputText formControlName="facturaRazonSocial" class="w-full mt-1" placeholder="Nombre o razón social" [disabled]="loading" />
+        </div>
+        <div class="mb-2">
+          <label class="summary-label">Régimen fiscal</label>
+          <select formControlName="facturaRegimen" class="w-full mt-1 factura-select" [disabled]="loading">
+            <option *ngFor="let r of regimenOptions" [value]="r.value">{{ r.label }}</option>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="summary-label">Correo</label>
+          <input pInputText formControlName="facturaEmail" class="w-full mt-1" placeholder="correo@ejemplo.com" [disabled]="loading" />
+        </div>
+      </div>
+
       <p-message *ngIf="errorMessage" severity="error" [text]="errorMessage" styleClass="mt-3"></p-message>
       <p-message *ngIf="successMessage" severity="success" [text]="successMessage" styleClass="mt-3"></p-message>
 

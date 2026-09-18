@@ -1,0 +1,65 @@
+<div class="facturacion-container">
+  <div class="facturacion-header">
+    <div>
+      <h2>Facturas enviadas</h2>
+      <p>Todas las facturas</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="refresh-btn" (click)="load()">Actualizar</button>
+      <button type="button" class="create-btn">Crear factura</button>
+    </div>
+  </div>
+
+  <div class="facturacion-toolbar">
+    <input
+      type="text"
+      [(ngModel)]="searchText"
+      placeholder="Buscar por concepto, nombre, RFC, etc."
+      class="search-input"
+    />
+    <div class="status-tabs">
+      <button
+        *ngFor="let f of statusFilters"
+        type="button"
+        class="tab"
+        [class.active]="statusFilter === f.value"
+        (click)="statusFilter = f.value"
+      >{{ f.label }}</button>
+    </div>
+  </div>
+
+  <p *ngIf="loading" class="state-msg">Cargando facturas...</p>
+  <p *ngIf="error" class="state-msg error">{{ error }}</p>
+
+  <table *ngIf="!loading && filteredInvoices.length > 0" class="invoices-table">
+    <thead>
+      <tr>
+        <th>Tipo</th>
+        <th>Receptor</th>
+        <th>Serie/Folio</th>
+        <th>Fecha de emisión</th>
+        <th>Importe</th>
+        <th>Estatus</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let inv of filteredInvoices">
+        <td>{{ inv.type ?? 'I' }}</td>
+        <td>{{ receptor(inv) }}</td>
+        <td class="mono">{{ serieFolio(inv) }}</td>
+        <td>{{ formatDate(inv.date ?? inv.created_at) }}</td>
+        <td>{{ formatTotal(inv.total) }}</td>
+        <td><span class="badge" [class]="statusClass(inv.status)">{{ statusLabel(inv.status) }}</span></td>
+        <td>
+          <button type="button" class="action-btn" (click)="download(inv.id, 'pdf')">PDF</button>
+          <button type="button" class="action-btn" (click)="download(inv.id, 'xml')">XML</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p *ngIf="!loading && !error && filteredInvoices.length === 0" class="state-msg">
+    No hay facturas para mostrar.
+  </p>
+</div>
