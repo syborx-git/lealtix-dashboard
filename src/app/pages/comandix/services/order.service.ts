@@ -136,4 +136,8 @@ export class OrderService {
       })
     );
   }
+
+  createFacturapiInvoice(payload: any): Observable<any> {
+    return this.http.post<any>(`${environment.apiUrl}/facturapi/invoices`, payload);
+  }
 }

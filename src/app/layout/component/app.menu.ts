@@ -96,6 +96,7 @@ export class AppMenu implements OnInit {
                 requiredPermissions: ['dashboard_kitchen'],
                 requiredRole: 'COCINA'
             },
+            { label: 'Facturación', icon: 'pi pi-fw pi-file', routerLink: ['/dashboard/facturacion'], requiredPermissions: ['view_dashboard'] },
             { label: 'Reportes', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/dashboard/uikit/charts'], visible: false, requiredPermissions: ['view_reports', 'admin_access'] },
             { label: 'Utils', icon: 'pi pi-fw pi-table', routerLink: ['/dashboard/uikit/table'], visible: false, requiredPermissions: ['admin_access'] }
         ];

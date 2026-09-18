@@ -67,6 +67,13 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
   errorMessage = '';
   successMessage = '';
 
+  readonly regimenOptions = [
+    { label: '601 - General de Ley Personas Morales', value: '601' },
+    { label: '612 - Personas Físicas con Actividades Empresariales', value: '612' },
+    { label: '626 - Régimen Simplificado de Confianza', value: '626' },
+    { label: '616 - Sin obligaciones fiscales', value: '616' }
+  ];
+
   private closeTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
@@ -76,7 +83,12 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
   ) {
     this.form = this.fb.group({
       method: ['CASH', Validators.required],
-      reference: ['']
+      reference: [''],
+      facturaRequired: [false],
+      facturaRfc: [''],
+      facturaRazonSocial: [''],
+      facturaRegimen: ['616'],
+      facturaEmail: ['']
     });
 
     this.form.get('method')?.valueChanges.subscribe((method: PaymentMethod) => {
@@ -107,6 +119,10 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
 
   get isReferenceRequired(): boolean {
     return this.selectedMethod !== 'CASH';
+  }
+
+  get facturaRequired(): boolean {
+    return !!this.form.get('facturaRequired')?.value;
   }
 
   get totalToPay(): number {
@@ -142,6 +158,17 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
     const method = this.selectedMethod;
     const referenceControlValue = (this.form.get('reference')?.value ?? '').toString().trim();
 
+    if (this.facturaRequired) {
+      const rfc = (this.form.get('facturaRfc')?.value ?? '').toString().trim();
+      const razon = (this.form.get('facturaRazonSocial')?.value ?? '').toString().trim();
+      const email = (this.form.get('facturaEmail')?.value ?? '').toString().trim();
+      if (!rfc || !razon || !email) {
+        this.loading = false;
+        this.errorMessage = 'Para generar factura ingresa RFC, Razón social y Correo.';
+        return;
+      }
+    }
+
     // Obtener email del usuario logeado desde localStorage
     const currentUserJson = localStorage.getItem('currentUser');
     const currentUser = currentUserJson ? JSON.parse(currentUserJson) : null;
@@ -175,9 +202,13 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
         paidAt
       });
 
+      if (this.facturaRequired) {
+        await this.generateFactura(this.order, method);
+      }
+
       this.closeTimer = setTimeout(() => {
         this.onClose();
-      }, 1200);
+      }, this.facturaRequired ? 10000 : 1200);
     } catch (error: any) {
       this.errorMessage =
         error?.error?.message ||
@@ -188,8 +219,48 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
     }
   }
 
-  getStatusClass(status: string | undefined): string {
-    const normalized = (status ?? '').toUpperCase();
+  private async generateFactura(order: PendingOrder, method: PaymentMethod): Promise<void> {
+    const items = (order.items ?? []).map(item => ({
+      quantity: item.cantidad ?? 1,
+      description: item.productName ?? item.prod ?? ('Producto ' + item.productId),
+      price: item.precioUnitario ?? item.precio ?? 0
+    }));
+
+    const paymentFormMap: Record<PaymentMethod, string> = {
+      CASH: '01',
+      CARD: '04',
+      TRANSFER: '03',
+      MIXED: '99'
+    };
+
+    const payload = {
+      customer: {
+        legalName: (this.form.get('facturaRazonSocial')?.value ?? '').toString().trim(),
+        taxId: (this.form.get('facturaRfc')?.value ?? '').toString().trim(),
+        taxSystem: (this.form.get('facturaRegimen')?.value ?? '616').toString().trim(),
+        email: (this.form.get('facturaEmail')?.value ?? '').toString().trim()
+      },
+      items,
+      paymentForm: paymentFormMap[method] ?? '04',
+      use: 'G03',
+      currency: 'MXN',
+      externalId: order.id
+    };
+
+    try {
+      const resp = await firstValueFrom(this.orderService.createFacturapiInvoice(payload));
+      const uuid = resp?.uuid ?? '';
+      const invoiceId = resp?.id ?? '';
+      this.successMessage = 'Pago registrado y factura generada'
+        + (uuid ? ` (UUID: ${uuid})` : '')
+        + (invoiceId ? ` - Factura ${invoiceId}` : '')
+        + '.';
+    } catch (e: any) {
+      this.successMessage = 'Pago registrado, pero no se pudo generar la factura: ' + (e?.error?.message || e?.message || 'error');
+    }
+  }
+
+  getStatusClass(status: string | undefined): string {    const normalized = (status ?? '').toUpperCase();
     if (normalized === 'PENDIENTE') return 'status-comanda';
     if (normalized === 'CONFIRMADA') return 'status-confirmada';
     if (normalized === 'EN_PREPARACION') return 'status-en_preparacion';
