@@ -34,6 +34,8 @@ import { TenantService } from '@/pages/admin-page/service/tenant.service';
 import { AuthService } from '@/auth/auth.service';
 import { ProductService } from '@/pages/products-menu/service/product.service';
 import { InventoryService } from '@/pages/inventario/service/inventory.service';
+import { MesaService } from '@/pages/hostess/services/mesa.service';
+import { MesaDTO } from '@/pages/hostess/models/mesa.model';
 import { environment } from '@/pages/commons/environment';
 
 // Componentes
@@ -171,6 +173,14 @@ export class ComandixComponent implements OnInit, OnDestroy {
   // Cliente seleccionado
   selectedCliente: Cliente | null = null;
   filteredClientes: Cliente[] = [];
+
+  // ==================== TRAZABILIDAD DE COMANDA (mesa / mesero / apertura) ====================
+  /** Mesas del tenant disponibles para el selector de mesa */
+  mesas = signal<MesaDTO[]>([]);
+  /** Mesa seleccionada para la comanda en curso */
+  selectedTable: MesaDTO | null = null;
+  /** Timestamp ISO de apertura de la comanda (se define al abrir/limpiar la comanda) */
+  horaAperturaComanda = signal<string>(new Date().toISOString());
 
   // Descuento por cupón
   codigoCupon = '';
@@ -330,6 +340,7 @@ configEditingItem: CartItem | null = null;
     private authService: AuthService,
     private productService: ProductService,
     private inventoryService: InventoryService,
+    private mesaService: MesaService,
     private messageService: MessageService,
     private fb: FormBuilder,
     private cdr: ChangeDetectorRef
@@ -345,6 +356,7 @@ configEditingItem: CartItem | null = null;
       this.loadCatalog();
       this.loadStockInfo();
       this.loadClientes();
+      this.loadMesas();
       this.startPolling();
       this.startSseConnection();
       this.subscribeToSseEvents();
@@ -479,8 +491,12 @@ configEditingItem: CartItem | null = null;
       tenantId: order.tenantId,
       estado: this.normalizeOrderStatus(order.estado),
       customerId: order.customerId ?? null,
+      idCliente: order.idCliente ?? order.customerId ?? null,
       customerName: order.customerName ?? null,
       nombre: order.customerName ?? null,
+      idMesa: order.idMesa ?? null,
+      idMesero: order.idMesero ?? null,
+      horaApertura: order.horaApertura ?? order.fechaApertura ?? null,
       items: order.items ?? [],
       subtotal: order.subtotal ?? 0,
       descuento: order.descuento ?? 0,
@@ -769,6 +785,8 @@ configEditingItem: CartItem | null = null;
     const latestOrder = this.pendingOrders().find((existingOrder) => existingOrder.id === order.id) ?? order;
 
     this.selectedCliente = this.resolveClienteFromOrder(latestOrder);
+    this.selectedTable = this.mesas().find((mesa) => mesa.id === Number(latestOrder.idMesa)) ?? null;
+    this.horaAperturaComanda.set(latestOrder.horaApertura || new Date().toISOString());
     this.codigoCupon = latestOrder.couponCode ?? '';
     this.descuentoAplicado.set(Number(latestOrder.descuento ?? 0));
     this.cart.set(this.buildCartFromPendingOrder(latestOrder));
@@ -1291,6 +1309,43 @@ configEditingItem: CartItem | null = null;
         next: (response) => { this.clientes.set(response.content); },
         error: (error) => { console.error('Error cargando clientes:', error); }
       });
+  }
+
+  // ==================== TRAZABILIDAD DE COMANDA: MESAS / MESERO / APERTURA ====================
+
+  private loadMesas(): void {
+    this.mesaService
+      .getMesas(this.tenantId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (mesas) => this.mesas.set(Array.isArray(mesas) ? mesas : []),
+        error: (error) => {
+          console.warn('[Comandix] No se pudieron cargar las mesas, se trabajará sin selector de mesa:', error);
+          this.mesas.set([]);
+        }
+      });
+  }
+
+  /** Nombre legible del mesero autenticado */
+  currentMeseroLabel(): string {
+    const user = this.authService.getCurrentUser();
+    return (
+      user?.nombre ||
+      user?.userName ||
+      user?.nombre_usuario ||
+      user?.email ||
+      'Mesero'
+    );
+  }
+
+  /** Id del mesero autenticado (se envía como idMesero de la comanda) */
+  currentMeseroId(): number | null {
+    return this.authService.getCurrentUser()?.id ?? null;
+  }
+
+  /** Actualiza la mesa seleccionada de la comanda en curso */
+  onTableChange(table: MesaDTO | null): void {
+    this.selectedTable = table ?? null;
   }
 
   filterClientes(event: any): void {
@@ -1819,6 +1874,17 @@ trackByProductId = (index: number, item: CartItem): string => {
       return;
     }
 
+    // Trazabilidad: la mesa es obligatoria cuando el negocio tiene mesas registradas
+    if (this.mesas().length > 0 && !this.selectedTable) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Mesa requerida',
+        detail: 'Selecciona la mesa de la comanda para continuar',
+        life: 3000
+      });
+      return;
+    }
+
     this.processingOrder.set(true);
     try {
       const orderItems: OrderItem[] = this.cart().map((item) => ({
@@ -1845,12 +1911,16 @@ trackByProductId = (index: number, item: CartItem): string => {
 
         const updateRequest: TenantClientOrderUpdateRequest = {
           customerId: this.selectedCliente?.id ?? editingOrder.customerId ?? null,
+          idCliente: this.selectedCliente?.id ?? editingOrder.idCliente ?? editingOrder.customerId ?? null,
           tenantId: editingOrder.tenantId,
           items: orderItems,
           subtotal: this.subtotal(),
           descuento: this.descuentoAplicado(),
           totalFinal: this.totalFinal(),
-          couponCode: this.codigoCupon.trim() || null
+          couponCode: this.codigoCupon.trim() || null,
+          idMesa: this.selectedTable?.id ?? editingOrder.idMesa ?? null,
+          idMesero: this.currentMeseroId() ?? editingOrder.idMesero ?? null,
+          horaApertura: this.horaAperturaComanda() ?? editingOrder.horaApertura ?? null
         };
 
         await firstValueFrom(this.orderService.updateOrder(editingOrder.id, updateRequest));
@@ -1858,6 +1928,10 @@ trackByProductId = (index: number, item: CartItem): string => {
         const updatedOrder: PendingOrder = {
           ...editingOrder,
           customerId: this.selectedCliente?.id ?? editingOrder.customerId ?? null,
+          idCliente: this.selectedCliente?.id ?? editingOrder.idCliente ?? null,
+          idMesa: this.selectedTable?.id ?? editingOrder.idMesa ?? null,
+          idMesero: this.currentMeseroId() ?? editingOrder.idMesero ?? null,
+          horaApertura: this.horaAperturaComanda() ?? editingOrder.horaApertura ?? null,
           customerName: this.selectedCliente?.nombreCompleto ?? editingOrder.customerName ?? editingOrder.nombre ?? null,
           nombre: this.selectedCliente?.nombreCompleto ?? editingOrder.nombre ?? editingOrder.customerName ?? null,
           items: this.cart().map((item) => ({
@@ -1890,6 +1964,7 @@ trackByProductId = (index: number, item: CartItem): string => {
 
       const orderRequest: TenantClientOrderCreateRequest = {
         customerId: this.selectedCliente?.id ?? null,
+        idCliente: this.selectedCliente?.id ?? null,
         tenantId: this.tenantId,
         items: orderItems,
         subtotal: this.subtotal(),
@@ -1898,7 +1973,10 @@ trackByProductId = (index: number, item: CartItem): string => {
         couponCode: this.codigoCupon.trim() || null,
         redeemedBy: this.selectedCliente?.id ?? null,
         redemptionChannel: 'COMANDIX',
-        source: 'POS'
+        source: 'POS',
+        idMesa: this.selectedTable?.id ?? null,
+        idMesero: this.currentMeseroId(),
+        horaApertura: this.horaAperturaComanda() || new Date().toISOString()
       };
 
       const response = await firstValueFrom(this.orderService.createOrder(orderRequest));
@@ -1908,6 +1986,10 @@ trackByProductId = (index: number, item: CartItem): string => {
         tenantId: this.tenantId,
         estado: this.normalizeOrderStatus(response.estado),
         customerId: orderRequest.customerId ?? null,
+        idCliente: orderRequest.idCliente ?? null,
+        idMesa: orderRequest.idMesa ?? response.idMesa ?? null,
+        idMesero: orderRequest.idMesero ?? response.idMesero ?? null,
+        horaApertura: orderRequest.horaApertura ?? response.horaApertura ?? null,
         customerName: this.selectedCliente?.nombreCompleto ?? null,
         nombre: this.selectedCliente?.nombreCompleto ?? null,
         items: this.cart().map((item) => ({
@@ -1962,6 +2044,8 @@ trackByProductId = (index: number, item: CartItem): string => {
     this.codigoCupon = '';
     this.descuentoAplicado.set(0);
     this.editingPendingOrder.set(null);
+    this.selectedTable = null;
+    this.horaAperturaComanda.set(new Date().toISOString());
   }
 
   limpiarCarrito(): void {
@@ -1969,6 +2053,8 @@ trackByProductId = (index: number, item: CartItem): string => {
     this.clearCartDraft();
     this.descuentoAplicado.set(0);
     this.codigoCupon = '';
+    this.selectedTable = null;
+    this.horaAperturaComanda.set(new Date().toISOString());
   }
 
   private restoreCartDraft(): void {

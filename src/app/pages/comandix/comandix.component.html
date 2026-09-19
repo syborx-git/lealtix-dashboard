@@ -135,6 +135,36 @@
       </div>
     </div>
 
+    <!-- ==================== TRAZABILIDAD: MESA / MESERO / HORA DE APERTURA ==================== -->
+    <div class="comanda-trace-bar mb-3">
+      <div class="trace-field">
+        <span class="trace-label"><i class="pi pi-table mr-1"></i>Mesa</span>
+        <p-select
+          [ngModel]="selectedTable"
+          (ngModelChange)="onTableChange($event)"
+          [options]="mesas()"
+          optionLabel="nombre"
+          placeholder="Sin mesa"
+          [showClear]="true"
+          appendTo="body"
+        ></p-select>
+      </div>
+      <div class="trace-field">
+        <span class="trace-label"><i class="pi pi-user mr-1"></i>Mesero</span>
+        <span class="trace-value">
+          <i class="pi pi-user-check trace-value-icon"></i>
+          {{ currentMeseroLabel() }}
+        </span>
+      </div>
+      <div class="trace-field">
+        <span class="trace-label"><i class="pi pi-clock mr-1"></i>Apertura</span>
+        <span class="trace-value">
+          <i class="pi pi-stopwatch trace-value-icon"></i>
+          {{ horaAperturaComanda() | date:'dd/MM/yyyy HH:mm' }}
+        </span>
+      </div>
+    </div>
+
     <!-- COLUMNA IZQUIERDA: CLIENTE + CATÁLOGO -->
     <div class="comandix-left-column">
 

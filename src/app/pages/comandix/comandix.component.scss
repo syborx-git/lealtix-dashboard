@@ -140,6 +140,68 @@
   }
 }
 
+// ==================== TRAZABILIDAD DE COMANDA (mesa / mesero / apertura) ====================
+.comanda-trace-bar {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 1px solid var(--surface-200);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.04);
+
+  .trace-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+
+    &:first-child {
+      flex: 1 1 200px;
+      max-width: 260px;
+    }
+
+    .trace-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-color-secondary);
+    }
+
+    .trace-value {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.925rem;
+      font-weight: 600;
+      color: #33211d;
+      padding: 0.45rem 0.625rem;
+      background: linear-gradient(135deg, rgba(79, 70, 229, 0.07), rgba(129, 140, 248, 0.07));
+      border: 1px solid rgba(79, 70, 229, 0.15);
+      border-radius: 8px;
+      white-space: nowrap;
+
+      .trace-value-icon {
+        color: #4f46e5;
+        font-size: 0.85rem;
+      }
+    }
+
+    ::ng-deep .p-select {
+      min-width: 160px;
+
+      .p-select-label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #33211d;
+      }
+    }
+  }
+}
+
 :host ::ng-deep .step-card,
 :host ::ng-deep .cart-card {
   display: block !important;

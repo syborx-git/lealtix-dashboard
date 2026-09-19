@@ -54,6 +54,8 @@ export interface RecordPaymentResponse {
 
 export interface TenantClientOrderCreateRequest {
   customerId?: number | null;
+  /** Identificador del cliente asociado a la comanda (opcional, null si no aplica) */
+  idCliente?: number | null;
   tenantId: number;
   items: OrderItem[];
   subtotal: number;
@@ -63,21 +65,32 @@ export interface TenantClientOrderCreateRequest {
   redeemedBy?: number | null;
   redemptionChannel?: string | null;
   source?: string;
+  /** Mesa seleccionada para la comanda (obligatoria en POS) */
+  idMesa?: number | null;
+  /** Mesero autenticado que abre la comanda (obligatorio en POS) */
+  idMesero?: number | null;
+  /** Timestamp ISO de apertura de la comanda */
+  horaApertura?: string | null;
 }
 
 export interface TenantClientOrderUpdateRequest {
   customerId?: number | null;
+  idCliente?: number | null;
   tenantId: number;
   items: OrderItem[];
   subtotal: number;
   descuento: number;
   totalFinal: number;
   couponCode?: string | null;
+  idMesa?: number | null;
+  idMesero?: number | null;
+  horaApertura?: string | null;
 }
 
 export interface TenantClientOrderResponse {
   id: number;
   customerId?: number | null;
+  idCliente?: number | null;
   tenantId: number;
   items: OrderItem[];
   subtotal: number;
@@ -85,6 +98,9 @@ export interface TenantClientOrderResponse {
   totalFinal: number;
   fechaCreacion: string;
   estado: string;
+  idMesa?: number | null;
+  idMesero?: number | null;
+  horaApertura?: string | null;
 }
 
 // ==================== DASHBOARD DE ÓRDENES PENDIENTES ====================
@@ -106,6 +122,7 @@ export interface PendingOrder {
   tenantId: number;
   estado: OrderStatus | string;
   customerId?: number | null;
+  idCliente?: number | null;
   customerName?: string | null;
   nombre?: string | null;
   items?: PendingOrderItem[];
@@ -115,6 +132,9 @@ export interface PendingOrder {
   couponCode?: string | null;
   coupon_id?: string | null;
   fechaCreacion?: string;
+  idMesa?: number | null;
+  idMesero?: number | null;
+  horaApertura?: string | null;
   payment?: PaymentInfo;
 }
 
