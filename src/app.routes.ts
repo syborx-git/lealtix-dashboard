@@ -91,6 +91,7 @@ export const appRoutes: Routes = [
                     { path: 'bodega', component: BodegaComponent, title: 'Bodega', canActivate: [PermissionGuard], data: { permission: 'view_products' } },
                     { path: 'reportes/transferencias', component: TransferenciasReportComponent, title: 'Reportes - Transferencias de Bodega', canActivate: [PermissionGuard], data: { permission: 'view_products' } },
                     { path: 'reportes/mermas', component: MermasReportComponent, title: 'Reportes - Mermas', canActivate: [PermissionGuard], data: { permission: 'manage_mermas' } },
+                    { path: 'reportes/ventas', component: ComandixComponent, title: 'Reportes - Ventas y Comandas', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'CAJA', 'MESERO'], permission: 'view_dashboard', initialView: 'report' } },
                     { path: 'recetas', component: RecetasComponent, title: 'Recetas', canActivate: [PermissionGuard], data: { permission: 'manage_recetas' } },
                     { path: 'mermas', component: MermasComponent, title: 'Mermas', canActivate: [PermissionGuard], data: { permission: 'manage_mermas' } },
                     { path: 'horarios', component: HorariosComponent, title: 'Horarios', canActivate: [PermissionGuard], data: { permission: 'manage_horarios' } },

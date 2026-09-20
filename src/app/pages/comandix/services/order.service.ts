@@ -13,8 +13,19 @@ import {
   RecordPaymentRequest,
   RecordPaymentResponse,
   SplitOrderRequest,
-  SplitOrderResponse
+  SplitOrderResponse,
+  SeatListResponse,
+  AddSeatRequest,
+  AddSeatResponse,
+  UpdateSeatAliasRequest,
+  UpdateSeatAliasResponse,
+  AssignItemToSeatRequest,
+  AssignItemToSeatResponse,
+  SettleSeatsRequest,
+  SettleSeatsResponse,
+  SalesReportRow
 } from '../models/order.model';
+import { GenericResponse } from '@/models/generic-response.model';
 import { environment } from '@/pages/commons/environment';
 
 @Injectable({
@@ -161,6 +172,102 @@ export class OrderService {
     return this.http.post<SplitOrderResponse>(`${this.baseUrl}/${orderId}/split`, request).pipe(
       catchError((error) => {
         console.error('Error al dividir cuenta:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  // ==================== ASIENTOS (comanda por personas) ====================
+
+  /**
+   * Lista los asientos (personas) de una comanda.
+   * GET /{orderId}/seats
+   */
+  getSeats(orderId: string): Observable<SeatListResponse> {
+    return this.http.get<SeatListResponse>(`${this.baseUrl}/${orderId}/seats`).pipe(
+      catchError((error) => {
+        console.warn('No se pudieron cargar los asientos de la comanda:', orderId, error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Añade un asiento (persona) a la comanda.
+   * POST /{orderId}/seats
+   */
+  addSeat(orderId: string, request: AddSeatRequest): Observable<AddSeatResponse> {
+    const body: AddSeatRequest = { ...request, orderId };
+    return this.http.post<AddSeatResponse>(`${this.baseUrl}/${orderId}/seats`, body).pipe(
+      catchError((error) => {
+        console.warn('No se pudo añadir el asiento:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Renombra el alias (apodo) de un asiento.
+   * PATCH /seats/{seatId}/alias
+   */
+  updateSeatAlias(seatId: string, alias: string): Observable<UpdateSeatAliasResponse> {
+    const body: UpdateSeatAliasRequest = { alias };
+    return this.http.patch<UpdateSeatAliasResponse>(`${this.baseUrl}/seats/${seatId}/alias`, body).pipe(
+      catchError((error) => {
+        console.warn('No se pudo renombrar el asiento:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Asigna artículos de la comanda a un asiento.
+   * POST /{orderId}/seats/{seatId}/items
+   */
+  assignItemToSeat(
+    orderId: string,
+    seatId: string,
+    itemIds: (string | number)[]
+  ): Observable<AssignItemToSeatResponse> {
+    const body: AssignItemToSeatRequest = { seatId, itemIds };
+    return this.http.post<AssignItemToSeatResponse>(`${this.baseUrl}/${orderId}/seats/${seatId}/items`, body).pipe(
+      catchError((error) => {
+        console.warn('No se pudo asignar el artículo al asiento:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Liquida los asientos seleccionados de una comanda (cierre por persona).
+   * POST /{orderId}/seats/settle
+   */
+  settleSeats(orderId: string, request: SettleSeatsRequest): Observable<SettleSeatsResponse> {
+    return this.http.post<SettleSeatsResponse>(`${this.baseUrl}/${orderId}/seats/settle`, request).pipe(
+      catchError((error) => {
+        console.warn('No se pudieron liquidar los asientos:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Reporte general de ventas/comandas de un tenant en un rango de fechas.
+   * GET /tenant/{tenantId}/report?from=&to=   → List<SalesReportRowDTO>
+   */
+  getSalesReport(
+    tenantId: number,
+    from: string,
+    to: string
+  ): Observable<SalesReportRow[]> {
+    let params = new HttpParams()
+      .set('tenantId', tenantId.toString())
+      .set('from', from)
+      .set('to', to);
+    return this.http.get<GenericResponse<SalesReportRow[]>>(`${this.baseUrl}/tenant/${tenantId}/report`, { params }).pipe(
+      map((response) => response.object || []),
+      catchError((error) => {
+        console.error('Error al obtener reporte de ventas:', error);
         return throwError(() => error);
       })
     );

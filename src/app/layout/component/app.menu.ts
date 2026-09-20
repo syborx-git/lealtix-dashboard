@@ -60,7 +60,7 @@ export class AppMenu implements OnInit {
                 items: [
                     { label: 'Mesas', icon: 'pi pi-fw pi-table', routerLink: ['/dashboard/mesas'], roles: ['HOSTESS', 'ADMIN'], requiredPermissions: ['view_mesas'] },
                     { label: 'Reservaciones', icon: 'pi pi-fw pi-calendar', routerLink: ['/dashboard/reservaciones'], roles: ['HOSTESS', 'ADMIN'], requiredPermissions: ['view_reservaciones'] },
-                    { label: 'Comanda', icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/dashboard/comandix'], visible: false, roles: ['ADMIN', 'MESERO'], requiredPermissions: ['create_order'] },
+                    { label: 'Comanda', icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/dashboard/comandix'], roles: ['ADMIN', 'MESERO'], requiredPermissions: ['create_order'] },
                     { label: 'Cocina', icon: 'pi pi-fw pi-box', routerLink: ['/dashboard/cocina'], roles: ['ADMIN', 'COCINA'], requiredPermissions: ['view_kitchen_orders', 'update_order_status'] },
                     { label: 'Barra', icon: 'pi pi-fw pi-th-large', routerLink: ['/dashboard/barra'], roles: ['ADMIN', 'COCINA'], requiredPermissions: ['view_kitchen_orders', 'update_order_status'] }
                 ]
@@ -103,6 +103,7 @@ export class AppMenu implements OnInit {
                 label: 'Reportes',
                 icon: 'pi pi-fw pi-chart-bar',
                 items: [
+                    { label: 'Ventas y Comandas', icon: 'pi pi-fw pi-receipt', routerLink: ['/dashboard/reportes/ventas'], roles: ['ADMIN', 'CAJA'], requiredPermissions: ['view_dashboard'] },
                     { label: 'Transferencias de Bodega', icon: 'pi pi-fw pi-arrows-alt', routerLink: ['/dashboard/reportes/transferencias'], roles: ['ADMIN'], requiredPermissions: ['view_products'] },
                     { label: 'Reportes de Mermas', icon: 'pi pi-fw pi-database', routerLink: ['/dashboard/reportes/mermas'], roles: ['ADMIN'], requiredPermissions: ['manage_mermas'] }
                 ]
@@ -236,7 +237,7 @@ export class AppMenu implements OnInit {
                     }
                     const comandixItem = this.findMenuItem('/dashboard/comandix');
                     if (comandixItem) {
-                        comandixItem.visible = hasProducts;
+                        comandixItem.visible = true;
                     }
                 },
                 error: (err) => {

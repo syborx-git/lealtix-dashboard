@@ -3,8 +3,8 @@
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
-  overflow-x: hidden;
-  background: var(--surface-50);
+  overflow: visible;
+  background: #f8fafc;
   min-height: 100vh;
 }
 
@@ -15,12 +15,20 @@
 
 .comandix-main-content {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 7fr) minmax(320px, 3fr);
   align-items: start;
-  gap: 1.5rem;
+  gap: 1.25rem;
   width: 100%;
   max-width: 100%;
   margin: 0;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
+
+  .editing-order-banner {
+    grid-column: 1 / -1;
+  }
 }
 
 // ==================== HEADER ====================
@@ -113,9 +121,12 @@
   min-height: 400px;
 }
 
-// ==================== COLUMNAS ====================
+// ==================== COLUMNAS (70/30) ====================
+.pos-left-column,
 .comandix-left-column {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   width: 100%;
   min-width: 0;
 }
@@ -125,7 +136,19 @@
   width: 100%;
   min-width: 0;
 
-  max-width: 340px;
+  .pos-ticket-sticky {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    display: flex;
+    flex-direction: column;
+
+    @media (max-width: 1024px) {
+      position: relative;
+      top: 0;
+      max-height: none;
+    }
+  }
 
   .cart-sticky-container {
     position: sticky;
@@ -140,65 +163,80 @@
   }
 }
 
-// ==================== TRAZABILIDAD DE COMANDA (mesa / mesero / apertura) ====================
-.comanda-trace-bar {
-  display: flex;
-  align-items: stretch;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  background: white;
-  border: 1px solid var(--surface-200);
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.04);
+// ==================== POS V2 COMPONENT STYLES ====================
+.pos-compact-header-card {
+  transition: box-shadow 0.2s ease;
 
-  .trace-field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    min-width: 0;
+  :host ::ng-deep .compact-p-select {
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    font-size: 0.875rem;
 
-    &:first-child {
-      flex: 1 1 200px;
-      max-width: 260px;
+    &:hover {
+      border-color: #cbd5e1;
     }
 
-    .trace-label {
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-color-secondary);
+    &:focus, &.p-focus {
+      border-color: #7c3aed !important;
+      box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.15) !important;
     }
+  }
 
-    .trace-value {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      font-size: 0.925rem;
-      font-weight: 600;
-      color: #33211d;
-      padding: 0.45rem 0.625rem;
-      background: linear-gradient(135deg, rgba(79, 70, 229, 0.07), rgba(129, 140, 248, 0.07));
-      border: 1px solid rgba(79, 70, 229, 0.15);
-      border-radius: 8px;
-      white-space: nowrap;
+  :host ::ng-deep .compact-p-autocomplete {
+    .p-autocomplete-input {
+      border-radius: 0.75rem !important;
+      border: 1px solid #e2e8f0 !important;
+      background: #f8fafc !important;
+      font-size: 0.875rem !important;
+      padding: 0.5rem 0.75rem !important;
 
-      .trace-value-icon {
-        color: #4f46e5;
-        font-size: 0.85rem;
+      &:focus {
+        border-color: #7c3aed !important;
+        box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.15) !important;
       }
     }
+  }
+}
 
-    ::ng-deep .p-select {
-      min-width: 160px;
+.pos-seats-tabs-card {
+  .seat-tab-chip {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
-      .p-select-label {
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: #33211d;
-      }
+    &:active {
+      transform: scale(0.98);
     }
+  }
+}
+
+.pos-catalog-card {
+  :host ::ng-deep .catalog-select-dropdown {
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    font-size: 0.875rem;
+
+    &:focus, &.p-focus {
+      border-color: #7c3aed !important;
+      box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.15) !important;
+    }
+  }
+
+  .dish-pos-card {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -4px rgba(124, 58, 237, 0.1);
+    }
+  }
+}
+
+.ticket-receipt-card {
+  transition: box-shadow 0.2s ease;
+
+  .ticket-receipt-header {
+    background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
   }
 }
 
@@ -2332,6 +2370,316 @@
     &:hover {
       background: var(--surface-200);
       color: var(--text-color);
+    }
+  }
+}
+
+// ==================== SEAT MANAGEMENT STYLES ====================
+.seat-management-card {
+  border-left: 4px solid #da9f5b;
+
+  .btn-add-person-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    border: 1.5px dashed #da9f5b;
+    background: rgba(218, 159, 91, 0.08);
+    color: #b05e15;
+    font-size: 0.825rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #da9f5b;
+      color: #ffffff;
+    }
+  }
+
+  .seat-bar-container {
+    padding-top: 0.25rem;
+
+    .seats-track {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+
+      &::-webkit-scrollbar {
+        height: 4px;
+      }
+      &::-webkit-scrollbar-thumb {
+        background: #e2d9cf;
+        border-radius: 4px;
+      }
+    }
+
+    .seat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.85rem;
+      background: #ffffff;
+      border: 1.5px solid #ede4da;
+      border-radius: 14px;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+
+      .seat-pill-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: #f7f2ec;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #8d6e63;
+        font-size: 0.8rem;
+      }
+
+      .seat-pill-label {
+        display: flex;
+        flex-direction: column;
+
+        .seat-pill-alias {
+          font-weight: 600;
+          font-size: 0.875rem;
+          color: #33211D;
+        }
+
+        .seat-pill-sub {
+          font-size: 0.68rem;
+          color: #a1887f;
+        }
+      }
+
+      .seat-pill-badge {
+        background: #da9f5b;
+        color: #ffffff;
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 10px;
+        min-width: 18px;
+        text-align: center;
+      }
+
+      .seat-pill-edit {
+        background: transparent;
+        border: none;
+        color: #bcaaa4;
+        cursor: pointer;
+        padding: 3px 5px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        transition: all 0.15s ease;
+
+        &:hover {
+          color: #33211D;
+          background: #f2ebe4;
+        }
+      }
+
+      &:hover {
+        border-color: #da9f5b;
+        background: #fffdfb;
+      }
+
+      &.active {
+        background: #fffaf3;
+        border-color: #da9f5b;
+        box-shadow: 0 0 0 2px rgba(218, 159, 91, 0.25);
+
+        .seat-pill-icon {
+          background: #da9f5b;
+          color: #ffffff;
+        }
+
+        .seat-pill-alias {
+          color: #b05e15;
+          font-weight: 700;
+        }
+      }
+    }
+
+    .active-seat-callout {
+      margin-top: 0.65rem;
+      padding: 0.5rem 0.75rem;
+      background: #fcf8f3;
+      border-radius: 10px;
+      border: 1px solid #f2e7db;
+      font-size: 0.825rem;
+      color: #5d4037;
+      display: flex;
+      align-items: center;
+    }
+  }
+}
+
+// Badge en el carrito para identificar qué comensal pidió el producto
+.cart-item-seat-tag {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(218, 159, 91, 0.12);
+  color: #b05e15;
+  font-size: 0.725rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 8px;
+  margin-bottom: 3px;
+  width: fit-content;
+}
+
+// ==================== REPORTE GENERAL DE VENTAS ====================
+.report-view-container {
+  width: 100%;
+
+  .report-header-card {
+    background: #ffffff;
+    border: 1px solid #ede7df;
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 2px 8px rgba(51, 33, 29, 0.03);
+
+    .report-filter-pill {
+      background: #f7f4f0;
+      border: 1px solid #e5ded5;
+      border-radius: 20px;
+      padding: 0.4rem 0.9rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #6b5c56;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #ede5dc;
+      }
+
+      &.active {
+        background: #4f46e5;
+        border-color: #4f46e5;
+        color: #ffffff;
+      }
+    }
+  }
+
+  .report-kpi-card {
+    background: #ffffff;
+    border: 1px solid #ede7df;
+    border-radius: 14px;
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+
+    .kpi-icon-wrap {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .kpi-label {
+      font-size: 0.775rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #8d6e63;
+      margin-bottom: 2px;
+    }
+
+    .kpi-value {
+      font-size: 1.5rem;
+      font-weight: 800;
+    }
+  }
+
+  .search-input-wrapper {
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #ede7df;
+    border-radius: 10px;
+    padding: 0.4rem 0.75rem;
+    width: 100%;
+    max-width: 380px;
+
+    .report-search-field {
+      border: none !important;
+      outline: none !important;
+      padding: 0.25rem 0.5rem !important;
+      font-size: 0.875rem !important;
+      width: 100%;
+      background: transparent;
+    }
+  }
+
+  .report-table-card {
+    background: #ffffff;
+    border: 1px solid #ede7df;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+
+    .minimal-report-table {
+      th {
+        background: #fbf9f6 !important;
+        color: #5d4037 !important;
+        font-size: 0.775rem !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.04em !important;
+        padding: 0.875rem 1rem !important;
+        border-bottom: 1px solid #ede7df !important;
+      }
+
+      td {
+        padding: 0.85rem 1rem !important;
+        border-bottom: 1px solid #f5efe9 !important;
+        font-size: 0.875rem;
+      }
+
+      tr:hover td {
+        background: #fcfbf9 !important;
+      }
+    }
+
+    .subcomanda-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: rgba(79, 70, 229, 0.1);
+      color: #4f46e5;
+    }
+
+    .report-client-registered {
+      display: inline-flex;
+      align-items: center;
+      font-weight: 600;
+      color: #33211D;
+    }
+
+    .report-client-unregistered {
+      display: inline-block;
+      padding: 2px 8px;
+      background: #f3f3f3;
+      color: #888888;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-style: italic;
     }
   }
 }

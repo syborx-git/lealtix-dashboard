@@ -16,18 +16,29 @@ import { OrderItem, PendingOrder, TipInfo } from '../../models/order.model';
 import { OrderService } from '../../services/order.service';
 import { AuthService } from '@/auth/auth.service';
 
-interface SplitItem {
+export interface SplitItem {
   productId: number;
   productName: string;
   cantidad: number;
   precioUnitario: number;
   comentarios?: string;
+  asientoId?: string;
+  asientoAlias?: string;
   excludedIngredientIds?: number[];
   additionalIngredientIds?: number[];
   seleccionado: boolean;
 }
 
-type SplitMode = 'items' | 'equal';
+export interface SeatGroupOption {
+  id: string;
+  alias: string;
+  subFolio: string;
+  items: SplitItem[];
+  subtotal: number;
+  seleccionado: boolean;
+}
+
+export type SplitMode = 'seats' | 'items' | 'equal';
 
 @Component({
   selector: 'app-split-order-modal',
@@ -59,9 +70,10 @@ export class SplitOrderModalComponent implements OnChanges, OnDestroy {
     newOrderIds?: string[];
   }>();
 
-  splitMode: SplitMode = 'items';
+  splitMode: SplitMode = 'seats';
   numPersonas = 2;
   items: SplitItem[] = [];
+  seatGroups: SeatGroupOption[] = [];
   loading = false;
   errorMessage = '';
   successMessage = '';
@@ -149,6 +161,79 @@ export class SplitOrderModalComponent implements OnChanges, OnDestroy {
     return this.montoPorPersona + this.propinaPorPersona;
   }
 
+  get seleccionMontoConTip(): number {
+    if (this.tip?.percent) {
+      return this.seleccionMonto * (1 + this.tip.percent / 100);
+    }
+    return this.seleccionMonto + (this.tip?.amount ?? 0);
+  }
+
+  get tienePropina(): boolean {
+    if (this.tip?.percent) {
+      return true;
+    }
+    return this.tip?.amount != null && this.tip.amount > 0;
+  }
+
+  // Métodos de gestión por asientos
+  get selectedSeatsCount(): number {
+    return this.seatGroups.filter(g => g.seleccionado).length;
+  }
+
+  get selectedSeatsAliases(): string {
+    return this.seatGroups
+      .filter(g => g.seleccionado)
+      .map(g => g.alias)
+      .join(', ');
+  }
+
+  get selectedSeatsSubFolios(): string {
+    return this.seatGroups
+      .filter(g => g.seleccionado)
+      .map(g => g.subFolio)
+      .join(', ');
+  }
+
+  toggleSeatGroup(group: SeatGroupOption): void {
+    group.seleccionado = !group.seleccionado;
+    group.items.forEach((it) => {
+      it.seleccionado = group.seleccionado;
+    });
+  }
+
+  seleccionarTodosAsientos(): void {
+    const todosSeleccionados = this.seatGroups.every(g => g.seleccionado);
+    this.seatGroups.forEach(g => {
+      g.seleccionado = !todosSeleccionados;
+      g.items.forEach(it => it.seleccionado = !todosSeleccionados);
+    });
+  }
+
+  // Aplica la propina seleccionada a los precios unitarios de los artículos
+  private aplicarPropina(items: OrderItem[]): OrderItem[] {
+    const tip = this.tip;
+    if (!tip || items.length === 0) {
+      return items;
+    }
+
+    const total = items.reduce((sum, item) => sum + item.precioUnitario * item.cantidad, 0);
+    if (total <= 0) {
+      return items;
+    }
+
+    let factor = 1;
+    if (tip.percent) {
+      factor = 1 + tip.percent / 100;
+    } else if (tip.amount != null && tip.amount > 0) {
+      factor = (total + tip.amount) / total;
+    }
+
+    return items.map((item) => ({
+      ...item,
+      precioUnitario: Math.round(item.precioUnitario * factor * 100) / 100
+    }));
+  }
+
   onClose(): void {
     if (this.loading) {
       return;
@@ -170,7 +255,7 @@ export class SplitOrderModalComponent implements OnChanges, OnDestroy {
       return;
     }
 
-    const items: OrderItem[] = this.items
+    const items: OrderItem[] = this.aplicarPropina(this.items
       .filter((item) => item.seleccionado)
       .map((item) => ({
         productId: item.productId,
@@ -178,11 +263,19 @@ export class SplitOrderModalComponent implements OnChanges, OnDestroy {
         precioUnitario: item.precioUnitario,
         comentarios: item.comentarios || undefined,
         excludedIngredientIds: item.excludedIngredientIds,
-        additionalIngredientIds: item.additionalIngredientIds
-      }));
+        additionalIngredientIds: item.additionalIngredientIds,
+        asientoId: item.asientoId,
+        asientoAlias: item.asientoAlias
+      })));
 
     if (items.length === 0) {
-      this.errorMessage = 'Selecciona al menos un artículo para crear la nueva cuenta.';
+      this.errorMessage = 'Selecciona al menos una persona o artículo para crear la nueva cuenta.';
+      return;
+    }
+
+    // No permitir mover TODOS los artículos si queda vacía la comanda padre
+    if (items.length >= this.items.length) {
+      this.errorMessage = 'Para cobrar toda la cuenta junta, utiliza el botón "Cobrar Cuenta" en lugar de dividirla.';
       return;
     }
 
@@ -205,7 +298,11 @@ export class SplitOrderModalComponent implements OnChanges, OnDestroy {
         throw new Error(response?.message || 'No se pudo crear la nueva cuenta.');
       }
 
-      this.successMessage = 'Nueva cuenta creada exitosamente, cada comanda se salvó por separado.';
+      const aliasStr = this.selectedSeatsAliases ? ` (${this.selectedSeatsAliases})` : '';
+      this.successMessage = this.tienePropina
+        ? `Sub-comanda generada exitosamente${aliasStr} incluyendo propina.`
+        : `Sub-comanda generada exitosamente${aliasStr}. Comandas sincronizadas.`;
+
       this.cuentaCreada.emit({ originalOrderId: this.order.id, newOrderId });
 
       this.closeTimer = setTimeout(() => {
@@ -251,17 +348,18 @@ export class SplitOrderModalComponent implements OnChanges, OnDestroy {
     this.successMessage = '';
 
     try {
-      // La comanda original conserva un grupo; las demás se abren como comandas nuevas
       const newOrderIds: string[] = [];
       for (let i = 1; i < grupos.length; i++) {
-        const items: OrderItem[] = grupos[i].map((item) => ({
+        const items: OrderItem[] = this.aplicarPropina(grupos[i].map((item) => ({
           productId: item.productId,
           cantidad: item.cantidad,
           precioUnitario: item.precioUnitario,
           comentarios: item.comentarios || undefined,
           excludedIngredientIds: item.excludedIngredientIds,
-          additionalIngredientIds: item.additionalIngredientIds
-        }));
+          additionalIngredientIds: item.additionalIngredientIds,
+          asientoId: item.asientoId,
+          asientoAlias: item.asientoAlias
+        })));
 
         const response = await firstValueFrom(
           this.orderService.splitOrder(this.order.id, {
@@ -282,8 +380,9 @@ export class SplitOrderModalComponent implements OnChanges, OnDestroy {
         throw new Error('No se pudo dividir la cuenta en partes equitativas.');
       }
 
-      this.successMessage =
-        `La cuenta se dividió en ${personas} comandas de $${this.montoPorPersona.toFixed(2)} cada una.`;
+      this.successMessage = this.tienePropina
+        ? `La cuenta se dividió en ${personas} sub-comandas de $${this.montoPorPersonaConTip.toFixed(2)} cada una con propina.`
+        : `La cuenta se dividió en ${personas} sub-comandas de $${this.montoPorPersona.toFixed(2)} cada una.`;
       this.cuentaCreada.emit({
         originalOrderId: this.order.id,
         newOrderId: newOrderIds[0],
@@ -303,7 +402,6 @@ export class SplitOrderModalComponent implements OnChanges, OnDestroy {
     }
   }
 
-  // Reparte los artículos en N grupos con montos lo más balanceados posible
   private repartoEquitativo(personas: number): SplitItem[][] {
     const unidades: SplitItem[] = [];
     this.items.forEach((item) => {
@@ -335,26 +433,78 @@ export class SplitOrderModalComponent implements OnChanges, OnDestroy {
   private buildItems(): void {
     if (!this.order?.items) {
       this.items = [];
+      this.seatGroups = [];
       return;
     }
-    this.items = this.order.items.map((item) => ({
-      productId: item.productId ?? 0,
-      productName: item.productName ?? item.prod ?? `Producto #${item.productId ?? ''}`,
-      cantidad: item.cantidad ?? 1,
-      precioUnitario: item.precioUnitario ?? item.precio ?? 0,
-      comentarios: item.comentarios,
-      excludedIngredientIds: item.excludedIngredientIds,
-      additionalIngredientIds: item.additionalIngredientIds,
-      seleccionado: false
-    }));
+
+    this.items = this.order.items.map((item, idx) => {
+      let alias = item.asientoAlias;
+      let cleanComent = item.comentarios;
+      if (!alias && cleanComent && cleanComent.startsWith('[')) {
+        const match = cleanComent.match(/^\[(.*?)\]\s*(.*)$/);
+        if (match) {
+          alias = match[1];
+          cleanComent = match[2];
+        }
+      }
+      return {
+        productId: item.productId ?? 0,
+        productName: item.productName ?? item.prod ?? `Producto #${item.productId ?? ''}`,
+        cantidad: item.cantidad ?? 1,
+        precioUnitario: item.precioUnitario ?? item.precio ?? 0,
+        comentarios: cleanComent,
+        asientoId: item.asientoId ? String(item.asientoId) : `seat-${(idx % 2) + 1}`,
+        asientoAlias: alias || `Persona ${(idx % 2) + 1}`,
+        excludedIngredientIds: item.excludedIngredientIds,
+        additionalIngredientIds: item.additionalIngredientIds,
+        seleccionado: false
+      };
+    });
+
+    this.buildSeatGroups();
+  }
+
+  private buildSeatGroups(): void {
+    const map = new Map<string, { alias: string; items: SplitItem[] }>();
+
+    this.items.forEach((item) => {
+      const key = item.asientoAlias || item.asientoId || 'Persona 1';
+      if (!map.has(key)) {
+        map.set(key, { alias: item.asientoAlias || 'Persona 1', items: [] });
+      }
+      map.get(key)!.items.push(item);
+    });
+
+    let index = 0;
+    this.seatGroups = Array.from(map.entries()).map(([key, data]) => {
+      const subFolio = `${this.ticket}-${String.fromCharCode(65 + index)}`;
+      index++;
+      const subtotal = data.items.reduce((sum, it) => sum + it.precioUnitario * it.cantidad, 0);
+      return {
+        id: key,
+        alias: data.alias,
+        subFolio,
+        items: data.items,
+        subtotal,
+        seleccionado: false
+      };
+    });
+
+    // Si hay más de un comensal detectado, iniciar en la pestaña de personas
+    if (this.seatGroups.length > 1) {
+      this.splitMode = 'seats';
+    } else {
+      this.splitMode = 'items';
+    }
   }
 
   private resetState(): void {
     this.items = [];
+    this.seatGroups = [];
     this.errorMessage = '';
     this.successMessage = '';
     this.loading = false;
-    this.splitMode = 'items';
+    this.splitMode = 'seats';
     this.numPersonas = 2;
   }
 }

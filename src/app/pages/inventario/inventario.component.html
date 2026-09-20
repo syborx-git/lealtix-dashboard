@@ -51,19 +51,20 @@
         </ng-container>
         <ng-container *ngIf="activeTab() === 'bebidas'">
           <tr>
-            <th pSortableColumn="nombre" style="width: 30%">
+            <th pSortableColumn="nombre" style="width: 28%">
               Bebida
               <p-sortIcon field="nombre" />
             </th>
-            <th pSortableColumn="stock" style="width: 20%">
+            <th pSortableColumn="stock" style="width: 18%">
               Stock
               <p-sortIcon field="stock" />
             </th>
-            <th pSortableColumn="precioVenta" style="width: 25%">
+            <th pSortableColumn="precioVenta" style="width: 20%">
               Precio venta
               <p-sortIcon field="precioVenta" />
             </th>
-            <th style="width: 25%">Ubicación</th>
+            <th style="width: 18%">Ubicación</th>
+            <th style="width: 16%">Acciones</th>
           </tr>
         </ng-container>
         <ng-container *ngIf="activeTab() === 'insumos' || activeTab() === 'insumos-bebida'">
@@ -110,7 +111,7 @@
         </ng-container>
         <ng-container *ngIf="activeTab() === 'bebidas'">
           <tr>
-            <td style="width: 30%">
+            <td style="width: 28%">
               <div class="font-medium text-900">{{ row.nombre }}</div>
               <div class="text-xs text-500">{{ row.unidad || 'pieza' }}</div>
               <div class="flex flex-wrap gap-1 mt-1" *ngIf="rowCategories(row).length">
@@ -123,16 +124,20 @@
                 </button>
               </div>
             </td>
-            <td style="width: 20%">
+            <td style="width: 18%">
               <span class="stock-badge" [ngClass]="insumoLowClass(row)">
                 {{ insumoLocalStock(row) }} {{ row.unidad || 'pieza' }}
               </span>
             </td>
-            <td style="width: 25%">
+            <td style="width: 20%">
               <div class="text-sm text-500">{{ row.precioVenta | currency: 'MXN' }}</div>
             </td>
-            <td style="width: 25%">
+            <td style="width: 18%">
               <span class="text-xs text-500">Barra</span>
+            </td>
+            <td style="width: 16%">
+              <button pButton icon="pi pi-trash" size="small" severity="danger" [outlined]="true"
+                pTooltip="Eliminar bebida" tooltipPosition="top" (click)="deleteBebida(row)"></button>
             </td>
           </tr>
         </ng-container>
@@ -162,8 +167,12 @@
               <span class="text-xs text-500">{{ mode === 'cocina' ? 'Cocina' : 'Barra' }}</span>
             </td>
             <td style="width: 31%">
-              <button pButton label="Solicitar stock" icon="pi pi-send" size="small" severity="secondary"
-                class="solicitar-stock-btn" (click)="openSolicitud(row)"></button>
+              <div class="flex gap-2">
+                <button pButton label="Solicitar stock" icon="pi pi-send" size="small" severity="secondary"
+                  class="solicitar-stock-btn" (click)="openSolicitud(row)"></button>
+                <button pButton icon="pi pi-trash" size="small" severity="danger" [outlined]="true"
+                  pTooltip="Eliminar insumo" tooltipPosition="top" (click)="deleteInsumo(row)"></button>
+              </div>
             </td>
           </tr>
         </ng-container>
@@ -238,5 +247,6 @@
     </ng-template>
   </p-dialog>
 
+  <p-confirmdialog [style]="{ width: '450px' }" />
   <p-toast></p-toast>
 </div>

@@ -1,15 +1,15 @@
-import { Component, computed, OnInit, signal, ViewChild } from '@angular/core';
+import { Component, OnInit, signal, computed, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Table, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
 import { TooltipModule } from 'primeng/tooltip';
 import { SelectButtonModule } from 'primeng/selectbutton';
-import { SelectModule } from 'primeng/select';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { MessageModule } from 'primeng/message';
 import { InventoryService } from '../inventario/service/inventory.service';
@@ -37,15 +37,15 @@ interface BodegaItem {
     TableModule,
     ButtonModule,
     DialogModule,
+    ConfirmDialogModule,
     InputNumberModule,
     InputTextModule,
     TooltipModule,
     SelectButtonModule,
-    SelectModule,
     ToastModule,
     MessageModule
   ],
-  providers: [MessageService],
+  providers: [MessageService, ConfirmationService],
   templateUrl: './bodega.component.html',
   styleUrls: ['./bodega.component.scss']
 })
@@ -53,27 +53,35 @@ export class BodegaComponent implements OnInit {
   @ViewChild('dt') dt!: Table;
 
   items = signal<BodegaItem[]>([]);
-  catalogFilter = signal<'all' | 'alphabetical' | 'minimum'>('all');
-  catalogFilterOptions = [
-    { label: 'Todos los insumos', value: 'all' },
-    { label: 'Orden alfabético', value: 'alphabetical' },
-    { label: 'En stock mínimo', value: 'minimum' }
-  ];
-  filteredItems = computed(() => {
-    const items = [...this.items()];
-
-    if (this.catalogFilter() === 'minimum') {
-      return items.filter((item) => this.isAtMinimum(item));
-    }
-
-    if (this.catalogFilter() === 'alphabetical') {
-      return items.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
-    }
-
-    return items;
-  });
   loading = signal(false);
   tenantId = 0;
+
+  /* ===== Filtro rápido: todos / alfabético / solo en stock mínimo ===== */
+  filtroOpciones = [
+    { label: 'Todos', value: 'todos', icon: 'pi pi-list' },
+    { label: 'Orden alfabético (A–Z)', value: 'alfabetico', icon: 'pi pi-sort-alpha-down' },
+    { label: 'Solo en stock mínimo', value: 'stockMinimo', icon: 'pi pi-exclamation-triangle' }
+  ];
+  filtroBodega: 'todos' | 'alfabetico' | 'stockMinimo' = 'todos';
+
+  /* Lista ya filtrada/ordenada (la consume la tabla) */
+  itemsFiltrados = computed<BodegaItem[]>(() => {
+    const base = this.items();
+    const f = this.filtroBodega;
+    if (f === 'alfabetico') {
+      return [...base].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+    }
+    if (f === 'stockMinimo') {
+      return base.filter((i) => this.enStockMinimo(i));
+    }
+    return base;
+  });
+
+  /* ¿Llegó (o bajó de) su stock mínimo? → requiere restock inmediato */
+  enStockMinimo(item: BodegaItem): boolean {
+    const min = item.stockMinimo ?? 0;
+    return min > 0 && (item.stockBodega ?? 0) <= min;
+  }
 
   // Alta de insumo en bodega
   createVisible = false;
@@ -103,7 +111,8 @@ export class BodegaComponent implements OnInit {
     private inventoryService: InventoryService,
     private stockRequestService: StockRequestService,
     private authService: AuthService,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private confirmationService: ConfirmationService
   ) {}
 
   ngOnInit() {
@@ -234,10 +243,6 @@ export class BodegaComponent implements OnInit {
     return (item.stockCocina ?? 0) + (item.stockBarra ?? 0);
   }
 
-  isAtMinimum(item: BodegaItem): boolean {
-    return (item.stockBodega ?? 0) < (item.stockMinimo ?? 0);
-  }
-
   /* ============ Alta de insumo en bodega ============ */
 
   openCreate() {
@@ -335,6 +340,42 @@ export class BodegaComponent implements OnInit {
         this.load();
       },
       error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo mover el stock' })
+    });
+  }
+
+  /* ============ Eliminar insumo ============ */
+
+  deleteInsumo(item: BodegaItem) {
+    this.confirmationService.confirm({
+      message: `¿Está seguro de que desea eliminar el insumo "${item.nombre}"? Esta acción también lo removerá de recetas y bebidas asociadas.`,
+      header: 'Confirmar eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Eliminar',
+      rejectLabel: 'Cancelar',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.inventoryService.deleteInsumo(item.id).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Insumo eliminado',
+              detail: `"${item.nombre}" se eliminó correctamente`,
+              life: 3000
+            });
+            this.load();
+          },
+          error: (err) => {
+            console.error('Error al eliminar insumo:', err);
+            const msg = err?.error?.message || 'No se pudo eliminar el insumo';
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: msg,
+              life: 3000
+            });
+          }
+        });
+      }
     });
   }
 }

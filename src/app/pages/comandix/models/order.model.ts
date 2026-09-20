@@ -7,10 +7,19 @@ export interface OrderItem {
   cantidad: number;
   precioUnitario: number;
   comentarios?: string;
+  asientoId?: string | number;
+  asientoAlias?: string;
   /** Ingredientes modificables que el cliente pidió quitar (no se descuentan) */
   excludedIngredientIds?: number[];
   /** Insumos adicionales seleccionados por el cliente (se descuentan) */
   additionalIngredientIds?: number[];
+}
+
+export interface ComandaAsiento {
+  id: string;
+  numero: number;
+  alias: string;
+  estado?: 'ACTIVO' | 'PAGADO';
 }
 
 export type OrderStatus =
@@ -54,8 +63,6 @@ export interface RecordPaymentResponse {
 
 export interface TenantClientOrderCreateRequest {
   customerId?: number | null;
-  /** Identificador del cliente asociado a la comanda (opcional, null si no aplica) */
-  idCliente?: number | null;
   tenantId: number;
   items: OrderItem[];
   subtotal: number;
@@ -65,32 +72,21 @@ export interface TenantClientOrderCreateRequest {
   redeemedBy?: number | null;
   redemptionChannel?: string | null;
   source?: string;
-  /** Mesa seleccionada para la comanda (obligatoria en POS) */
-  idMesa?: number | null;
-  /** Mesero autenticado que abre la comanda (obligatorio en POS) */
-  idMesero?: number | null;
-  /** Timestamp ISO de apertura de la comanda */
-  horaApertura?: string | null;
 }
 
 export interface TenantClientOrderUpdateRequest {
   customerId?: number | null;
-  idCliente?: number | null;
   tenantId: number;
   items: OrderItem[];
   subtotal: number;
   descuento: number;
   totalFinal: number;
   couponCode?: string | null;
-  idMesa?: number | null;
-  idMesero?: number | null;
-  horaApertura?: string | null;
 }
 
 export interface TenantClientOrderResponse {
   id: number;
   customerId?: number | null;
-  idCliente?: number | null;
   tenantId: number;
   items: OrderItem[];
   subtotal: number;
@@ -98,9 +94,6 @@ export interface TenantClientOrderResponse {
   totalFinal: number;
   fechaCreacion: string;
   estado: string;
-  idMesa?: number | null;
-  idMesero?: number | null;
-  horaApertura?: string | null;
 }
 
 // ==================== DASHBOARD DE ÓRDENES PENDIENTES ====================
@@ -113,6 +106,8 @@ export interface PendingOrderItem {
   precioUnitario: number;
   precio?: number;
   comentarios?: string;
+  asientoId?: string | number;
+  asientoAlias?: string;
   excludedIngredientIds?: number[];
   additionalIngredientIds?: number[];
 }
@@ -122,7 +117,6 @@ export interface PendingOrder {
   tenantId: number;
   estado: OrderStatus | string;
   customerId?: number | null;
-  idCliente?: number | null;
   customerName?: string | null;
   nombre?: string | null;
   items?: PendingOrderItem[];
@@ -132,10 +126,28 @@ export interface PendingOrder {
   couponCode?: string | null;
   coupon_id?: string | null;
   fechaCreacion?: string;
-  idMesa?: number | null;
-  idMesero?: number | null;
-  horaApertura?: string | null;
+  horaApertura?: string;
+  horaCierre?: string | null;
+  mesaId?: number;
+  mesaNombre?: string;
+  mesaNumero?: number;
+  meseroNombre?: string;
+  subcomandas?: string[];
   payment?: PaymentInfo;
+}
+
+export interface ReporteVentaRow {
+  id_comanda: string;
+  folio_comanda: string;
+  hora_apertura: string;
+  hora_cierre: string | null;
+  mesa_nombre: string;
+  mesa_numero?: number;
+  mesero_nombre: string;
+  cliente_nombre: string;
+  total_pagado: number;
+  estado_comanda: string;
+  subcomandas?: string[];
 }
 
 export interface OrderListData {
@@ -194,3 +206,88 @@ export interface TipInfo {
   /** Propina como monto fijo (modo "Otro") */
   amount?: number | null;
 }
+
+// ==================== ASIENTOS (comanda por personas) ====================
+
+export interface OrderSeat {
+  id: string;
+  orderId?: string | null;
+  /** Alias editable por el mesero (p. ej. "Hombre gorra azul") */
+  alias?: string | null;
+  /** Número de asiento (1, 2, 3...) */
+  numero?: number | null;
+  /** Método con el que se liquidó su parte (si ya se cobró) */
+  settleMethod?: PaymentMethod | null;
+  settledAt?: string | null;
+  createdAt?: string;
+}
+
+export interface SeatListResponse {
+  code: number;
+  message: string;
+  object?: OrderSeat[];
+}
+
+export interface AddSeatRequest {
+  orderId?: string;
+  alias?: string | null;
+  numero?: number | null;
+}
+
+export interface AddSeatResponse {
+  code: number;
+  message: string;
+  object?: OrderSeat;
+}
+
+export interface UpdateSeatAliasRequest {
+  alias: string;
+}
+
+export interface UpdateSeatAliasResponse {
+  code: number;
+  message: string;
+  object?: OrderSeat;
+}
+
+export interface AssignItemToSeatRequest {
+  seatId: string;
+  /** Ids de los artículos que se asignan al asiento (ids de ítem u orderItem ids) */
+  itemIds?: (string | number)[];
+}
+
+export interface AssignItemToSeatResponse {
+  code: number;
+  message: string;
+  object?: OrderSeat;
+}
+
+export interface SettleSeatsRequest {
+  seatIds: string[];
+  method: PaymentMethod;
+  reference?: string | null;
+  userEmail?: string;
+}
+
+export interface SettleSeatsResponse {
+  code: number;
+  message: string;
+  object?: {
+    derivedFolios?: Record<string, string>;
+  } | null;
+}
+
+/**
+ * Fila del reporte general de ventas/comandas (JOIN client_order + mesa + app_user + customer).
+ * Coincide 1:1 con SalesReportRowDTO del backend.
+ */
+export interface SalesReportRow {
+  folio: string;
+  horarioApertura: string;
+  horarioCierre: string;
+  mesa: string;
+  mesero: string;
+  totalPagado: number;
+  cliente: string | null;
+}
+

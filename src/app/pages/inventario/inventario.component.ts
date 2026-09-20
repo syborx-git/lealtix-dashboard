@@ -5,13 +5,14 @@ import { FormsModule } from '@angular/forms';
 import { Table, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
 import { TooltipModule } from 'primeng/tooltip';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { SelectModule } from 'primeng/select';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { MessageModule } from 'primeng/message';
 import { InventoryService } from './service/inventory.service';
@@ -50,6 +51,7 @@ type TabKey = 'products' | 'insumos' | 'bebidas' | 'insumos-bebida';
     TableModule,
     ButtonModule,
     DialogModule,
+    ConfirmDialogModule,
     InputNumberModule,
     InputTextModule,
     TooltipModule,
@@ -59,7 +61,7 @@ type TabKey = 'products' | 'insumos' | 'bebidas' | 'insumos-bebida';
     ToastModule,
     MessageModule
   ],
-  providers: [MessageService],
+  providers: [MessageService, ConfirmationService],
   templateUrl: './inventario.component.html',
   styleUrls: ['./inventario.component.scss']
 })
@@ -109,6 +111,7 @@ export class InventarioComponent implements OnInit {
     private stockRequestService: StockRequestService,
     private authService: AuthService,
     private messageService: MessageService,
+    private confirmationService: ConfirmationService,
     private route: ActivatedRoute
   ) {}
 
@@ -251,7 +254,7 @@ export class InventarioComponent implements OnInit {
       case 'products':
         return 3;
       case 'bebidas':
-        return 4;
+        return 5;
       default:
         return 5;
     }
@@ -396,5 +399,77 @@ export class InventarioComponent implements OnInit {
 
   hiddenCategoryCount(row: any): number {
     return Math.max(0, this.rowCategories(row).length - 3);
+  }
+
+  deleteInsumo(row: any) {
+    if (!row || !row.id) return;
+    this.confirmationService.confirm({
+      message: `¿Está seguro de que desea eliminar el insumo "${row.nombre}"?`,
+      header: 'Confirmar eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Eliminar',
+      rejectLabel: 'Cancelar',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.inventoryService.deleteInsumo(row.id).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Insumo eliminado',
+              detail: `"${row.nombre}" se eliminó correctamente`,
+              life: 3000
+            });
+            this.loadInsumos();
+            this.load();
+          },
+          error: (err) => {
+            console.error('Error al eliminar insumo:', err);
+            const msg = err?.error?.message || 'No se pudo eliminar el insumo';
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: msg,
+              life: 3000
+            });
+          }
+        });
+      }
+    });
+  }
+
+  deleteBebida(row: any) {
+    if (!row || !row.id) return;
+    this.confirmationService.confirm({
+      message: `¿Está seguro de que desea eliminar la bebida "${row.nombre}"?`,
+      header: 'Confirmar eliminación',
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Eliminar',
+      rejectLabel: 'Cancelar',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.inventoryService.deleteBebida(row.id).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Bebida eliminada',
+              detail: `"${row.nombre}" se eliminó correctamente`,
+              life: 3000
+            });
+            this.loadBebidas();
+            this.load();
+          },
+          error: (err) => {
+            console.error('Error al eliminar bebida:', err);
+            const msg = err?.error?.message || 'No se pudo eliminar la bebida';
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error',
+              detail: msg,
+              life: 3000
+            });
+          }
+        });
+      }
+    });
   }
 }

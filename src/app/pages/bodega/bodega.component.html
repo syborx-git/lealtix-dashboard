@@ -31,7 +31,7 @@
   <div class="catalog-panel surface-card border-round-lg p-3">
     <p-table
       #dt
-      [value]="filteredItems()"
+      [value]="itemsFiltrados()"
       [loading]="loading()"
       styleClass="p-datatable-sm catalog-table"
       [paginator]="true"
@@ -48,19 +48,14 @@
       <ng-template pTemplate="caption">
         <div class="table-header-bar">
           <div class="table-title">
-            <h5>{{ filteredItems().length }} insumos registrados</h5>
+            <h5>{{ itemsFiltrados().length }} insumos registrados</h5>
             <span class="table-title-sub">Total del almacén central</span>
           </div>
-          <div class="table-filters">
-            <p-select
-              [options]="catalogFilterOptions"
-              [ngModel]="catalogFilter()"
-              (ngModelChange)="catalogFilter.set($event)"
-              optionLabel="label"
-              optionValue="value"
-              ariaLabel="Filtrar insumos"
-              styleClass="catalog-filter"
-            ></p-select>
+          <div class="table-tools">
+            <!-- Filtro desplegable (a la izquierda del buscador) -->
+            <select class="table-filter-select" [(ngModel)]="filtroBodega" aria-label="Filtrar insumos">
+              <option *ngFor="let op of filtroOpciones" [ngValue]="op.value">{{ op.label }}</option>
+            </select>
             <input pInputText type="text" placeholder="Buscar insumo..." (input)="onGlobalFilter(dt, $event)" />
           </div>
         </div>
@@ -108,18 +103,7 @@
             </span>
           </td>
           <td class="col-num" style="width: 12%">
-            <span class="stock-value" [class.stock-value-alert]="isAtMinimum(item)">
-              <span class="num-bodega">{{ item.stockBodega ?? 0 }}</span>
-              <span
-                *ngIf="isAtMinimum(item)"
-                class="stock-alert"
-                title="Stock mínimo alcanzado: se requiere restock inmediato"
-                aria-label="Stock mínimo alcanzado: se requiere restock inmediato"
-              >
-                <i class="pi pi-exclamation-triangle"></i>
-                Restock inmediato
-              </span>
-            </span>
+            <span class="num-bodega">{{ item.stockBodega ?? 0 }}</span>
           </td>
           <td class="col-num" style="width: 10%">
             <span class="num-plain">{{ item.stockMinimo ?? 0 }}</span>
@@ -146,6 +130,16 @@
                 pTooltip="Mover stock de bodega a cocina o barra"
                 tooltipPosition="top"
                 (click)="openMove(item)"
+              ></button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-trash"
+                severity="danger"
+                class="p-button-sm p-button-danger p-button-outlined btn-delete"
+                pTooltip="Eliminar insumo"
+                tooltipPosition="top"
+                (click)="deleteInsumo(item)"
               ></button>
             </div>
           </td>
@@ -460,4 +454,6 @@
       </div>
     </ng-template>
   </p-dialog>
+
+  <p-confirmdialog [style]="{ width: '450px' }" />
 </div>

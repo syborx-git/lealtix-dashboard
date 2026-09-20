@@ -1,6 +1,7 @@
-import { Component, OnInit, OnDestroy, signal, computed, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { Subject, firstValueFrom } from 'rxjs';
 import { finalize, takeUntil } from 'rxjs/operators';
 
@@ -23,6 +24,7 @@ import { DataViewModule } from 'primeng/dataview';
 import { SkeletonModule } from 'primeng/skeleton';
 import { CheckboxModule } from 'primeng/checkbox';
 import { TooltipModule } from 'primeng/tooltip';
+import { TableModule } from 'primeng/table';
 
 // Servicios
 import { MenuService } from './services/menu.service';
@@ -35,7 +37,6 @@ import { AuthService } from '@/auth/auth.service';
 import { ProductService } from '@/pages/products-menu/service/product.service';
 import { InventoryService } from '@/pages/inventario/service/inventory.service';
 import { MesaService } from '@/pages/hostess/services/mesa.service';
-import { MesaDTO } from '@/pages/hostess/models/mesa.model';
 import { environment } from '@/pages/commons/environment';
 
 // Componentes
@@ -46,6 +47,7 @@ import { SplitOrderModalComponent } from './components/split-order-modal/split-o
 
 // Modelos
 import { MenuCategory, Product, IngredientOption } from './models/menu.model';
+import { MesaDTO } from '@/pages/hostess/models/mesa.model';
 import {
   OrderItem,
   TenantClientOrderCreateRequest,
@@ -54,7 +56,9 @@ import {
   PendingOrderItem,
   OrderStatus,
   PaymentMethod,
-  TipInfo
+  TipInfo,
+  ComandaAsiento,
+  ReporteVentaRow
 } from './models/order.model';
 import { Cliente, GENERO_OPTIONS, CreateClienteRequest } from '@/models/cliente.model';
 import { RedemptionRequest, RedemptionChannel } from '@/pages/redeem/models/redemption-request.model';
@@ -67,6 +71,8 @@ interface CartItem {
   excludedIngredientIds?: number[];
   additionalIngredientIds?: number[];
   configKey?: string;
+  asientoId?: string;
+  asientoAlias?: string;
 }
 
 interface StockInfo {
@@ -100,6 +106,7 @@ interface StockInfo {
     SkeletonModule,
     CheckboxModule,
     TooltipModule,
+    TableModule,
     ClienteDialogComponent,
     CloseOrderModalComponent,
     RegistrarMermaModalComponent,
@@ -110,6 +117,8 @@ interface StockInfo {
   styleUrls: ['./comandix.component.scss']
 })
 export class ComandixComponent implements OnInit, OnDestroy {
+  private route = inject(ActivatedRoute);
+
   // ==================== SIGNALS POS (existente) ====================
   categories = signal<MenuCategory[]>([]);
 
@@ -174,14 +183,6 @@ export class ComandixComponent implements OnInit, OnDestroy {
   selectedCliente: Cliente | null = null;
   filteredClientes: Cliente[] = [];
 
-  // ==================== TRAZABILIDAD DE COMANDA (mesa / mesero / apertura) ====================
-  /** Mesas del tenant disponibles para el selector de mesa */
-  mesas = signal<MesaDTO[]>([]);
-  /** Mesa seleccionada para la comanda en curso */
-  selectedTable: MesaDTO | null = null;
-  /** Timestamp ISO de apertura de la comanda (se define al abrir/limpiar la comanda) */
-  horaAperturaComanda = signal<string>(new Date().toISOString());
-
   // Descuento por cupón
   codigoCupon = '';
   descuentoAplicado = signal<number>(0);
@@ -227,7 +228,7 @@ configAdditionalIds = new Set<number>();
 configEditingItem: CartItem | null = null;
 
   // ==================== SIGNALS DASHBOARD DE ÓRDENES (nuevo) ====================
-  activeView = signal<'pos' | 'orders'>('pos');
+  activeView = signal<'pos' | 'orders' | 'report'>('pos');
   ordersView = signal<'active' | 'closed' | 'cancelled'>('active');
   pendingOrders = signal<PendingOrder[]>([]);
   loadingOrders = signal<boolean>(false);
@@ -253,6 +254,26 @@ configEditingItem: CartItem | null = null;
   selectedOrderForSplit = signal<PendingOrder | null>(null);
   // Propina de cierre que se mantiene al dividir comandas
   splitOrderTip = signal<TipInfo | null>(null);
+
+  // ==================== ASIENTOS / PERSONAS (Seat Management) ====================
+  asientos = signal<ComandaAsiento[]>([
+    { id: 'seat-1', numero: 1, alias: 'Persona 1', estado: 'ACTIVO' }
+  ]);
+  asientoActivoId = signal<string>('seat-1');
+  asientoActivo = computed(() => {
+    return this.asientos().find((a) => a.id === this.asientoActivoId()) ?? this.asientos()[0];
+  });
+  showEditAliasDialog = signal<boolean>(false);
+  editingAsiento = signal<ComandaAsiento | null>(null);
+  tempAliasInput: string = '';
+
+  // ==================== TRAZABILIDAD (Mesa y Mesero) ====================
+  mesas = signal<MesaDTO[]>([]);
+  selectedMesa = signal<MesaDTO | null>(null);
+
+  // ==================== REPORTE GENERAL DE VENTAS / COMANDAS ====================
+  reporteFiltroFecha = signal<'hoy' | 'semana' | 'todos'>('hoy');
+  reporteFiltroBusqueda = signal<string>('');
 
   // Computed: Órdenes activas (excluyendo PAGADA y CANCELADA)
   activeOrders = computed(() => {
@@ -315,6 +336,81 @@ configEditingItem: CartItem | null = null;
   closedOrdersCount = computed(() => this.closedOrders().length);
   cancelledOrdersCount = computed(() => this.cancelledOrders().length);
 
+  reporteComandas = computed<ReporteVentaRow[]>(() => {
+    const orders = this.pendingOrders();
+    const filtroFecha = this.reporteFiltroFecha();
+    const busqueda = (this.reporteFiltroBusqueda() || '').toLowerCase().trim();
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    const semanaAtras = new Date(hoy);
+    semanaAtras.setDate(semanaAtras.getDate() - 7);
+
+    return orders
+      .filter((o) => {
+        if (filtroFecha === 'hoy') {
+          const f = o.horaApertura || o.fechaCreacion;
+          if (!f) return true;
+          const d = new Date(f);
+          d.setHours(0, 0, 0, 0);
+          return d.getTime() === hoy.getTime();
+        } else if (filtroFecha === 'semana') {
+          const f = o.horaApertura || o.fechaCreacion;
+          if (!f) return true;
+          const d = new Date(f);
+          return d >= semanaAtras;
+        }
+        return true;
+      })
+      .map((o) => {
+        const clienteNombre = o.customerName || o.nombre || (o.customerId ? `Cliente #${o.customerId}` : 'Cliente no registrado');
+        const mesaLabel = o.mesaNombre ? `${o.mesaNombre}${o.mesaNumero ? ' (M-' + o.mesaNumero + ')' : ''}` : 'Mesa General';
+        const meseroLabel = o.meseroNombre || (o.payment?.paidBy ? String(o.payment.paidBy) : 'Mesero General');
+        const horaApertura = o.horaApertura || o.fechaCreacion || new Date().toISOString();
+        const horaCierre = o.horaCierre || (o.payment?.paidAt ? o.payment.paidAt : null);
+        const totalPagado = o.totalFinal ?? o.subtotal ?? 0;
+
+        return {
+          id_comanda: o.id,
+          folio_comanda: o.id.length > 8 ? o.id.slice(0, 8).toUpperCase() : o.id,
+          hora_apertura: horaApertura,
+          hora_cierre: horaCierre,
+          mesa_nombre: mesaLabel,
+          mesa_numero: o.mesaNumero,
+          mesero_nombre: meseroLabel,
+          cliente_nombre: clienteNombre,
+          total_pagado: totalPagado,
+          estado_comanda: o.estado,
+          subcomandas: o.subcomandas
+        };
+      })
+      .filter((row) => {
+        if (!busqueda) return true;
+        return (
+          row.folio_comanda.toLowerCase().includes(busqueda) ||
+          row.cliente_nombre.toLowerCase().includes(busqueda) ||
+          row.mesero_nombre.toLowerCase().includes(busqueda) ||
+          row.mesa_nombre.toLowerCase().includes(busqueda)
+        );
+      });
+  });
+
+  reporteTotalVendido = computed(() => {
+    return this.reporteComandas()
+      .filter((r) => r.estado_comanda === 'PAGADA')
+      .reduce((sum, r) => sum + r.total_pagado, 0);
+  });
+
+  reporteTotalComandas = computed(() => {
+    return this.reporteComandas().length;
+  });
+
+  reporteTicketPromedio = computed(() => {
+    const pagadas = this.reporteComandas().filter((r) => r.estado_comanda === 'PAGADA');
+    return pagadas.length > 0 ? this.reporteTotalVendido() / pagadas.length : 0;
+  });
+
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
   private editCountdownTimer: ReturnType<typeof setInterval> | null = null;
   private knownOrderIds = new Set<string>();
@@ -349,6 +445,11 @@ configEditingItem: CartItem | null = null;
   }
 
   async ngOnInit(): Promise<void> {
+    const initialView = this.route.snapshot.data['initialView'] || this.route.snapshot.queryParams['view'];
+    if (initialView === 'report' || window.location.pathname.includes('reportes/ventas')) {
+      this.switchView('report');
+    }
+
     this.restoreCartDraft();
     this.startEditCountdown();
     await this.initializeTenant();
@@ -380,7 +481,7 @@ configEditingItem: CartItem | null = null;
 
   // ==================== VISTA ACTIVA ====================
 
-  switchView(view: 'pos' | 'orders'): void {
+  switchView(view: 'pos' | 'orders' | 'report'): void {
     this.activeView.set(view);
     if (view === 'orders') {
       this.ordersView.set('active');
@@ -390,6 +491,107 @@ configEditingItem: CartItem | null = null;
   switchOrdersView(view: 'active' | 'closed' | 'cancelled'): void {
     this.activeView.set('orders');
     this.ordersView.set(view);
+  }
+
+  // ==================== GESTIÓN DE ASIENTOS / PERSONAS ====================
+
+  agregarAsiento(): void {
+    const list = this.asientos();
+    const nextNum = list.length + 1;
+    const nuevoAsiento: ComandaAsiento = {
+      id: `seat-${Date.now()}-${nextNum}`,
+      numero: nextNum,
+      alias: `Persona ${nextNum}`,
+      estado: 'ACTIVO'
+    };
+    this.asientos.update((items) => [...items, nuevoAsiento]);
+    this.asientoActivoId.set(nuevoAsiento.id);
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Comensal agregado',
+      detail: `Ahora tomando orden para ${nuevoAsiento.alias}`,
+      life: 2000
+    });
+  }
+
+  seleccionarAsiento(id: string): void {
+    this.asientoActivoId.set(id);
+  }
+
+  abrirEditarAlias(asiento: ComandaAsiento, event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.editingAsiento.set(asiento);
+    this.tempAliasInput = asiento.alias;
+    this.showEditAliasDialog.set(true);
+  }
+
+  guardarAlias(): void {
+    const target = this.editingAsiento();
+    if (target && this.tempAliasInput.trim()) {
+      const nuevoAlias = this.tempAliasInput.trim();
+      this.asientos.update((list) =>
+        list.map((a) => (a.id === target.id ? { ...a, alias: nuevoAlias } : a))
+      );
+      this.cart.update((items) =>
+        items.map((i) => (i.asientoId === target.id ? { ...i, asientoAlias: nuevoAlias } : i))
+      );
+      this.showEditAliasDialog.set(false);
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Alias guardado',
+        detail: `Comensal renombrado a "${nuevoAlias}"`,
+        life: 2000
+      });
+    }
+  }
+
+  countItemsPorAsiento(asientoId: string): number {
+    return this.cart()
+      .filter((i) => i.asientoId === asientoId)
+      .reduce((sum, i) => sum + i.cantidad, 0);
+  }
+
+  totalPorAsiento(asientoId: string): number {
+    return this.cart()
+      .filter((i) => i.asientoId === asientoId)
+      .reduce((sum, i) => sum + (this.getCartItemUnitPrice(i) * i.cantidad), 0);
+  }
+
+  // ==================== CARGA DE MESAS ====================
+
+  private loadMesas(): void {
+    if (this.tenantId <= 0) return;
+    this.mesaService.getMesas(this.tenantId).subscribe({
+      next: (mesas) => {
+        if (mesas && mesas.length > 0) {
+          this.mesas.set(mesas);
+          if (!this.selectedMesa()) {
+            this.selectedMesa.set(mesas[0]);
+          }
+        } else {
+          const defaultMesas: MesaDTO[] = [
+            { id: 1, tenantId: this.tenantId, nombre: 'Mesa 1', numero: 1, capacidad: 4, estado: 'LIBRE' },
+            { id: 2, tenantId: this.tenantId, nombre: 'Mesa 2', numero: 2, capacidad: 4, estado: 'LIBRE' },
+            { id: 3, tenantId: this.tenantId, nombre: 'Mesa 3', numero: 3, capacidad: 4, estado: 'LIBRE' },
+            { id: 4, tenantId: this.tenantId, nombre: 'Barra', numero: 4, capacidad: 2, estado: 'LIBRE' }
+          ];
+          this.mesas.set(defaultMesas);
+          this.selectedMesa.set(defaultMesas[0]);
+        }
+      },
+      error: () => {
+        const defaultMesas: MesaDTO[] = [
+          { id: 1, tenantId: this.tenantId, nombre: 'Mesa 1', numero: 1, capacidad: 4, estado: 'LIBRE' },
+          { id: 2, tenantId: this.tenantId, nombre: 'Mesa 2', numero: 2, capacidad: 4, estado: 'LIBRE' },
+          { id: 3, tenantId: this.tenantId, nombre: 'Mesa 3', numero: 3, capacidad: 4, estado: 'LIBRE' },
+          { id: 4, tenantId: this.tenantId, nombre: 'Barra', numero: 4, capacidad: 2, estado: 'LIBRE' }
+        ];
+        this.mesas.set(defaultMesas);
+        this.selectedMesa.set(defaultMesas[0]);
+      }
+    });
   }
 
   // ==================== POLLING DE ÓRDENES PENDIENTES ====================
@@ -486,24 +688,53 @@ configEditingItem: CartItem | null = null;
   }
 
   private mapBackendOrder(order: any): PendingOrder {
+    const mesaId = order.idMesa ?? order.mesaId;
+    const mesaObj = this.mesas().find(m => m.id === mesaId);
+    const mesaNombre = order.mesaNombre ?? (mesaObj ? mesaObj.nombre : (mesaId ? `Mesa #${mesaId}` : undefined));
+    const mesaNumero = order.mesaNumero ?? (mesaObj ? mesaObj.numero : undefined);
+    const meseroNombre = order.meseroNombre ?? (order.idMesero ? `Mesero #${order.idMesero}` : undefined);
+    const horaApertura = order.horaApertura ?? order.fecha ?? order.createdAt;
+    const horaCierre = order.horaCierre ?? order.paidAt;
+
+    const items = (order.items ?? []).map((it: any) => {
+      let alias = it.asientoAlias;
+      let comentarios = it.comentarios;
+      if (!alias && comentarios && comentarios.startsWith('[')) {
+        const m = comentarios.match(/^\[(.*?)\]\s*(.*)$/);
+        if (m) {
+          alias = m[1];
+          comentarios = m[2];
+        }
+      }
+      return {
+        ...it,
+        comentarios,
+        asientoId: it.idAsiento ?? it.asientoId,
+        asientoAlias: alias
+      };
+    });
+
     return {
       id: order.id,
       tenantId: order.tenantId,
       estado: this.normalizeOrderStatus(order.estado),
       customerId: order.customerId ?? null,
-      idCliente: order.idCliente ?? order.customerId ?? null,
       customerName: order.customerName ?? null,
       nombre: order.customerName ?? null,
-      idMesa: order.idMesa ?? null,
-      idMesero: order.idMesero ?? null,
-      horaApertura: order.horaApertura ?? order.fechaApertura ?? null,
-      items: order.items ?? [],
+      items,
       subtotal: order.subtotal ?? 0,
       descuento: order.descuento ?? 0,
       totalFinal: order.total ?? order.totalFinal ?? 0,
       couponCode: order.couponCode ?? null,
       coupon_id: order.couponId ?? null,
       fechaCreacion: order.fecha ?? order.createdAt,
+      mesaId,
+      mesaNombre,
+      mesaNumero,
+      meseroNombre,
+      horaApertura,
+      horaCierre,
+      subcomandas: order.subcomandas ?? [],
       payment: {
         method: order.paymentMethod,
         reference: order.paymentReference ?? null,
@@ -785,8 +1016,6 @@ configEditingItem: CartItem | null = null;
     const latestOrder = this.pendingOrders().find((existingOrder) => existingOrder.id === order.id) ?? order;
 
     this.selectedCliente = this.resolveClienteFromOrder(latestOrder);
-    this.selectedTable = this.mesas().find((mesa) => mesa.id === Number(latestOrder.idMesa)) ?? null;
-    this.horaAperturaComanda.set(latestOrder.horaApertura || new Date().toISOString());
     this.codigoCupon = latestOrder.couponCode ?? '';
     this.descuentoAplicado.set(Number(latestOrder.descuento ?? 0));
     this.cart.set(this.buildCartFromPendingOrder(latestOrder));
@@ -1311,43 +1540,6 @@ configEditingItem: CartItem | null = null;
       });
   }
 
-  // ==================== TRAZABILIDAD DE COMANDA: MESAS / MESERO / APERTURA ====================
-
-  private loadMesas(): void {
-    this.mesaService
-      .getMesas(this.tenantId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (mesas) => this.mesas.set(Array.isArray(mesas) ? mesas : []),
-        error: (error) => {
-          console.warn('[Comandix] No se pudieron cargar las mesas, se trabajará sin selector de mesa:', error);
-          this.mesas.set([]);
-        }
-      });
-  }
-
-  /** Nombre legible del mesero autenticado */
-  currentMeseroLabel(): string {
-    const user = this.authService.getCurrentUser();
-    return (
-      user?.nombre ||
-      user?.userName ||
-      user?.nombre_usuario ||
-      user?.email ||
-      'Mesero'
-    );
-  }
-
-  /** Id del mesero autenticado (se envía como idMesero de la comanda) */
-  currentMeseroId(): number | null {
-    return this.authService.getCurrentUser()?.id ?? null;
-  }
-
-  /** Actualiza la mesa seleccionada de la comanda en curso */
-  onTableChange(table: MesaDTO | null): void {
-    this.selectedTable = table ?? null;
-  }
-
   filterClientes(event: any): void {
     const query = event.query.toLowerCase();
     this.filteredClientes = this.clientes().filter((cliente) =>
@@ -1668,15 +1860,18 @@ const editingItem = this.configEditingItem;
   private appendToCart(product: Product, excludedIds: number[], additionalIds: number[], extraPrice: number): void {
     const unitPrice = (Number(product.price) || 0) + extraPrice;
     const configKey = JSON.stringify([[...excludedIds].sort((a, b) => a - b), [...additionalIds].sort((a, b) => a - b)]);
+    const currentSeat = this.asientoActivo();
+    const seatId = currentSeat.id;
+    const seatAlias = currentSeat.alias;
 
     const existingItem = this.cart().find(
-      (item) => item.product.id === product.id && item.configKey === configKey
+      (item) => item.product.id === product.id && item.configKey === configKey && item.asientoId === seatId
     );
 
     if (existingItem) {
       this.cart.update((items) =>
         items.map((item) =>
-          item.product.id === product.id && item.configKey === configKey
+          item.product.id === product.id && item.configKey === configKey && item.asientoId === seatId
             ? { ...item, cantidad: item.cantidad + 1, precioUnitario: unitPrice }
             : item
         )
@@ -1691,7 +1886,9 @@ const editingItem = this.configEditingItem;
           precioUnitario: unitPrice,
           excludedIngredientIds: excludedIds,
           additionalIngredientIds: additionalIds,
-          configKey
+          configKey,
+          asientoId: seatId,
+          asientoAlias: seatAlias
         }
       ]);
     }
@@ -1702,13 +1899,12 @@ const editingItem = this.configEditingItem;
       severity: 'success',
       summary: 'Producto añadido',
       detail: additionalIds.length > 0
-        ? `${product.name} añadido ($${unitPrice.toFixed(2)}, incluye adicionales)`
-        : `${product.name} añadido a la comanda ($${unitPrice.toFixed(2)})`,
+        ? `${product.name} añadido a ${seatAlias} ($${unitPrice.toFixed(2)}, incluye adicionales)`
+        : `${product.name} añadido a ${seatAlias} ($${unitPrice.toFixed(2)})`,
       life: 2500
     });
 
-// Forzar actualización de la vista del carrito.
-    console.log('[Comandix] Producto agregado, items en carrito:', this.cart().length, { product: product.name });
+    console.log('[Comandix] Producto agregado, items en carrito:', this.cart().length, { product: product.name, asiento: seatAlias });
     this.cdr.detectChanges();
   }
 
@@ -1741,7 +1937,7 @@ const editingItem = this.configEditingItem;
   }
 
   private cartItemKey(item: CartItem): string {
-    return `${item.product.id}::${item.configKey || ''}`;
+    return `${item.product.id}::${item.configKey || ''}::${item.asientoId || 'seat-1'}`;
   }
 
   getCartItemUnitPrice(item: CartItem): number {
@@ -1874,24 +2070,15 @@ trackByProductId = (index: number, item: CartItem): string => {
       return;
     }
 
-    // Trazabilidad: la mesa es obligatoria cuando el negocio tiene mesas registradas
-    if (this.mesas().length > 0 && !this.selectedTable) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Mesa requerida',
-        detail: 'Selecciona la mesa de la comanda para continuar',
-        life: 3000
-      });
-      return;
-    }
-
     this.processingOrder.set(true);
     try {
       const orderItems: OrderItem[] = this.cart().map((item) => ({
         productId: item.product.id,
         cantidad: item.cantidad,
         precioUnitario: this.getCartItemUnitPrice(item),
-        comentarios: item.comentarios || undefined,
+        comentarios: item.asientoAlias ? `[${item.asientoAlias}] ${item.comentarios || ''}`.trim() : (item.comentarios || undefined),
+        asientoId: item.asientoId,
+        asientoAlias: item.asientoAlias,
         excludedIngredientIds: item.excludedIngredientIds?.length ? item.excludedIngredientIds : undefined,
         additionalIngredientIds: item.additionalIngredientIds?.length ? item.additionalIngredientIds : undefined
       }));
@@ -1911,16 +2098,12 @@ trackByProductId = (index: number, item: CartItem): string => {
 
         const updateRequest: TenantClientOrderUpdateRequest = {
           customerId: this.selectedCliente?.id ?? editingOrder.customerId ?? null,
-          idCliente: this.selectedCliente?.id ?? editingOrder.idCliente ?? editingOrder.customerId ?? null,
           tenantId: editingOrder.tenantId,
           items: orderItems,
           subtotal: this.subtotal(),
           descuento: this.descuentoAplicado(),
           totalFinal: this.totalFinal(),
-          couponCode: this.codigoCupon.trim() || null,
-          idMesa: this.selectedTable?.id ?? editingOrder.idMesa ?? null,
-          idMesero: this.currentMeseroId() ?? editingOrder.idMesero ?? null,
-          horaApertura: this.horaAperturaComanda() ?? editingOrder.horaApertura ?? null
+          couponCode: this.codigoCupon.trim() || null
         };
 
         await firstValueFrom(this.orderService.updateOrder(editingOrder.id, updateRequest));
@@ -1928,18 +2111,18 @@ trackByProductId = (index: number, item: CartItem): string => {
         const updatedOrder: PendingOrder = {
           ...editingOrder,
           customerId: this.selectedCliente?.id ?? editingOrder.customerId ?? null,
-          idCliente: this.selectedCliente?.id ?? editingOrder.idCliente ?? null,
-          idMesa: this.selectedTable?.id ?? editingOrder.idMesa ?? null,
-          idMesero: this.currentMeseroId() ?? editingOrder.idMesero ?? null,
-          horaApertura: this.horaAperturaComanda() ?? editingOrder.horaApertura ?? null,
           customerName: this.selectedCliente?.nombreCompleto ?? editingOrder.customerName ?? editingOrder.nombre ?? null,
           nombre: this.selectedCliente?.nombreCompleto ?? editingOrder.nombre ?? editingOrder.customerName ?? null,
+          mesaNombre: this.selectedMesa()?.nombre ?? editingOrder.mesaNombre ?? 'Mesa General',
+          mesaNumero: this.selectedMesa()?.numero ?? editingOrder.mesaNumero,
           items: this.cart().map((item) => ({
             productId: item.product.id,
             productName: item.product.name,
             cantidad: item.cantidad,
             precioUnitario: this.getCartItemUnitPrice(item),
             comentarios: item.comentarios || undefined,
+            asientoId: item.asientoId,
+            asientoAlias: item.asientoAlias,
             excludedIngredientIds: item.excludedIngredientIds?.length ? item.excludedIngredientIds : undefined,
             additionalIngredientIds: item.additionalIngredientIds?.length ? item.additionalIngredientIds : undefined
           })),
@@ -1964,7 +2147,6 @@ trackByProductId = (index: number, item: CartItem): string => {
 
       const orderRequest: TenantClientOrderCreateRequest = {
         customerId: this.selectedCliente?.id ?? null,
-        idCliente: this.selectedCliente?.id ?? null,
         tenantId: this.tenantId,
         items: orderItems,
         subtotal: this.subtotal(),
@@ -1973,10 +2155,7 @@ trackByProductId = (index: number, item: CartItem): string => {
         couponCode: this.codigoCupon.trim() || null,
         redeemedBy: this.selectedCliente?.id ?? null,
         redemptionChannel: 'COMANDIX',
-        source: 'POS',
-        idMesa: this.selectedTable?.id ?? null,
-        idMesero: this.currentMeseroId(),
-        horaApertura: this.horaAperturaComanda() || new Date().toISOString()
+        source: 'POS'
       };
 
       const response = await firstValueFrom(this.orderService.createOrder(orderRequest));
@@ -1986,18 +2165,21 @@ trackByProductId = (index: number, item: CartItem): string => {
         tenantId: this.tenantId,
         estado: this.normalizeOrderStatus(response.estado),
         customerId: orderRequest.customerId ?? null,
-        idCliente: orderRequest.idCliente ?? null,
-        idMesa: orderRequest.idMesa ?? response.idMesa ?? null,
-        idMesero: orderRequest.idMesero ?? response.idMesero ?? null,
-        horaApertura: orderRequest.horaApertura ?? response.horaApertura ?? null,
         customerName: this.selectedCliente?.nombreCompleto ?? null,
         nombre: this.selectedCliente?.nombreCompleto ?? null,
+        mesaId: this.selectedMesa()?.id,
+        mesaNombre: this.selectedMesa()?.nombre ?? 'Mesa General',
+        mesaNumero: this.selectedMesa()?.numero,
+        meseroNombre: this.authService.getCurrentUser()?.nombre ?? this.authService.getCurrentUser()?.userName ?? this.authService.getCurrentUser()?.email ?? 'Mesero en Turno',
+        horaApertura: new Date().toISOString(),
         items: this.cart().map((item) => ({
           productId: item.product.id,
           productName: item.product.name,
           cantidad: item.cantidad,
           precioUnitario: this.getCartItemUnitPrice(item),
           comentarios: item.comentarios || undefined,
+          asientoId: item.asientoId,
+          asientoAlias: item.asientoAlias,
           excludedIngredientIds: item.excludedIngredientIds?.length ? item.excludedIngredientIds : undefined,
           additionalIngredientIds: item.additionalIngredientIds?.length ? item.additionalIngredientIds : undefined
         })),
@@ -2044,8 +2226,6 @@ trackByProductId = (index: number, item: CartItem): string => {
     this.codigoCupon = '';
     this.descuentoAplicado.set(0);
     this.editingPendingOrder.set(null);
-    this.selectedTable = null;
-    this.horaAperturaComanda.set(new Date().toISOString());
   }
 
   limpiarCarrito(): void {
@@ -2053,8 +2233,8 @@ trackByProductId = (index: number, item: CartItem): string => {
     this.clearCartDraft();
     this.descuentoAplicado.set(0);
     this.codigoCupon = '';
-    this.selectedTable = null;
-    this.horaAperturaComanda.set(new Date().toISOString());
+    this.asientos.set([{ id: 'seat-1', numero: 1, alias: 'Persona 1', estado: 'ACTIVO' }]);
+    this.asientoActivoId.set('seat-1');
   }
 
   private restoreCartDraft(): void {

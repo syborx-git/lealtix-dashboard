@@ -80,13 +80,6 @@
     }
   }
 
-  .table-filters {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    min-width: min(100%, 34rem);
-  }
-
   .p-inputtext {
     background: rgba(255, 255, 255, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.3);
@@ -94,8 +87,7 @@
     padding: 0.75rem 1rem;
     color: var(--lealtix-slate-900);
     font-size: 0.875rem;
-    min-width: 14rem;
-    flex: 1;
+    min-width: 16rem;
 
     &::placeholder {
       color: var(--lealtix-slate-400);
@@ -105,23 +97,6 @@
       outline: none;
       border-color: rgba(255, 255, 255, 0.8);
       box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15);
-    }
-  }
-
-  .catalog-filter {
-    min-width: 13rem;
-    color: var(--lealtix-slate-900);
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: var(--lealtix-radius-md);
-
-    .p-select-label {
-      padding: 0.75rem 0.9rem;
-      font-size: 0.875rem;
-    }
-
-    .p-select-dropdown {
-      color: var(--lealtix-slate-500);
     }
   }
 }
@@ -226,36 +201,6 @@
   font-size: 0.875rem;
   font-weight: 700;
   color: var(--lealtix-primary-700, #4338ca);
-}
-
-.stock-value {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-.stock-value-alert .num-bodega {
-  color: var(--red-600, #dc2626);
-}
-
-.stock-alert {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.2rem 0.45rem;
-  border: 1px solid var(--red-200, #fecaca);
-  border-radius: 999px;
-  background: var(--red-50, #fef2f2);
-  color: var(--red-700, #b91c1c);
-  font-size: 0.62rem;
-  font-weight: 700;
-  line-height: 1.1;
-  white-space: nowrap;
-
-  i {
-    font-size: 0.65rem;
-  }
 }
 
 /* === CHIPS DE CATEGORÍA (limpios y discretos) === */
