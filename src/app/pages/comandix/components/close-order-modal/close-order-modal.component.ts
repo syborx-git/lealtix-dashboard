@@ -194,7 +194,15 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
       }
 
       const paidAt = response?.object?.paidAt ?? new Date().toISOString();
+      const factura = this.facturaRequired;
+
       this.successMessage = 'Pago registrado exitosamente.';
+
+      // Generar la factura ANTES de emitir (el padre resetea el modal/form al recibir paymentRecorded)
+      if (factura) {
+        await this.generateFactura(this.order, method);
+      }
+
       this.paymentRecorded.emit({
         orderId: this.order.id,
         method,
@@ -202,13 +210,9 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
         paidAt
       });
 
-      if (this.facturaRequired) {
-        await this.generateFactura(this.order, method);
-      }
-
       this.closeTimer = setTimeout(() => {
         this.onClose();
-      }, this.facturaRequired ? 10000 : 1200);
+      }, factura ? 10000 : 1200);
     } catch (error: any) {
       this.errorMessage =
         error?.error?.message ||
