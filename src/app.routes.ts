@@ -35,6 +35,7 @@ import { ClienteListComponent } from '@/pages/clientes/components/cliente-list/c
 
 // Comandix component
 import { ComandixComponent } from '@/pages/comandix/comandix.component';
+import { FacturacionComponent } from '@/pages/facturacion/facturacion.component';
 import { KitchenComponent } from '@/pages/kitchen/kitchen.component';
 import { KitchenDashboardComponent } from '@/pages/kitchen/kitchen-dashboard.component';
 import { BarraComponent } from '@/pages/barra/barra.component';
@@ -101,6 +102,7 @@ export const appRoutes: Routes = [
                     // Admin Roles & Permissions
                     { path: 'admin/roles-permissions', component: AdminRolesPermissionsComponent, title: 'Administración de Roles y Permisos', canActivate: [PermissionGuard], data: { permission: 'manage_roles' } },
                     { path: 'comandix', component: ComandixComponent, title: 'Comandix - Comanda Inteligente', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'MESERO'], permission: 'create_order' } },
+                    { path: 'facturacion', component: FacturacionComponent, title: 'Facturación' },
                     { path: 'cocina-dashboard', component: KitchenDashboardComponent, title: 'Kitchndix - Dashboard Cocina', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'COCINA'], permission: 'dashboard_kitchen' } },
                     { path: 'cocina', component: KitchenComponent, title: 'Kitchndix - Cocina', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'COCINA'], permission: 'view_kitchen_orders' } },
                     { path: 'barra', component: BarraComponent, title: 'Kitchndix - Barra', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'COCINA'], permission: 'view_kitchen_orders' } },
