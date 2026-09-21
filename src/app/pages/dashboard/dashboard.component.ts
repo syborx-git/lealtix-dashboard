@@ -97,9 +97,114 @@ export class DashboardComponent implements OnInit {
   doughnutOptions = signal<any>(null);
   salesPeriodData = signal<any>(null);
   salesPeriodOptions = signal<any>(null);
+
+  // Config ProTend (estática de muestra para el gráfico principal)
+  proTendLineData: any = {
+    labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep'],
+    datasets: [
+      {
+        label: 'Ventas ($)',
+        data: [40, 68, 20, 88, 35, 80, 28, 92, 55],
+        borderColor: '#6366f1',
+        backgroundColor: 'rgba(99, 102, 241, 0.12)',
+        fill: true,
+        tension: 0.45,
+        pointBackgroundColor: '#6366f1',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6
+      },
+      {
+        label: 'Pedidos',
+        data: [10, 32, 48, 20, 55, 30, 20, 50, 25],
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245, 158, 11, 0.12)',
+        fill: true,
+        tension: 0.45,
+        pointBackgroundColor: '#f59e0b',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6
+      }
+    ]
+  };
+
+  proTendLineOptions: any = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top',
+        align: 'end',
+        labels: {
+          usePointStyle: true,
+          pointStyle: 'circle',
+          boxWidth: 8,
+          boxHeight: 8,
+          padding: 16,
+          font: { size: 12, weight: '600' }
+        }
+      }
+    },
+    scales: {
+      x: { grid: { display: false } },
+      y: { min: 0, max: 100, ticks: { stepSize: 20 } }
+    }
+  };
   topProductsList = signal<TopProductDTO[]>([]);
   topClientsData = signal<any>(null);
   topClientsOptions = signal<any>(null);
+
+  // Ingresos semanales (bar chart ProTend – barras dobles)
+  weeklyBalanceData: any = {
+    labels: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie'],
+    datasets: [
+      {
+        label: 'Completado',
+        data: [48, 68, 38, 88, 48, 68],
+        backgroundColor: '#10b981',
+        borderRadius: 8,
+        borderSkipped: false,
+        barPercentage: 0.6,
+        categoryPercentage: 0.5
+      },
+      {
+        label: 'En Proceso',
+        data: [78, 42, 55, 68, 72, 40],
+        backgroundColor: '#f59e0b',
+        borderRadius: 8,
+        borderSkipped: false,
+        barPercentage: 0.6,
+        categoryPercentage: 0.5
+      }
+    ]
+  };
+
+  weeklyBalanceOptions: any = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { enabled: true }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { font: { size: 11, weight: '600' }, color: '#9ca3af' }
+      },
+      y: {
+        display: true,
+        border: { display: false },
+        grid: { color: '#f3f4f6' },
+        ticks: { font: { size: 10, weight: '500' }, color: '#9ca3af', stepSize: 20 },
+        min: 0,
+        max: 100
+      }
+    }
+  };
   salesByCategoryData = signal<any>(null);
   salesByCategoryOptions = signal<any>(null);
   periodo = signal<string>('week');
@@ -534,6 +639,24 @@ export class DashboardComponent implements OnInit {
           { productName: 'Refresco', totalQuantity: 71, totalRevenue: 0 }
         ];
     this.topProductsList.set(list);
+  }
+
+  // Categoría aproximada para el top de productos (hasta que el BE la envíe)
+  catOf(p: any): string {
+    const map: Record<string, string> = {
+      chilaquiles: 'Desayunos',
+      enchiladas: 'Desayunos',
+      cappuccino: 'Bebidas Calientes',
+      refresco: 'Bebidas',
+      panini: 'Salados',
+      tacos: 'Comida',
+      quesadillas: 'Comida',
+      hamburguesa: 'Comida'
+    };
+    if (p?.categoryName) return p.categoryName;
+    const name = String(p?.productName || '').toLowerCase();
+    const hit = Object.keys(map).find((k) => name.includes(k));
+    return hit ? map[hit] : 'General';
   }
 
   private buildTopClientsChart(customers: CustomerLTVDTO[]): void {

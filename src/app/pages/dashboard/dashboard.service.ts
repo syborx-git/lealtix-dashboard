@@ -89,4 +89,23 @@ export class DashboardService {
       .get<CampaignPerformanceDTO[]>(`${this.base}/campaigns/performance`, { params: this.params(tenantId, from, to) })
       .pipe(catchError((e) => throwError(() => e)));
   }
+
+  ventasTickets(tenantId: number, size: number = 200): Observable<any> {
+    const params = new HttpParams()
+      .set('page', '0')
+      .set('size', String(size));
+    const url = `${this.getApiBaseUrl().replace(/\/+$/g, '')}/tenant-client-orders/tenant/${tenantId}`;
+    return this.http
+      .get<any>(url, { params })
+      .pipe(catchError((e) => throwError(() => e)));
+  }
+
+  costosAutomaticos(tenantId: number, months: number = 2): Observable<any> {
+    const params = new HttpParams()
+      .set('tenantId', String(tenantId))
+      .set('months', String(months));
+    return this.http
+      .get<any>(`${this.base}/costs/automatic`, { params })
+      .pipe(catchError((e) => throwError(() => e)));
+  }
 }

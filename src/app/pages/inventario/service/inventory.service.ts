@@ -17,20 +17,58 @@ export class InventoryService {
     return this.http.get<any>(`${this.baseUrl}/insumos/tenant/${tenantId}`);
   }
 
-  createInsumo(tenantId: number, nombre: string, unidad: string, stock: number, stockMinimo: number): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/insumos`, { tenantId, nombre, unidad, stock, stockMinimo });
+  createInsumo(tenantId: number, nombre: string, unidad: string, stock: number, stockMinimo: number, categoryIds?: number[]): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/insumos`, { tenantId, nombre, unidad, stock, stockMinimo, categoryIds: categoryIds ?? [] });
   }
 
-  updateInsumo(insumoId: number, nombre: string, unidad: string, stock: number, stockMinimo: number): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/insumos/${insumoId}`, { nombre, unidad, stock, stockMinimo });
+  updateInsumo(insumoId: number, nombre: string, unidad: string, stock: number, stockMinimo: number, categoryIds?: number[]): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/insumos/${insumoId}`, { nombre, unidad, stock, stockMinimo, categoryIds: categoryIds ?? [] });
   }
 
   deleteInsumo(insumoId: number): Observable<any> {
     return this.http.delete<any>(`${this.baseUrl}/insumos/${insumoId}`);
   }
 
-  restockInsumo(insumoId: number, cantidad: number): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/insumos/${insumoId}/restock`, { cantidad });
+  restockInsumo(insumoId: number, cantidad: number, costoTotal?: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/insumos/${insumoId}/restock`, { cantidad, costoTotal: costoTotal ?? 0 });
+  }
+
+  /* ============ Bodega (almacén central que distribuye a cocina/barra) ============ */
+
+  getBodega(tenantId: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/bodega/tenant/${tenantId}`);
+  }
+
+  createInsumoBodega(tenantId: number, nombre: string, unidad: string, cantidad: number, costoTotal: number, stockMinimo: number, categoryIds?: number[]): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/bodega`, { tenantId, nombre, unidad, cantidad, costoTotal, stockMinimo, categoryIds: categoryIds ?? [] });
+  }
+
+  restockBodega(insumoId: number, cantidad: number, costoTotal: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/bodega/${insumoId}/restock`, { cantidad, costoTotal });
+  }
+
+  moverBodega(insumoId: number, cantidad: number, destino: 'cocina' | 'barra'): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/bodega/${insumoId}/move`, { cantidad, destino });
+  }
+
+  getTransferencias(tenantId: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/reportes/transferencias/tenant/${tenantId}`);
+  }
+
+  getBebidas(tenantId: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/bebidas/tenant/${tenantId}`);
+  }
+
+createBebida(tenantId: number, nombre: string, unidad: string, stock: number, stockMinimo: number, precioVenta: number, categoryIds?: number[]): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/bebidas`, { tenantId, nombre, unidad, stock, stockMinimo, precioVenta, categoryIds: categoryIds ?? [] });
+  }
+
+  updateBebida(insumoId: number, nombre: string, unidad: string, stock: number, stockMinimo: number, precioVenta: number, categoryIds?: number[]): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/bebidas/${insumoId}`, { nombre, unidad, stock, stockMinimo, precioVenta, categoryIds: categoryIds ?? [] });
+  }
+
+  deleteBebida(insumoId: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/bebidas/${insumoId}`);
   }
 
   updateStock(productId: number, stock: number, stockMinimo: number, unidad: string): Observable<any> {
@@ -75,5 +113,33 @@ export class InventoryService {
 
   removeAdditional(additionalId: number): Observable<any> {
     return this.http.delete<any>(`${this.baseUrl}/additionals/${additionalId}`);
+  }
+
+  getSubRecetas(tenantId: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/sub-recetas/tenant/${tenantId}`);
+  }
+
+  createSubReceta(tenantId: number, nombre: string, lines: any[]): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/sub-recetas`, { tenantId, nombre, lines, categoryIds: [] });
+  }
+
+  updateSubReceta(subRecetaId: number, nombre: string, lines: any[]): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/sub-recetas/${subRecetaId}`, { nombre, lines, categoryIds: [] });
+  }
+
+  deleteSubReceta(subRecetaId: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/sub-recetas/${subRecetaId}`);
+  }
+
+  getSubRecetasByDish(dishId: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/dish/${dishId}/sub-recetas`);
+  }
+
+  assignSubReceta(dishId: number, subRecetaId: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/dish/${dishId}/sub-recetas/${subRecetaId}`, null);
+  }
+
+  removeSubRecetaFromDish(dishId: number, subRecetaId: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/dish/${dishId}/sub-recetas/${subRecetaId}`);
   }
 }

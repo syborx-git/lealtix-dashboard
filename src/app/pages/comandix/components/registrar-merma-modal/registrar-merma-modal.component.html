@@ -1,0 +1,135 @@
+<p-dialog
+  [visible]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true"
+  [closable]="!loading"
+  [header]="'Registrar Merma'"
+  [style]="{ width: '100%', 'max-width': '720px' }"
+  styleClass="registrar-merma-dialog minimal-modal"
+  (onHide)="onClose()"
+>
+  <ng-container *ngIf="order as currentOrder">
+    <div class="merma-header-summary">
+      <div class="summary-grid">
+        <div>
+          <div class="summary-label">Comanda</div>
+          <div class="summary-value">{{ ticket }}</div>
+        </div>
+        <div>
+          <div class="summary-label">Cliente</div>
+          <div class="summary-value">{{ currentOrder.customerName ?? currentOrder.nombre ?? 'Cliente General' }}</div>
+        </div>
+      </div>
+    </div>
+
+    <p-divider></p-divider>
+
+    <div class="merma-tipo">
+      <div class="summary-label mb-2">Tipo de merma</div>
+      <p-select
+        [options]="tiposMerma"
+        optionLabel="label"
+        optionValue="codigo"
+        [(ngModel)]="tipoMerma"
+        styleClass="w-full"
+      ></p-select>
+    </div>
+
+    <p-divider></p-divider>
+
+    <div class="insumos-wrapper">
+      <div class="summary-label mb-2">Insumos usados en la comanda</div>
+
+      <div *ngIf="loadingInsumos" class="loading-insumos">
+        <p-progressSpinner strokeWidth="4" [style]="{ width: '34px', height: '34px' }"></p-progressSpinner>
+        <span>Cargando insumos de la comanda...</span>
+      </div>
+
+      <div *ngIf="!loadingInsumos && insumos.length === 0" class="no-insumos">
+        No se encontraron insumos asociados a esta comanda.
+      </div>
+
+      <div *ngIf="!loadingInsumos && insumos.length > 0" class="insumos-list">
+        <div *ngFor="let insumo of insumos; let i = index; trackBy: trackByInsumo" class="insumo-row">
+          <p-checkbox
+            [binary]="true"
+            [(ngModel)]="seleccionados[i]"
+            inputId="insumo-{{ i }}"
+          ></p-checkbox>
+          <div class="insumo-main">
+            <span class="insumo-name">{{ getName(insumo) }}</span>
+            <span class="insumo-meta">
+              x {{ insumo.cantidad }} {{ insumo.unidad || 'pieza' }}
+              <ng-container *ngIf="insumo.costoUnitario">
+                &middot; ${{ insumo.costoUnitario | number:'1.2-2' }}/u
+              </ng-container>
+            </span>
+          </div>
+          <div class="insumo-qty">
+            <label [for]="'cantidad-' + i" class="qty-label">Merma</label>
+            <input
+              [id]="'cantidad-' + i"
+              pInputText
+              type="number"
+              min="0"
+              [step]="0.01"
+              [class.disabled]="!seleccionados[i]"
+              [value]="cantidades[i] ?? insumo.cantidad ?? 0"
+              (input)="onCantidadInput(i, $event)"
+            />
+          </div>
+          <div class="insumo-subtotal" *ngIf="seleccionados[i]">
+            ${{ ((cantidades[i] ?? 0) * (insumo.costoUnitario ?? 0)) | number:'1.2-2' }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p-divider></p-divider>
+
+    <div class="merma-footer-info">
+      <div>
+        <div class="summary-label">Registros seleccionados</div>
+        <div class="summary-value">{{ seleccionTotal }}</div>
+      </div>
+      <div>
+        <div class="summary-label">Pérdida estimada</div>
+        <div class="summary-total">${{ perdidaTotal | number:'1.2-2' }}</div>
+      </div>
+      <div>
+        <div class="summary-label">Tipo</div>
+        <p-tag severity="warn" [value]="getTipoLabel(tipoMerma)"></p-tag>
+      </div>
+    </div>
+
+    <p-divider></p-divider>
+
+    <p-message *ngIf="errorMessage" severity="error" [text]="errorMessage" styleClass="mt-2"></p-message>
+    <p-message *ngIf="successMessage" severity="success" [text]="successMessage" styleClass="mt-2"></p-message>
+
+    <div class="footer-actions mt-4">
+      <p-button
+        label="Cancelar"
+        icon="pi pi-times"
+        severity="secondary"
+        [outlined]="true"
+        [disabled]="loading"
+        (onClick)="onClose()"
+      ></p-button>
+
+      <p-button
+        label="Registrar Merma"
+        icon="pi pi-save"
+        severity="warn"
+        styleClass="minimal-submit"
+        [disabled]="loading || loadingInsumos || insumos.length === 0"
+        (onClick)="onRegistrar()"
+      ></p-button>
+    </div>
+
+    <div *ngIf="loading" class="loading-overlay">
+      <p-progressSpinner strokeWidth="4" [style]="{ width: '42px', height: '42px' }"></p-progressSpinner>
+      <span>Registrando merma...</span>
+    </div>
+  </ng-container>
+</p-dialog>

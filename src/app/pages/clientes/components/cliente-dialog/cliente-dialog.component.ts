@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormsModule, FormGroup } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { TextareaModule } from 'primeng/textarea';
 import { DatePickerModule } from 'primeng/datepicker';
 import { SelectModule } from 'primeng/select';
 import { MessageModule } from 'primeng/message';
@@ -18,6 +19,7 @@ import { MessageModule } from 'primeng/message';
     DialogModule,
     ButtonModule,
     InputTextModule,
+    TextareaModule,
     DatePickerModule,
     SelectModule,
     MessageModule
@@ -32,7 +34,7 @@ import { MessageModule } from 'primeng/message';
       [dismissableMask]="true"
       [maximizable]="true"
       [resizable]="true"
-      styleClass="cliente-dialog"
+      styleClass="cliente-dialog minimal-modal"
       (onHide)="onHide()"
     >
       <ng-template #header>
@@ -46,7 +48,7 @@ import { MessageModule } from 'primeng/message';
 
       <div class="cliente-form-container">
         <form [formGroup]="clienteForm" class="p-fluid">
-          <div class="grid grid-cols-2">
+          <div class="grid grid-cols-1">
             <!-- Nombre Completo -->
             <div class="col-span-full">
               <label for="nombreCompleto">
@@ -147,6 +149,23 @@ import { MessageModule } from 'primeng/message';
                 [text]="'Género es requerido'"
               ></p-message>
             </div>
+
+            <!-- Alergias (Opcional) -->
+            <div class="col-span-full">
+              <label for="alergias">
+                Alergias <span class="text-gray-500">(Opcional)</span>
+              </label>
+              <textarea
+                id="alergias"
+                pTextarea
+                rows="2"
+                formControlName="alergias"
+                placeholder="Ej: nuez, calabaza y almendras"
+              ></textarea>
+              <small class="block text-xs text-color-secondary">
+                Separa cada alergia con comas («nuez, cacahuate») o con «y» («nuez y cacahuate»).
+              </small>
+            </div>
           </div>
         </form>
       </div>
@@ -162,6 +181,7 @@ import { MessageModule } from 'primeng/message';
           <p-button
             [label]="clienteEnEdicion ? 'Actualizar' : 'Crear'"
             icon="pi pi-check"
+            styleClass="minimal-submit"
             (click)="save.emit()"
             [disabled]="clienteForm.invalid"
           ></p-button>

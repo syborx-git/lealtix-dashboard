@@ -1,0 +1,628 @@
+.recetas-wrapper {
+  padding: 1.25rem;
+}
+
+.recetas-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.page-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.recetas-card {
+  background: var(--surface-card);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: var(--shadow-2);
+}
+
+.recetas-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.recetas-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem;
+  color: var(--text-color-secondary);
+}
+
+.receta-product-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--primary-50);
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.category-tag {
+  white-space: nowrap;
+}
+
+/* ===== Dialog de receta ===== */
+:host ::ng-deep {
+  .recetas-recipe-dialog,
+  .recetas-picker-dialog,
+  .recetas-subreceta-dialog {
+    width: min(60rem, 95vw) !important;
+    max-height: 90vh;
+    overflow: hidden;
+  }
+
+  .recetas-picker-dialog {
+    width: min(48rem, 95vw) !important;
+  }
+
+  .recetas-subreceta-dialog {
+    width: min(52rem, 95vw) !important;
+  }
+
+  .recetas-recipe-dialog .p-dialog-content,
+  .recetas-picker-dialog .p-dialog-content,
+  .recetas-subreceta-dialog .p-dialog-content {
+    padding: 1.5rem;
+    overflow-y: auto;
+  }
+
+  .recetas-recipe-dialog .p-dialog-content {
+    max-height: calc(90vh - 9rem);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .recetas-picker-dialog .p-dialog-content,
+  .recetas-subreceta-dialog .p-dialog-content {
+    max-height: calc(90vh - 8rem);
+  }
+
+  .recetas-recipe-dialog .p-dialog-header,
+  .recetas-picker-dialog .p-dialog-header,
+  .recetas-subreceta-dialog .p-dialog-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--surface-border);
+    background: linear-gradient(135deg, var(--primary-50), var(--surface-card));
+  }
+
+  .recetas-recipe-dialog .p-dialog-footer,
+  .recetas-picker-dialog .p-dialog-footer,
+  .recetas-subreceta-dialog .p-dialog-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--surface-border);
+    background: var(--surface-card);
+  }
+
+  .recipe-add-row {
+    border: 1px solid var(--surface-border);
+    box-shadow: var(--shadow-1);
+  }
+
+  .recetas-recipe-dialog .recipe-lines {
+    max-height: 24rem;
+    overflow-y: auto;
+    padding-right: 0.35rem;
+  }
+
+  .recetas-recipe-dialog .recipe-line {
+    align-items: flex-start;
+    gap: 1rem;
+    min-height: 4.25rem;
+  }
+
+  .recetas-recipe-dialog .recipe-line-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .recetas-recipe-dialog .recipe-line-actions {
+    flex-shrink: 0;
+  }
+
+  .recetas-recipe-dialog .recipe-line-edit {
+    width: 100%;
+    align-items: center;
+  }
+
+  .recetas-picker-dialog .p-dialog-content > div:not(.recetas-loading),
+  .recetas-subreceta-dialog .p-dialog-content > div {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .recetas-picker-dialog .p-select,
+  .recetas-subreceta-dialog .p-select {
+    width: 100%;
+  }
+
+  .recetas-picker-dialog .p-select-overlay,
+  .recetas-recipe-dialog .p-select-overlay,
+  .recetas-subreceta-dialog .p-select-overlay {
+    max-height: 22rem;
+  }
+}
+
+.recipe-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.recipe-add-row {
+  margin-bottom: 0.25rem;
+}
+
+/* ===== Apartados apilados en columna (modal de receta) ===== */
+.recipe-dialog-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.apartado {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.apartado-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 0.7rem;
+  background: linear-gradient(135deg, var(--primary-50), var(--surface-card));
+}
+
+.apartado-header .font-semibold {
+  color: var(--text-color);
+}
+
+.recipe-add-form {
+  border: 1px solid var(--surface-border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-1);
+}
+
+.recipe-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--surface-d);
+  border-radius: 0.75rem;
+  background: var(--surface-a);
+}
+
+.recipe-line-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.recipe-line-name {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.recipe-line-detail {
+  font-size: 0.85rem;
+  color: var(--text-color-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ing-type-badge {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.badge-base {
+  background: var(--surface-200);
+  color: var(--text-color-secondary);
+}
+
+.badge-modificable {
+  background: var(--blue-100);
+  color: var(--blue-600);
+}
+
+.badge-adicional {
+  background: var(--orange-100);
+  color: var(--orange-600);
+  font-weight: 600;
+}
+
+.recipe-line-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.recipe-line-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.recipe-line-edit .recipe-line-name {
+  min-width: 120px;
+}
+
+.recipe-edit-qty {
+  width: 90px;
+}
+
+/* ===== Botones grandes (estilo gestión de Clientes) ===== */
+.recetas-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+:host ::ng-deep .recetas-actions .big-btn {
+  width: 100% !important;
+  justify-content: center;
+  padding: 1.35rem 1.4rem !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.012em;
+  border: none !important;
+  color: #fff !important;
+  border-radius: var(--lealtix-radius-lg, 0.9rem) !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.4, 1) !important;
+
+  .p-button-icon {
+    font-size: 1.15rem !important;
+    transition: transform 0.3s ease !important;
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-3px) scale(1.03) !important;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25) !important;
+    color: #fff !important;
+
+    .p-button-icon {
+      transform: scale(1.15) !important;
+    }
+  }
+}
+
+.product-btn {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.28) !important;
+}
+
+.bebida-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.3) !important;
+}
+
+.subreceta-btn {
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%) !important;
+  box-shadow: 0 4px 14px rgba(219, 39, 119, 0.3) !important;
+}
+
+/* ===== Sección sub-recetas dentro del diálogo de receta ===== */
+.subrecetas-section {
+  border: 1px dashed var(--surface-d);
+  border-radius: 0.75rem;
+  padding: 0.9rem;
+  background: var(--surface-a);
+}
+
+.subrecetas-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.subreceta-assigned {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--surface-d);
+  border-radius: 0.6rem;
+  background: var(--surface-card);
+  margin-bottom: 0.45rem;
+}
+
+/* ===== Modal crear sub-receta ===== */
+.subreceta-qty {
+  width: 110px;
+  flex-shrink: 0;
+}
+
+.subreceta-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.5rem;
+  border-radius: 0.6rem;
+  background: var(--surface-a);
+  max-height: 18rem;
+  overflow-y: auto;
+}
+
+.subreceta-line {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--surface-d);
+  border-radius: 0.5rem;
+  background: var(--surface-card);
+}
+
+@media (max-width: 720px) {
+  .recetas-actions {
+    grid-template-columns: 1fr;
+  }
+
+  :host ::ng-deep {
+    .recetas-recipe-dialog,
+    .recetas-picker-dialog,
+    .recetas-subreceta-dialog {
+      width: calc(100vw - 1.5rem) !important;
+      max-height: 92vh;
+    }
+
+    .recetas-recipe-dialog .p-dialog-content,
+    .recetas-picker-dialog .p-dialog-content,
+    .recetas-subreceta-dialog .p-dialog-content {
+      padding: 1rem;
+      max-height: calc(92vh - 8rem);
+    }
+
+    .recipe-line {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .recipe-line-actions {
+      align-self: flex-end;
+    }
+
+    .recipe-line-edit {
+      align-items: stretch;
+    }
+  }
+}
+
+/* === PANEL DE CATÁLOGO ÚNICO (homogéneo con products-menu / inventario) === */
+.catalog-panel {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  box-shadow: var(--lealtix-shadow-sm);
+  border: 1px solid var(--lealtix-slate-200);
+}
+
+.catalog-tabs {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  background: var(--lealtix-slate-100);
+  border-radius: var(--lealtix-radius-lg);
+  padding: 0.375rem;
+}
+
+.catalog-tab {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: var(--lealtix-radius-md);
+  background: transparent;
+  color: var(--lealtix-slate-600);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  i {
+    font-size: 1rem;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--lealtix-primary-600);
+  }
+}
+
+.catalog-tab-active {
+  background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%);
+  color: #fff;
+  box-shadow: var(--lealtix-shadow-sm);
+
+  &:hover {
+    background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%);
+    color: #fff;
+  }
+}
+
+.cat-chip-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--lealtix-primary-50, #eef2ff);
+  border: 1px solid var(--lealtix-primary-200, #c7d2fe);
+  color: var(--lealtix-primary-700, #4338ca);
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem 0.2rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* === ENCABEZADO MORADO DE LA TABLA === */
+::ng-deep .catalog-panel .p-datatable-header {
+  background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%) !important;
+  color: white !important;
+  border-radius: var(--lealtix-radius-lg) var(--lealtix-radius-lg) 0 0 !important;
+  padding: 1.25rem 1.5rem !important;
+  border: none !important;
+
+  h5 {
+    color: white !important;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .p-iconfield {
+    .p-inputtext {
+      background: rgba(255, 255, 255, 0.95) !important;
+      border: 1px solid rgba(255, 255, 255, 0.3) !important;
+      border-radius: var(--lealtix-radius-md) !important;
+      padding: 0.625rem 1rem 0.625rem 2.5rem !important;
+      color: var(--lealtix-slate-900) !important;
+      font-size: 0.875rem !important;
+      min-width: 14rem;
+
+      &::placeholder {
+        color: var(--lealtix-slate-400) !important;
+      }
+
+      &:focus {
+        outline: none !important;
+        border-color: rgba(255, 255, 255, 0.8) !important;
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15) !important;
+      }
+    }
+
+    .p-inputicon {
+      color: var(--lealtix-slate-400) !important;
+    }
+  }
+}
+
+::ng-deep .catalog-panel .p-datatable {
+  table-layout: fixed !important;
+  width: 100% !important;
+}
+
+::ng-deep .catalog-panel .p-datatable-header .p-select.catalog-category-select {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: var(--lealtix-radius-md) !important;
+  color: var(--lealtix-slate-900) !important;
+  min-width: 12rem;
+
+  .p-select-label {
+    color: var(--lealtix-slate-900) !important;
+  }
+
+  .p-select-dropdown {
+    color: var(--lealtix-slate-600) !important;
+  }
+}
+
+/* === MODO OSCURO: tablas y buscador homologueados === */
+:root[class*='app-dark'],
+.app-dark {
+  ::ng-deep .catalog-panel {
+    border-color: var(--surface-border) !important;
+  }
+
+  ::ng-deep .catalog-panel .p-datatable {
+    background: var(--surface-card) !important;
+
+    .p-datatable-thead > tr > th {
+      background: rgba(255, 255, 255, 0.05) !important;
+      color: #cbd2e0 !important;
+      border-bottom: 1px solid var(--surface-border) !important;
+    }
+
+    .p-datatable-tbody > tr {
+      background: transparent !important;
+
+      &:nth-child(even) {
+        background: rgba(255, 255, 255, 0.02) !important;
+      }
+
+      &:hover {
+        background-color: rgba(99, 102, 241, 0.08) !important;
+      }
+
+      > td {
+        color: var(--text-color) !important;
+        border-bottom: 1px solid var(--surface-border) !important;
+      }
+    }
+  }
+
+  ::ng-deep .catalog-panel .p-datatable-header .p-iconfield .p-inputtext,
+  ::ng-deep .catalog-panel .p-datatable-header .p-select.catalog-category-select {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+
+    &::placeholder,
+    .p-select-label {
+      color: rgba(255, 255, 255, 0.7) !important;
+    }
+  }
+
+  ::ng-deep .catalog-panel .p-datatable-header .p-iconfield .p-inputicon {
+    color: rgba(255, 255, 255, 0.8) !important;
+  }
+
+  .catalog-tabs {
+    background: #303950 !important;
+  }
+
+  .catalog-tab {
+    color: #b6bdcc !important;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06) !important;
+      color: #ffffff !important;
+    }
+  }
+
+  .apartado-header {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--surface-border);
+  }
+
+  .recipe-add-form {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--surface-border);
+    box-shadow: none;
+  }
+}

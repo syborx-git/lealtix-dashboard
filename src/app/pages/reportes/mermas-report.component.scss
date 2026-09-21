@@ -1,0 +1,206 @@
+.inventario-container {
+  padding: 0.5rem;
+}
+
+.inventario-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+
+  h2 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    margin: 0 0 0.25rem;
+    letter-spacing: -0.02em;
+    color: var(--text-color);
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-color-secondary);
+    font-size: 0.925rem;
+    max-width: 46rem;
+  }
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* === ENCABEZADO MORADO (estilo products-menu / inventario) === */
+::ng-deep .catalog-panel .p-datatable-header {
+  background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%) !important;
+  color: white !important;
+  border-radius: var(--lealtix-radius-lg) var(--lealtix-radius-lg) 0 0 !important;
+  padding: 1.5rem 1.75rem !important;
+  border: none !important;
+
+  h5 {
+    color: white !important;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .p-inputtext {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: var(--lealtix-radius-md) !important;
+    padding: 0.625rem 1rem 0.625rem 2.5rem !important;
+    color: var(--lealtix-slate-900) !important;
+    font-size: 0.875rem !important;
+    min-width: 14rem;
+
+    &::placeholder {
+      color: var(--lealtix-slate-400) !important;
+    }
+
+    &:focus {
+      outline: none !important;
+      border-color: rgba(255, 255, 255, 0.8) !important;
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15) !important;
+    }
+  }
+
+  .p-inputicon {
+    color: var(--lealtix-slate-400) !important;
+  }
+}
+
+.table-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.table-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  .table-title-sub {
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.78rem;
+    font-weight: 500;
+  }
+}
+
+/* === PANEL DE CATÁLOGO ÚNICO === */
+.catalog-panel {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  box-shadow: var(--lealtix-shadow-sm);
+  border: 1px solid var(--lealtix-slate-200);
+}
+
+::ng-deep .catalog-panel .p-datatable {
+  table-layout: fixed !important;
+  width: 100% !important;
+}
+
+/* === CELDAS === */
+.fecha-cell {
+  white-space: nowrap;
+  color: var(--text-color-secondary);
+  font-size: 0.82rem;
+}
+
+.usuario-cell {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.usuario-origen {
+  color: var(--text-color-secondary);
+  font-size: 0.75rem;
+}
+
+.item-name {
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-color);
+}
+
+.item-sub {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-color-secondary);
+}
+
+.motivo-cell {
+  color: var(--text-color-secondary);
+  font-size: 0.85rem;
+}
+
+.stock-bodega-val {
+  color: var(--lealtix-primary-700, #4338ca);
+}
+
+.col-num {
+  text-align: center !important;
+}
+
+:host ::ng-deep .tipo-tag {
+  font-weight: 600;
+}
+
+.empty-cell {
+  text-align: center;
+  color: var(--text-color-secondary);
+  padding: 2rem 1rem !important;
+}
+
+/* === MODO OSCURO === */
+:root[class*='app-dark'],
+.app-dark {
+  ::ng-deep .catalog-panel {
+    border-color: var(--surface-border) !important;
+  }
+
+  ::ng-deep .catalog-panel .p-datatable {
+    background: var(--surface-card) !important;
+
+    .p-datatable-thead > tr > th {
+      background: rgba(255, 255, 255, 0.05) !important;
+      color: #cbd2e0 !important;
+      border-bottom: 1px solid var(--surface-border) !important;
+    }
+
+    .p-datatable-tbody > tr {
+      background: transparent !important;
+
+      &:nth-child(even) {
+        background: rgba(255, 255, 255, 0.02) !important;
+      }
+
+      &:hover {
+        background-color: rgba(99, 102, 241, 0.08) !important;
+      }
+
+      > td {
+        color: var(--text-color) !important;
+        border-bottom: 1px solid var(--surface-border) !important;
+      }
+    }
+  }
+
+  ::ng-deep .catalog-panel .p-datatable-header .p-inputtext {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.7) !important;
+    }
+  }
+}

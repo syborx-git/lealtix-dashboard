@@ -487,6 +487,7 @@
   [modal]="true"
   [closable]="true"
   [style]="{width: '90vw', maxWidth: '450px'}"
+  styleClass="minimal-modal"
   (onHide)="cancelAmountDialog()">
 
   <div class="amount-dialog-content">
@@ -579,6 +580,7 @@
     <p-button
       label="Continuar"
       icon="pi pi-check"
+      styleClass="minimal-submit"
       (onClick)="confirmRedemption()"
       [disabled]="(originalAmount ?? 0) < minRedemptionAmount">
     </p-button>

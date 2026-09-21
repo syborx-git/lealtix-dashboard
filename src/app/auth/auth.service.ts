@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, tap, of, map, catchError, BehaviorSubject } from 'rxjs';
 import { environment } from '@/pages/commons/environment';
 import { TenantService } from '@/pages/admin-page/service/tenant.service';
+import { UserRoleName } from './user-role';
 
 export interface LoginCredentials {
 	email: string;
@@ -23,8 +24,8 @@ export interface User {
 	nombre_usuario?: string;
 	userName?: string;
 	email: string;
-	rol?: 'ADMIN' | 'MESERO' | 'COCINA';
-	role?: 'ADMIN' | 'MESERO' | 'COCINA';
+	rol?: UserRoleName;
+	role?: UserRoleName;
 	tenantId?: number;  // Opcional - puede venir del JWT o de otro endpoint
 }
 
@@ -262,7 +263,7 @@ export class AuthService {
 	/**
 	 * Obtiene el rol del usuario actual
 	 */
-	getUserRole(): 'ADMIN' | 'MESERO' | 'COCINA' | null {
+	getUserRole(): UserRoleName | null {
 		return this.currentUser$.value?.rol || null;
 	}
 

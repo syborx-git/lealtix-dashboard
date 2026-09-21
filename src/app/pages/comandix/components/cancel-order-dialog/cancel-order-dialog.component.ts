@@ -3,13 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
-import { InputTextareaModule } from 'primeng/inputtextarea';
+import { TextareaModule } from 'primeng/textarea';
 import { PendingOrder } from '../../models/order.model';
 
 @Component({
   selector: 'app-cancel-order-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule, DialogModule, ButtonModule, InputTextareaModule],
+  imports: [CommonModule, FormsModule, DialogModule, ButtonModule, TextareaModule],
   templateUrl: './cancel-order-dialog.component.html',
   styleUrls: ['./cancel-order-dialog.component.scss']
 })

@@ -3,6 +3,11 @@
    Alineados con el sistema de diseño Lealtix
    ============================================================================ */
 
+:host {
+  display: block;
+  width: 100%;
+}
+
 /* === TABLA: ESTILOS DE FILAS === */
 .fixed-row {
   height: auto;
@@ -89,21 +94,31 @@
   max-width: none !important;
 }
 
-/* === TOOLBAR: GRID DE 3 BOTONES QUE OCUPAN TODO EL ANCHO === */
+/* === TOOLBAR: BOTONES DEL MISMO TAMAÑO QUE OCUPAN EL 100% DEL ANCHO === */
+::ng-deep .p-toolbar {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
 ::ng-deep .p-toolbar .p-toolbar-start {
-  flex: 1 1 auto;
-  width: 100%;
+  display: flex !important;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
 }
 
 .toolbar-actions {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
   width: 100%;
+  min-width: 0;
 }
 
 ::ng-deep .toolbar-actions .p-button {
   width: 100% !important;
+  min-width: 0 !important;
+  justify-content: center !important;
 }
 
 /* === TABLA === */
@@ -341,19 +356,58 @@
     box-shadow: var(--lealtix-shadow-sm) !important;
   }
 
+  .catalog-panel {
+    border-color: var(--surface-border) !important;
+  }
+
+  .catalog-tabs {
+    background: #303950 !important;
+  }
+
+  .catalog-tab {
+    color: #b6bdcc !important;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06) !important;
+      color: #ffffff !important;
+    }
+  }
+
   ::ng-deep .p-datatable {
+    background: var(--surface-card) !important;
+
+    /* Buscador dentro del encabezado morado -> oscuro legible */
+    .p-datatable-header {
+      input {
+        background: rgba(255, 255, 255, 0.12) !important;
+        border-color: rgba(255, 255, 255, 0.25) !important;
+        color: #ffffff !important;
+
+        &::placeholder {
+          color: rgba(255, 255, 255, 0.7) !important;
+        }
+      }
+    }
+
     .p-datatable-thead > tr > th {
-      background: rgba(255, 255, 255, 0.03) !important;
+      background: rgba(255, 255, 255, 0.05) !important;
       color: #cbd2e0 !important;
       border-color: var(--surface-border) !important;
     }
 
     .p-datatable-tbody > tr {
+      background: transparent !important;
+
+      &:nth-child(even) {
+        background: rgba(255, 255, 255, 0.02) !important;
+      }
+
       &:hover {
-        background-color: rgba(255, 255, 255, 0.04) !important;
+        background-color: rgba(99, 102, 241, 0.08) !important;
       }
 
       > td {
+        color: var(--text-color) !important;
         border-color: var(--surface-border) !important;
       }
     }
@@ -414,7 +468,7 @@
     }
 
     .p-dropdown {
-      background: #14141c !important;
+      background: #303950 !important;
       border-color: rgba(255, 255, 255, 0.12) !important;
     }
   }
@@ -570,6 +624,62 @@
   font-size: 0.8125rem;
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* === CHIPS DE CATEGORÍAS (mini-cards) === */
+.cat-chip-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--lealtix-primary-50, #eef2ff);
+  border: 1px solid var(--lealtix-primary-200, #c7d2fe);
+  color: var(--lealtix-primary-700, #4338ca);
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem 0.2rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cat-chip-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--lealtix-primary-100, #e0e7ff);
+  border: 1px dashed var(--lealtix-primary-400, #818cf8);
+  color: var(--lealtix-primary-700, #4338ca);
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem 0.2rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.cat-chip-more:hover {
+  background: var(--lealtix-primary-200, #c7d2fe);
+}
+
+.cat-chip-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border: none;
+  background: transparent;
+  color: var(--lealtix-primary-700, #4338ca);
+  border-radius: 999px;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.cat-chip-x:hover {
+  background: var(--lealtix-primary-200, #c7d2fe);
+  color: #b91c1c;
 }
 
 .stock-ok {
@@ -796,4 +906,14 @@
   font-size: 1rem !important;
   padding: 0.9rem 1.1rem !important;
   width: 100% !important;
+}
+
+/* Título del encabezado del modal de bebida siempre en blanco */
+::ng-deep .bebida-dialog .bebida-dialog-title {
+  color: #ffffff !important;
+}
+
+::ng-deep .bebida-dialog .p-dialog-header {
+  background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%);
+  color: #ffffff;
 }

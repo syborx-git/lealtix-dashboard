@@ -34,7 +34,7 @@ import { TouchTooltipDirective } from '@/shared/directives/touch-tooltip.directi
         [style]="{ width: '32rem', maxWidth: '90vw' }"
         header="Detalle de Categoría"
         [modal]="true"
-        styleClass="category-dialog"
+        styleClass="category-dialog minimal-modal"
         contentStyleClass="category-dialog-content"
         (onHide)="onHide()">
         <ng-template #content>
@@ -135,6 +135,7 @@ import { TouchTooltipDirective } from '@/shared/directives/touch-tooltip.directi
                     label="Guardar"
                     icon="pi pi-check"
                     severity="success"
+                    styleClass="minimal-submit"
                     (onClick)="save.emit()" />
             </div>
         </ng-template>

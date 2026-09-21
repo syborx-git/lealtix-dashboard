@@ -272,7 +272,8 @@ export class ClienteListComponent implements OnInit {
         email: formValue.email,
         fechaNacimiento: this.formatDateIso(fecha),
         genero: formValue.genero,
-        telefono: formValue.telefono || undefined
+        telefono: formValue.telefono || undefined,
+        alergias: formValue.alergias || ''
       };
 
       this.clienteService.updateCliente(this.clienteEnEdicion.id, updateReq).subscribe({
@@ -308,7 +309,8 @@ export class ClienteListComponent implements OnInit {
         birthDate: this.formatDateIso(fecha),
         fechaNacimiento: this.formatDateIso(fecha),
         genero: formValue.genero,
-        telefono: formValue.telefono || undefined
+        telefono: formValue.telefono || undefined,
+        alergias: formValue.alergias || ''
       };
 
       this.clienteService.createCliente(this.tenantId, createReq).subscribe({
@@ -353,7 +355,8 @@ export class ClienteListComponent implements OnInit {
       email: [cliente.email, [Validators.required, Validators.email]],
       fechaNacimiento: [fechaObj, Validators.required],
       genero: [cliente.genero, Validators.required],
-      telefono: [cliente.telefono || '']
+      telefono: [cliente.telefono || ''],
+      alergias: [Array.isArray(cliente.alergias) ? cliente.alergias.join(', ') : '']
     });
 
     this.mostrarDialogoNuevo = true;
@@ -511,7 +514,8 @@ export class ClienteListComponent implements OnInit {
       email: ['', [Validators.required, Validators.email]],
       fechaNacimiento: ['', [Validators.required, this.ageValidator(12)]],
       genero: ['', Validators.required],
-      telefono: ['', [Validators.pattern('^[0-9]{10}$')]]
+      telefono: ['', [Validators.pattern('^[0-9]{10}$')]],
+      alergias: ['']
     });
   }
 

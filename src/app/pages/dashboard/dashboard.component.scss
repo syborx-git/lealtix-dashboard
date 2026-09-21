@@ -1193,3 +1193,1810 @@
   min-height: 220px !important;
   flex: 1 !important;
 }
+
+.kpi-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) 180px !important;
+  gap: 16px !important;
+  margin-bottom: 24px !important;
+  align-items: stretch !important;
+}
+
+@media (max-width: 1024px) {
+  .kpi-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+  }
+}
+
+.kpi-card {
+  background: rgba(26, 24, 23, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+  padding: 18px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
+  transition: transform 0.2s ease, border-color 0.2s ease !important;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px) !important;
+  border-color: rgba(163, 67, 43, 0.4) !important;
+}
+
+.kpi-card.highlight {
+  background: linear-gradient(135deg, rgba(163, 67, 43, 0.2) 0%, rgba(26, 24, 23, 0.9) 100%) !important;
+  border: 1px solid rgba(163, 67, 43, 0.3) !important;
+}
+
+.kpi-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 12px !important;
+}
+
+.kpi-title {
+  color: #9ca3af !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.kpi-badge {
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  padding: 2px 8px !important;
+  border-radius: 12px !important;
+}
+
+.kpi-badge.positive {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  color: #10b981 !important;
+}
+
+.kpi-badge.warning {
+  background-color: rgba(217, 119, 6, 0.15) !important;
+  color: #f59e0b !important;
+}
+
+.kpi-value {
+  color: #ffffff !important;
+  font-size: 1.6rem !important;
+  font-weight: 700 !important;
+  margin: 0 0 4px 0 !important;
+  line-height: 1.1 !important;
+}
+
+.kpi-caption {
+  color: #6b7280 !important;
+  font-size: 0.75rem !important;
+  margin: 0 !important;
+}
+
+.kpi-action-card {
+  display: flex !important;
+}
+
+.btn-new-order {
+  width: 100% !important;
+  background-color: #a3432b !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease, transform 0.1s ease !important;
+  box-shadow: 0 8px 20px rgba(163, 67, 43, 0.3) !important;
+}
+
+.btn-new-order:hover {
+  background-color: #8b3823 !important;
+  transform: translateY(-1px) !important;
+}
+
+.btn-icon {
+  font-size: 1.5rem !important;
+  line-height: 1 !important;
+}
+
+/* Fondo oscuro del dashboard (Lealtix) */
+.dashboard-content-wrapper {
+  background-color: #12100e !important;
+  color: #f3f4f6 !important;
+  padding: 24px !important;
+  min-height: 100vh !important;
+}
+
+.dashboard-container {
+  background-color: #12100e !important;
+  color: #f3f4f6 !important;
+  padding: 24px !important;
+  min-height: 100vh !important;
+}
+
+/* Tarjetas de KPIs con alto contraste */
+.kpi-card {
+  background-color: #1a1817 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+  padding: 16px 20px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+}
+
+.kpi-card.highlight {
+  background: linear-gradient(135deg, rgba(163, 67, 43, 0.3) 0%, #1a1817 100%) !important;
+  border: 1px solid rgba(163, 67, 43, 0.5) !important;
+}
+
+.kpi-title {
+  color: #d1d5db !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.kpi-value {
+  color: #ffffff !important;
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  margin: 4px 0 !important;
+}
+
+.kpi-caption {
+  color: #9ca3af !important;
+  font-size: 0.72rem !important;
+}
+
+.kpi-badge {
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  padding: 2px 8px !important;
+  border-radius: 12px !important;
+}
+
+.kpi-badge.positive {
+  background-color: rgba(16, 185, 129, 0.2) !important;
+  color: #34d399 !important;
+}
+
+.kpi-badge.warning {
+  background-color: rgba(217, 119, 6, 0.2) !important;
+  color: #fbbf24 !important;
+}
+
+.btn-new-order {
+  background-color: #a3432b !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 12px !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 80px !important;
+  font-weight: 700 !important;
+  font-size: 0.9rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 15px rgba(163, 67, 43, 0.3) !important;
+}
+
+.btn-new-order:hover {
+  background-color: #8b3823 !important;
+}
+
+/* ===== Estilo claro ProTend para KPIs ===== */
+.dashboard-container {
+  background-color: #f4f5f9 !important;
+  color: #111827 !important;
+  padding: 24px !important;
+}
+
+.kpi-row {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) 180px !important;
+  gap: 16px !important;
+  align-items: center !important;
+  margin-bottom: 24px !important;
+}
+
+.kpi-card {
+  border-radius: 16px !important;
+  padding: 16px 20px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 14px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06) !important;
+}
+
+.kpi-card.bg-cream {
+  background-color: #fff9e6 !important;
+}
+
+.kpi-card.bg-mint {
+  background-color: #e8f8f0 !important;
+}
+
+.kpi-card.bg-lavender {
+  background-color: #f0eefb !important;
+}
+
+.kpi-card.bg-white {
+  background-color: #ffffff !important;
+}
+
+.kpi-icon-circle {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1.1rem !important;
+  flex-shrink: 0 !important;
+}
+
+.kpi-icon-circle.yellow { background-color: #fbe393 !important; }
+.kpi-icon-circle.green { background-color: #a3e6cd !important; }
+.kpi-icon-circle.purple { background-color: #d2c9f5 !important; }
+.kpi-icon-circle.orange { background-color: #ffd0b7 !important; }
+
+.kpi-info {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+.kpi-label {
+  color: #6b7280 !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+}
+
+.kpi-value {
+  color: #111827 !important;
+  font-size: 1.4rem !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+  line-height: 1.2 !important;
+}
+
+.kpi-subtext {
+  color: #9ca3af !important;
+  font-size: 0.7rem !important;
+  font-weight: 500 !important;
+}
+
+.kpi-subtext.positive {
+  color: #10b981 !important;
+  font-weight: 600 !important;
+}
+
+.btn-primary-action {
+  background-color: #e05328 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 16px !important;
+  padding: 16px !important;
+  height: 100% !important;
+  min-height: 76px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  box-shadow: 0 8px 18px rgba(224, 83, 40, 0.25) !important;
+  transition: background-color 0.2s ease, transform 0.1s ease !important;
+}
+
+.btn-primary-action:hover {
+  background-color: #c8441c !important;
+  transform: translateY(-1px) !important;
+}
+
+.btn-plus-icon {
+  font-size: 1.4rem !important;
+  line-height: 1 !important;
+}
+
+/* ===== Proporciones ProTend ===== */
+.kpi-row {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) 200px !important;
+  gap: 20px !important;
+  margin-bottom: 28px !important;
+  align-items: stretch !important;
+}
+
+@media (max-width: 1024px) {
+  .kpi-row {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+  }
+}
+
+.kpi-card {
+  border-radius: 18px !important;
+  padding: 20px 22px !important;
+  min-height: 95px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+}
+
+.kpi-icon-circle {
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1.3rem !important;
+  flex-shrink: 0 !important;
+}
+
+.kpi-info {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+}
+
+.kpi-label {
+  color: #6b7280 !important;
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+}
+
+.kpi-value {
+  color: #111827 !important;
+  font-size: 1.6rem !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+  line-height: 1.1 !important;
+}
+
+.kpi-subtext {
+  color: #9ca3af !important;
+  font-size: 0.72rem !important;
+  font-weight: 500 !important;
+}
+
+.btn-primary-action {
+  border-radius: 18px !important;
+  padding: 16px !important;
+  min-height: 95px !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  box-shadow: 0 8px 20px rgba(224, 83, 40, 0.28) !important;
+}
+
+/* ===== Correcciones finales ProTend (legibilidad y alturas) ===== */
+.kpi-row {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) 190px !important;
+  gap: 16px !important;
+  align-items: stretch !important;
+  margin-bottom: 24px !important;
+}
+
+.kpi-card {
+  border-radius: 16px !important;
+  padding: 22px 20px !important;
+  min-height: 100px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+}
+
+.kpi-label {
+  color: #374151 !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.3px !important;
+}
+
+.kpi-value {
+  color: #111827 !important;
+  font-size: 1.6rem !important;
+  font-weight: 800 !important;
+  margin: 2px 0 !important;
+  line-height: 1.1 !important;
+}
+
+.kpi-subtext {
+  color: #6b7280 !important;
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+}
+
+.kpi-icon-circle {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1.25rem !important;
+  flex-shrink: 0 !important;
+}
+
+.btn-primary-action {
+  border-radius: 16px !important;
+  padding: 16px !important;
+  height: 100% !important;
+  min-height: 100px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  background-color: #e05328 !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 8px 18px rgba(224, 83, 40, 0.25) !important;
+  cursor: pointer !important;
+}
+
+/* ===== Retoques finales ProTend (alineación y espaciado) ===== */
+.kpi-card {
+  align-items: center !important;
+  justify-content: flex-start !important;
+}
+
+.kpi-info {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 3px !important;
+}
+
+.kpi-value {
+  margin: 1px 0 !important;
+  line-height: 1.15 !important;
+}
+
+.kpi-subtext {
+  margin-top: 2px !important;
+  opacity: 0.85 !important;
+}
+
+/* ===== Gráfica principal + Top 5 (ProTend) ===== */
+.charts-row {
+  display: grid !important;
+  grid-template-columns: 2fr 1fr !important;
+  gap: 20px !important;
+  margin-bottom: 24px !important;
+  align-items: stretch !important;
+}
+
+.charts-row-secondary {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 20px !important;
+  margin-bottom: 24px !important;
+  align-items: stretch !important;
+}
+
+@media (max-width: 1024px) {
+  .charts-row,
+  .charts-row-secondary {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.chart-card {
+  background-color: #ffffff !important;
+  border-radius: 18px !important;
+  padding: 24px !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+}
+
+.chart-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 20px !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+}
+
+.chart-title {
+  color: #111827 !important;
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+}
+
+.chart-subtitle {
+  color: #6b7280 !important;
+  font-size: 0.78rem !important;
+  margin: 2px 0 0 0 !important;
+}
+
+.chart-wrapper {
+  position: relative !important;
+  height: 320px !important;
+  width: 100% !important;
+}
+
+.time-filters {
+  display: flex !important;
+  background-color: #f3f4f6 !important;
+  padding: 4px !important;
+  border-radius: 12px !important;
+  gap: 2px !important;
+}
+
+.time-btn {
+  border: none !important;
+  background: transparent !important;
+  color: #6b7280 !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  padding: 6px 14px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.time-btn.active {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+}
+
+.top-products-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+.product-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 10px 12px !important;
+  background-color: #f9fafb !important;
+  border-radius: 12px !important;
+}
+
+.product-rank {
+  width: 28px !important;
+  height: 28px !important;
+  background-color: #6366f1 !important;
+  color: #ffffff !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 700 !important;
+  font-size: 0.8rem !important;
+  flex-shrink: 0 !important;
+}
+
+.product-name {
+  color: #111827 !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  flex: 1 !important;
+}
+
+.product-count {
+  color: #6b7280 !important;
+  font-size: 0.78rem !important;
+  font-weight: 500 !important;
+}
+
+/* ===== Layout 2 columnas ProTend ===== */
+.dashboard-grid-layout {
+  display: grid !important;
+  grid-template-columns: 1fr 340px !important;
+  gap: 24px !important;
+  align-items: start !important;
+}
+
+@media (max-width: 1200px) {
+  .dashboard-grid-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.main-content-column {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 24px !important;
+}
+
+.side-content-column {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 24px !important;
+}
+
+.sub-cards-row {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 20px !important;
+}
+
+@media (max-width: 900px) {
+  .sub-cards-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.chart-card, .info-card, .balance-card, .daily-tasks-card {
+  background-color: #ffffff !important;
+  border-radius: 18px !important;
+  padding: 24px !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+}
+
+.chart-wrapper {
+  position: relative !important;
+  height: 280px !important;
+}
+
+.mini-chart-wrapper {
+  position: relative !important;
+  height: 200px !important;
+  width: 100% !important;
+}
+
+.card-min-title {
+  color: #111827 !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  margin: 0 0 14px 0 !important;
+}
+
+.empty-note {
+  color: #9ca3af !important;
+  font-size: 0.85rem !important;
+}
+
+/* Panel lateral */
+.promo-banner-card {
+  background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%) !important;
+  color: #ffffff !important;
+  border-radius: 18px !important;
+  padding: 24px !important;
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.25) !important;
+}
+
+.promo-banner-card h3 {
+  margin: 0 0 6px 0 !important;
+  font-size: 1.1rem !important;
+}
+
+.promo-banner-card p {
+  margin: 0 0 14px 0 !important;
+  font-size: 0.82rem !important;
+  opacity: 0.9 !important;
+}
+
+.promo-btn {
+  background-color: #ffffff !important;
+  color: #4f46e5 !important;
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 8px 16px !important;
+  font-weight: 700 !important;
+  font-size: 0.8rem !important;
+  cursor: pointer !important;
+}
+
+.card-label {
+  color: #6b7280 !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.4px !important;
+}
+
+.balance-amount {
+  color: #111827 !important;
+  font-size: 1.9rem !important;
+  font-weight: 800 !important;
+  margin: 4px 0 !important;
+}
+
+.balance-trend {
+  color: #10b981 !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+}
+
+.daily-task-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 8px 0 !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04) !important;
+}
+
+.daily-task-item:last-child {
+  border-bottom: none !important;
+}
+
+.task-dot {
+  width: 9px !important;
+  height: 9px !important;
+  border-radius: 50% !important;
+  flex-shrink: 0 !important;
+}
+
+.task-dot.done { background-color: #10b981 !important; }
+.task-dot.active { background-color: #f59e0b !important; }
+.task-dot.pending { background-color: #6b7280 !important; }
+
+.task-text {
+  color: #374151 !important;
+  font-size: 0.82rem !important;
+  font-weight: 500 !important;
+}
+
+/* ===== Fix colapso del canvas del gráfico ===== */
+.chart-card {
+  width: 100% !important;
+  display: block !important;
+}
+
+.chart-wrapper {
+  position: relative !important;
+  width: 100% !important;
+  height: 280px !important;
+  min-height: 280px !important;
+  display: block !important;
+}
+
+.chart-wrapper canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ===== Fix render del canvas (ProTend) ===== */
+.chart-wrapper {
+  position: relative !important;
+  height: 300px !important;
+  width: 100% !important;
+  display: block !important;
+}
+
+.chart-wrapper canvas {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ===== Banner promocional mejorado (ProTend) ===== */
+.promo-banner-card {
+  background: linear-gradient(135deg, #4338ca 0%, #312e81 100%) !important;
+  color: #ffffff !important;
+  border-radius: 18px !important;
+  padding: 28px 24px !important;
+  min-height: 180px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  box-shadow: 0 8px 20px rgba(67, 56, 202, 0.25) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.promo-title {
+  color: #ffffff !important;
+  font-size: 1.15rem !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  margin: 0 0 8px 0 !important;
+}
+
+.promo-description {
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 0.8rem !important;
+  line-height: 1.4 !important;
+  margin: 0 !important;
+}
+
+.promo-btn {
+  background-color: #ffffff !important;
+  color: #312e81 !important;
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 10px 18px !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  align-self: flex-start !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1) !important;
+  transition: transform 0.2s ease, background-color 0.2s ease !important;
+}
+
+.promo-btn:hover {
+  background-color: #f8fafc !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ===== Secciones inferiores estilo ranking (ProTend) ===== */
+.card-section {
+  background: #ffffff !important;
+  border-radius: 18px !important;
+  padding: 24px !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+  margin-bottom: 24px !important;
+}
+
+.sub-cards-row .card-section {
+  margin-bottom: 0 !important;
+  height: 100% !important;
+}
+
+.card-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 18px !important;
+}
+
+.card-title {
+  color: #111827 !important;
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+}
+
+.view-all-link {
+  color: #6366f1 !important;
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+}
+
+.product-ranking-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+.ranking-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+  padding: 12px 16px !important;
+  background-color: #f9fafb !important;
+  border-radius: 14px !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.ranking-item:hover {
+  background-color: #f3f4f6 !important;
+}
+
+.rank-badge {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 700 !important;
+  font-size: 0.85rem !important;
+  flex-shrink: 0 !important;
+}
+
+.rank-badge.gold {
+  background-color: #fef08a !important;
+  color: #854d0e !important;
+}
+
+.rank-badge.silver {
+  background-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+.rank-badge.bronze {
+  background-color: #fed7aa !important;
+  color: #7c2d12 !important;
+}
+
+.item-info {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
+}
+
+.item-name {
+  color: #111827 !important;
+  font-weight: 600 !important;
+  font-size: 0.9rem !important;
+}
+
+.item-subtext {
+  color: #6b7280 !important;
+  font-size: 0.75rem !important;
+}
+
+.item-stat {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+}
+
+.stat-value {
+  color: #111827 !important;
+  font-weight: 700 !important;
+  font-size: 0.9rem !important;
+}
+
+.stat-trend {
+  color: #10b981 !important;
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+}
+
+/* ===== Proporciones grid + banner azul ProTend ===== */
+.dashboard-grid-layout {
+  display: grid !important;
+  grid-template-columns: 1fr 380px !important;
+  gap: 24px !important;
+  align-items: start !important;
+}
+
+.promo-banner-card {
+  background: linear-gradient(135deg, #4338ca 0%, #312e81 100%) !important;
+  color: #ffffff !important;
+  border-radius: 20px !important;
+  padding: 32px 28px !important;
+  min-height: 240px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  box-shadow: 0 10px 25px rgba(67, 56, 202, 0.28) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.promo-title {
+  color: #ffffff !important;
+  font-size: 1.3rem !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  margin: 0 0 10px 0 !important;
+}
+
+.promo-description {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 0.88rem !important;
+  line-height: 1.5 !important;
+  margin: 0 0 16px 0 !important;
+}
+
+.promo-btn {
+  background-color: #ffffff !important;
+  color: #312e81 !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 12px 22px !important;
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  align-self: flex-start !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+  transition: transform 0.2s ease, background-color 0.2s ease !important;
+  z-index: 2 !important;
+}
+
+.promo-btn:hover {
+  background-color: #f8fafc !important;
+  transform: translateY(-2px) !important;
+}
+
+.promo-banner-card::after {
+  content: '' !important;
+  position: absolute !important;
+  width: 180px !important;
+  height: 180px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-radius: 50% !important;
+  bottom: -50px !important;
+  right: -40px !important;
+  pointer-events: none !important;
+}
+
+.chart-wrapper {
+  position: relative !important;
+  width: 100% !important;
+  height: 290px !important;
+}
+
+/* ===== Subfila 2 KPIs + banner estirado (ProTend) ===== */
+.dashboard-grid-layout {
+  display: grid !important;
+  grid-template-columns: 1fr 380px !important;
+  gap: 24px !important;
+  align-items: stretch !important;
+}
+
+.kpis-subrow {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 20px !important;
+  margin-top: 20px !important;
+}
+
+@media (max-width: 900px) {
+  .kpis-subrow {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.sub-kpi-card {
+  background-color: #ffffff !important;
+  border-radius: 18px !important;
+  padding: 20px 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+}
+
+.sub-kpi-info {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.sub-kpi-label {
+  color: #6b7280 !important;
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+}
+
+.sub-kpi-value {
+  color: #111827 !important;
+  font-size: 1.8rem !important;
+  font-weight: 800 !important;
+  margin: 4px 0 !important;
+}
+
+.sub-kpi-badge.positive {
+  color: #10b981 !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+}
+
+.sub-kpi-caption {
+  color: #6b7280 !important;
+  font-size: 0.75rem !important;
+}
+
+.circle-progress {
+  width: 54px !important;
+  height: 54px !important;
+  border-radius: 50% !important;
+  border: 4px solid #6366f1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 700 !important;
+  font-size: 0.82rem !important;
+  color: #6366f1 !important;
+  flex-shrink: 0 !important;
+}
+
+.sub-kpi-icon-box {
+  width: 54px !important;
+  height: 54px !important;
+  border-radius: 50% !important;
+  background-color: #eef2ff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1.4rem !important;
+  flex-shrink: 0 !important;
+}
+
+.promo-banner-card {
+  background: linear-gradient(135deg, #4338ca 0%, #312e81 100%) !important;
+  color: #ffffff !important;
+  border-radius: 20px !important;
+  padding: 36px 30px !important;
+  height: 100% !important;
+  min-height: 420px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  box-shadow: 0 10px 25px rgba(67, 56, 202, 0.28) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.promo-title {
+  color: #ffffff !important;
+  font-size: 1.5rem !important;
+  font-weight: 800 !important;
+  line-height: 1.3 !important;
+}
+
+.promo-description {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 0.9rem !important;
+  line-height: 1.5 !important;
+}
+
+.promo-btn {
+  background-color: #ffffff !important;
+  color: #312e81 !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 14px 26px !important;
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  align-self: flex-start !important;
+  z-index: 2 !important;
+}
+
+/* ===== Proporción horizontal: derecha 450px ===== */
+.dashboard-grid-layout {
+  display: grid !important;
+  grid-template-columns: 1fr 450px !important;
+  gap: 24px !important;
+  align-items: start !important;
+}
+
+@media (max-width: 1200px) {
+  .dashboard-grid-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.promo-banner-card {
+  width: 100% !important;
+  min-height: 220px !important;
+  height: auto !important;
+  padding: 32px 28px !important;
+  background: linear-gradient(135deg, #4338ca 0%, #312e81 100%) !important;
+  border-radius: 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  box-shadow: 0 10px 25px rgba(67, 56, 202, 0.28) !important;
+}
+
+.chart-card {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* ===== Grid 1.5fr / 1fr (derecha ~2 KPIs) ===== */
+.dashboard-grid-layout {
+  display: grid !important;
+  grid-template-columns: 1.5fr 1fr !important;
+  gap: 24px !important;
+  align-items: start !important;
+}
+
+.promo-banner-card {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  background: linear-gradient(135deg, #4338ca 0%, #312e81 100%) !important;
+  border-radius: 20px !important;
+  padding: 32px 28px !important;
+  min-height: 220px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  box-shadow: 0 10px 25px rgba(67, 56, 202, 0.28) !important;
+}
+
+.chart-card {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.chart-wrapper {
+  position: relative !important;
+  width: 100% !important;
+  height: 270px !important;
+}
+
+
+/* ===== Cuadrícula 2x2 definitiva (ProTend) ===== */
+.kpis-quad-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 16px !important;
+  margin-top: 20px !important;
+}
+
+@media (max-width: 900px) {
+  .kpis-quad-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.sub-kpi-card {
+  background-color: #ffffff !important;
+  border-radius: 18px !important;
+  padding: 18px 22px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+}
+
+.sub-kpi-label {
+  color: #6b7280 !important;
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+}
+
+.sub-kpi-value {
+  color: #111827 !important;
+  font-size: 1.6rem !important;
+  font-weight: 800 !important;
+  margin: 2px 0 !important;
+}
+
+.sub-kpi-badge.positive {
+  color: #10b981 !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+}
+
+.sub-kpi-caption {
+  color: #9ca3af !important;
+  font-size: 0.72rem !important;
+}
+
+.circle-progress {
+  width: 50px !important;
+  height: 50px !important;
+  border-radius: 50% !important;
+  border: 4px solid #6366f1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 700 !important;
+  font-size: 0.8rem !important;
+  color: #6366f1 !important;
+  flex-shrink: 0 !important;
+}
+
+.icon-box-kpi, .sparkline-box {
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1.2rem !important;
+  flex-shrink: 0 !important;
+}
+
+.icon-box-kpi.green { background-color: #ecfdf5 !important; }
+.sparkline-box.purple { background-color: #f3e8ff !important; }
+.sparkline-box.orange { background-color: #ffedd5 !important; }
+
+/* ===== Tarjeta de Ingresos Semanales (Current Balance) ===== */
+.balance-card {
+  background: #ffffff !important;
+  border-radius: 18px !important;
+  padding: 24px !important;
+  margin-top: 20px !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+}
+
+.balance-title {
+  color: #6b7280 !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.balance-amount {
+  color: #111827 !important;
+  font-size: 1.8rem !important;
+  font-weight: 800 !important;
+  margin: 6px 0 4px 0 !important;
+}
+
+.balance-trend.positive {
+  color: #10b981 !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+}
+
+.balance-chart-wrapper {
+  position: relative !important;
+  width: 100% !important;
+  height: 160px !important;
+  margin-top: 16px !important;
+}
+
+.balance-chart-wrapper canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+}
+
+/* ===== Emparejar altura sub-tarjetas ===== */
+.sub-kpi-card {
+  background-color: #ffffff !important;
+  border-radius: 18px !important;
+  padding: 24px 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+  min-height: 110px !important;
+  box-sizing: border-box !important;
+}
+
+.kpis-quad-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 20px !important;
+  margin-top: 24px !important;
+  width: 100% !important;
+}
+
+/* ===== Recorte altura de Ingresos Semanales ===== */
+.balance-chart-wrapper {
+  position: relative !important;
+  width: 100% !important;
+  height: 110px !important;
+  margin-top: 10px !important;
+}
+
+.balance-card {
+  background: #ffffff !important;
+  border-radius: 18px !important;
+  padding: 16px 20px !important;
+  margin-top: 20px !important;
+  margin-bottom: 0 !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+  box-sizing: border-box !important;
+}
+
+.balance-amount {
+  color: #111827 !important;
+  font-size: 1.5rem !important;
+  font-weight: 800 !important;
+  margin: 2px 0 !important;
+}
+
+.balance-title {
+  color: #6b7280 !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+}
+
+/* ===== Columna derecha sin encimado ===== */
+.side-content-column {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 20px !important;
+  height: 100% !important;
+}
+
+.side-card {
+  background: #ffffff !important;
+  border-radius: 18px !important;
+  padding: 20px !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+  position: relative !important;
+  z-index: 1 !important;
+  box-sizing: border-box !important;
+}
+
+.balance-card, .daily-tasks-card {
+  position: static !important;
+  margin: 0 !important;
+}
+
+.balance-chart-wrapper {
+  position: relative !important;
+  width: 100% !important;
+  height: 120px !important;
+  margin-top: 10px !important;
+  overflow: hidden !important;
+}
+
+.daily-title {
+  color: #111827 !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  margin: 0 0 12px 0 !important;
+}
+
+.task-list {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.task-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 9px 0 !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04) !important;
+}
+
+.task-item:last-child {
+  border-bottom: none !important;
+}
+
+.dot {
+  width: 9px !important;
+  height: 9px !important;
+  border-radius: 50% !important;
+  flex-shrink: 0 !important;
+}
+
+.dot.green { background-color: #10b981 !important; }
+.dot.yellow { background-color: #f59e0b !important; }
+.dot.blue { background-color: #3b82f6 !important; }
+
+.task-name {
+  color: #374151 !important;
+  font-size: 0.82rem !important;
+  font-weight: 500 !important;
+}
+
+/* ===== Compactación columna derecha ===== */
+.side-content-column {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  height: auto !important;
+}
+
+.balance-card {
+  background: #ffffff !important;
+  border-radius: 18px !important;
+  padding: 16px 20px !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+  box-sizing: border-box !important;
+}
+
+.balance-amount {
+  color: #111827 !important;
+  font-size: 1.45rem !important;
+  font-weight: 800 !important;
+  margin: 2px 0 !important;
+}
+
+.balance-chart-wrapper {
+  position: relative !important;
+  width: 100% !important;
+  height: 95px !important;
+  margin-top: 8px !important;
+}
+
+.balance-chart-wrapper canvas {
+  max-height: 95px !important;
+}
+
+.daily-tasks-card {
+  background: #ffffff !important;
+  border-radius: 18px !important;
+  padding: 16px 20px !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+  box-sizing: border-box !important;
+}
+
+.daily-title {
+  color: #111827 !important;
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 10px !important;
+}
+
+/* ===== FIX: forzar dimensiones del p-chart (Ingresos Semanales) ===== */
+.balance-chart-wrapper {
+  height: 95px !important;
+  max-height: 95px !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.balance-chart-wrapper p-chart,
+.balance-chart-wrapper .p-chart {
+  display: block !important;
+  width: 100% !important;
+  height: 95px !important;
+  max-height: 95px !important;
+  position: relative !important;
+}
+
+.balance-chart-wrapper canvas {
+  width: 100% !important;
+  height: 95px !important;
+  max-height: 95px !important;
+  min-height: 95px !important;
+  display: block !important;
+}
+
+/* FIX definitivo: p-chart con altura inline ya fijada en el template */
+.balance-chart-wrapper p-chart,
+.balance-chart-wrapper .p-chart {
+  height: 95px !important;
+  width: 100% !important;
+  display: block !important;
+}
+
+.balance-chart-wrapper canvas {
+  width: 100% !important;
+  height: 95px !important;
+  max-height: 95px !important;
+}
+
+/* ===== Réplica Current Balance (barras dobles) ===== */
+.balance-card {
+  background: #ffffff !important;
+  border-radius: 20px !important;
+  padding: 24px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+  box-sizing: border-box !important;
+}
+
+.balance-title {
+  color: #6b7280 !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.balance-amount {
+  color: #111827 !important;
+  font-size: 1.8rem !important;
+  font-weight: 800 !important;
+  margin: 4px 0 2px 0 !important;
+}
+
+.balance-trend.positive {
+  color: #10b981 !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+}
+
+.balance-chart-wrapper {
+  position: relative !important;
+  width: 100% !important;
+  height: 180px !important;
+  max-height: 180px !important;
+  margin-top: 16px !important;
+}
+
+.balance-chart-wrapper p-chart,
+.balance-chart-wrapper .p-chart {
+  display: block !important;
+  width: 100% !important;
+  height: 180px !important;
+  position: relative !important;
+}
+
+.balance-chart-wrapper canvas {
+  width: 100% !important;
+  height: 180px !important;
+  max-height: 180px !important;
+  display: block !important;
+}
+
+
+/* ===== Gráfica semanal en CSS puro (sin canvas) ===== */
+.weekly-css-chart {
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  width: 100% !important;
+  height: 130px !important;
+  margin-top: 14px !important;
+}
+
+.week-group {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 6px !important;
+  height: 100% !important;
+}
+
+.week-bars {
+  flex: 1 !important;
+  width: 100% !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  height: 100px !important;
+}
+
+.bar {
+  width: 9px !important;
+  border-radius: 5px 5px 2px 2px !important;
+}
+
+.bar.done { background-color: #10b981 !important; }
+.bar.proc { background-color: #f59e0b !important; }
+
+.week-label {
+  color: #9ca3af !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+}
+
+/* ===== Balance con eje Y y altura 175 ===== */
+.balance-card {
+  background: #ffffff !important;
+  border-radius: 18px !important;
+  padding: 20px 22px !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid rgba(0, 0, 0, 0.04) !important;
+  box-sizing: border-box !important;
+}
+
+.balance-chart-wrapper {
+  position: relative !important;
+  width: 100% !important;
+  height: 175px !important;
+  max-height: 175px !important;
+  margin-top: 12px !important;
+}
+
+.balance-chart-wrapper p-chart,
+.balance-chart-wrapper .p-chart {
+  display: block !important;
+  width: 100% !important;
+  height: 175px !important;
+}
+
+.balance-chart-wrapper canvas {
+  width: 100% !important;
+  height: 175px !important;
+  max-height: 175px !important;
+  display: block !important;
+}
+
+/* ===== Gráfica semanal CSS con eje Y (0-100) ===== */
+.weekly-plot {
+  display: flex !important;
+  gap: 10px !important;
+  align-items: stretch !important;
+  margin-top: 12px !important;
+  width: 100% !important;
+}
+
+.y-labels {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  color: #9ca3af !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  width: 22px !important;
+  flex-shrink: 0 !important;
+  padding: 0 0 16px 0 !important;
+  text-align: right !important;
+}
+
+.plot-area {
+  flex: 1 !important;
+  min-width: 0 !important;
+  background-image: repeating-linear-gradient(
+    to top,
+    #f3f4f6 0px,
+    #f3f4f6 1px,
+    transparent 1px,
+    transparent 25%
+  ) !important;
+  border-radius: 4px !important;
+}
+
+.weekly-css-chart {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: space-between !important;
+  gap: 6px !important;
+  width: 100% !important;
+  height: 150px !important;
+  padding-top: 2px !important;
+}
+
+.week-group {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  height: 100% !important;
+}
+
+.week-bars {
+  flex: 1 !important;
+  width: 100% !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  min-height: 0 !important;
+}
+
+.bar {
+  width: 9px !important;
+  border-radius: 5px 5px 2px 2px !important;
+}
+
+.bar.done { background-color: #10b981 !important; }
+.bar.proc { background-color: #f59e0b !important; }
+
+.week-label {
+  color: #9ca3af !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  padding-top: 4px !important;
+}
+
+/* ===== Fondo totalmente blanco ===== */
+.dashboard-container,
+.dashboard-content-wrapper {
+  background-color: #ffffff !important;
+}

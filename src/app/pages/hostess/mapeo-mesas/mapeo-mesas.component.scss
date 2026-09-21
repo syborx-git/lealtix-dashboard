@@ -1,0 +1,120 @@
+:host {
+    display: block;
+    padding: 0.5rem;
+}
+
+.mapeo-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.mapeo-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.mapeo-subtitle {
+    color: var(--p-text-muted-color);
+}
+
+.mapeo-loading {
+    display: flex;
+    justify-content: center;
+    padding: 3rem 0;
+}
+
+.mapeo-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 3rem 1rem;
+    text-align: center;
+    color: var(--p-text-muted-color);
+
+    i {
+        font-size: 3rem;
+        opacity: 0.5;
+    }
+
+    h3 {
+        margin: 0.5rem 0 0;
+    }
+
+    p {
+        margin: 0 0 0.5rem;
+    }
+}
+
+.mesas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.mesa-card {
+    border: 1px solid var(--p-surface-border);
+    border-radius: 12px;
+    padding: 1rem;
+    background: var(--p-surface-card);
+    box-shadow: var(--p-card-shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.mesa-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.mesa-name {
+    font-weight: 700;
+    font-size: 1.05rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mesa-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--p-text-muted-color);
+}
+
+.mesa-mesero {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+}
+
+.mesa-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.25rem;
+    margin-top: auto;
+}
+
+.mesa-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    .field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+
+        label {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+    }
+}

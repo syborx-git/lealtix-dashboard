@@ -1,0 +1,132 @@
+:host ::ng-deep .registrar-merma-dialog .p-dialog-content {
+  padding: 1.25rem;
+}
+
+.merma-header-summary .summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.summary-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-color-secondary);
+}
+
+.summary-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-top: 0.2rem;
+}
+
+.merma-tipo {
+  margin-bottom: 0.25rem;
+}
+
+.insumos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.insumo-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--surface-d);
+  border-radius: 8px;
+  background: var(--surface-a);
+}
+
+.insumo-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.insumo-name {
+  font-weight: 600;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.insumo-meta {
+  font-size: 0.82rem;
+  color: var(--text-color-secondary);
+}
+
+.insumo-qty {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.qty-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-color-secondary);
+}
+
+.insumo-qty input {
+  width: 78px;
+  text-align: center;
+}
+
+.insumo-qty input.disabled {
+  opacity: 0.45;
+}
+
+.insumo-subtotal {
+  min-width: 88px;
+  text-align: right;
+  font-weight: 600;
+  color: var(--warning);
+}
+
+.loading-insumos,
+.no-insumos {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  color: var(--text-color-secondary);
+  justify-content: center;
+}
+
+.merma-footer-info {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  align-items: center;
+}
+
+.merma-footer-info .summary-total {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--warning);
+  margin-top: 0.2rem;
+}
+
+.footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.loading-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  color: var(--text-color-secondary);
+}

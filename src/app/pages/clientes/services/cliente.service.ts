@@ -116,6 +116,34 @@ export class ClienteService {
   }
 
   /**
+   * Verifica si el cliente tiene alergias que coincidan con los insumos de un producto.
+   * Devuelve los insumos alergénicos {insumoId, insumoName}.
+   */
+  checkClienteAllergens(
+    customerId: number,
+    productId: number,
+    excludedIds: number[] = [],
+    additionalIds: number[] = []
+  ): Observable<{ insumoId: number; insumoName: string }[]> {
+    return this.http.post<GenericResponse<any>>(`${this.baseUrl}/${customerId}/allergies/check`, {
+      productId,
+      excludedIds,
+      additionalIds
+    })
+      .pipe(
+        map(response => (response?.object && Array.isArray(response.object) ? response.object : []) as any[]),
+        map(items => items.map((it: any) => ({
+          insumoId: Number(it.insumoId ?? 0),
+          insumoName: String(it.insumoName ?? '')
+        })).filter(m => m.insumoId > 0 && m.insumoName)),
+        catchError(error => {
+          console.error('Error al verificar alergias:', error);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  /**
    * Actualiza un cliente existente
    */
   updateCliente(id: number, req: UpdateClienteRequest): Observable<Cliente> {
@@ -127,6 +155,12 @@ export class ClienteService {
     if ((req as any).genero) payload.gender = this.mapGeneroToBackend((req as any).genero ?? req.genero);
     if (req.telefono) payload.phone = req.telefono;
     if (typeof req.activo !== 'undefined') payload.active = (req as any).activo ?? req.activo;
+    if (typeof (req as any).alergias === 'string' && (req as any).alergias.trim()) {
+      payload.allergies = this.parseAllergiesTokens((req as any).alergias);
+      payload.allergyText = (req as any).alergias.trim();
+    } else if (Array.isArray((req as any).alergias)) {
+      payload.allergies = (req as any).alergias;
+    }
 
     return this.http.put<GenericResponse<any>>(`${this.baseUrl}/${id}`, payload)
       .pipe(
@@ -175,7 +209,9 @@ export class ClienteService {
       email: c.email,
       gender: this.mapGeneroToBackend(c.genero),
       birthDate: typeof c.fechaNacimiento === 'string' ? c.fechaNacimiento : (c.fechaNacimiento as Date).toISOString().split('T')[0],
-      phone: c.telefono ?? ''
+      phone: c.telefono ?? '',
+      allergies: this.parseAllergiesTokens(c.alergias ?? ''),
+      allergyText: (c.alergias ?? '').trim()
     }));
 
     return this.http.post<GenericResponse<any>>(`${this.baseUrl}/bulk-upload?tenantId=${tenantId}`, payload)
@@ -369,7 +405,10 @@ export class ClienteService {
       telefono,
       activo,
       fechaCreacion,
-      fechaActualizacion
+      fechaActualizacion,
+      alergias: Array.isArray(item.allergies)
+        ? item.allergies.map((a: any) => typeof a === 'string' ? a : (a?.name ?? '')).filter((n: string) => !!n)
+        : []
     } as Cliente;
   }
 
@@ -399,8 +438,26 @@ export class ClienteService {
       phone: req.telefono ?? '',
       acceptedPromotions: true,
       acceptedAt: new Date().toISOString().split('T')[0],
-      active: true
+      active: true,
+      allergies: this.parseAllergiesTokens(req.alergias ?? ''),
+      allergyText: (req.alergias ?? '').trim()
     };
+  }
+
+  /**
+   * Divide el texto libre de alergias ("nuez, calabaza y almendras") en términos.
+   * El backend normaliza cada término (minúsculas, sin acentos, singular).
+   */
+  private parseAllergiesTokens(text: string): string[] {
+    if (!text) return [];
+    const aux = text
+      .replace(/\by\b/gi, ',')
+      .replace(/\be\b/gi, ',')
+      .replace(/[;,]/g, ',');
+    return aux
+      .split(',')
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
   }
 
   /**

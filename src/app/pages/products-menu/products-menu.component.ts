@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, signal, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormArray, FormControl } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -36,7 +36,7 @@ import { TenantService } from '../admin-page/service/tenant.service';
 import { AuthService } from '@/auth/auth.service';
 import { ConfettiService } from '@/confetti/confetti.service';
 import { ConfettiComponent } from '@/confetti/confetti.component';
-import { environment } from '../commons/environment.dev';
+import { environment } from '../commons/environment';
 import { CampaignService } from '@/pages/campaigns/services/campaign.service';
 import { CatalogService, CatalogCategory } from '@/pages/campaigns/services/catalog.service';
 import { TreeNode } from 'primeng/api';
@@ -129,10 +129,10 @@ export class ProductMenuComponent implements OnInit {
 
     products = signal<Product[]>([]);
 
-    // Pestaña activa de la tabla unificada: 'products' | 'insumos'
-    activeTab = signal<'products' | 'insumos'>('products');
+    // Pestaña activa de la tabla unificada: 'products' | 'insumos' | 'bebidas'
+    activeTab = signal<'products' | 'insumos' | 'bebidas'>('products');
 
-    setActiveTab(tab: 'products' | 'insumos') {
+    setActiveTab(tab: 'products' | 'insumos' | 'bebidas') {
         this.activeTab.set(tab);
         this.tableFirst = 0;
         this.dt?.reset();
@@ -147,32 +147,11 @@ export class ProductMenuComponent implements OnInit {
 
     insumos = signal<any[]>([]);
     insumosLoading = signal<boolean>(false);
-    productRecipeLines: any[] = [];
-    recipeLoading: boolean = false;
     unidades = ['pieza', 'gramos', 'mililitros'];
-    tipoIngredienteOptions = [
-        { label: 'Base (siempre en la receta)', value: 'BASE' },
-        { label: 'Modificable (puede retirarse)', value: 'MODIFICABLE' },
-        { label: 'Adicional (costo extra)', value: 'ADICIONAL' }
-    ];
+    bebidaUnidades = ['pieza', 'mililitros'];
 
     // Stock por producto (inventario) para mostrarlo en la tabla de productos
     inventoryItems = signal<any[]>([]);
-
-    // Diálogo "Ver receta" (asignar insumos por platillo: base/modificable/adicional)
-    recipeVisible = false;
-    recipeItem: any | null = null;
-    recipeIngredients = signal<any[]>([]);
-    loadingRecipes = signal<boolean>(false);
-    recipeInsumoId: number | null = null;
-    recipeCantidad = 0;
-    recipeTipoIngrediente = 'BASE';
-    recipePrecio = 0;
-    recipeAddLoading = signal<boolean>(false);
-    editingRecipe: any | null = null;
-    editRecipeCantidad = 0;
-    editRecipeModificable = false;
-    editRecipePrecio = 0;
 
     // Diálogo de insumo (crear/editar/restock)
     insumoDialogVisible = false;
@@ -181,9 +160,25 @@ export class ProductMenuComponent implements OnInit {
     insumoUnidad = 'pieza';
     insumoStock = 0;
     insumoMin = 0;
+    insumoCategoryIds: number[] = [];
+    insumoCategoryPicker: any = null;
     insumoRestockVisible = false;
     insumoRestockTarget: any | null = null;
     insumoRestockCantidad = 0;
+    insumoRestockCostoTotal = 0;
+
+    // Bebidas (insumos marcados como bebida, vendibles en Comandix)
+    bebidas = signal<any[]>([]);
+    bebidasLoading = signal<boolean>(false);
+    bebidaDialogVisible = false;
+    editingBebida: any | null = null;
+    bebidaNombre = '';
+    bebidaUnidad = 'pieza';
+    bebidaStock = 0;
+    bebidaMin = 0;
+    bebidaPrecioVenta = 0;
+    bebidaCategoryIds: number[] = [];
+    bebidaCategoryPicker: any = null;
 
     newCategory: { name?: string; description?: string; tenantId?: string; active: boolean } = {
         name: '',
@@ -212,7 +207,8 @@ export class ProductMenuComponent implements OnInit {
         private confettiService: ConfettiService,
         private campaignService: CampaignService,
         private inventoryService: InventoryService,
-        private router: Router
+        private router: Router,
+        private cdr: ChangeDetectorRef
     ) {
         this.categoryForm = this.fb.group({
             id: [0],
@@ -231,7 +227,8 @@ export class ProductMenuComponent implements OnInit {
             price: [null, Validators.required],
             img_url: [''],
             productImage: [null], // store actual File/Blob for upload
-            isActive: [true]
+            isActive: [true],
+            autoAvailability: [true]
         });
     }
 
@@ -252,6 +249,7 @@ export class ProductMenuComponent implements OnInit {
                     this.loadProducts();
                     this.loadCrossSellingCatalog();
                     this.loadInsumos();
+                    this.loadBebidas();
                     this.loadInventory();
                     this.checkBannerConditions();
                     this.checkCampaignSetupPrompt();
@@ -352,6 +350,22 @@ export class ProductMenuComponent implements OnInit {
         });
     }
 
+    private loadBebidas(): void {
+        if (!this.tenantId) return;
+        this.bebidasLoading.set(true);
+        this.inventoryService.getBebidas(this.tenantId).subscribe({
+            next: (res) => {
+                this.bebidas.set(res?.object || []);
+                this.bebidasLoading.set(false);
+            },
+            error: (err) => {
+                console.error('Error loading bebidas', err);
+                this.bebidas.set([]);
+                this.bebidasLoading.set(false);
+            }
+        });
+    }
+
     private loadInventory(): void {
         if (!this.tenantId) return;
         this.inventoryService.getByTenant(this.tenantId).subscribe({
@@ -373,6 +387,63 @@ export class ProductMenuComponent implements OnInit {
         return item?.stock ?? 0;
     }
 
+    /** Categorías completas de una fila (producto/insumo/bebida) para mostrar chips */
+    rowCategories(row: any): { id: number; name: string }[] {
+        const cats: { id: number; name: string }[] = [];
+
+        if (row && Array.isArray(row.categories)) {
+            row.categories.forEach((c: any) => {
+                if (c && c.id !== null && c.id !== undefined && c.name) {
+                    const id = Number(c.id);
+                    if (!Number.isNaN(id) && !cats.some((x) => x.id === id)) {
+                        cats.push({ id, name: c.name });
+                    }
+                }
+            });
+        }
+
+        if (!cats.length && row && row.categoryId != null && row.categoryName) {
+            const id = Number(row.categoryId);
+            if (!Number.isNaN(id)) cats.push({ id, name: row.categoryName });
+        }
+
+        return cats;
+    }
+
+    /* ============ Mini-cards de categorías (máx 3 + "..." expandible) ============ */
+
+    private expandedCatRows = new Set<string>();
+
+    private categoryRowKey(row: any): string {
+        const rawId = row?.id ?? 0;
+        const id = typeof rawId === 'number' ? rawId : String(rawId);
+        const name = row?.name ?? row?.nombre ?? '';
+        return `${id}_${name}`;
+    }
+
+    isCategoryRowExpanded(row: any): boolean {
+        return this.expandedCatRows.has(this.categoryRowKey(row));
+    }
+
+    toggleCategories(row: any): void {
+        const key = this.categoryRowKey(row);
+        if (this.expandedCatRows.has(key)) {
+            this.expandedCatRows.delete(key);
+        } else {
+            this.expandedCatRows.add(key);
+        }
+    }
+
+    visibleRowCategories(row: any, limit = 3): { id: number; name: string }[] {
+        const all = this.rowCategories(row);
+        if (all.length <= limit || this.isCategoryRowExpanded(row)) return all;
+        return all.slice(0, limit);
+    }
+
+    hiddenCategoryCount(row: any): number {
+        return Math.max(0, this.rowCategories(row).length - 3);
+    }
+
     stockBadgeClass(product: any): string {
         const id = this.normalizeProductId(product?.id);
         const item = id == null ? null : this.inventoryItems().find((i: any) => Number(i.id) === id);
@@ -389,145 +460,6 @@ export class ProductMenuComponent implements OnInit {
         return `${item.stock} ${item.unidad ?? ''}`.trim();
     }
 
-    /* ============ Receta (Ver receta) ============ */
-
-    openRecipe(product: any) {
-        const id = this.normalizeProductId(product?.id);
-        if (id == null) return;
-        this.recipeItem = product;
-        this.recipeIngredients.set([]);
-        this.recipeInsumoId = null;
-        this.recipeCantidad = 0;
-        this.recipeTipoIngrediente = 'BASE';
-        this.recipePrecio = 0;
-        this.recipeVisible = true;
-        this.loadRecipeLines(id);
-    }
-
-    private loadRecipeLines(dishId: number): void {
-        this.loadingRecipes.set(true);
-        const lines: any[] = [];
-        this.inventoryService.getRecipes(dishId).subscribe({
-            next: (res) => {
-                const recipes = (res?.object || []).map((r: any) => ({
-                    ...r,
-                    kind: 'RECIPE',
-                    tipoIngrediente: r.modificable ? 'MODIFICABLE' : 'BASE'
-                }));
-                lines.push(...recipes);
-                this.inventoryService.getAdditionals(dishId).subscribe({
-                    next: (res2) => {
-                        const additionals = (res2?.object || []).map((a: any) => ({
-                            ...a,
-                            kind: 'ADDITIONAL',
-                            tipoIngrediente: 'ADICIONAL'
-                        }));
-                        lines.push(...additionals);
-                        this.recipeIngredients.set(lines);
-                        this.loadingRecipes.set(false);
-                    },
-                    error: () => {
-                        this.recipeIngredients.set(lines);
-                        this.loadingRecipes.set(false);
-                    }
-                });
-            },
-            error: () => {
-                this.recipeIngredients.set(lines);
-                this.loadingRecipes.set(false);
-            }
-        });
-    }
-
-    addRecipeIngredient() {
-        const dishId = this.normalizeProductId(this.recipeItem?.id);
-        if (!dishId || !this.recipeInsumoId || this.recipeCantidad <= 0) return;
-        this.recipeAddLoading.set(true);
-        const finish = () => {
-            this.recipeInsumoId = null;
-            this.recipeCantidad = 0;
-            this.recipePrecio = 0;
-            this.recipeTipoIngrediente = 'BASE';
-            this.loadRecipeLines(dishId);
-            this.loadInventory();
-            this.messageService.add({ severity: 'success', summary: 'Insumo agregado', detail: 'Se actualizó la receta del platillo', life: 3000 });
-        };
-        if (this.recipeTipoIngrediente === 'ADICIONAL') {
-            this.inventoryService.addAdditional(dishId, this.recipeInsumoId, this.recipeCantidad, this.recipePrecio || 0).subscribe({
-                next: () => {
-                    finish();
-                    this.recipeAddLoading.set(false);
-                },
-                error: (err) => {
-                    this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo agregar el adicional', life: 3000 });
-                    this.recipeAddLoading.set(false);
-                }
-            });
-        } else {
-            this.inventoryService.addRecipeIngredient(dishId, this.recipeInsumoId, this.recipeCantidad, this.recipeTipoIngrediente === 'MODIFICABLE').subscribe({
-                next: () => {
-                    finish();
-                    this.recipeAddLoading.set(false);
-                },
-                error: (err) => {
-                    this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo agregar el insumo', life: 3000 });
-                    this.recipeAddLoading.set(false);
-                }
-            });
-        }
-    }
-
-    removeRecipeIngredient(ing: any) {
-        const label = ing.kind === 'ADDITIONAL' ? 'adicional' : 'ingrediente';
-        this.confirmationService.confirm({
-            message: `¿Quitar "${ing.insumoName}" (${label}) de la receta?`,
-            header: 'Confirmar',
-            icon: 'pi pi-exclamation-triangle',
-            accept: () => {
-                const dishId = this.normalizeProductId(this.recipeItem?.id);
-                const action = ing.kind === 'ADDITIONAL'
-                    ? this.inventoryService.removeAdditional(ing.id)
-                    : this.inventoryService.removeRecipeIngredient(ing.id);
-                action.subscribe({
-                    next: () => {
-                        if (dishId) this.loadRecipeLines(dishId);
-                        this.loadInventory();
-                    },
-                    error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: `No se pudo quitar el ${label}`, life: 3000 })
-                });
-            }
-        });
-    }
-
-    startEditIngredient(ing: any) {
-        this.editingRecipe = ing;
-        this.editRecipeCantidad = ing.cantidad;
-        this.editRecipeModificable = !!ing.modificable;
-        this.editRecipePrecio = Number(ing.precio ?? 0);
-    }
-
-    cancelEditIngredient() {
-        this.editingRecipe = null;
-    }
-
-    saveEditIngredient() {
-        if (!this.editingRecipe || this.editRecipeCantidad <= 0) return;
-        const dishId = this.normalizeProductId(this.recipeItem?.id);
-        const ing = this.editingRecipe;
-        const action = ing.kind === 'ADDITIONAL'
-            ? this.inventoryService.updateAdditional(ing.id, this.editRecipeCantidad, this.editRecipePrecio)
-            : this.inventoryService.updateRecipeIngredient(ing.id, this.editRecipeCantidad, this.editRecipeModificable);
-        action.subscribe({
-            next: () => {
-                this.editingRecipe = null;
-                if (dishId) this.loadRecipeLines(dishId);
-                this.loadInventory();
-                this.messageService.add({ severity: 'success', summary: 'Actualizado', detail: 'Insumo de la receta actualizado', life: 3000 });
-            },
-            error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar', life: 3000 })
-        });
-    }
-
     /* ============ Insumos (crear/editar/almacenar) ============ */
 
     openNewInsumo() {
@@ -536,6 +468,8 @@ export class ProductMenuComponent implements OnInit {
         this.insumoUnidad = 'pieza';
         this.insumoStock = 0;
         this.insumoMin = 0;
+        this.insumoCategoryIds = [];
+        this.insumoCategoryPicker = null;
         this.insumoDialogVisible = true;
     }
 
@@ -545,7 +479,32 @@ export class ProductMenuComponent implements OnInit {
         this.insumoUnidad = insumo.unidad || 'pieza';
         this.insumoStock = insumo.stock;
         this.insumoMin = insumo.stockMinimo;
+        this.insumoCategoryIds = Array.isArray(insumo.categoryIds)
+            ? insumo.categoryIds.map((n: any) => Number(n)).filter((n: number) => !Number.isNaN(n))
+            : [];
+        this.insumoCategoryPicker = null;
         this.insumoDialogVisible = true;
+    }
+
+    addInsumoCategory(value: any) {
+        this.insumoCategoryPicker = null;
+        if (value === null || value === undefined) return;
+        const id = Number(value);
+        if (Number.isNaN(id)) return;
+        if (!this.insumoCategoryIds.includes(id)) this.insumoCategoryIds.push(id);
+    }
+
+    removeInsumoCategory(id: number) {
+        this.insumoCategoryIds = this.insumoCategoryIds.filter((v) => v !== Number(id));
+    }
+
+    insumoAvailableCategories(): any[] {
+        return (this.categoriesArray.value || []).filter((c: any) => !this.insumoCategoryIds.includes(Number(c.value)));
+    }
+
+    insumoCategoryName(id: number): string {
+        const cat = (this.categoriesArray.value || []).find((c: any) => String(c.value) === String(id));
+        return cat?.label ?? '';
     }
 
     saveInsumo() {
@@ -556,14 +515,14 @@ export class ProductMenuComponent implements OnInit {
         };
         if (this.editingInsumo) {
             this.inventoryService.updateInsumo(
-                this.editingInsumo.id, this.insumoNombre, this.insumoUnidad, this.insumoStock, this.insumoMin
+                this.editingInsumo.id, this.insumoNombre, this.insumoUnidad, this.insumoStock, this.insumoMin, this.insumoCategoryIds
             ).subscribe({
                 next: () => { this.messageService.add({ severity: 'success', summary: 'Insumo actualizado', detail: 'Listo', life: 3000 }); done(); },
                 error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el insumo', life: 3000 })
             });
         } else {
             this.inventoryService.createInsumo(
-                this.tenantId, this.insumoNombre, this.insumoUnidad, this.insumoStock, this.insumoMin
+                this.tenantId, this.insumoNombre, this.insumoUnidad, this.insumoStock, this.insumoMin, this.insumoCategoryIds
             ).subscribe({
                 next: () => { this.messageService.add({ severity: 'success', summary: 'Insumo creado', detail: 'Listo para usar en recetas', life: 3000 }); done(); },
                 error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear el insumo', life: 3000 })
@@ -595,16 +554,18 @@ export class ProductMenuComponent implements OnInit {
     openInsumoRestock(insumo: any) {
         this.insumoRestockTarget = insumo;
         this.insumoRestockCantidad = 0;
+        this.insumoRestockCostoTotal = 0;
         this.insumoRestockVisible = true;
     }
 
     doInsumoRestock() {
         if (!this.insumoRestockTarget || this.insumoRestockCantidad <= 0) return;
-        this.inventoryService.restockInsumo(this.insumoRestockTarget.id, this.insumoRestockCantidad).subscribe({
+        this.inventoryService.restockInsumo(this.insumoRestockTarget.id, this.insumoRestockCantidad, this.insumoRestockCostoTotal).subscribe({
             next: (res) => {
                 this.messageService.add({ severity: 'success', summary: 'Exitoso', detail: `Stock del insumo: ${res.object}`, life: 3000 });
                 this.insumoRestockVisible = false;
                 this.loadInsumos();
+                this.loadBebidas();
                 this.loadInventory();
             },
             error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo reabastecer', life: 3000 })
@@ -615,30 +576,110 @@ export class ProductMenuComponent implements OnInit {
         return insumo.stock <= insumo.stockMinimo;
     }
 
-    private loadRecipeForProduct(productId: number | null): void {
-        this.productRecipeLines = [];
-        if (!productId) return;
-        this.recipeLoading = true;
-        this.inventoryService.getRecipes(productId).subscribe({
-            next: (res) => {
-                const items = res?.object || [];
-                this.productRecipeLines = items.map((r: any) => ({
-                    insumoId: r.insumoId,
-                    cantidad: r.cantidad,
-                    modificable: r.modificable
-                }));
-                this.recipeLoading = false;
-            },
-            error: () => {
-                this.productRecipeLines = [];
-                this.recipeLoading = false;
+    /* ============ Bebidas (crear/editar/almacenar, vendibles en Comandix) ============ */
+
+    openNewBebida() {
+        this.editingBebida = null;
+        this.bebidaNombre = '';
+        this.bebidaUnidad = 'pieza';
+        this.bebidaStock = 0;
+        this.bebidaMin = 0;
+        this.bebidaPrecioVenta = 0;
+        this.bebidaCategoryIds = [];
+        this.bebidaCategoryPicker = null;
+        this.bebidaDialogVisible = true;
+        this.cdr.detectChanges();
+    }
+
+    openEditBebida(bebida: any) {
+        this.editingBebida = bebida;
+        this.bebidaNombre = bebida.nombre;
+        this.bebidaUnidad = bebida.unidad || 'pieza';
+        this.bebidaStock = bebida.stock;
+        this.bebidaMin = bebida.stockMinimo;
+        this.bebidaPrecioVenta = bebida.precioVenta ?? 0;
+        this.bebidaCategoryIds = Array.isArray(bebida.categoryIds)
+            ? bebida.categoryIds.map((n: any) => Number(n)).filter((n: number) => !Number.isNaN(n))
+            : [];
+        this.bebidaCategoryPicker = null;
+        this.bebidaDialogVisible = true;
+        this.cdr.detectChanges();
+    }
+
+    addBebidaCategory(value: any) {
+        this.bebidaCategoryPicker = null;
+        if (value === null || value === undefined) return;
+        const id = Number(value);
+        if (Number.isNaN(id)) return;
+        if (!this.bebidaCategoryIds.includes(id)) this.bebidaCategoryIds.push(id);
+    }
+
+    removeBebidaCategory(id: number) {
+        this.bebidaCategoryIds = this.bebidaCategoryIds.filter((v) => v !== Number(id));
+    }
+
+    bebidaAvailableCategories(): any[] {
+        return (this.categoriesArray.value || []).filter((c: any) => !this.bebidaCategoryIds.includes(Number(c.value)));
+    }
+
+    bebidaCategoryName(id: number): string {
+        const cat = (this.categoriesArray.value || []).find((c: any) => String(c.value) === String(id));
+        return cat?.label ?? '';
+    }
+
+    saveBebida() {
+        if (!this.bebidaNombre?.trim()) {
+            this.messageService.add({ severity: 'warn', summary: 'Aviso', detail: 'Escribe el nombre de la bebida', life: 3000 });
+            return;
+        }
+        const done = () => {
+            this.bebidaDialogVisible = false;
+            this.loadBebidas();
+        };
+        if (this.editingBebida) {
+            this.inventoryService.updateBebida(
+                this.editingBebida.id, this.bebidaNombre, this.bebidaUnidad, this.bebidaStock, this.bebidaMin, this.bebidaPrecioVenta, this.bebidaCategoryIds
+            ).subscribe({
+                next: () => { this.messageService.add({ severity: 'success', summary: 'Bebida actualizada', detail: 'Listo', life: 3000 }); done(); },
+                error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar la bebida', life: 3000 })
+            });
+        } else {
+            this.inventoryService.createBebida(
+                this.tenantId, this.bebidaNombre, this.bebidaUnidad, this.bebidaStock, this.bebidaMin, this.bebidaPrecioVenta, this.bebidaCategoryIds
+            ).subscribe({
+                next: () => { this.messageService.add({ severity: 'success', summary: 'Bebida creada', detail: 'Aparecerá en el menú y en Comandix', life: 3000 }); done(); },
+                error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear la bebida', life: 3000 })
+            });
+        }
+    }
+
+    deleteBebida(bebida: any) {
+        this.confirmationService.confirm({
+            message: `¿Eliminar la bebida "${bebida.nombre}"?`,
+            header: 'Confirmar',
+            icon: 'pi pi-exclamation-triangle',
+            accept: () => {
+                this.inventoryService.deleteBebida(bebida.id).subscribe({
+                    next: (res) => {
+                        if (res.code !== 200) {
+                            this.messageService.add({ severity: 'warn', summary: 'Aviso', detail: res.message, life: 3000 });
+                            return;
+                        }
+                        this.messageService.add({ severity: 'success', summary: 'Bebida eliminada', detail: 'Listo', life: 3000 });
+                        this.loadBebidas();
+                        this.loadInventory();
+                    },
+                    error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo eliminar la bebida', life: 3000 })
+                });
             }
         });
     }
 
-    private resetRecipeState(): void {
-        this.productRecipeLines = [];
-        this.recipeLoading = false;
+    openBebidaRestock(bebida: any) {
+        this.insumoRestockTarget = bebida;
+        this.insumoRestockCantidad = 0;
+        this.insumoRestockCostoTotal = 0;
+        this.insumoRestockVisible = true;
     }
 
     private loadCrossSellingForProduct(productId: number | null): void {
@@ -1036,6 +1077,7 @@ export class ProductMenuComponent implements OnInit {
         // Ensure `isActive` is always true by default for each product
         productsToCreate.forEach(p => {
             p.isActive = true;
+            (p as any).autoAvailability = true;
         });
 
         const payload = {
@@ -1247,21 +1289,24 @@ export class ProductMenuComponent implements OnInit {
         this.product = {};
         // default category selection should be the placeholder (null)
         (this.product as any).categoryId = null;
+        (this.product as any).categoryIds = [];
+        (this.product as any).categories = [];
         this.submitted = false;
         // reset product form (clear productImage as well)
-        this.productForm.reset({ id: null, name: '', description: '', price: null, img_url: '', productImage: null, isActive: true });
+        this.productForm.reset({ id: null, name: '', description: '', price: null, img_url: '', productImage: null, isActive: true, autoAvailability: true });
         // ensure preview and internal file reference are cleared when creating new
         this.productImagePreview = null;
         this.productForm.get('productImage')?.setValue(null);
         this.resetCrossSellingState();
-        this.resetRecipeState();
         this.productDialog = true;
     }
 
     openNewWithCategory(categoryId: number) {
         this.product = {};
-        // Preselect the category
+        // Preselect the category (as principal)
         (this.product as any).categoryId = categoryId;
+        (this.product as any).categoryIds = [categoryId];
+        (this.product as any).categories = [];
         this.submitted = false;
         // reset product form with preselected category
         this.productForm.reset({
@@ -1271,18 +1316,26 @@ export class ProductMenuComponent implements OnInit {
             price: null,
             img_url: '',
             productImage: null,
-            isActive: true
+            isActive: true,
+            autoAvailability: true
         });
         // ensure preview and internal file reference are cleared when creating new
         this.productImagePreview = null;
         this.productForm.get('productImage')?.setValue(null);
         this.resetCrossSellingState();
-        this.resetRecipeState();
         this.productDialog = true;
     }
 
     editProduct(product: Product) {
         this.product = { ...product };
+        // populate categoryIds/categories from the product (backend provides them)
+        if (!Array.isArray(this.product.categoryIds)) {
+            const baseId = (product as any).categoryId;
+            (this.product as any).categoryIds = baseId != null ? [baseId] : [];
+        }
+        if (!Array.isArray(this.product.categories)) {
+            (this.product as any).categories = [];
+        }
         // populate productForm
         this.productForm.patchValue({
             id: product.id ?? null,
@@ -1290,14 +1343,13 @@ export class ProductMenuComponent implements OnInit {
             description: product.description ?? '',
             price: product.price ?? null,
             img_url: product.imageUrl ?? '',
-            isActive: product.isActive ?? true
-
+            isActive: product.isActive ?? true,
+            autoAvailability: (product as any).autoAvailability ?? true
         });
         this.productForm.get('productImage')?.setValue(null);
         this.productImagePreview = product.imageUrl ?? null;
         const productId = this.getCurrentProductId();
         this.loadCrossSellingForProduct(productId);
-        this.loadRecipeForProduct(productId);
         this.productDialog = true;
     }
 
@@ -1451,8 +1503,11 @@ export class ProductMenuComponent implements OnInit {
     saveProduct() {
 
         this.submitted = true;
-        if (!this.product || (this.product as any).categoryId === null || (this.product as any).categoryId === undefined) {
-            this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'Seleccione una categoría', life: 3000 });
+        const categoryIds = Array.isArray((this.product as any)?.categoryIds)
+            ? ((this.product as any).categoryIds as number[]).map((n) => Number(n)).filter((n) => !Number.isNaN(n))
+            : [];
+        if (!this.product || categoryIds.length === 0) {
+            this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'Seleccione al menos una categoría', life: 3000 });
             return;
         }
 
@@ -1465,7 +1520,7 @@ export class ProductMenuComponent implements OnInit {
         const prod = this.productForm.value;
         const imgFile: File | Blob | null = this.productForm.get('productImage')?.value || null;
 
-        const selectedCategoryId = (this.product as any).categoryId;
+        const selectedCategoryId = categoryIds[0];
 
         const isNewProduct = !prod.id;
         if (!isNewProduct) {
@@ -1483,11 +1538,13 @@ export class ProductMenuComponent implements OnInit {
             const newProduct: Product = {
                 id: prod.id,
                 categoryId: selectedCategoryId,
+                categoryIds: categoryIds,
                 tenantId: this.tenantId,
                 name: prod.name,
                 description: prod.description,
                 price: prod.price,
                 isActive: prod.isActive,
+                autoAvailability: prod.autoAvailability ?? true,
                 imageUrl: imageUrl ?? prod.img_url
             } as any;
             this.startLoading();
@@ -1495,21 +1552,7 @@ export class ProductMenuComponent implements OnInit {
                 next: (resp) => {
                     this.messageService.add({ severity: 'success', summary: 'Producto creado', detail: `${newProduct.name} creado`, life: 3000 });
 
-                    // Guardar la receta (insumos) del producto
-                    const savedId = resp?.object?.id ?? prod.id;
-                    if (savedId != null) {
-                        this.inventoryService.setRecipes(savedId, this.productRecipeLines).subscribe({
-                            next: () => {
-                                window.dispatchEvent(new Event('productsUpdated'));
-                            },
-                            error: (err) => {
-                                console.error('Error saving recipe', err);
-                                window.dispatchEvent(new Event('productsUpdated'));
-                            }
-                        });
-                    } else {
-                        window.dispatchEvent(new Event('productsUpdated'));
-                    }
+                    window.dispatchEvent(new Event('productsUpdated'));
 
                     // Check if this is the first product created
                     if (isNewProduct) {

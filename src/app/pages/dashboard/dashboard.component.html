@@ -1,149 +1,193 @@
 <div class="dashboard-container">
 
-  <!-- Sección KPIs -->
-  <div class="kpi-section">
-    <div class="kpi-grid">
+  <!-- Sección KPIs (estilo ProTend claro) -->
+  <div class="kpi-row">
 
-      <p-card class="kpi-card kpi-blue animate-fade-in-up animate-delay-1">
-        <ng-container *ngIf="!loading(); else kpiSkeleton">
-          <div class="kpi-content">
-            <div class="kpi-top">
-              <span class="kpi-label">Total Clientes</span>
-              <div class="kpi-icon-badge"><i class="pi pi-users"></i></div>
-            </div>
-            <div class="kpi-value">{{ totalClientes() | number }}</div>
-            <div class="kpi-sub"><i class="pi pi-user-plus"></i> Socios registrados</div>
-          </div>
-        </ng-container>
-      </p-card>
-
-      <p-card class="kpi-card kpi-green animate-fade-in-up animate-delay-2">
-        <ng-container *ngIf="!loading(); else kpiSkeleton">
-          <div class="kpi-content">
-            <div class="kpi-top">
-              <span class="kpi-label">Ventas Totales</span>
-              <div class="kpi-icon-badge"><i class="pi pi-dollar"></i></div>
-            </div>
-            <div class="kpi-value">{{ ventasResumen()?.totalSales | currency:'USD':'symbol':'1.0-0' }}</div>
-            <div class="kpi-sub"><i class="pi pi-calendar"></i> Últimos 2 meses</div>
-          </div>
-        </ng-container>
-      </p-card>
-
-      <p-card class="kpi-card kpi-amber animate-fade-in-up animate-delay-3">
-        <ng-container *ngIf="!loading(); else kpiSkeleton">
-          <div class="kpi-content">
-            <div class="kpi-top">
-              <span class="kpi-label">Costos</span>
-              <div class="kpi-icon-badge"><i class="pi pi-wallet"></i></div>
-            </div>
-            <div class="kpi-value">{{ costos() | currency:'USD':'symbol':'1.0-0' }}</div>
-            <div class="kpi-sub"><i class="pi pi-percentage"></i> ~55% de ventas</div>
-          </div>
-        </ng-container>
-      </p-card>
-
-      <p-card class="kpi-card kpi-violet animate-fade-in-up animate-delay-4">
-        <ng-container *ngIf="!loading(); else kpiSkeleton">
-          <div class="kpi-content">
-            <div class="kpi-top">
-              <span class="kpi-label">Ganancias</span>
-              <div class="kpi-icon-badge"><i class="pi pi-chart-line"></i></div>
-            </div>
-            <div class="kpi-value">{{ ganancias() | currency:'USD':'symbol':'1.0-0' }}</div>
-            <div class="kpi-sub"><i class="pi pi-trending-up"></i> Ventas - Costos</div>
-          </div>
-        </ng-container>
-      </p-card>
-
-    </div>
-  </div>
-
-  <ng-template #kpiSkeleton>
-    <div class="kpi-content">
-      <p-skeleton shape="circle" size="3rem"></p-skeleton>
-      <div style="flex: 1; margin-left: 1rem;">
-        <p-skeleton width="60%" height="1rem" styleClass="mb-2"></p-skeleton>
-        <p-skeleton width="80%" height="1.5rem"></p-skeleton>
+    <!-- KPI 1: Ventas Hoy (Amarillo/Crema) -->
+    <div class="kpi-card bg-cream">
+      <div class="kpi-icon-circle yellow"><span>📋</span></div>
+      <div class="kpi-info">
+        <span class="kpi-label">Ventas de Hoy</span>
+        <h3 class="kpi-value">$14,280.00</h3>
+        <span class="kpi-subtext positive">+8.4% vs ayer</span>
       </div>
     </div>
-  </ng-template>
 
-  <!-- Ventas durante el periodo -->
-  <div class="sales-period-grid animate-fade-in-up animate-delay-1">
-    <p-card class="sales-period-card" *ngIf="!loading() && salesPeriodData()">
-      <ng-template pTemplate="header">
-        <div class="sales-header">
-          <div class="sales-heading">
-            <div class="sales-title">Ventas durante el periodo</div>
-            <div class="sales-subtitle">Ingresos por {{ periodoLabel() }}</div>
+    <!-- KPI 2: En Preparación (Verde Menta) -->
+    <div class="kpi-card bg-mint">
+      <div class="kpi-icon-circle green"><span>⏳</span></div>
+      <div class="kpi-info">
+        <span class="kpi-label">En Preparación</span>
+        <h3 class="kpi-value">6</h3>
+        <span class="kpi-subtext">Tiempo prom: 9 min</span>
+      </div>
+    </div>
+
+    <!-- KPI 3: Clientes Frecuentes (Morado Claro) -->
+    <div class="kpi-card bg-lavender">
+      <div class="kpi-icon-circle purple"><span>⭐</span></div>
+      <div class="kpi-info">
+        <span class="kpi-label">Clientes Frecuentes</span>
+        <h3 class="kpi-value">342</h3>
+        <span class="kpi-subtext">12 registros hoy</span>
+      </div>
+    </div>
+
+    <!-- KPI 4: Puntos Canjeados (Blanca) -->
+    <div class="kpi-card bg-white">
+      <div class="kpi-icon-circle orange"><span>🎁</span></div>
+      <div class="kpi-info">
+        <span class="kpi-label">Puntos Canjeados</span>
+        <h3 class="kpi-value">1,850 pts</h3>
+        <span class="kpi-subtext">15 recompensas</span>
+      </div>
+    </div>
+
+    <!-- Botón Destacado "Nuevo Pedido" -->
+    <button type="button" class="btn-primary-action">
+      <span class="btn-plus-icon">+</span>
+      <span>Nuevo Pedido</span>
+    </button>
+
+  </div>
+
+  <!-- Layout 2 columnas asimétricas (ProTend) -->
+  <div class="dashboard-grid-layout animate-fade-in-up animate-delay-1">
+
+    <!-- COLUMNA IZQUIERDA (Principal ~70%) -->
+    <div class="main-content-column">
+
+      <!-- Gráfico Principal -->
+      <div class="chart-card" *ngIf="!loading() && salesPeriodData()">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Ventas durante el periodo</h3>
+            <span class="chart-subtitle">Ingresos por semana</span>
           </div>
-          <div class="period-selector" role="group" aria-label="Periodo">
+          <div class="time-filters" role="group" aria-label="Periodo">
             <button
               *ngFor="let p of periodoOptions"
               type="button"
+              class="time-btn"
               [class.active]="periodo() === p.value"
               (click)="cambiarPeriodo(p.value)">
               {{ p.label }}
             </button>
           </div>
         </div>
-      </ng-template>
-      <ng-container *ngIf="!loading(); else chartSkeleton">
-        <div class="chart-wrapper sales-period-chart">
-          <p-chart type="line" [data]="salesPeriodData()" [options]="salesPeriodOptions()"></p-chart>
-        </div>
-      </ng-container>
-    </p-card>
-
-    <!-- Productos más vendidos -->
-    <p-card class="sales-period-card top-products-card" *ngIf="!loading()">
-      <ng-template pTemplate="header">
-        <div class="sales-header">
-          <div class="sales-heading">
-            <div class="sales-title">Top 5 Productos</div>
-            <div class="sales-subtitle">Lo que más se ha vendido</div>
-          </div>
-        </div>
-      </ng-template>
-      <div class="top-products-list">
-        <div class="top-product-item" *ngFor="let p of topProductsList(); let i = index">
-          <span class="rank">{{ i + 1 }}</span>
-          <span class="name">{{ p.productName }}</span>
-          <span class="qty">{{ p.totalQuantity | number }}</span>
+        <div class="chart-wrapper">
+          <p-chart type="line" [data]="proTendLineData" [options]="proTendLineOptions"></p-chart>
         </div>
       </div>
-    </p-card>
 
-    <!-- Top Clientes -->
-    <p-card class="sales-period-card top-clients-card" *ngIf="!loading() && topClientsData()">
-      <ng-template pTemplate="header">
-        <div class="sales-header">
-          <div class="sales-heading">
-            <div class="sales-title">Top Clientes</div>
-            <div class="sales-subtitle">Mejores clientes por valor (LTV)</div>
+      <!-- Cuadrícula 2x2 de KPIs (estilo ProTend) -->
+      <div class="kpis-quad-grid">
+
+        <!-- Tarjeta 1: Total Clientes -->
+        <div class="sub-kpi-card">
+          <div class="sub-kpi-info">
+            <span class="sub-kpi-label">Total Clientes</span>
+            <h3 class="sub-kpi-value">78</h3>
+            <span class="sub-kpi-badge positive">▲ +0.5% vs mes anterior</span>
+          </div>
+          <div class="circle-progress"><span>76%</span></div>
+        </div>
+
+        <!-- Tarjeta 2: Comandas Finalizadas -->
+        <div class="sub-kpi-card">
+          <div class="sub-kpi-info">
+            <span class="sub-kpi-label">Comandas Finalizadas</span>
+            <h3 class="sub-kpi-value">34</h3>
+            <span class="sub-kpi-caption">87 restan para la meta</span>
+          </div>
+          <div class="icon-box-kpi green"><span>✅</span></div>
+        </div>
+
+        <!-- Tarjeta 3: Nuevos Clientes -->
+        <div class="sub-kpi-card">
+          <div class="sub-kpi-info">
+            <span class="sub-kpi-label">Nuevos Clientes</span>
+            <h3 class="sub-kpi-value">565</h3>
+            <span class="sub-kpi-badge positive">▲ +0.5% vs mes anterior</span>
+          </div>
+          <div class="sparkline-box purple"><span>👥</span></div>
+        </div>
+
+        <!-- Tarjeta 4: Recompensas Canjeadas -->
+        <div class="sub-kpi-card">
+          <div class="sub-kpi-info">
+            <span class="sub-kpi-label">Recompensas Canjeadas</span>
+            <h3 class="sub-kpi-value">142</h3>
+            <span class="sub-kpi-badge positive">▲ +12% esta semana</span>
+          </div>
+          <div class="sparkline-box orange"><span>🎁</span></div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- COLUMNA DERECHA (Panel Lateral ~30%) -->
+    <div class="side-content-column">
+
+      <!-- Banner Destacado -->
+      <div class="promo-banner-card">
+        <div class="promo-content">
+          <h3 class="promo-title">Controla tu caja en un toque</h3>
+          <p class="promo-description">
+            Genera cortes de caja, reportes de ventas y balances automáticamente sin complicaciones.
+          </p>
+        </div>
+        <button type="button" class="promo-btn">Ver Reportes Ahora</button>
+      </div>
+
+      <!-- Tarjeta de Balance / Ingresos semanales -->
+      <div class="side-card balance-card">
+        <div class="balance-header">
+          <span class="balance-title">Ingresos Semanales</span>
+          <h2 class="balance-amount">$25,456.44</h2>
+          <span class="balance-trend positive">▲ +3.2% vs semana pasada</span>
+        </div>
+
+        <div class="weekly-plot">
+          <div class="y-labels">
+            <span>100</span><span>80</span><span>60</span><span>40</span><span>20</span><span>0</span>
+          </div>
+          <div class="plot-area">
+            <div class="weekly-css-chart">
+              <div class="week-group" *ngFor="let d of weeklyBalanceData.labels; let i = index">
+                <div class="week-bars">
+                  <div class="bar done" [style.height.%]="weeklyBalanceData.datasets[0].data[i]"></div>
+                  <div class="bar proc" [style.height.%]="weeklyBalanceData.datasets[1].data[i]"></div>
+                </div>
+                <span class="week-label">{{ d }}</span>
+              </div>
+            </div>
           </div>
         </div>
-      </ng-template>
-      <div class="chart-wrapper top-clients-chart">
-        <p-chart type="bar" [data]="topClientsData()" [options]="topClientsOptions()"></p-chart>
       </div>
-    </p-card>
 
-    <!-- Ventas por categoría -->
-    <p-card class="sales-period-card category-card" *ngIf="!loading() && salesByCategoryData()">
-      <ng-template pTemplate="header">
-        <div class="sales-header">
-          <div class="sales-heading">
-            <div class="sales-title">Ventas por categoría</div>
-            <div class="sales-subtitle">Distribución por categoría</div>
-          </div>
-        </div>
-      </ng-template>
-      <div class="chart-wrapper category-chart">
-        <p-chart type="bar" [data]="salesByCategoryData()" [options]="salesByCategoryOptions()"></p-chart>
+      <!-- 3. Comandas del Día -->
+      <div class="side-card daily-tasks-card">
+        <h3 class="daily-title">Comandas del Día</h3>
+        <ul class="task-list">
+          <li class="task-item completed">
+            <span class="dot green"></span>
+            <span class="task-name">Pedido #0048 — Completado</span>
+          </li>
+          <li class="task-item in-progress">
+            <span class="dot yellow"></span>
+            <span class="task-name">Pedido #0049 — En preparación</span>
+          </li>
+          <li class="task-item new">
+            <span class="dot blue"></span>
+            <span class="task-name">Pedido #0050 — Nuevo</span>
+          </li>
+        </ul>
       </div>
-    </p-card>
+
+    </div>
+
   </div>
 
 

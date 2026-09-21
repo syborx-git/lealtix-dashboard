@@ -1,0 +1,459 @@
+<p-toast></p-toast>
+
+<div class="bodega-container">
+  <div class="bodega-header">
+    <div>
+      <h2>Bodega</h2>
+      <p>Almacén central: registra insumos, guarda el stock de su totalidad y distribúyelo a inventario de cocina o barra. El POS solo consume stock distribuido.</p>
+    </div>
+    <button pButton label="Nuevo insumo" icon="pi pi-plus" severity="secondary" (click)="openCreate()"></button>
+  </div>
+
+  <div class="solicitudes-bar">
+    <button type="button" class="solicitudes-btn solicitudes-btn-cocina" (click)="openSolicitudes('COCINA')">
+      <span class="solicitudes-btn-icon"><i class="pi pi-box"></i></span>
+      <span class="solicitudes-btn-text">
+        <span class="solicitudes-btn-label">Solicitudes de Cocina</span>
+        <span class="solicitudes-btn-count">{{ pendientesCocina() }} pendiente{{ pendientesCocina() === 1 ? '' : 's' }}</span>
+      </span>
+      <i class="pi pi-angle-right solicitudes-btn-arrow"></i>
+    </button>
+    <button type="button" class="solicitudes-btn solicitudes-btn-barra" (click)="openSolicitudes('BARRA')">
+      <span class="solicitudes-btn-icon"><i class="pi pi-glass"></i></span>
+      <span class="solicitudes-btn-text">
+        <span class="solicitudes-btn-label">Solicitudes de Barra</span>
+        <span class="solicitudes-btn-count">{{ pendientesBarra() }} pendiente{{ pendientesBarra() === 1 ? '' : 's' }}</span>
+      </span>
+      <i class="pi pi-angle-right solicitudes-btn-arrow"></i>
+    </button>
+  </div>
+
+  <div class="catalog-panel surface-card border-round-lg p-3">
+    <p-table
+      #dt
+      [value]="itemsFiltrados()"
+      [loading]="loading()"
+      styleClass="p-datatable-sm catalog-table"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[5, 10, 25, 50]"
+      [globalFilterFields]="['nombre', 'unidad']"
+      responsiveLayout="scroll"
+      dataKey="id"
+      [rowHover]="true"
+      [showCurrentPageReport]="true"
+      [currentPageReportTemplate]="'Mostrando {first} a {last} de {totalRecords} insumos'"
+      [tableStyle]="{ 'width': '100%', 'table-layout': 'fixed', 'min-width': '60rem' }"
+    >
+      <ng-template pTemplate="caption">
+        <div class="table-header-bar">
+          <div class="table-title">
+            <h5>{{ itemsFiltrados().length }} insumos registrados</h5>
+            <span class="table-title-sub">Total del almacén central</span>
+          </div>
+          <div class="table-tools">
+            <!-- Filtro desplegable (a la izquierda del buscador) -->
+            <select class="table-filter-select" [(ngModel)]="filtroBodega" aria-label="Filtrar insumos">
+              <option *ngFor="let op of filtroOpciones" [ngValue]="op.value">{{ op.label }}</option>
+            </select>
+            <input pInputText type="text" placeholder="Buscar insumo..." (input)="onGlobalFilter(dt, $event)" />
+          </div>
+        </div>
+      </ng-template>
+
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="nombre" style="width: 32%">
+            <span class="th-text">Insumo</span>
+            <p-sortIcon field="nombre" />
+          </th>
+          <th pSortableColumn="unidad" style="width: 8%">
+            <span class="th-text">Unidad</span>
+            <p-sortIcon field="unidad" />
+          </th>
+          <th pSortableColumn="esBebida" style="width: 10%">
+            <span class="th-text">Categoría</span>
+            <p-sortIcon field="esBebida" />
+          </th>
+          <th pSortableColumn="stockBodega" class="col-num" style="width: 12%">
+            <span class="th-text">Stock bodega</span>
+            <p-sortIcon field="stockBodega" />
+          </th>
+          <th pSortableColumn="stockMinimo" class="col-num" style="width: 10%">
+            <span class="th-text">Mínimo</span>
+            <p-sortIcon field="stockMinimo" />
+          </th>
+          <th class="col-actions" style="width: 28%">Acciones</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-item>
+        <tr>
+          <td style="width: 32%">
+            <span class="item-name">{{ item.nombre }}</span>
+            <span class="item-sub">{{ distribuido(item) }} {{ item.unidad || 'pieza' }} disponibles</span>
+          </td>
+          <td style="width: 8%">
+            <span class="unit-text">{{ item.unidad || 'pieza' }}</span>
+          </td>
+          <td style="width: 10%">
+            <span class="cat-chip-mini" [class.chip-bebida]="item.esBebida" [class.chip-insumo]="!item.esBebida">
+              <i [class]="item.esBebida ? 'pi pi-glass' : 'pi pi-box'"></i>
+              {{ item.esBebida ? 'Bebida' : 'Insumo' }}
+            </span>
+          </td>
+          <td class="col-num" style="width: 12%">
+            <span class="num-bodega">{{ item.stockBodega ?? 0 }}</span>
+          </td>
+          <td class="col-num" style="width: 10%">
+            <span class="num-plain">{{ item.stockMinimo ?? 0 }}</span>
+          </td>
+          <td class="col-actions" style="width: 28%">
+            <div class="action-btns">
+              <button
+                pButton
+                type="button"
+                icon="pi pi-plus"
+                label="Entrada"
+                class="p-button-sm p-button-outlined btn-entrada"
+                pTooltip="Registrar entrada de stock a bodega"
+                tooltipPosition="top"
+                (click)="openRestock(item)"
+              ></button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-arrow-right-arrow-left"
+                label="Distribuir"
+                class="p-button-sm btn-distribuir"
+                [disabled]="!item.stockBodega"
+                pTooltip="Mover stock de bodega a cocina o barra"
+                tooltipPosition="top"
+                (click)="openMove(item)"
+              ></button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-trash"
+                severity="danger"
+                class="p-button-sm p-button-danger p-button-outlined btn-delete"
+                pTooltip="Eliminar insumo"
+                tooltipPosition="top"
+                (click)="deleteInsumo(item)"
+              ></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="text-center p-8">
+            {{ loading() ? 'Cargando insumos...' : 'No hay insumos registrados en bodega' }}
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- =================== DIALOG: Alta de insumo =================== -->
+  <p-dialog
+    header="Registrar insumo en bodega"
+    [modal]="true"
+    [(visible)]="createVisible"
+    [style]="{ width: '32rem' }"
+    styleClass="create-dialog"
+    [dismissableMask]="true"
+  >
+    <div class="create-body">
+      <!-- Fila 1: Nombre (100%) -->
+      <div class="create-block">
+        <label class="create-label" for="createNombre">Nombre del insumo</label>
+        <input id="createNombre" pInputText type="text" [(ngModel)]="createNombre" placeholder="Ej. Tortilla de maíz" />
+      </div>
+
+      <!-- Fila 2: Unidad (select) -->
+      <div class="create-block">
+        <label class="create-label" for="createUnidad">Unidad de medida</label>
+        <select id="createUnidad" class="create-select" [(ngModel)]="createUnidad">
+          <option value="" disabled>Selecciona una unidad…</option>
+          <option value="pieza">Pieza</option>
+          <option value="kg">Kilogramo (kg)</option>
+          <option value="gramo">Gramo (g)</option>
+          <option value="litro">Litro</option>
+          <option value="ml">Mililitro (ml)</option>
+          <option value="docena">Docena</option>
+          <option value="bolsa">Bolsa</option>
+          <option value="caja">Caja</option>
+        </select>
+      </div>
+
+      <!-- Fila 3: Cantidades (grid 2 columnas) -->
+      <div class="create-grid">
+        <div class="create-block">
+          <label class="create-label" for="createCantidad">Cantidad inicial en bodega</label>
+          <input id="createCantidad" pInputText type="number" min="0" [(ngModel)]="createCantidad" placeholder="0" />
+        </div>
+        <div class="create-block">
+          <label class="create-label" for="createStockMinimo">Stock mínimo (alerta)</label>
+          <input id="createStockMinimo" pInputText type="number" min="0" [(ngModel)]="createStockMinimo" placeholder="0" />
+        </div>
+      </div>
+
+      <!-- Costo total (condicional, con prefijo de moneda) -->
+      <div class="create-block" *ngIf="createCantidad > 0">
+        <label class="create-label" for="createCostoTotal">
+          Costo total de la carga <span class="create-required">(obligatorio si hay stock)</span>
+        </label>
+        <div class="create-money-input">
+          <span class="create-currency">$</span>
+          <input
+            id="createCostoTotal"
+            pInputText
+            type="number"
+            min="0"
+            step="0.01"
+            [(ngModel)]="createCostoTotal"
+            placeholder="0.00"
+          />
+        </div>
+      </div>
+
+      <!-- Info box: tipo automático -->
+      <div class="create-info-box">
+        <i class="pi pi-info-circle"></i>
+        <span>El tipo (Bebida / Insumo) se asigna automáticamente con las categorías del insumo.</span>
+      </div>
+    </div>
+    <ng-template pTemplate="footer">
+      <div class="create-footer">
+        <button
+          pButton
+          label="Cancelar"
+          icon="pi pi-times"
+          class="p-button-text create-cancel"
+          (click)="createVisible = false"
+        ></button>
+        <button
+          pButton
+          label="Registrar"
+          icon="pi pi-check"
+          class="create-submit"
+          [disabled]="!createNombre || !createUnidad || (createCantidad > 0 && !createCostoTotal)"
+          (click)="doCreate()"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- =================== DIALOG: Entrada (restock) =================== -->
+  <p-dialog
+    header="Entrada a bodega"
+    [modal]="true"
+    [(visible)]="restockVisible"
+    [style]="{ width: '30rem' }"
+    styleClass="restock-dialog"
+    [dismissableMask]="true"
+  >
+    <div class="restock-body" *ngIf="restockTarget">
+      <!-- Tarjeta read-only: insumo -->
+      <div class="restock-info-card">
+        <span class="restock-info-label">Insumo</span>
+        <span class="restock-info-value">{{ restockTarget.nombre }}</span>
+      </div>
+
+      <!-- Cantidad a agregar -->
+      <div class="restock-block">
+        <label class="restock-label" for="restockCantidad">Cantidad a agregar</label>
+        <input
+          id="restockCantidad"
+          pInputText
+          type="number"
+          min="1"
+          [(ngModel)]="restockCantidad"
+          placeholder="0"
+        />
+      </div>
+
+      <!-- Costo total de la carga (con prefijo de moneda) -->
+      <div class="restock-block restock-block--last">
+        <label class="restock-label" for="restockCostoTotal">Costo total de la carga</label>
+        <div class="restock-money-input">
+          <span class="restock-currency">$</span>
+          <input
+            id="restockCostoTotal"
+            pInputText
+            type="number"
+            min="0.01"
+            step="0.01"
+            [(ngModel)]="restockCostoTotal"
+            placeholder="0.00"
+          />
+        </div>
+        <small class="restock-hint">Se usa para calcular el costo unitario del insumo.</small>
+      </div>
+    </div>
+    <ng-template pTemplate="footer">
+      <div class="restock-footer">
+        <button
+          pButton
+          label="Cancelar"
+          icon="pi pi-times"
+          class="p-button-text restock-cancel"
+          (click)="restockVisible = false"
+        ></button>
+        <button
+          pButton
+          label="Registrar entrada"
+          icon="pi pi-plus"
+          class="restock-submit"
+          [disabled]="!restockCantidad || restockCantidad <= 0 || !restockCostoTotal || restockCostoTotal <= 0"
+          (click)="doRestock()"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- =================== DIALOG: Distribuir a cocina/barra =================== -->
+  <p-dialog
+    header="Distribuir a inventario"
+    [modal]="true"
+    [(visible)]="moveVisible"
+    [style]="{ width: '30rem' }"
+    styleClass="distribuir-dialog"
+    [dismissableMask]="true"
+  >
+    <div class="move-body" *ngIf="moveTarget">
+      <!-- Tarjeta read-only: insumo + existencias -->
+      <div class="move-info-card">
+        <div class="move-info-item">
+          <span class="move-info-label">Insumo</span>
+          <span class="move-info-value">{{ moveTarget.nombre }}</span>
+        </div>
+        <div class="move-info-divider"></div>
+        <div class="move-info-item move-info-end">
+          <span class="move-info-label">Existencias</span>
+          <span class="move-info-value">
+            {{ moveTarget.stockBodega ?? 0 }}
+            <span class="move-info-unit">{{ moveTarget.unidad || 'pieza' }}</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Destino: segmented control -->
+      <div class="move-block">
+        <label class="move-label" for="moveDestino">Destino</label>
+        <p-selectButton [options]="destinoOptions" [(ngModel)]="moveDestino" optionLabel="label" optionValue="value" />
+      </div>
+
+      <!-- Cantidad a mover -->
+      <div class="move-block">
+        <label class="move-label" for="moveCantidad">Cantidad a mover</label>
+        <div class="move-qty-input">
+          <input
+            id="moveCantidad"
+            pInputText
+            type="number"
+            min="1"
+            [max]="moveTarget.stockBodega ?? 0"
+            [(ngModel)]="moveCantidad"
+            placeholder="0"
+          />
+          <button type="button" class="move-max" (click)="moverMaximo()">
+            <i class="pi pi-arrow-up"></i> Mover máximo
+          </button>
+        </div>
+        <small class="move-hint">Se transferirá del stock de bodega al almacén seleccionado.</small>
+      </div>
+    </div>
+    <ng-template pTemplate="footer">
+      <div class="move-footer">
+        <button
+          pButton
+          label="Cancelar"
+          icon="pi pi-times"
+          class="p-button-text move-cancel"
+          (click)="moveVisible = false"
+        ></button>
+        <button
+          pButton
+          label="Distribuir"
+          icon="pi pi-arrow-right-arrow-left"
+          class="move-submit"
+          [disabled]="!moveCantidad || moveCantidad <= 0 || moveCantidad > (moveTarget?.stockBodega ?? 0)"
+          (click)="doMove()"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- =================== DIALOG: Solicitudes de stock (Cocina/Barra) =================== -->
+  <p-dialog
+    header="Solicitudes de stock"
+    [modal]="true"
+    [(visible)]="solicitudesVisible"
+    [style]="{ width: 'min(46rem, 96vw)' }"
+    styleClass="solicitudes-dialog"
+    [closable]="aceptandoId === null"
+    [closeOnEscape]="aceptandoId === null"
+    [dismissableMask]="aceptandoId === null"
+    (onHide)="cerrarSolicitudes()"
+  >
+    <ng-template pTemplate="header">
+      <div class="solicitudes-dialog-header">
+        <span class="solicitudes-dialog-icon" [class.solicitudes-dialog-icon-barra]="solicitudesArea === 'BARRA'">
+          <i [class]="solicitudesArea === 'COCINA' ? 'pi pi-box' : 'pi pi-glass'"></i>
+        </span>
+        <div>
+          <div class="solicitudes-dialog-title">{{ solicitudesTitulo() }}</div>
+          <div class="solicitudes-dialog-sub">{{ solicitudesSubtitulo() }}</div>
+        </div>
+      </div>
+    </ng-template>
+
+    <div class="solicitudes-dialog-body">
+      <div class="solicitudes-empty" *ngIf="!solicitudesLoading() && solicitudes().length === 0">
+        <i class="pi pi-check-circle"></i>
+        <span>Sin solicitudes pendientes de {{ solicitudesArea === 'COCINA' ? 'cocina' : 'barra' }}</span>
+      </div>
+
+      <div class="solicitudes-item" *ngFor="let s of solicitudes()">
+        <div class="solicitudes-item-icon">
+          <i class="pi pi-box"></i>
+        </div>
+        <div class="solicitudes-item-info">
+          <div class="solicitudes-item-name">{{ s.insumoNombre }}</div>
+          <div class="solicitudes-item-meta">
+            <span class="solicitudes-item-qty">
+              {{ s.cantidad }} {{ s.unidad && s.unidad !== 'pieza' ? s.unidad : 'pieza(s)' }}
+            </span>
+            <span class="solicitudes-item-prio" [ngClass]="prioridadClass(s.prioridad)">
+              {{ prioridadLabel(s.prioridad) }}
+            </span>
+            <span class="solicitudes-item-date">{{ s.createdAt | date: 'dd MMM yyyy · HH:mm' }}</span>
+          </div>
+        </div>
+        <button pButton label="Aceptar transferencia" icon="pi pi-arrow-right"
+          [loading]="aceptandoId === s.id" [disabled]="aceptandoId !== null"
+          class="solicitudes-item-accept" (click)="aceptarSolicitud(s)"></button>
+      </div>
+
+      <div class="solicitudes-dialog-body-footer" *ngIf="solicitudes().length > 0">
+        <div class="solicitudes-dialog-body-line"></div>
+        <span class="solicitudes-dialog-body-note">
+          Al aceptar, el insumo sale de bodega y se distribuye automáticamente a {{ solicitudesArea === 'COCINA' ? 'cocina' : 'barra' }}.
+        </span>
+        <div class="solicitudes-dialog-body-line"></div>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="solicitudes-dialog-footer">
+        <button pButton label="Cerrar" icon="pi pi-times" class="solicitudes-dialog-cancel"
+          [disabled]="aceptandoId !== null" (click)="solicitudesVisible = false"></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <p-confirmdialog [style]="{ width: '450px' }" />
+</div>

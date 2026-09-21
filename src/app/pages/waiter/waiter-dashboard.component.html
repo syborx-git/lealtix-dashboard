@@ -259,7 +259,8 @@
   [style]="{ width: '100%', maxWidth: '500px' }"
   [closable]="false"
   [closeOnEscape]="!clientDialogLoading()"
-  [blockScroll]="true">
+  [blockScroll]="true"
+  styleClass="minimal-modal">
 
   <div class="new-client-form">
     <!-- Form Fields -->
@@ -312,7 +313,7 @@
       pButton
       type="button"
       label="Guardar"
-      class="p-button"
+      class="p-button minimal-submit"
       [loading]="clientDialogLoading()"
       (click)="saveNewClient()">
     </button>

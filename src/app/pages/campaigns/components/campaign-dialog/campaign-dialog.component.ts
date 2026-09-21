@@ -55,7 +55,7 @@ import { DateRangeValidator } from '../../utils/date-range.validator';
       [modal]="true"
       [maximizable]="true"
       [resizable]="true"
-      styleClass="campaign-dialog"
+      styleClass="campaign-dialog minimal-modal"
       contentStyleClass="campaign-dialog-content"
       (onHide)="onHide()">
 
@@ -542,6 +542,7 @@ import { DateRangeValidator } from '../../utils/date-range.validator';
             [label]="isEditMode ? 'Actualizar' : 'Guardar'"
             icon="pi pi-check"
             severity="success"
+            styleClass="minimal-submit"
             [loading]="saving()"
             [disabled]="campaignForm.invalid"
             (onClick)="save.emit()"

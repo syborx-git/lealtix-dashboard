@@ -1,0 +1,646 @@
+/* ==========================================================================
+   LEALTIX STUDIO BUILDER - COMPONENTES DEL EDITOR Y CONTROLES
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   PUZZLE PIECES LIST
+   -------------------------------------------------------------------------- */
+.puzzle-pieces-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.puzzle-piece-card {
+  background: rgba(11, 28, 48, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.puzzle-piece-card:hover {
+  background: rgba(11, 28, 48, 0.9);
+  border-color: rgba(45, 212, 191, 0.4);
+}
+
+.puzzle-piece-card.disabled {
+  opacity: 0.5;
+  background: rgba(7, 18, 32, 0.4);
+}
+
+.puzzle-piece-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.puzzle-drag-handle {
+  color: #64748B;
+  cursor: grab;
+  font-size: 1rem;
+}
+
+.puzzle-piece-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(45, 212, 191, 0.1);
+  color: #2DD4BF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.puzzle-piece-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #F8FAFC;
+}
+
+.puzzle-piece-badge {
+  font-size: 0.65rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: #94A3B8;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  margin-left: 0.4rem;
+}
+
+.puzzle-piece-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Custom Switch Toggle */
+.custom-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+}
+
+.custom-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #334155;
+  transition: 0.25s;
+  border-radius: 999px;
+}
+
+.switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.25s;
+  border-radius: 50%;
+}
+
+input:checked + .switch-slider {
+  background-color: #2DD4BF;
+}
+
+input:checked + .switch-slider:before {
+  transform: translateX(18px);
+}
+
+/* --------------------------------------------------------------------------
+   THEME PALETTE CARDS (7 COLORES)
+   -------------------------------------------------------------------------- */
+.theme-palettes-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+.palette-card {
+  background: rgba(11, 28, 48, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.palette-card:hover {
+  background: rgba(11, 28, 48, 0.95);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.palette-card.selected {
+  border-color: #2DD4BF;
+  background: rgba(45, 212, 191, 0.08);
+  box-shadow: 0 0 0 1px #2DD4BF;
+}
+
+.palette-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.palette-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.palette-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #F8FAFC;
+}
+
+.palette-badge {
+  font-size: 0.68rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: #94A3B8;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+}
+
+.palette-swatches {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.color-swatch-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* --------------------------------------------------------------------------
+   TYPOGRAPHY CARDS (7 FUENTES)
+   -------------------------------------------------------------------------- */
+.typography-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+.typography-card {
+  background: rgba(11, 28, 48, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 1rem 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.typography-card:hover {
+  background: rgba(11, 28, 48, 0.95);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.typography-card.selected {
+  border-color: #2DD4BF;
+  background: rgba(45, 212, 191, 0.08);
+  box-shadow: 0 0 0 1px #2DD4BF;
+}
+
+.typography-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.typography-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #F8FAFC;
+}
+
+.typography-category {
+  font-size: 0.7rem;
+  color: #2DD4BF;
+  background: rgba(45, 212, 191, 0.1);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+}
+
+.typography-preview-sample {
+  font-size: 1.15rem;
+  color: #E2E8F0;
+  margin: 0.4rem 0;
+  font-weight: 700;
+}
+
+.typography-desc {
+  font-size: 0.78rem;
+  color: #94A3B8;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   IMAGE UPLOADER & DROPZONE
+   -------------------------------------------------------------------------- */
+.dropzone-container {
+  border: 2px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  background: rgba(11, 28, 48, 0.4);
+  transition: all 0.2s ease;
+}
+
+.dropzone-container:hover,
+.dropzone-container.dragover {
+  border-color: #2DD4BF;
+  background: rgba(45, 212, 191, 0.05);
+}
+
+.dropzone-icon {
+  font-size: 2rem;
+  color: #2DD4BF;
+  margin-bottom: 0.5rem;
+}
+
+.dropzone-text {
+  font-size: 0.85rem;
+  color: #F8FAFC;
+  font-weight: 600;
+}
+
+.dropzone-subtext {
+  font-size: 0.72rem;
+  color: #94A3B8;
+  margin-top: 0.25rem;
+}
+
+.preset-images-strip {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.5rem 0;
+}
+
+.preset-img-thumb {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.preset-img-thumb:hover {
+  transform: scale(1.05);
+  border-color: #2DD4BF;
+}
+
+.preset-img-thumb.active {
+  border-color: #2DD4BF;
+  box-shadow: 0 0 0 2px #2DD4BF;
+  transform: scale(1.05);
+}
+
+/* --------------------------------------------------------------------------
+   MODALS & DIALOGS
+   -------------------------------------------------------------------------- */
+.builder-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(7, 18, 32, 0.8);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.builder-modal-backdrop.hidden {
+  display: none !important;
+}
+
+.builder-modal-box {
+  background: #0B1C30;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  animation: modalIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0;
+}
+
+.btn-modal-close {
+  background: transparent;
+  border: none;
+  color: #94A3B8;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0.25rem;
+}
+
+.btn-modal-close:hover {
+  color: #FFFFFF;
+}
+
+.modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  max-height: calc(90vh - 130px);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 1.25rem;
+}
+
+/* --------------------------------------------------------------------------
+   FORMS & INPUTS
+   -------------------------------------------------------------------------- */
+.form-group {
+  margin-bottom: 1.1rem;
+}
+
+.form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #CBD5E1;
+  margin-bottom: 0.35rem;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  background: rgba(7, 18, 32, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #F8FAFC;
+  padding: 0.65rem 0.9rem;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-family: inherit;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: #2DD4BF;
+}
+
+/* --------------------------------------------------------------------------
+   MENU EDITOR ITEMS
+   -------------------------------------------------------------------------- */
+.categories-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: rgba(7, 18, 32, 0.5);
+  padding: 0.75rem;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.categories-list {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(255, 255, 255, 0.08);
+  color: #E2E8F0;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.category-count {
+  color: #94A3B8;
+  font-size: 0.7rem;
+}
+
+.btn-cat-delete {
+  background: transparent;
+  border: none;
+  color: #EF4444;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  font-size: 0.7rem;
+}
+
+.products-list-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.product-item-card {
+  background: rgba(11, 28, 48, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 1rem;
+  align-items: center;
+}
+
+.product-item-thumb {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.product-item-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-item-badge {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.75);
+  color: #2DD4BF;
+  font-size: 0.55rem;
+  text-align: center;
+  padding: 1px;
+  font-weight: 700;
+}
+
+.product-item-top {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.product-item-cat {
+  font-size: 0.7rem;
+  color: #2DD4BF;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.product-item-price {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #D4AF37;
+}
+
+.product-item-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0.15rem 0;
+}
+
+.product-item-desc {
+  font-size: 0.75rem;
+  color: #94A3B8;
+  margin: 0;
+}
+
+.product-item-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.btn-icon-action {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #CBD5E1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-icon-action:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+}
+
+.btn-icon-action.text-danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #EF4444;
+  border-color: #EF4444;
+}
+
+/* --------------------------------------------------------------------------
+   TOAST NOTIFICATION
+   -------------------------------------------------------------------------- */
+.builder-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #0B1C30;
+  border: 1px solid #2DD4BF;
+  color: #FFFFFF;
+  padding: 0.85rem 1.4rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  z-index: 200;
+  transform: translateY(100px);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.builder-toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.builder-toast i {
+  color: #2DD4BF;
+  font-size: 1.1rem;
+}

@@ -1,4 +1,4 @@
-import { Component, ChangeDetectorRef, OnInit, signal, HostListener } from '@angular/core';
+import { Component, ChangeDetectorRef, OnInit, signal, HostListener, ViewChild, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -39,6 +39,67 @@ export class LandingEditorComponent implements OnInit {
     email: string = '';
     step: number = 1;
     isMobile: boolean = false;
+    fullscreen = false;
+
+    @ViewChild('modFrame') modFrame!: ElementRef<HTMLIFrameElement>;
+
+    enterFullscreen(): void {
+        this.fullscreen = true;
+        document.body.classList.add('modulo-fullscreen-active');
+        this.notifyFullscreenState();
+    }
+
+    exitFullscreen(): void {
+        this.fullscreen = false;
+        document.body.classList.remove('modulo-fullscreen-active');
+        this.notifyFullscreenState();
+    }
+
+    private notifyFullscreenState(): void {
+        try {
+            this.modFrame?.nativeElement?.contentWindow?.postMessage(
+                { type: 'lealtix-fullscreen-state', fullscreen: this.fullscreen },
+                '*'
+            );
+        } catch (e) {
+            // ignore
+        }
+    }
+
+    @HostListener('window:message', ['$event'])
+    onWindowMessage(event: MessageEvent): void {
+        if (event.data?.type === 'lealtix-toggle-fullscreen') {
+            if (this.fullscreen) {
+                this.exitFullscreen();
+            } else {
+                this.enterFullscreen();
+            }
+        } else if (event.data?.type === 'lealtix-save-site') {
+            this.saveCustomSite(event.data.html);
+        }
+    }
+
+    private saveCustomSite(html: string): void {
+        if (!this.tenantId) {
+            this.notifySaveResult(false);
+            return;
+        }
+        this.tenantService.saveCustomSite(this.tenantId, html).subscribe({
+            next: () => this.notifySaveResult(true),
+            error: () => this.notifySaveResult(false)
+        });
+    }
+
+    private notifySaveResult(ok: boolean): void {
+        try {
+            this.modFrame?.nativeElement?.contentWindow?.postMessage(
+                { type: 'lealtix-save-result', ok },
+                '*'
+            );
+        } catch (e) {
+            // ignore
+        }
+    }
     landingForm: FormGroup;
     socialPlatforms = [
         { name: 'Facebook', icon: 'pi pi-facebook', control: 'facebook' },
@@ -485,6 +546,7 @@ export class LandingEditorComponent implements OnInit {
         if (this.logoObjectUrl) {
             URL.revokeObjectURL(this.logoObjectUrl);
         }
+        document.body.classList.remove('modulo-fullscreen-active');
     }
 
 

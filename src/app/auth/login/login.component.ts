@@ -11,6 +11,7 @@ import { ToastModule } from 'primeng/toast';
 import { AppFloatingConfigurator } from "@/layout/component/app.floatingconfigurator";
 import { Router, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../auth.service';
+import { homeRouteForRole } from '../user-role';
 import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs/operators';
 
@@ -45,10 +46,6 @@ export class LoginComponent {
     loading: boolean = false;
     errorMessage: string | null = null;
     private returnUrl: string | null = null;
-
-    private readonly kitchenDashboardRoute = '/dashboard/cocina-dashboard';
-    private readonly waiterDashboardRoute = '/dashboard/mesero';
-    private readonly defaultDashboardRoute = '/dashboard/kpis';
 
     constructor() {
         this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
@@ -187,18 +184,6 @@ export class LoginComponent {
     private resolveDefaultRoute(): string {
         const currentUser = this.authService.getCurrentUser();
         const userRole = currentUser?.role || currentUser?.rol;
-        const hasWaiterDashboardPermission = this.authService.hasPermission('dashboard_mesero');
-        const hasKitchenDashboardPermission = this.authService.hasPermission('dashboard_kitchen');
-
-        // Waiter dashboard - redirect if user has dashboard_mesero permission
-        if (hasWaiterDashboardPermission) {
-            return this.waiterDashboardRoute;
-        }
-
-        if (userRole === 'COCINA' && hasKitchenDashboardPermission) {
-            return this.kitchenDashboardRoute;
-        }
-
-        return this.defaultDashboardRoute;
+        return homeRouteForRole(userRole);
     }
 }

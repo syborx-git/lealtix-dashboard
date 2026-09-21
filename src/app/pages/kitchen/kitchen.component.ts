@@ -11,8 +11,12 @@ import { DialogModule } from 'primeng/dialog';
 import { DividerModule } from 'primeng/divider';
 import { AuthService } from '@/auth/auth.service';
 import { TenantService } from '@/pages/admin-page/service/tenant.service';
-import { KitchenOrder } from './models/kitchen-order.model';
+import { ProductService } from '@/pages/products-menu/service/product.service';
+import { InventoryService } from '@/pages/inventario/service/inventory.service';
+import { IngredientOption } from '@/pages/comandix/models/menu.model';
+import { KitchenOrder, KitchenOrderItem } from './models/kitchen-order.model';
 import { KitchenOrderFacadeService } from './services/kitchen-order-facade.service';
+import { buildBeverageProductIds, isBeverageProduct } from './services/order-beverage-utils';
 
 @Component({
     selector: 'app-kitchen',
@@ -42,11 +46,17 @@ export class KitchenComponent implements OnInit, OnDestroy {
     private timerRef: ReturnType<typeof setInterval> | null = null;
     private processingOrderIds = new Set<string>();
 
+    // Catálogo de recetas/adicionales por producto (productId -> receta)
+    private readonly recipeCatalog = new Map<number, { recipes: IngredientOption[]; additionals: IngredientOption[] }>();
+    readonly recipeCatalogReady = signal<boolean>(false);
+
     constructor(
         private authService: AuthService,
         private tenantService: TenantService,
         private kitchenOrderFacadeService: KitchenOrderFacadeService,
-        private messageService: MessageService
+        private messageService: MessageService,
+        private productService: ProductService,
+        private inventoryService: InventoryService
     ) {}
 
     async ngOnInit(): Promise<void> {
@@ -61,10 +71,19 @@ export class KitchenComponent implements OnInit, OnDestroy {
             return;
         }
 
+        await this.loadBeverageCatalog(tenantId);
         this.kitchenOrderFacadeService.init(tenantId);
+        await this.loadRecipeCatalog(tenantId);
 
         this.kitchenOrderFacadeService.orders$.pipe(takeUntil(this.destroy$)).subscribe((orders) => {
-            this.orders = orders;
+            // La comanda llega completa desde Comandix; Cocina solo prepara platillos,
+            // así que se descartan los items que son bebidas (van a Barra).
+            this.orders = orders
+                .map((order) => ({
+                    ...order,
+                    items: order.items.filter((item) => !this.isBeverageItem(item.productId))
+                }))
+                .filter((order) => order.items.length > 0);
 
             const selectedOrder = this.selectedOrderForDetail();
             if (!selectedOrder) {
@@ -297,6 +316,99 @@ export class KitchenComponent implements OnInit, OnDestroy {
 
     private getItemKey(itemIndex: number): string {
         return `item-${itemIndex}`;
+    }
+
+    /** IDs de productos de menú que son bebidas (para ocultarlas del tablero de Cocina) */
+    private beverageProductIds = new Set<number>();
+
+    private isBeverageItem(productId: number | undefined): boolean {
+        return isBeverageProduct(productId, this.beverageProductIds);
+    }
+
+    private async loadBeverageCatalog(tenantId: number): Promise<void> {
+        this.beverageProductIds = new Set<number>();
+        try {
+            const response = await firstValueFrom(this.inventoryService.getBebidas(tenantId));
+            this.beverageProductIds = buildBeverageProductIds(Array.isArray(response?.object) ? response.object : []);
+        } catch (error) {
+            console.warn('Cocina: no se pudo cargar el catálogo de bebidas:', error);
+        }
+    }
+
+    private async loadRecipeCatalog(tenantId: number): Promise<void> {
+        try {
+            const response = await firstValueFrom(this.productService.getProductsByTenantId(tenantId));
+            const products = Array.isArray(response?.object) ? response.object : [];
+            this.recipeCatalog.clear();
+            for (const product of products) {
+                this.recipeCatalog.set(product.id, {
+                    recipes: Array.isArray(product.recipes) ? product.recipes : [],
+                    additionals: Array.isArray(product.additionals) ? product.additionals : []
+                });
+            }
+        } catch (error) {
+            console.error('Cocina: no se pudo cargar el catálogo de recetas:', error);
+        } finally {
+            this.recipeCatalogReady.set(true);
+        }
+    }
+
+    private getRecipeEntry(item: KitchenOrderItem): { recipes: IngredientOption[]; additionals: IngredientOption[] } {
+        if (item.productId == null) {
+            return { recipes: [], additionals: [] };
+        }
+        return (
+            this.recipeCatalog.get(item.productId) ?? { recipes: [], additionals: [] }
+        );
+    }
+
+    getItemBaseIngredients(item: KitchenOrderItem): IngredientOption[] {
+        return this.getRecipeEntry(item).recipes.filter((ing) => ing.tipoIngrediente === 'BASE');
+    }
+
+    getItemModifiableIngredients(item: KitchenOrderItem): IngredientOption[] {
+        const excluded = new Set(item.excludedIngredientIds ?? []);
+        return this.getRecipeEntry(item).recipes.filter(
+            (ing) => ing.tipoIngrediente === 'MODIFICABLE' && !excluded.has(ing.insumoId)
+        );
+    }
+
+    getItemRemovedIngredients(item: KitchenOrderItem): IngredientOption[] {
+        const excluded = new Set(item.excludedIngredientIds ?? []);
+        return this.getRecipeEntry(item).recipes.filter(
+            (ing) => ing.tipoIngrediente === 'MODIFICABLE' && excluded.has(ing.insumoId)
+        );
+    }
+
+    getItemAdditionalIngredients(item: KitchenOrderItem): IngredientOption[] {
+        const entry = this.getRecipeEntry(item);
+        const additionalIds = new Set(item.additionalIngredientIds ?? []);
+        const fromAdditionals = entry.additionals.filter((add) => additionalIds.has(add.insumoId));
+        if (fromAdditionals.length > 0) {
+            return fromAdditionals;
+        }
+        return entry.recipes.filter(
+            (ing) => ing.tipoIngrediente === 'ADICIONAL' && additionalIds.has(ing.insumoId)
+        );
+    }
+
+    itemHasRecipeInfo(item: KitchenOrderItem): boolean {
+        if (item.productId == null) {
+            return false;
+        }
+        return (
+            this.getItemBaseIngredients(item).length > 0 ||
+            this.getItemModifiableIngredients(item).length > 0 ||
+            this.getItemRemovedIngredients(item).length > 0 ||
+            this.getItemAdditionalIngredients(item).length > 0
+        );
+    }
+
+    ingredientLabel(ingredient: IngredientOption): string {
+        const quantity = ingredient.cantidad != null ? String(ingredient.cantidad) : '';
+        const unit = ingredient.unidad ?? '';
+        const amount = [quantity, unit].filter(Boolean).join(' ');
+        return amount ? `${ingredient.insumoName} (${amount})` : ingredient.insumoName;
     }
 
     private async resolveTenantId(): Promise<number> {

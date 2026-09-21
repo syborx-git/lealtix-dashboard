@@ -1,0 +1,454 @@
+<div class="mermas-wrapper">
+    <div class="mermas-header">
+        <div>
+            <h1 class="page-title">Mermas</h1>
+            <p class="text-sm text-500 m-0">Registra insumos desperdiciados o usados sin venta por cada comanda.</p>
+        </div>
+        <div class="header-actions">
+            <p-button
+                icon="pi pi-database"
+                label="Merma administrativa"
+                severity="secondary"
+                [outlined]="true"
+                (onClick)="openAdminModal()"
+            ></p-button>
+            <p-button
+                icon="pi pi-refresh"
+                label="Actualizar"
+                severity="secondary"
+                [outlined]="true"
+                [loading]="loading()"
+                (onClick)="loadMermas(); loadActiveOrders()"
+            ></p-button>
+        </div>
+    </div>
+
+    <p-toast></p-toast>
+
+    <!-- Sección: Comandas activas -->
+    <div class="mermas-card active-orders-section">
+        <div class="section-header">
+            <h2 class="section-title"><i class="pi pi-ticket mr-2"></i>Comandas activas</h2>
+            <span class="text-sm text-500">Selecciona una comanda para registrar mermas de sus insumos</span>
+        </div>
+
+        <div *ngIf="loadingOrders()" class="mermas-loading">
+            <p-progressSpinner strokeWidth="4" styleClass="w-2rem h-2rem"></p-progressSpinner>
+            <span>Cargando comandas activas…</span>
+        </div>
+
+        <div *ngIf="!loadingOrders() && activeOrders().length === 0" class="no-active-orders">
+            <i class="pi pi-inbox text-2xl text-400"></i>
+            <span>No hay comandas en preparación o listas.</span>
+        </div>
+
+        <div *ngIf="!loadingOrders() && activeOrders().length > 0" class="orders-grid">
+            <div
+                *ngFor="let order of activeOrders(); trackBy: trackByOrderId"
+                class="order-card"
+                (click)="openMermaModal(order)"
+            >
+                <!-- Badge "Nueva Orden" -->
+                <div *ngIf="isNewOrder(order)" class="order-new-badge">
+                    <i class="pi pi-star-fill mr-1"></i> Nueva Orden
+                </div>
+
+                <!-- Cabecera de la tarjeta -->
+                <div class="order-card-header">
+                    <div class="order-card-icon">
+                        <i class="pi pi-shopping-bag"></i>
+                    </div>
+                    <div class="order-card-id">
+                        <span class="text-xs font-semibold" style="color: #b8997d;">ORDEN</span>
+                        <span class="font-bold text-sm" style="color: #33211D;">{{ getTicket(order.id) }}</span>
+                    </div>
+                    <p-tag [value]="getEstadoLabel(order.estado)" [styleClass]="getStatusClass(order.estado)"></p-tag>
+                </div>
+
+                <!-- Cliente -->
+                <div class="order-card-client">
+                    <i class="pi pi-user mr-2" style="color: #DA9F5B;"></i>
+                    <span class="font-semibold" style="color: #33211D;">{{ getCustomerName(order) }}</span>
+                </div>
+
+                <!-- Items count -->
+                <div *ngIf="order.items && order.items.length > 0" class="order-card-items-count">
+                    <i class="pi pi-list mr-2" style="color: #b8997d;"></i>
+                    <span class="text-sm" style="color: #7a5c51;">
+                        {{ order.items.length }} producto{{ order.items.length === 1 ? '' : 's' }}
+                    </span>
+                </div>
+
+                <!-- Total -->
+                <div class="order-card-total">
+                    <span class="text-xs" style="color: #7a5c51;">Total</span>
+                    <span class="order-card-price">
+                        ${{ (order.totalFinal ?? order.subtotal ?? 0) | number:'1.2-2' }}
+                    </span>
+                </div>
+
+                <!-- CTA -->
+                <div class="order-card-cta">
+                    <i class="pi pi-pencil mr-1"></i> Registrar merma
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de merma: registro de insumos de la comanda -->
+    <p-dialog
+        [(visible)]="mermaDialogVisible"
+        [modal]="true"
+        [style]="{ width: '42rem', maxWidth: '95vw' }"
+        styleClass="merma-dialog minimal-modal"
+        [dismissableMask]="true"
+        (onHide)="closeMermaModal()">
+        <ng-template pTemplate="header">
+            <div class="flex align-items-center gap-2">
+                <i class="pi pi-ticket"></i>
+                <span class="font-semibold">Mermas → {{ getTicket(mermaOrderId() ?? '') }}</span>
+            </div>
+        </ng-template>
+
+        <div class="flex flex-column gap-3">
+            <div *ngIf="loadingIngredients()" class="mermas-loading">
+                <p-progressSpinner strokeWidth="4" styleClass="w-2rem h-2rem"></p-progressSpinner>
+                <span>Cargando insumos…</span>
+            </div>
+
+            <div *ngIf="!loadingIngredients() && orderIngredients().length === 0" class="no-ingredients">
+                No se encontraron insumos para esta comanda.
+            </div>
+
+            <div *ngIf="!loadingIngredients() && orderIngredients().length > 0">
+                <div class="modal-busqueda">
+                    <p-iconfield>
+                        <p-inputicon styleClass="pi pi-search"></p-inputicon>
+                        <input
+                            pInputText
+                            type="text"
+                            placeholder="Buscar insumo o producto…"
+                            [value]="busquedaComanda()"
+                            (input)="onBusquedaInput($event)"
+                        />
+                    </p-iconfield>
+                </div>
+
+                <div class="merma-tipo-row">
+                    <label class="text-sm font-medium">Tipo de merma:</label>
+                    <p-select
+                        [options]="tiposMerma"
+                        optionLabel="label"
+                        optionValue="codigo"
+                        [(ngModel)]="tipoMermaSeleccionado"
+                        styleClass="w-auto"
+                        [appendTo]="'body'"
+                    ></p-select>
+                </div>
+
+                <div class="ingredients-list">
+                    <div *ngFor="let entry of getIngredientesFiltrados(); let pos = index" class="ingredient-row">
+                        <p-checkbox
+                            [binary]="true"
+                            [(ngModel)]="seleccionados[entry.i]"
+                            (ngModelChange)="onInsumoCheck(entry.i, $event)"
+                            inputId="insumo-{{ entry.i }}"
+                        ></p-checkbox>
+                        <div class="ingredient-info">
+                            <span class="ingredient-name">{{ getInsumoName(entry.insumo) }}</span>
+                            <span class="ingredient-meta">
+                                × {{ entry.insumo.cantidad }} {{ entry.insumo.unidad || 'pieza' }}
+                                <ng-container *ngIf="entry.insumo.costoUnitario">
+                                    · ${{ entry.insumo.costoUnitario | number:'1.2-2' }}/u
+                                </ng-container>
+                            </span>
+                        </div>
+                        <div class="ingredient-qty">
+                            <label class="qty-label">Merma</label>
+                            <input
+                                type="number"
+                                pInputText
+                                min="0"
+                                [step]="0.01"
+                                [value]="cantidades[entry.i] ?? entry.insumo.cantidad ?? 0"
+                                (input)="onCantidadInput(entry.i, $event)"
+                                [disabled]="!seleccionados[entry.i]"
+                                class="qty-input"
+                            />
+                        </div>
+                        <div class="ingredient-subtotal" *ngIf="seleccionados[entry.i]">
+                            ${{ ((cantidades[entry.i] ?? 0) * (entry.insumo.costoUnitario ?? 0)) | number:'1.2-2' }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="merma-summary">
+                    <div class="summary-item">
+                        <span class="summary-label">Seleccionados</span>
+                        <span class="summary-value">{{ getSeleccionTotal() }}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Pérdida estimada</span>
+                        <span class="summary-value summary-perdida">${{ getPerdidaTotal() | number:'1.2-2' }}</span>
+                    </div>
+                </div>
+
+                <div class="merma-actions">
+                    <p-button
+                        label="Registrar Merma"
+                        icon="pi pi-save"
+                        severity="warn"
+                        styleClass="minimal-submit"
+                        [loading]="registeringMerma()"
+                        [disabled]="registeringMerma() || getSeleccionTotal() === 0"
+                        (onClick)="registerMerma()"
+                    ></p-button>
+                </div>
+            </div>
+        </div>
+    </p-dialog>
+
+    <!-- Modal de merma administrativa: transfer list de dos columnas -->
+    <p-dialog
+        [(visible)]="adminVisible"
+        [modal]="true"
+        [style]="{ width: 'min(72rem, 96vw)' }"
+        styleClass="admin-dialog"
+        [dismissableMask]="true"
+        (onHide)="closeAdminModal()">
+        <ng-template pTemplate="header">
+            <div class="admin-header">
+                <i class="pi pi-database"></i>
+                <span class="admin-title">Merma administrativa</span>
+                <span class="admin-subtitle">Salida directa de almacén</span>
+            </div>
+        </ng-template>
+
+        <div class="admin-body">
+            <!-- Columna izquierda: insumos disponibles -->
+            <div class="admin-col admin-col-left">
+                <div class="admin-col-header">
+                    <span class="admin-col-title">Insumos disponibles</span>
+                    <span class="admin-col-count">{{ adminDisponibles().length }}</span>
+                </div>
+
+                <div class="admin-search">
+                    <p-iconfield styleClass="w-full">
+                        <p-inputicon styleClass="pi pi-search"></p-inputicon>
+                        <input
+                            pInputText
+                            type="text"
+                            class="w-full"
+                            placeholder="Buscar insumo…"
+                            [value]="adminBusqueda()"
+                            (input)="onAdminBusquedaInput($event)"
+                        />
+                    </p-iconfield>
+                </div>
+
+                <div *ngIf="adminLoading()" class="admin-state">
+                    <p-progressSpinner strokeWidth="4" styleClass="w-2rem h-2rem"></p-progressSpinner>
+                    <span>Cargando insumos…</span>
+                </div>
+
+                <div *ngIf="!adminLoading() && adminDisponibles().length === 0" class="admin-state empty">
+                    No hay más insumos disponibles.
+                </div>
+
+                <div *ngIf="!adminLoading()" class="admin-list">
+                    <button
+                        type="button"
+                        class="admin-item"
+                        *ngFor="let insumo of adminDisponibles()"
+                        (click)="moverADerecha(insumo)"
+                    >
+                        <span class="admin-item-icon"><i class="pi pi-plus"></i></span>
+                        <span class="admin-item-main">
+                            <span class="admin-item-name">{{ insumo.nombre }}</span>
+                            <span class="admin-item-meta">
+                                {{ insumo.unidad || 'pieza' }} ·
+                                Disponible: {{ adminDisponibleDe(insumo) }}
+                            </span>
+                        </span>
+                        <i class="pi pi-angle-right admin-item-arrow"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Columna derecha: insumos a mermar -->
+            <div class="admin-col admin-col-right">
+                <div class="admin-col-header">
+                    <span class="admin-col-title">Insumos a mermar</span>
+                    <span class="admin-col-count">{{ adminSeleccionados().length }}</span>
+                </div>
+
+                <div class="admin-list">
+                    <div *ngFor="let item of adminSeleccionados(); let i = index" class="admin-transfer-row">
+                        <div class="admin-item-name">{{ item.insumo.nombre }}</div>
+                        <div class="admin-item-meta">
+                            {{ item.insumo.unidad || 'pieza' }} ·
+                            Disp. {{ adminDisponibleDe(item.insumo) }}
+                        </div>
+                        <div class="admin-row-controls">
+                            <span class="admin-qty-input">
+                                <input
+                                    type="number"
+                                    pInputText
+                                    min="0"
+                                    [step]="0.01"
+                                    [max]="adminDisponibleDe(item.insumo)"
+                                    placeholder="0"
+                                    [class.over-stock]="item.cantidad > 0 && item.cantidad > adminDisponibleDe(item.insumo)"
+                                    [value]="item.cantidad || ''"
+                                    (input)="onCantidadAdminInput(i, $event)"
+                                />
+                                <span class="admin-qty-unit">{{ item.insumo.unidad || 'pieza' }}</span>
+                            </span>
+                            <button
+                                type="button"
+                                class="admin-remove"
+                                title="Quitar"
+                                (click)="moverAIzquierda(i)"
+                            >
+                                <i class="pi pi-times"></i>
+                            </button>
+                        </div>
+                        <div *ngIf="item.cantidad > 0 && item.cantidad > adminDisponibleDe(item.insumo)" class="admin-over-warn">
+                            Supera el stock disponible ({{ adminDisponibleDe(item.insumo) }})
+                        </div>
+                    </div>
+
+                    <div *ngIf="adminSeleccionados().length === 0" class="admin-state empty">
+                        Haz clic en un insumo de la izquierda para agregarlo aquí.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer (ambas columnas): origen + motivo + registrar -->
+        <ng-template pTemplate="footer">
+            <div class="admin-footer">
+                <div class="admin-footer-fields">
+                    <div class="admin-footer-field">
+                        <label for="adminOrigen">Almacén de origen</label>
+                        <p-select
+                            id="adminOrigen"
+                            [options]="[{'codigo':'BODEGA','label':'Bodega'},{'codigo':'COCINA','label':'Cocina'},{'codigo':'BARRA','label':'Barra'}]"
+                            optionLabel="label"
+                            optionValue="codigo"
+                            [(ngModel)]="adminOrigen"
+                            styleClass="w-full"
+                            [appendTo]="'body'"
+                        ></p-select>
+                    </div>
+                    <div class="admin-footer-field">
+                        <label for="adminMotivo">Motivo de la merma</label>
+                        <p-select
+                            id="adminMotivo"
+                            [options]="[{'codigo':'CADUCIDAD','label':'Caducidad'},{'codigo':'ACCIDENTE','label':'Accidente'},{'codigo':'ROTURA','label':'Rotura'},{'codigo':'CALIDAD','label':'Calidad'},{'codigo':'OTRO','label':'Otro'}]"
+                            optionLabel="label"
+                            optionValue="codigo"
+                            [(ngModel)]="adminMotivo"
+                            placeholder="Selecciona un motivo…"
+                            [showClear]="true"
+                            styleClass="w-full"
+                            [appendTo]="'body'"
+                        ></p-select>
+                        <input
+                            *ngIf="adminMotivo === 'OTRO'"
+                            pInputText
+                            type="text"
+                            class="admin-motivo-custom"
+                            placeholder="Escribe el motivo de la merma…"
+                            [value]="adminMotivoCustom"
+                            (input)="onMotivoCustomInput($event)"
+                        />
+                    </div>
+                </div>
+                <p-button
+                    label="Registrar Merma"
+                    icon="pi pi-check"
+                    styleClass="admin-submit"
+                    [loading]="registeringAdmin()"
+                    [disabled]="registeringAdmin() || !adminPuedeRegistrar()"
+                    (onClick)="registroAdmin()"
+                ></p-button>
+            </div>
+        </ng-template>
+    </p-dialog>
+
+    <!-- Sección: Historial de mermas -->
+    <div class="catalog-panel surface-card border-round-lg p-3">
+        <div *ngIf="loading()" class="mermas-loading">
+            <p-progressSpinner strokeWidth="4" styleClass="w-2rem h-2rem"></p-progressSpinner>
+            <span>Cargando mermas…</span>
+        </div>
+
+        <p-table
+            *ngIf="!loading()"
+            [value]="filteredRecords()"
+            [paginator]="true"
+            [rows]="10"
+            [rowsPerPageOptions]="[10, 30, 50]"
+            [globalFilterFields]="['ticket','insumoNombre','productoNombre']"
+            responsiveLayout="scroll"
+            styleClass="p-datatable-sm catalog-table"
+            [tableStyle]="{ 'width': '100%', 'table-layout': 'fixed' }"
+            dataKey="id"
+            [rowHover]="true"
+            [showCurrentPageReport]="true"
+            [currentPageReportTemplate]="'Mostrando {first} a {last} de {totalRecords} registros de merma'"
+        >
+            <ng-template pTemplate="caption">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <h5 class="m-0">Historial de mermas</h5>
+                        <span class="caption-badge">{{ records().length }} registro(s)</span>
+                        <span class="caption-badge caption-badge-danger">Pérdida: ${{ getTotalPerdida() | number:'1.2-2' }}</span>
+                    </div>
+                    <p-iconfield>
+                        <p-inputicon styleClass="pi pi-search"></p-inputicon>
+                        <input
+                            pInputText
+                            type="text"
+                            (input)="onGlobalFilter($event)"
+                            placeholder="Buscar por ticket, insumo o producto…"
+                        />
+                    </p-iconfield>
+                </div>
+            </ng-template>
+            <ng-template pTemplate="header">
+                <tr>
+                    <th>Ticket</th>
+                    <th>Insumo / Producto</th>
+                    <th>Cantidad</th>
+                    <th>Tipo</th>
+                    <th>Costo unitario</th>
+                    <th>Pérdida</th>
+                    <th>Fecha</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-row>
+                <tr>
+                    <td><span class="font-semibold ticket-chip">#{{ row.ticket }}</span></td>
+                    <td><span class="font-semibold">{{ getName(row) }}</span></td>
+                    <td>{{ row.cantidad }} {{ row.unidad || '' }}</td>
+                    <td><p-tag [value]="getTipoLabel(row.tipoMerma)" [severity]="getTipoColor(row.tipoMerma)"></p-tag></td>
+                    <td>${{ (row.costoUnitario ?? 0) | number:'1.2-2' }}</td>
+                    <td><span class="perdida-cell">${{ (row.costoTotal ?? 0) | number:'1.2-2' }}</span></td>
+                    <td class="fecha-cell">{{ formatFecha(row.fecha) }}</td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td [attr.colspan]="7" class="text-center p-4">
+                        <div class="flex flex-column align-items-center gap-2 text-500">
+                            <i class="pi pi-inbox text-3xl"></i>
+                            <span>No hay mermas registradas todavía.</span>
+                        </div>
+                    </td>
+                </tr>
+            </ng-template>
+        </p-table>
+    </div>
+</div>
