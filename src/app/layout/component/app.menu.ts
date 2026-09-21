@@ -49,64 +49,85 @@ export class AppMenu implements OnInit {
     }
 
     private buildMenu() {
-        const allMenuItems: MenuItem[] = [
-            // Waiter Dashboard - specific for mesero role
-            { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/dashboard/mesero'], requiredPermissions: ['dashboard_mesero'] },
-            // Admin/Default Dashboard
-            { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/dashboard/kpis'], requiredPermissions: ['view_dashboard'] },
-            { label: 'Admin Page', icon: 'pi pi-fw pi-globe', routerLink: ['/dashboard/adminPage'], requiredPermissions: ['manage_admin_page'] },
-            { label: 'Categorías', icon: 'pi pi-fw pi-tags', routerLink: ['/dashboard/categoriesMenu'], requiredPermissions: ['manage_categories'] },
+        const categoriesItem: MenuItem = { label: 'Categorías', icon: 'pi pi-fw pi-tags', routerLink: ['/dashboard/categoriesMenu'], roles: ['ADMIN'], requiredPermissions: ['manage_categories'] };
+        const productsItem: MenuItem = { label: 'Productos', icon: 'pi pi-fw pi-bars', routerLink: ['/dashboard/adminMenu'], disabled: true, title: 'Primero crea al menos una categoría', roles: ['ADMIN'], requiredPermissions: ['create_product', 'edit_product'] };
+        const recetasItem: MenuItem = { label: 'Recetas', icon: 'pi pi-fw pi-book', routerLink: ['/dashboard/recetas'], roles: ['ADMIN'], requiredPermissions: ['manage_recetas'] };
+
+        const allMenuGroups: any[] = [
             {
-                label: 'Productos',
-                icon: 'pi pi-fw pi-bars',
-                routerLink: ['/dashboard/adminMenu'],
-                disabled: true,
-                title: 'Primero crea al menos una categoría',
-                requiredPermissions: ['create_product', 'edit_product']
-            },
-            { label: 'Campañas', icon: 'pi pi-fw pi-id-card', routerLink: ['/dashboard/campaigns'], requiredPermissions: ['manage_campaigns'] },
-            { label: 'Plantillas', icon: 'pi pi-fw pi-file', routerLink: ['/dashboard/campaign-templates'], requiredPermissions: ['manage_campaign_templates'] },
-            { label: 'Redención', icon: 'pi pi-fw pi-ticket', routerLink: ['/dashboard/manual-redemption'], requiredPermissions: ['process_redemption'] },
-            { label: 'Gestión de Clientes', icon: 'pi pi-fw pi-users', routerLink: ['/dashboard/clientes'], requiredPermissions: ['view_customers'] },
-            { label: 'Gestión de Equipo', icon: 'pi pi-fw pi-id-card', routerLink: ['/dashboard/users'], requiredPermissions: ['view_users', 'manage_user_roles'] },
-            {
-                label: 'Mi Página',
-                icon: 'pi pi-fw pi-qrcode',
-                routerLink: ['/dashboard/mi-pagina'],
-                visible: false,
-                requiredPermissions: ['view_products']
+                label: 'Servicio',
+                icon: 'pi pi-fw pi-wallet',
+                items: [
+                    { label: 'Mesas', icon: 'pi pi-fw pi-table', routerLink: ['/dashboard/mesas'], roles: ['HOSTESS', 'ADMIN'], requiredPermissions: ['view_mesas'] },
+                    { label: 'Reservaciones', icon: 'pi pi-fw pi-calendar', routerLink: ['/dashboard/reservaciones'], roles: ['HOSTESS', 'ADMIN'], requiredPermissions: ['view_reservaciones'] },
+                    { label: 'Comanda', icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/dashboard/comandix'], roles: ['ADMIN', 'MESERO'], requiredPermissions: ['create_order'] },
+                    { label: 'Cocina', icon: 'pi pi-fw pi-box', routerLink: ['/dashboard/cocina'], roles: ['ADMIN', 'COCINA'], requiredPermissions: ['view_kitchen_orders', 'update_order_status'] },
+                    { label: 'Barra', icon: 'pi pi-fw pi-th-large', routerLink: ['/dashboard/barra'], roles: ['ADMIN', 'COCINA'], requiredPermissions: ['view_kitchen_orders', 'update_order_status'] }
+                ]
             },
             {
-                label: 'Mi Comanda',
-                icon: 'pi pi-fw pi-shopping-cart',
-                routerLink: ['/dashboard/comandix'],
-                visible: false,
-                requiredPermissions: ['create_order']
+                label: 'Gestiona tu Menú',
+                icon: 'pi pi-fw pi-shop',
+                items: [categoriesItem, productsItem, recetasItem]
             },
             {
-                label: 'Cocina',
+                label: 'Gestión de Equipo',
+                icon: 'pi pi-fw pi-users',
+                items: [
+                    { label: 'Gestión de Equipo', icon: 'pi pi-fw pi-id-card', routerLink: ['/dashboard/users'], roles: ['ADMIN'], requiredPermissions: ['view_users', 'manage_user_roles'] },
+                    { label: 'Horarios', icon: 'pi pi-fw pi-clock', routerLink: ['/dashboard/horarios'], roles: ['ADMIN'], requiredPermissions: ['manage_horarios'] }
+                ]
+            },
+            {
+                label: 'Gestión Administrativa',
+                icon: 'pi pi-fw pi-cog',
+                items: [
+                    { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/dashboard/kpis'], roles: ['ADMIN', 'MARKETING', 'CAJA'], requiredPermissions: ['view_dashboard'] },
+                    { label: 'Admin Page', icon: 'pi pi-fw pi-globe', routerLink: ['/dashboard/adminPage'], roles: ['ADMIN'], requiredPermissions: ['manage_admin_page'] },
+                    { label: 'Mi Página', icon: 'pi pi-fw pi-qrcode', routerLink: ['/dashboard/mi-pagina'], visible: false, roles: ['ADMIN'], requiredPermissions: ['view_products'] },
+                    { label: 'Dashboard Cocina', icon: 'pi pi-fw pi-chart-line', routerLink: ['/dashboard/cocina-dashboard'], roles: ['ADMIN', 'COCINA'], requiredPermissions: ['dashboard_kitchen'] },
+                    { label: 'Gestión de Clientes', icon: 'pi pi-fw pi-users', routerLink: ['/dashboard/clientes'], roles: ['ADMIN'], requiredPermissions: ['view_customers'] }
+                ]
+            },
+            {
+                label: 'Almacén',
                 icon: 'pi pi-fw pi-box',
-                routerLink: ['/dashboard/cocina'],
-                requiredPermissions: ['view_kitchen_orders', 'update_order_status']
+                items: [
+                    { label: 'Bodega', icon: 'pi pi-fw pi-database', routerLink: ['/dashboard/bodega'], roles: ['ADMIN'], requiredPermissions: ['view_products'] },
+                    { label: 'Inventario de Cocina', icon: 'pi pi-fw pi-box', routerLink: ['/dashboard/inventario-cocina'], roles: ['ADMIN'], requiredPermissions: ['view_products'] },
+                    { label: 'Inventario de Barra', icon: 'pi pi-fw pi-warehouse', routerLink: ['/dashboard/inventario-barra'], roles: ['ADMIN'], requiredPermissions: ['view_products'] },
+                    { label: 'Mermas', icon: 'pi pi-fw pi-trash', routerLink: ['/dashboard/mermas'], roles: ['ADMIN'], requiredPermissions: ['manage_mermas'] }
+                ]
             },
             {
-                label: 'Dashboard Cocina',
-                icon: 'pi pi-fw pi-chart-line',
-                routerLink: ['/dashboard/cocina-dashboard'],
-                requiredPermissions: ['dashboard_kitchen'],
-                requiredRole: 'COCINA'
+                label: 'Reportes',
+                icon: 'pi pi-fw pi-chart-bar',
+                items: [
+                    { label: 'Ventas y Comandas', icon: 'pi pi-fw pi-receipt', routerLink: ['/dashboard/reportes/ventas'], roles: ['ADMIN', 'CAJA'], requiredPermissions: ['view_dashboard'] },
+                    { label: 'Transferencias de Bodega', icon: 'pi pi-fw pi-arrows-alt', routerLink: ['/dashboard/reportes/transferencias'], roles: ['ADMIN'], requiredPermissions: ['view_products'] },
+                    { label: 'Reportes de Mermas', icon: 'pi pi-fw pi-database', routerLink: ['/dashboard/reportes/mermas'], roles: ['ADMIN'], requiredPermissions: ['manage_mermas'] }
+                ]
             },
-            { label: 'Reportes', icon: 'pi pi-fw pi-chart-bar', routerLink: ['/dashboard/uikit/charts'], visible: false, requiredPermissions: ['view_reports', 'admin_access'] },
-            { label: 'Utils', icon: 'pi pi-fw pi-table', routerLink: ['/dashboard/uikit/table'], visible: false, requiredPermissions: ['admin_access'] }
+            {
+                label: 'Promociones',
+                icon: 'pi pi-fw pi-percentage',
+                items: [
+                    { label: 'Campañas', icon: 'pi pi-fw pi-id-card', routerLink: ['/dashboard/campaigns'], roles: ['ADMIN', 'MARKETING'], requiredPermissions: ['manage_campaigns'] },
+                    { label: 'Plantillas', icon: 'pi pi-fw pi-file', routerLink: ['/dashboard/campaign-templates'], roles: ['ADMIN', 'MARKETING'], requiredPermissions: ['manage_campaign_templates'] },
+                    { label: 'Redención', icon: 'pi pi-fw pi-ticket', routerLink: ['/dashboard/manual-redemption'], roles: ['ADMIN', 'MARKETING', 'CAJA'], requiredPermissions: ['process_redemption'] }
+                ]
+            }
         ];
 
-        // Filtrar items según permisos
-        const filteredItems = allMenuItems.filter(item => this.hasRequiredPermissions(item));
+        // Filtrar items según permisos y descartar grupos vacíos
+        const filteredGroups = allMenuGroups
+            .map(group => ({ ...group, items: group.items.filter((item: any) => this.hasRequiredPermissions(item)) }))
+            .filter(group => group.items.length > 0);
 
         this.model = [
             {
                 label: 'Home',
-                items: filteredItems
+                items: filteredGroups
             }
         ];
 
@@ -120,9 +141,30 @@ export class AppMenu implements OnInit {
         this.checkAndUpdateKitchenMenu();
     }
 
+    /** Busca un item de menú por su primera ruta del routerLink, en cualquier nivel del modelo */
+    private findMenuItem(routerLink: string): MenuItem | undefined {
+        const search = (items: MenuItem[] | undefined): MenuItem | undefined => {
+            if (!items) return undefined;
+            for (const item of items) {
+                if (item.routerLink && item.routerLink[0] === routerLink) {
+                    return item;
+                }
+                const found = search(item.items);
+                if (found) return found;
+            }
+            return undefined;
+        };
+        return search(this.model[0]?.items);
+    }
+
     private hasRequiredPermissions(item: any): boolean {
         const user = this.authService.getCurrentUser();
         const userRole = user?.role || user?.rol;
+
+        // Validar restricción de rol por lista de roles permitidos
+        if (item.roles && item.roles.length > 0 && !item.roles.includes(userRole)) {
+            return false;
+        }
 
         // Validar restricción de rol (ej: requiredRole: 'MESERO')
         if (item.requiredRole && item.requiredRole !== userRole) {
@@ -153,7 +195,7 @@ export class AppMenu implements OnInit {
         if (tenantId) {
             this.categoryService.checkCategoriesExist(tenantId).subscribe({
                 next: (hasCategories) => {
-                    const productsItem = this.model[0]?.items?.find(item => item.label === 'Productos');
+                    const productsItem = this.findMenuItem('/dashboard/adminMenu');
                     if (productsItem) {
                         productsItem.disabled = !hasCategories;
                         productsItem.title = hasCategories ? undefined : 'Primero crea al menos una categoría';
@@ -173,11 +215,11 @@ export class AppMenu implements OnInit {
 
         // "Mi Página" y "Mi Comanda" no son para COCINA
         if (userRole === 'COCINA') {
-            const miPaginaItem = this.model[0]?.items?.find(item => item.label === 'Mi Página');
+            const miPaginaItem = this.findMenuItem('/dashboard/mi-pagina');
             if (miPaginaItem) {
                 miPaginaItem.visible = false;
             }
-            const comandixItem = this.model[0]?.items?.find(item => item.label === 'Mi Comanda');
+            const comandixItem = this.findMenuItem('/dashboard/comandix');
             if (comandixItem) {
                 comandixItem.visible = false;
             }
@@ -189,13 +231,13 @@ export class AppMenu implements OnInit {
                 next: (productResp) => {
                     const products = productResp?.object || [];
                     const hasProducts = products.length > 0;
-                    const miPaginaItem = this.model[0]?.items?.find(item => item.label === 'Mi Página');
+                    const miPaginaItem = this.findMenuItem('/dashboard/mi-pagina');
                     if (miPaginaItem) {
                         miPaginaItem.visible = hasProducts;
                     }
-                    const comandixItem = this.model[0]?.items?.find(item => item.label === 'Mi Comanda');
+                    const comandixItem = this.findMenuItem('/dashboard/comandix');
                     if (comandixItem) {
-                        comandixItem.visible = hasProducts;
+                        comandixItem.visible = true;
                     }
                 },
                 error: (err) => {
@@ -209,7 +251,7 @@ export class AppMenu implements OnInit {
         // Si el usuario tiene los permisos de cocina, mostrar la opción
         // Los permisos ya se validaron en buildMenu(), así que solo necesitamos
         // verificar que existe el item
-        const kitchenItem = this.model[0]?.items?.find(item => item.label === 'Cocina');
+        const kitchenItem = this.findMenuItem('/dashboard/cocina');
 
         if (kitchenItem) {
             // Asegurar que esté visible si el usuario logró pasar el filtro de permisos

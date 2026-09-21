@@ -39,7 +39,8 @@ export interface SseNewOrderEvent {
 
 /**
  * Servicio para manejar las notificaciones SSE (Server-Sent Events) de órdenes
- * del backend CHATBOT. Maneja reconexión automática con backoff fijo de 3s.
+ * del backend CHATBOT. Usa la reconexión automática nativa de EventSource
+ * (el navegador reintenta indefinidamente), sin límite de intentos.
  */
 @Injectable({
   providedIn: 'root'
@@ -51,11 +52,8 @@ export class OrderSseService implements OnDestroy {
   private errorMessageSubject = new Subject<string>();
 
   private readonly SSE_ENDPOINT = `${environment.apiUrl}/sse/orders`;
-  private readonly RECONNECT_DELAY_MS = 3000; // Backoff fijo de 3 segundos
-  private readonly MAX_RECONNECT_ATTEMPTS = 5; // Máximo 5 reintentos
   private reconnectAttempts = 0;
   private tenantIdForReconnect = 0;
-  private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 
   newOrder$ = this.newOrderSubject.asObservable();
   connectionStatus$ = this.connectionStatusSubject.asObservable();
@@ -66,15 +64,10 @@ export class OrderSseService implements OnDestroy {
   }
 
   /**
-   * Inicia la conexión SSE para un tenant específico
-   * @param tenantId ID del tenant a monitorear
+   * Inicia la conexión SSE para un tenant específico.
+   * Si ya hay una conexión abierta/conectando para el mismo tenant, no duplica.
    */
   connect(tenantId: number): void {
-    if (this.eventSource !== null) {
-      console.warn('[OrderSSE] Conexión ya activa, desconectando primero...');
-      this.disconnect();
-    }
-
     if (tenantId <= 0) {
       console.warn('[OrderSSE] TenantId inválido, no se inicia SSE');
       this.connectionStatusSubject.next('error');
@@ -82,29 +75,39 @@ export class OrderSseService implements OnDestroy {
       return;
     }
 
+    // Ya conectado o reconectando al mismo tenant: no duplicar
+    if (this.eventSource && this.tenantIdForReconnect === tenantId &&
+        (this.eventSource.readyState === EventSource.OPEN || this.eventSource.readyState === EventSource.CONNECTING)) {
+      console.log('[OrderSSE] Conexión ya activa para tenant', tenantId);
+      return;
+    }
+
+    // Limpiar cualquier conexión previa (de otro tenant o ya cerrada)
+    if (this.eventSource) {
+      this.eventSource.close();
+      this.eventSource = null;
+    }
+
     this.tenantIdForReconnect = tenantId;
     const url = `${this.SSE_ENDPOINT}?tenantId=${tenantId}`;
-
     console.log('[OrderSSE] Conectando a', url);
 
     try {
-      this.eventSource = new EventSource(url);
+      const es = new EventSource(url);
+      this.eventSource = es;
       this.reconnectAttempts = 0;
 
       // ==================== Evento: Conexión confirmada ====================
-      // Solo informativo, no mostrar al usuario
-      this.eventSource.addEventListener('connected', (event: MessageEvent) => {
+      es.addEventListener('connected', (event: MessageEvent) => {
         try {
           console.debug('[OrderSSE] Evento "connected" recibido (ignorado)');
-          // No emitir nada, solo logging
         } catch (error) {
           console.error('[OrderSSE] Error procesando evento connected:', error);
         }
       });
 
       // ==================== Evento: Nueva orden ====================
-      // CRÍTICO: Este es el único evento relevante para el negocio
-      this.eventSource.addEventListener('new-order', (event: MessageEvent) => {
+      es.addEventListener('new-order', (event: MessageEvent) => {
         try {
           const sseEvent: SseNewOrderEvent = JSON.parse(event.data);
           console.log('[OrderSSE] Nueva orden recibida:', {
@@ -119,88 +122,48 @@ export class OrderSseService implements OnDestroy {
       });
 
       // ==================== Evento: Heartbeat ====================
-      // Mantener viva la conexión, no mostrar nada
-      this.eventSource.addEventListener('ping', (event: MessageEvent) => {
+      es.addEventListener('ping', (event: MessageEvent) => {
         console.debug('[OrderSSE] Heartbeat recibido');
       });
 
       // ==================== Ciclo de vida de la conexión ====================
-
-      this.eventSource.onopen = () => {
+      es.onopen = () => {
         console.log('[OrderSSE] ✓ Conexión abierta exitosamente');
-        this.connectionStatusSubject.next('connected');
         this.reconnectAttempts = 0;
+        this.connectionStatusSubject.next('connected');
       };
 
-      this.eventSource.onerror = () => {
-        const readyState = this.eventSource?.readyState;
-        console.error('[OrderSSE] ✗ Error en conexión SSE (readyState:', readyState, ')');
-
-        // Cerrar la conexión
-        if (this.eventSource) {
-          this.eventSource.close();
-          this.eventSource = null;
+      // Reconexión automática NATIVA del navegador: EventSource reintenta solo
+      // e indefinidamente. NO cerramos manualmente; solo informamos del estado.
+      es.onerror = () => {
+        const state = es.readyState;
+        if (state === EventSource.CLOSED) {
+          console.error('[OrderSSE] Conexión SSE cerrada');
+          this.connectionStatusSubject.next('disconnected');
+        } else {
+          // readyState === CONNECTING: el navegador está reintentando por su cuenta
+          this.reconnectAttempts++;
+          console.warn('[OrderSSE] Reconexión automática del navegador (intento ' + this.reconnectAttempts + ')');
+          this.connectionStatusSubject.next('disconnected');
         }
-
-        // Intentar reconectar
-        this.connectionStatusSubject.next('error');
-        this.attemptReconnect();
       };
     } catch (error) {
       console.error('[OrderSSE] ✗ Error al crear EventSource:', error);
       this.connectionStatusSubject.next('error');
       this.errorMessageSubject.next('Sin conexión en tiempo real');
-      this.attemptReconnect();
     }
   }
 
   /**
-   * Desconecta la conexión SSE
+   * Desconecta la conexión SSE (cierre explícito, p.ej. al salir de la página)
    */
   disconnect(): void {
-    if (this.reconnectTimeout !== null) {
-      clearTimeout(this.reconnectTimeout);
-      this.reconnectTimeout = null;
-    }
-
     if (this.eventSource !== null) {
       console.log('[OrderSSE] Desconectando...');
       this.eventSource.close();
       this.eventSource = null;
       this.connectionStatusSubject.next('disconnected');
     }
-  }
-
-  /**
-   * Intenta reconectar con backoff fijo de 3 segundos
-   * Máximo 5 reintentos, después desiste
-   */
-  private attemptReconnect(): void {
-    if (this.reconnectAttempts >= this.MAX_RECONNECT_ATTEMPTS) {
-      const message =
-        'No se pudo conectar a las notificaciones en tiempo real después de ' +
-        this.MAX_RECONNECT_ATTEMPTS +
-        ' intentos. Por favor recarga la página.';
-      console.error('[OrderSSE] ✗', message);
-      this.errorMessageSubject.next('Sin conexión en tiempo real');
-      return;
-    }
-
-    this.reconnectAttempts++;
-    const nextAttempt = this.reconnectAttempts;
-
-    console.warn(
-      '[OrderSSE] Reintentando conexión en 3s... (intento ' +
-      nextAttempt +
-      '/' +
-      this.MAX_RECONNECT_ATTEMPTS +
-      ')'
-    );
-
-    this.reconnectTimeout = setTimeout(() => {
-      console.log('[OrderSSE] Realizando reintento de conexión #' + nextAttempt);
-      this.connect(this.tenantIdForReconnect);
-    }, this.RECONNECT_DELAY_MS);
   }
 
   /**
@@ -211,7 +174,7 @@ export class OrderSseService implements OnDestroy {
   }
 
   /**
-   * Obtiene el número de reintentos realizados
+   * Obtiene el número de reconexiones realizadas
    */
   getReconnectAttempts(): number {
     return this.reconnectAttempts;

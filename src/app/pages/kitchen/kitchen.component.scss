@@ -447,6 +447,105 @@
     font-style: italic;
 }
 
+// Desglose de receta en el detalle de la orden
+.item-recipe-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: 0.6rem;
+}
+
+.recipe-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: 0.45rem;
+    border-left: 3px solid var(--primary-color);
+    background: color-mix(in srgb, var(--surface-card) 88%, #ffffff 12%);
+}
+
+.recipe-group-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text-color-secondary);
+}
+
+.recipe-group-label .pi {
+    font-size: 0.85rem;
+}
+
+.recipe-group-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.recipe-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: color-mix(in srgb, var(--primary-color) 10%, #ffffff 90%);
+    color: var(--primary-color);
+    border: 1px solid color-mix(in srgb, var(--primary-color) 35%, #ffffff 65%);
+    border-radius: 999px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.recipe-tag-price {
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.05rem 0.4rem;
+    border-radius: 999px;
+    background: rgba(22, 101, 52, 0.12);
+    color: #166534;
+}
+
+.recipe-group-base {
+    border-left-color: #3f8c6b;
+}
+
+.recipe-group-modifiable {
+    border-left-color: #f08c00;
+}
+
+.recipe-group-removed {
+    border-left-color: #ef4444;
+    background: color-mix(in srgb, #fef2f2 70%, var(--surface-card) 30%);
+}
+
+.recipe-tag-removed {
+    background: #fef2f2;
+    color: #b91c1c;
+    border-color: #fca5a5;
+    text-decoration: line-through;
+}
+
+.recipe-group-extra {
+    border-left-color: #7c3aed;
+}
+
+.recipe-tag-extra {
+    background: #f5f3ff;
+    color: #6d28d9;
+    border-color: #c4b5fd;
+}
+
+.recipe-groups-empty {
+    margin-top: 0.6rem;
+    padding: 0.5rem 0.7rem;
+    border-radius: 0.45rem;
+    font-size: 0.85rem;
+    font-style: italic;
+    color: var(--text-color-secondary);
+    background: color-mix(in srgb, var(--surface-card) 92%, #ffffff 8%);
+}
+
 .totals-grid {
     display: grid;
     gap: 0.75rem;
@@ -587,6 +686,45 @@
     .total-item.total-final {
       background: rgba(16, 185, 129, 0.12);
       border-color: #34d399;
+    }
+
+    .recipe-group {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .recipe-group-label {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .recipe-tag {
+      background: rgba(99, 102, 241, 0.18);
+      color: #a5b4fc;
+      border-color: rgba(165, 180, 252, 0.35);
+    }
+
+    .recipe-tag-price {
+      background: rgba(110, 231, 183, 0.15);
+      color: #6ee7b7;
+    }
+
+    .recipe-group-removed {
+      background: rgba(239, 68, 68, 0.12);
+    }
+
+    .recipe-tag-removed {
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+      border-color: rgba(252, 165, 165, 0.4);
+    }
+
+    .recipe-tag-extra {
+      background: rgba(139, 92, 246, 0.15);
+      color: #c4b5fd;
+      border-color: rgba(196, 181, 253, 0.4);
+    }
+
+    .recipe-groups-empty {
+      background: rgba(255, 255, 255, 0.02);
     }
   }
 }

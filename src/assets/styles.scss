@@ -195,11 +195,11 @@ body {
 /* === MODO OSCURO (PREDETERMINADO - PREMIUM) === */
 :root[class*='app-dark'],
 .app-dark {
-  --text-color: #e6e8ef;
-  --text-color-secondary: #9aa3b5;
-  --surface-ground: #09090e;
-  --surface-card: #101016;
-  --surface-section: #0d0d13;
+  --text-color: #f2f4f8;
+  --text-color-secondary: #b8c0d0;
+  --surface-ground: #1a2130;
+  --surface-card: #242c40;
+  --surface-section: #202839;
   --surface-border: rgba(255, 255, 255, 0.08);
   --surface-hover: rgba(255, 255, 255, 0.05);
 
@@ -210,7 +210,7 @@ body {
   --lealtix-primary-700: #4f46e5;
 
   /* Vidrio premium */
-  --lealtix-glass-bg: rgba(16, 16, 22, 0.72);
+  --lealtix-glass-bg: rgba(36, 44, 64, 0.72);
   --lealtix-glass-border: rgba(255, 255, 255, 0.08);
   --lealtix-glass-blur: blur(20px) saturate(140%);
 
@@ -223,10 +223,111 @@ body {
   --lealtix-shadow-2xl: 0 32px 64px rgba(0,0,0,0.6);
 }
 
+/* ----------------------------------------------------------------------------
+   MODO OSCURO GLOBAL: ningún texto negro/oscuro debe permanecer oscuro.
+   Convierte los tonos oscuros hardcodeados (slate-900, #0f172a, #111827,
+   #1e293b, #1a1a1a, etc.) en texto claro legible en toda la aplicación.
+   ---------------------------------------------------------------------------- */
+:root[class*='app-dark'],
+.app-dark {
+
+  /* LOGIN */
+  .form-side h2,
+  .form-side .input-wrapper input {
+    color: #e6e8ef !important;
+  }
+
+  /* LANDING / CAMPAÑAS */
+  .preview-value,
+  .template-title,
+  .create-campaign .title,
+  .create-campaign .value,
+  .create-campaign .info-text,
+  .create-campaign .campaign-header,
+  .create-campaign .section-title,
+  .create-campaign .preview-title,
+  .campaign-form .card,
+  .section-title {
+    color: #e6e8ef !important;
+  }
+
+  /* DASHBOARD - modal de costos/ganancias */
+  .costs-line,
+  .costs-result-label,
+  .ganancias-result {
+    color: #e6e8ef !important;
+  }
+
+  /* KITCHEN */
+  .hero-title,
+  .dish-name,
+  .fidelity-message,
+  .cta-content h3 {
+    color: #e6e8ef !important;
+  }
+
+  /* MI PÁGINA */
+  .header-title,
+  .status-title,
+  .tips-title,
+  .tip-title {
+    color: #e6e8ef !important;
+  }
+
+  /* REDENCIÓN */
+  .page-title,
+  .benefit-title,
+  .info-value,
+  .amount-header h3,
+  .amount-label,
+  .amount-preview .preview-value,
+  .summary-header h3,
+  .summary-value,
+  .summary-label {
+    color: #e6e8ef !important;
+  }
+
+  /* REDEEM (QR / código manual) */
+  .redeem-header,
+  .redeem-page .secondary-button,
+  .requirement-value,
+  .detail-value {
+    color: #e6e8ef !important;
+  }
+
+  /* CLIENTES / USUARIOS - títulos de diálogo y body de tablas */
+  .p-dialog-title,
+  .field,
+  .cliente-list .font-medium {
+    color: #e6e8ef !important;
+  }
+
+  /* Inputs dentro de encabezados morados se mantienen oscuros legibles
+     (el input usa fondo claro; el texto debe seguir siendo oscuro) */
+  .p-datatable-header .p-inputtext,
+  .catalog-panel .p-datatable-header .p-inputtext {
+    color: var(--lealtix-slate-900) !important;
+  }
+}
+
+/* Header de tablas/primes con fondo morado: texto siempre blanco */
+:root[class*='app-dark'] .p-datatable-header,
+.app-dark .p-datatable-header,
+:root[class*='app-dark'] .p-card-header,
+.app-dark .p-card-header {
+  color: #ffffff;
+}
+:root[class*='app-dark'] .p-datatable-header *,
+.app-dark .p-datatable-header *,
+:root[class*='app-dark'] .p-card-header *,
+.app-dark .p-card-header * {
+  color: #ffffff;
+}
+
 /* Fondo premium tipo Linear: gradientes radiales índigo/violeta + rejilla sutil */
 :root[class*='app-dark'] body,
 .app-dark body {
-  background-color: #09090e;
+  background-color: #1a2130;
   background-image:
     radial-gradient(ellipse 80% 50% at 20% -20%, rgba(99, 102, 241, 0.14), transparent 60%),
     radial-gradient(ellipse 60% 40% at 100% 0%, rgba(168, 85, 247, 0.09), transparent 55%),
@@ -1267,7 +1368,7 @@ i.pi-whatsapp { color: #25D366 !important; }
 
   .p-dropdown-panel,
   .p-multiselect-panel {
-    background-color: #14141c !important;
+    background-color: #242c40 !important;
     border: 1px solid rgba(255,255,255,0.1) !important;
     border-radius: 14px !important;
     box-shadow: 0 24px 48px rgba(0,0,0,0.6) !important;
@@ -1292,15 +1393,15 @@ i.pi-whatsapp { color: #25D366 !important; }
 
   /* === DIÁLOGOS OSCUROS === */
   .p-dialog {
-    background-color: #14141c !important;
+    background-color: #242c40 !important;
     border: 1px solid rgba(255,255,255,0.1) !important;
   }
   .p-dialog .p-dialog-header {
-    background-color: #14141c !important;
+    background-color: #242c40 !important;
     border-bottom: 1px solid rgba(255,255,255,0.08) !important;
   }
   .p-dialog .p-dialog-content {
-    background-color: #14141c !important;
+    background-color: #242c40 !important;
   }
   .p-dialog .p-dialog-footer {
     background-color: rgba(255,255,255,0.02) !important;
@@ -1316,7 +1417,7 @@ i.pi-whatsapp { color: #25D366 !important; }
   .p-tieredmenu,
   .p-contextmenu,
   .p-menu-list {
-    background-color: #14141c !important;
+    background-color: #242c40 !important;
     border: 1px solid rgba(255,255,255,0.1) !important;
   }
   .p-menuitem-link {
@@ -1382,7 +1483,7 @@ i.pi-whatsapp { color: #25D366 !important; }
 
   /* === TOASTS OSCUROS === */
   .p-toast .p-toast-message {
-    background-color: rgba(20,20,28,0.92) !important;
+    background-color: rgba(36,44,64,0.92) !important;
     border: 1px solid rgba(255,255,255,0.1) !important;
   }
 
@@ -1394,7 +1495,7 @@ i.pi-whatsapp { color: #25D366 !important; }
 
   /* === CALENDARIO OSCURO === */
   .p-datepicker {
-    background-color: #14141c !important;
+    background-color: #242c40 !important;
     border: 1px solid rgba(255,255,255,0.1) !important;
   }
   .p-datepicker:not(.p-disabled) table td span:not(.p-highlight):not(.p-disabled):hover {
@@ -1476,13 +1577,13 @@ i.pi-whatsapp { color: #25D366 !important; }
       color: #cbd2e0 !important;
     }
     .p-dialog-content {
-      background: #14141c !important;
+      background: #242c40 !important;
     }
   }
 
   /* Tarjetas internas de dialogo / form */
   .global-loading-spinner {
-    background: rgba(20,20,28,0.95) !important;
+    background: rgba(36,44,64,0.95) !important;
     border: 1px solid rgba(255,255,255,0.1) !important;
   }
 
@@ -1492,9 +1593,367 @@ i.pi-whatsapp { color: #25D366 !important; }
   }
 }
 
+/* === TABS DE CATÁLOGO (inventario / productos) — override GLOBAL oscuro === */
+:root[class*='app-dark'] .catalog-tabs,
+.app-dark .catalog-tabs,
+:root[class*='app-dark'] .catalog-tabs[class],
+.app-dark .catalog-tabs[class] {
+  background: #303950 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+:root[class*='app-dark'] .catalog-tab,
+.app-dark .catalog-tab,
+:root[class*='app-dark'] .catalog-tab[class],
+.app-dark .catalog-tab[class] {
+  color: #b6bdcc !important;
+}
+
+:root[class*='app-dark'] .catalog-tab:not(.catalog-tab-active):hover,
+.app-dark .catalog-tab:not(.catalog-tab-active):hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+:root[class*='app-dark'] .catalog-tab-active,
+.app-dark .catalog-tab-active {
+  background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%) !important;
+  color: #fff !important;
+}
+
+/* ============================================================================
+   MODALES MINIMALISTAS — .minimal-modal
+   Formularios limpios: encabezado morado, campos con línea inferior,
+   distribución vertical 100%, botón de envío ancho en morado.
+   Reglas con prefijo `body` para ganar especificidad sobre estilos de
+   componentes (cascada garantizada) y `!important` donde hace falta.
+   ============================================================================ */
+body .p-dialog.minimal-modal {
+  border-radius: 16px !important;
+  overflow: hidden;
+  background: #ffffff !important;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28), 0 8px 24px rgba(15, 23, 42, 0.12) !important;
+  border: none !important;
+}
+
+/* --- Encabezado morado, texto blanco centrado --- */
+body .p-dialog.minimal-modal .p-dialog-header {
+  background: linear-gradient(135deg, #5d5fef 0%, #6b46c1 100%) !important;
+  color: #ffffff !important;
+  padding: 1.4rem 2rem !important;
+  border: none !important;
+  border-radius: 0 !important;
+  justify-content: center;
+  position: relative;
+}
+
+body .p-dialog.minimal-modal .p-dialog-header .p-dialog-title,
+body .p-dialog.minimal-modal .p-dialog-header h2 {
+  font-size: 1.05rem !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  letter-spacing: 0.01em;
+  margin: 0;
+  text-align: center;
+}
+
+body .p-dialog.minimal-modal .p-dialog-header h2,
+body .p-dialog.minimal-modal .p-dialog-header i,
+body .p-dialog.minimal-modal .p-dialog-header .flex,
+body .p-dialog.minimal-modal .p-dialog-header .inline-flex,
+body .p-dialog.minimal-modal .p-dialog-header span,
+body .p-dialog.minimal-modal .p-dialog-header .font-semibold,
+body .p-dialog.minimal-modal .p-dialog-header .font-bold {
+  color: #ffffff;
+}
+
+body .p-dialog.minimal-modal .p-dialog-header-actions,
+body .p-dialog.minimal-modal .p-dialog-header-icons {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+body .p-dialog.minimal-modal .p-dialog-header .p-dialog-header-icon,
+body .p-dialog.minimal-modal .p-dialog-header-close,
+body .p-dialog.minimal-modal .p-dialog-header button {
+  color: #ffffff !important;
+  border-radius: 8px;
+}
+
+body .p-dialog.minimal-modal .p-dialog-header .p-dialog-header-icon:hover,
+body .p-dialog.minimal-modal .p-dialog-header-close:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+}
+
+/* --- Contenido blanco, color de texto oscuro --- */
+body .p-dialog.minimal-modal .p-dialog-content,
+body .p-dialog.minimal-modal .p-dialog-content[class] {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  padding: 2rem 2.25rem 1rem !important;
+}
+
+body .p-dialog.minimal-modal .p-dialog-content > * {
+  margin-bottom: 1.35rem;
+}
+
+body .p-dialog.minimal-modal .p-dialog-content > *:last-child {
+  margin-bottom: 0;
+}
+
+body .p-dialog.minimal-modal .p-dialog-content h4,
+body .p-dialog.minimal-modal .p-dialog-content .section-title,
+body .p-dialog.minimal-modal .p-dialog-content .summary-label {
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b !important;
+}
+
+/* Etiquetas pequeñas y discretas sobre la línea */
+body .p-dialog.minimal-modal .p-dialog-content label,
+body .p-dialog.minimal-modal .p-dialog-content .field-label,
+body .p-dialog.minimal-modal .p-dialog-content .field-label-checkbox {
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b !important;
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+/* --- Campos: fondo transparente + línea inferior --- */
+body .p-dialog.minimal-modal input:not([type='checkbox']):not([type='radio']):not([type='file']),
+body .p-dialog.minimal-modal textarea,
+body .p-dialog.minimal-modal .p-dialog-content .p-inputtext,
+body .p-dialog.minimal-modal .p-dialog-content .p-inputtextarea,
+body .p-dialog.minimal-modal .p-dialog-content .p-password input {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid #d8dee9 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: #0f172a !important;
+  width: 100% !important;
+  padding: 0.55rem 0.125rem !important;
+  font-size: 0.9375rem !important;
+  transition: border-color 0.2s ease !important;
+}
+
+body .p-dialog.minimal-modal input:not([type='checkbox']):not([type='radio']):not([type='file'])::placeholder,
+body .p-dialog.minimal-modal textarea::placeholder {
+  color: #a1aec4;
+}
+
+body .p-dialog.minimal-modal input:not([type='checkbox']):not([type='radio']):not([type='file']):focus,
+body .p-dialog.minimal-modal textarea:focus,
+body .p-dialog.minimal-modal .p-dialog-content .p-inputtext:focus,
+body .p-dialog.minimal-modal .p-dialog-content .p-inputtextarea:focus,
+body .p-dialog.minimal-modal .p-dialog-content .p-password input:focus {
+  border-bottom-color: #5d5fef !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Wrappers PrimeNG (select, datepicker, inputnumber, treeselect, multiselect, password) */
+body .p-dialog.minimal-modal .p-dialog-content .p-select,
+body .p-dialog.minimal-modal .p-dialog-content .p-datepicker,
+body .p-dialog.minimal-modal .p-dialog-content .p-inputnumber,
+body .p-dialog.minimal-modal .p-dialog-content .p-treeselect,
+body .p-dialog.minimal-modal .p-dialog-content .p-multiselect,
+body .p-dialog.minimal-modal .p-dialog-content .p-password,
+body .p-dialog.minimal-modal .p-dialog-content .p-chips .p-chips-multiple-container {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid #d8dee9 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  width: 100% !important;
+  color: #0f172a !important;
+}
+
+body .p-dialog.minimal-modal .p-dialog-content .p-select:hover,
+body .p-dialog.minimal-modal .p-dialog-content .p-datepicker:hover,
+body .p-dialog.minimal-modal .p-dialog-content .p-treeselect:hover,
+body .p-dialog.minimal-modal .p-dialog-content .p-multiselect:hover {
+  border-bottom-color: #a1aec4 !important;
+}
+
+body .p-dialog.minimal-modal .p-dialog-content .p-select .p-select-label,
+body .p-dialog.minimal-modal .p-dialog-content .p-treeselect .p-treeselect-label,
+body .p-dialog.minimal-modal .p-dialog-content .p-multiselect .p-multiselect-label {
+  color: #0f172a !important;
+  padding: 0.5rem 0.125rem !important;
+}
+
+body .p-dialog.minimal-modal .p-dialog-content .p-select-dropdown,
+body .p-dialog.minimal-modal .p-dialog-content .p-treeselect .p-treeselect-trigger,
+body .p-dialog.minimal-modal .p-dialog-content .p-multiselect .p-multiselect-trigger,
+body .p-dialog.minimal-modal .p-dialog-content .p-datepicker .p-datepicker-input-icon {
+  color: #94a3b8 !important;
+}
+
+/* Quitar botones spinner de inputnumber: línea limpia */
+body .p-dialog.minimal-modal .p-dialog-content .p-inputnumber > .p-inputnumber-buttons,
+body .p-dialog.minimal-modal .p-dialog-content .p-inputnumber-buttons-stacked,
+body .p-dialog.minimal-modal .p-dialog-content .p-inputnumber-button {
+  display: none !important;
+}
+
+/* Checkbox: acento morado */
+body .p-dialog.minimal-modal .p-checkbox .p-checkbox-box,
+body .p-dialog.minimal-modal .p-checkbox-box {
+  border-radius: 6px !important;
+}
+
+body .p-dialog.minimal-modal .p-checkbox .p-checkbox-box.p-highlight,
+body .p-dialog.minimal-modal .p-checkbox-box.p-highlight {
+  background: #5d5fef !important;
+  border-color: #5d5fef !important;
+}
+
+/* SelectButton (dashboard costos): minimal */
+body .p-dialog.minimal-modal .p-selectbutton {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid #d8dee9 !important;
+  border-radius: 0 !important;
+  width: 100% !important;
+}
+
+/* --- Distribución vertical 100% --- */
+body .p-dialog.minimal-modal .p-dialog-content .grid {
+  display: grid;
+  grid-template-columns: 1fr !important;
+  gap: 1.4rem !important;
+}
+
+body .p-dialog.minimal-modal .p-dialog-content .form-row {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 1.1rem !important;
+}
+
+body .p-dialog.minimal-modal .p-dialog-content .form-col,
+body .p-dialog.minimal-modal .p-dialog-content .form-col-narrow {
+  width: 100% !important;
+}
+
+body .p-dialog.minimal-modal .p-dialog-content .grid .col-6,
+body .p-dialog.minimal-modal .p-dialog-content .grid > .col-6 {
+  max-width: 100%;
+}
+
+/* --- Pie del modal: botón de envío ancho en morado --- */
+body .p-dialog.minimal-modal .p-dialog-footer {
+  background: #ffffff !important;
+  border-top: 1px solid #f1f5f9 !important;
+  padding: 0.5rem 2.25rem 1.75rem !important;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+body .p-dialog.minimal-modal .p-dialog-footer > div {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.7rem !important;
+  width: 100% !important;
+  background: transparent !important;
+  border-top: none !important;
+  padding: 0 !important;
+  justify-content: stretch !important;
+}
+
+body .p-dialog.minimal-modal .p-dialog-footer .p-button {
+  width: 100% !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  padding: 0.7rem 1rem !important;
+}
+
+body .p-dialog.minimal-modal .p-dialog-footer .p-button.p-button-text {
+  background: transparent !important;
+  color: #64748b !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+body .p-dialog.minimal-modal .p-dialog-footer .p-button.p-button-secondary {
+  background: #ffffff !important;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+/* Botón de envío (donde se aplique .minimal-submit) */
+body .p-dialog.minimal-modal .minimal-submit,
+body .p-dialog.minimal-modal .p-dialog-footer .minimal-submit,
+body .p-dialog.minimal-modal .p-dialog-content .minimal-submit {
+  width: 100% !important;
+  background: linear-gradient(135deg, #5d5fef 0%, #6b46c1 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  padding: 0.7rem 1rem !important;
+  box-shadow: 0 8px 20px rgba(93, 95, 239, 0.3) !important;
+}
+
+body .p-dialog.minimal-modal .minimal-submit:hover:not(:disabled),
+body .p-dialog.minimal-modal .p-dialog-footer .minimal-submit:hover:not(:disabled),
+body .p-dialog.minimal-modal .p-dialog-content .minimal-submit:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4f52e8 0%, #5f3fb4 100%) !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+}
+
+body .p-dialog.minimal-modal .minimal-submit:disabled {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+}
+
+/* Avisos y mensajes dentro del formulario: suaves */
+body .p-dialog.minimal-modal .p-dialog-content .p-message {
+  border-radius: 8px !important;
+  font-size: 0.8125rem !important;
+}
+
+/* Inputs compactos dentro de listas (cantidades por fila) */
+body .p-dialog.minimal-modal .p-dialog-content .qty-input,
+body .p-dialog.minimal-modal .p-dialog-content .recipe-edit-qty,
+body .p-dialog.minimal-modal .p-dialog-content .subreceta-qty {
+  width: 6rem !important;
+  height: 2.4rem !important;
+  background: #f1f5f9 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 0.4rem 0.6rem !important;
+  text-align: right;
+}
+
 /* === VENTANA CONFIABLE: todo contenido transparente para el glass === */
 .layout-main-container {
   position: relative;
+}
+
+/* === PANEL DE SELECT DE CATEGORÍAS (catálogo comandix) ===
+   El overlay se monta en <body> (appendTo="body"), por eso va aquí global. */
+body .catalog-select-panel.p-select-overlay {
+  min-width: 260px;
+  max-width: 340px;
+}
+
+body .catalog-select-panel .p-select-list {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+body .catalog-select-panel .p-select-option {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 @media (prefers-reduced-motion: reduce) {

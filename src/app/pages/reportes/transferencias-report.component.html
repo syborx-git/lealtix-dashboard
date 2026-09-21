@@ -1,0 +1,71 @@
+<p-toast></p-toast>
+
+<div class="inventario-container">
+  <div class="inventario-header">
+    <div>
+      <h2>Reportes</h2>
+      <p>Historial de transferencias de stock desde bodega hacia los subalmacenes de cocina y barra (auditoría).</p>
+    </div>
+    <div class="header-actions">
+      <button pButton type="button" icon="pi pi-refresh" label="Actualizar" class="p-button-outlined" (click)="load()"></button>
+    </div>
+  </div>
+
+  <div class="catalog-panel">
+    <p-table
+      #dt
+      [value]="items()"
+      [loading]="loading()"
+      styleClass="p-datatable-sm catalog-table"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[5, 10, 25, 50]"
+      [globalFilterFields]="['insumoNombre', 'destino', 'origen']"
+      dataKey="id"
+      [tableStyle]="{ 'min-width': '50rem' }"
+    >
+      <ng-template pTemplate="header">
+        <div class="table-header-bar">
+          <h5>Transferencias de bodega</h5>
+          <p-iconfield>
+            <p-inputicon styleClass="pi pi-search" />
+            <input pInputText type="text" placeholder="Buscar transferencia..." (input)="onGlobalFilter(dt, $event)" />
+          </p-iconfield>
+        </div>
+      </ng-template>
+      <ng-template pTemplate="headerrow">
+        <tr>
+          <th pSortableColumn="createdAt">Fecha <p-sortIcon field="createdAt" /></th>
+          <th pSortableColumn="insumoNombre">Insumo <p-sortIcon field="insumoNombre" /></th>
+          <th>Origen</th>
+          <th pSortableColumn="destino">Destino <p-sortIcon field="destino" /></th>
+          <th pSortableColumn="cantidad">Cantidad <p-sortIcon field="cantidad" /></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <tr>
+          <td>{{ formatFecha(row.createdAt) }}</td>
+          <td><strong>{{ row.insumoNombre }}</strong></td>
+          <td>
+            <span class="cat-chip-mini chip-origen">
+              <i class="pi pi-database"></i>
+              Bodega
+            </span>
+          </td>
+          <td>
+            <span class="cat-chip-mini" [ngClass]="row.destino === 'cocina' ? 'chip-insumo' : 'chip-bebida'">
+              <i [class]="row.destino === 'cocina' ? 'pi pi-box' : 'pi pi-glass'"></i>
+              {{ destinoLabel(row.destino) }}
+            </span>
+          </td>
+          <td><strong class="stock-bodega-val">{{ row.cantidad }}</strong></td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="empty-cell">Aún no hay transferencias registradas. Usa "Distribuir" en la Bodega para mover stock a cocina o barra.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

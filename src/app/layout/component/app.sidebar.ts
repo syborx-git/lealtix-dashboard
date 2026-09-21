@@ -1,40 +1,57 @@
 import { Component, ElementRef } from '@angular/core';
-import { Router } from '@angular/router';
 import { AppMenu } from './app.menu';
-import { ButtonModule } from 'primeng/button';
 import { CommonModule } from '@angular/common';
-import { UserProfileComponent } from '@/shared/components/user-profile.component';
+import { LayoutService } from '../service/layout.service';
 
 @Component({
     selector: 'app-sidebar',
     standalone: true,
-    imports: [AppMenu, ButtonModule, CommonModule, UserProfileComponent],
-    template: ` <div class="layout-sidebar">
+    imports: [AppMenu, CommonModule],
+    template: ` <div class="layout-sidebar"
+        [ngClass]="{ 'sidebar-collapsed': isCollapsed, 'hover-expanded': isHovered }"
+        (mouseenter)="onMouseEnter()"
+        (mouseleave)="onMouseLeave()">
+        <!-- Encabezado con marca Lealtix y botón pin -->
+        <div class="sidebar-header">
+            <div class="brand-logo">
+                <img src="https://res.cloudinary.com/lealtix-media/image/upload/q_auto/f_auto/v1759897289/lealtix_logo_transp_qcp5h9.png" alt="Lealtix Logo" class="logo-img" />
+                <span class="logo-text">LEALTIX</span>
+            </div>
+            <button class="toggle-pin-btn" (click)="toggleSidebar()" title="Fijar / Colapsar">
+                <i class="pi" [ngClass]="isCollapsed ? 'pi-circle' : 'pi-circle-fill'"></i>
+            </button>
+        </div>
+
         <div class="layout-menu-wrapper">
             <app-menu></app-menu>
-        </div>
-        <div class="sidebar-footer" style="display: flex; flex-direction: column; gap: 14px; padding: 14px 0 2rem 0; border-top: 1.5px solid var(--lealtix-glass-border);">
-            <div class="sidebar-user-section w-full">
-                <app-user-profile></app-user-profile>
-            </div>
-            <button pButton type="button" icon="pi pi-power-off" class="p-button-text p-button-danger logout-button" (click)="logout()" style="width: 100%; border-radius: 10px; font-weight: 600; justify-content: center; height: 32px; font-size: 0.8125rem;">Cerrar Sesión</button>
         </div>
     </div>`
 })
 export class AppSidebar {
-    constructor(public el: ElementRef, private router: Router) {}
+    isHovered = false;
 
-    logout(): void {
-        try {
-            sessionStorage.clear();
-            localStorage.clear();
-        } catch (e) {
-            console.warn('Error clearing storage during logout', e);
+    constructor(public el: ElementRef, public layoutService: LayoutService) {}
+
+    get isCollapsed(): boolean {
+        return !!this.layoutService.layoutState().staticMenuDesktopInactive;
+    }
+
+    toggleSidebar(): void {
+        this.layoutService.layoutState.update((prev) => ({
+            ...prev,
+            staticMenuDesktopInactive: !prev.staticMenuDesktopInactive
+        }));
+    }
+
+    onMouseEnter(): void {
+        if (this.isCollapsed) {
+            this.isHovered = true;
         }
-        // Navigate to login page
-        this.router.navigate(['/dashboard/auth/login']).then(() => {
-            // ensure a fresh state
-            window.location.reload();
-        });
+    }
+
+    onMouseLeave(): void {
+        if (this.isCollapsed) {
+            this.isHovered = false;
+        }
     }
 }

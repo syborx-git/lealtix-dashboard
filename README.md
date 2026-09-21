@@ -163,6 +163,19 @@ El script de seed [`demo_seed.sql`](../lealtix-BE/src/main/resources/db/demo_see
 | **CAJA**      | `luis.caja@taqueria.com`     | Vista caja                    |
 | **MARKETING** | `sofia.mkt@taqueria.com`     | Vista campañas y analytics    |
 
+#### 🖥️ Cuentas de Desarrollo / Local (base `lealtix_db`)
+
+> Cuentas creadas en la base de datos local de desarrollo, también con contraseña **`Demo2025!`**. Incluyen el nuevo rol **HOSTESS** (mapeo de mesas y reservaciones).
+
+| Rol           | Email                      | Panel en Dashboard            |
+|---------------|----------------------------|-------------------------------|
+| **ADMIN**     | `admin@lealtix-demo.com`   | Dashboard completo + Mesas y Reservaciones |
+| **MESERO**    | `estegon@gmail.com`        | Vista comanda                 |
+| **COCINA**    | `jamo@gmail.com`           | Vista cocina                  |
+| **CAJA**      | `elgonzalez@gmail.com`     | Vista caja                    |
+| **MARKETING** | `raul@gmail.com`           | Vista campañas y analytics    |
+| **HOSTESS**   | `hostess@lealtix-demo.com` | Mapeo de Mesas y Reservaciones |
+
 ---
 
 ### 👥 Clientes de Demo (10 registros)

@@ -21,7 +21,8 @@ export class UserService {
       email: 'admin@lealtix.com',
       rol: UserRole.ADMIN,
       permissions: ROLE_PERMISSIONS[UserRole.ADMIN],
-      activo: true
+      activo: true,
+      sueldoMensual: 100
     },
     {
       id: 2,
@@ -29,7 +30,8 @@ export class UserService {
       email: 'juan@lealtix.com',
       rol: UserRole.MESERO,
       permissions: ROLE_PERMISSIONS[UserRole.MESERO],
-      activo: true
+      activo: true,
+      sueldoMensual: 100
     },
     {
       id: 3,
@@ -37,7 +39,8 @@ export class UserService {
       email: 'maria@lealtix.com',
       rol: UserRole.COCINA,
       permissions: ROLE_PERMISSIONS[UserRole.COCINA],
-      activo: true
+      activo: true,
+      sueldoMensual: 100
     }
   ];
 

@@ -1,0 +1,268 @@
+.horarios-wrapper {
+  padding: 1.25rem;
+}
+
+.horarios-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.page-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+/* ===== Botones grandes (estilo Clientes) ===== */
+.horarios-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+:host ::ng-deep .horarios-actions .big-btn {
+  width: 100% !important;
+  justify-content: center;
+  padding: 1.35rem 1.4rem !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.012em;
+  border: none !important;
+  color: #fff !important;
+  border-radius: var(--lealtix-radius-lg, 0.9rem) !important;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.28) !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.4, 1) !important;
+
+  .p-button-icon {
+    font-size: 1.15rem !important;
+    transition: transform 0.3s ease !important;
+  }
+
+  &:hover:not(:disabled) {
+    color: #fff !important;
+    transform: translateY(-3px) scale(1.03) !important;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25) !important;
+
+    .p-button-icon {
+      transform: scale(1.15) !important;
+    }
+  }
+}
+
+.jornada-btn {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+}
+
+.turno-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.3) !important;
+}
+
+/* ===== Tarjeta principal ===== */
+.horarios-card {
+  background: var(--surface-card);
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: var(--shadow-2);
+}
+
+/* ===== Chips de jornadas ===== */
+.jornadas-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.35rem 0 0.9rem;
+  border-bottom: 1px solid var(--surface-d);
+  margin-bottom: 1rem;
+}
+
+.jornada-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.82rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.jornada-chip-title {
+  font-weight: 700;
+}
+
+.jornada-chip-time {
+  opacity: 0.9;
+}
+
+.jornada-chip-del {
+  margin-left: 0.15rem;
+  width: 1.05rem;
+  height: 1.05rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.45);
+  }
+}
+
+/* ===== Calendario semanal ===== */
+.calendar-scroll {
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(150px, 1fr));
+  gap: 0.6rem;
+  min-width: 960px;
+}
+
+.day-col {
+  border: 1px solid var(--surface-d);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface-a);
+  display: flex;
+  flex-direction: column;
+}
+
+.day-header {
+  padding: 0.6rem 0.75rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--primary-color);
+  background: var(--primary-50);
+  border-bottom: 1px solid var(--surface-d);
+  text-align: center;
+}
+
+.day-body {
+  padding: 0.5rem;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.shift-chip {
+  --chip-color: var(--primary-color);
+  border-left: 4px solid var(--chip-color);
+  background: var(--surface-card);
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  box-shadow: var(--shadow-1);
+  transition: transform 0.15s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-2);
+  }
+}
+
+.shift-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.shift-emp {
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shift-remove {
+  width: 1.05rem;
+  height: 1.05rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+  transition: background 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    background: var(--red-100);
+    color: var(--red-600);
+  }
+}
+
+.shift-jornada {
+  font-size: 0.74rem;
+  color: var(--text-color-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shift-time {
+  opacity: 0.85;
+}
+
+.day-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color-secondary);
+  font-size: 0.78rem;
+  opacity: 0.7;
+}
+
+/* ===== Preview en modales ===== */
+.preview-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px dashed var(--primary-300);
+  border-radius: 0.7rem;
+  background: var(--primary-50);
+}
+
+/* ===== Modales más amplios y con scroll interno ===== */
+:host ::ng-deep .horarios-jornada-dialog .p-dialog-content,
+:host ::ng-deep .horarios-asignar-dialog .p-dialog-content {
+  padding: 1.25rem;
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+:host ::ng-deep .horarios-jornada-dialog .p-dialog-footer,
+:host ::ng-deep .horarios-asignar-dialog .p-dialog-footer {
+  border-top: 1px solid var(--surface-d);
+}
+
+@media (max-width: 720px) {
+  .horarios-actions {
+    grid-template-columns: 1fr;
+  }
+}

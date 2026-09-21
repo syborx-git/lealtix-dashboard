@@ -21,14 +21,14 @@
     </div>
 </div>
 
-<p-toolbar styleClass="mb-6">
+<p-toolbar styleClass="mb-4">
     <ng-template pTemplate="start">
-        <p-button label="Nuevo Producto" icon="pi pi-plus" severity="secondary" class="mr-2" styleClass="text-sm p-button-sm" (onClick)="openNew()"></p-button>
-        <p-button severity="secondary" label="Borrar" icon="pi pi-trash" outlined (onClick)="deleteSelectedProducts()"
-            [disabled]="!selectedProducts || !selectedProducts.length" styleClass="text-sm p-button-sm"></p-button>
-    </ng-template>
-    <ng-template pTemplate="end">
-        <p-button label="Cargar Menú" icon="pi pi-file-excel" severity="secondary" styleClass="text-sm p-button-sm" (onClick)="uploadMenu()"></p-button>
+        <div class="toolbar-actions">
+            <p-button label="Agregar Producto" icon="pi pi-plus" styleClass="add-btn" (onClick)="openNew()"></p-button>
+            <p-button label="Agregar Insumo" icon="pi pi-plus" styleClass="add-btn" (onClick)="openNewInsumo()"></p-button>
+            <p-button label="Agregar Bebida" icon="pi pi-plus" styleClass="add-btn" (onClick)="openNewBebida()"></p-button>
+            <p-button label="Cargar Menú" icon="pi pi-file-excel" styleClass="upload-btn" (onClick)="uploadMenu()"></p-button>
+        </div>
     </ng-template>
 </p-toolbar>
 
@@ -128,86 +128,164 @@
     </div>
 </div>
 
-<p-table #dt [value]="products()" [rows]="10" [first]="tableFirst" (onPage)="onTablePage($event)" [columns]="cols" [paginator]="true" [globalFilterFields]="['name', 'description', 'categoryName']"
-    [tableStyle]="{ 'width': '100%', 'table-layout': 'fixed' }" [(selection)]="selectedProducts" [rowHover]="true" dataKey="id"
-    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} productos" [showCurrentPageReport]="true"
-    [rowsPerPageOptions]="[10, 30, 50]" styleClass="p-datatable-sm">
-    <ng-template #caption>
-        <div class="flex items-center justify-between">
-            <h5 class="m-0">Productos del Menú</h5>
-            <p-iconfield>
-                <p-inputicon styleClass="pi pi-search" />
-                <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" />
-            </p-iconfield>
-        </div>
-    </ng-template>
-    <ng-template #header>
-        <tr>
-            <th style="width: 3rem">
-                <p-tableHeaderCheckbox />
-            </th>
-            <th pSortableColumn="categoryName" style="width: 12%">
-                Categoria
-                <p-sortIcon field="categoryName" />
-            </th>
-            <th pSortableColumn="name" style="width: 15%">
-                Nombre
-                <p-sortIcon field="name" />
-            </th>
-            <th pSortableColumn="description" style="width: 25%">
-                Descripción
-                <p-sortIcon field="description" />
-            </th>
-            <th pSortableColumn="price" style="width: 10%">
-                Precio
-                <p-sortIcon field="price" />
-            </th>
-            <th style="width: 15%">Imagen</th>
-            <th pSortableColumn="isActive" style="width: 12%">
-                Status
-                <p-sortIcon field="isActive" />
-            </th>
-            <th style="width: 8%"></th>
-        </tr>
-    </ng-template>
-    <ng-template #body let-product>
-        <tr class="fixed-row">
-            <td style="width: 3rem">
-                <p-tableCheckbox [value]="product" />
-            </td>
-            <td style="width: 12%">{{ product.categoryName}}</td>
-            <td style="width: 15%">{{ product.name }}</td>
-            <td style="width: 25%; word-wrap: break-word; overflow-wrap: break-word;">{{ product.description }}</td>
-            <td style="width: 10%">{{ product.price | currency: 'MXN' }}</td>
-            <td style="width: 15%">
-                <div class="img-cell">
-                    <img *ngIf="product.imageUrl" [src]="product.imageUrl" [alt]="product.name" class="product-thumb rounded" />
-                </div>
-            </td>
+<div class="catalog-panel surface-card border-round-lg p-3">
+    <div class="catalog-tabs mb-3">
+        <button type="button" class="catalog-tab"
+            [ngClass]="{ 'catalog-tab-active': activeTab() === 'products' }"
+            (click)="setActiveTab('products')">
+            <i class="pi pi-bars"></i>
+            <span>Productos</span>
+        </button>
+        <button type="button" class="catalog-tab"
+            [ngClass]="{ 'catalog-tab-active': activeTab() === 'insumos' }"
+            (click)="setActiveTab('insumos')">
+            <i class="pi pi-box"></i>
+            <span>Insumos</span>
+        </button>
+        <button type="button" class="catalog-tab"
+            [ngClass]="{ 'catalog-tab-active': activeTab() === 'bebidas' }"
+            (click)="setActiveTab('bebidas')">
+            <i class="pi pi-glass"></i>
+            <span>Bebidas</span>
+        </button>
+    </div>
 
-            <td style="width: 12%">
-                <p-tag [value]="getStatusTitle(product.isActive)" [severity]="getSeverity(product.isActive)" />
-            </td>
-            <td style="width: 8%">
-                <p-button icon="pi pi-pencil" class="mr-2" [rounded]="true" [outlined]="true"
-                    (click)="editProduct(product)" />
-                <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [outlined]="true"
-                    (click)="deleteProduct(product)" />
-            </td>
-        </tr>
-    </ng-template>
-    <ng-template pTemplate="emptymessage">
-        <tr>
-            <td colspan="7" class="text-center p-8">
-                <div class="empty-state">
-                    <i class="pi pi-box empty-state-icon"></i>
-                    <h3 class="empty-state-title">No hay productos</h3>
-                    <p class="empty-state-description">Agrega tu primer producto para empezar a mostrar tu menú.</p>
-                </div>
-            </td>
-        </tr>
-    </ng-template>
-</p-table>
+    <p-table #dt [value]="activeTab() === 'products' ? products() : (activeTab() === 'bebidas' ? bebidas() : insumos())" [rows]="10" [first]="tableFirst"
+        (onPage)="onTablePage($event)" [columns]="cols" [paginator]="true"
+        [globalFilterFields]="activeTab() === 'products' ? ['name', 'description', 'categoryName'] : ['nombre', 'unidad']"
+        [tableStyle]="{ 'width': '100%', 'table-layout': 'fixed' }" [rowHover]="true" dataKey="id"
+        [showCurrentPageReport]="true"
+        [rowsPerPageOptions]="[10, 30, 50]" styleClass="p-datatable-sm catalog-table">
+        <ng-template #caption>
+            <div class="flex items-center justify-between">
+                <h5 class="m-0">{{ activeTab() === 'products' ? 'Productos del Menú' : (activeTab() === 'bebidas' ? 'Bebidas' : 'Insumos') }}</h5>
+                <p-iconfield>
+                    <p-inputicon styleClass="pi pi-search" />
+                    <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" />
+                </p-iconfield>
+            </div>
+        </ng-template>
+        <ng-template #header>
+            <tr>
+                <th [pSortableColumn]="activeTab() === 'products' ? 'name' : 'nombre'" style="width: 45%">
+                    {{ activeTab() === 'products' ? 'Producto' : (activeTab() === 'bebidas' ? 'Bebida' : 'Insumo') }}
+                    <p-sortIcon [field]="activeTab() === 'products' ? 'name' : 'nombre'" />
+                </th>
+                <th style="width: 30%">
+                    Stock
+                </th>
+                <th style="width: 25%">Acciones</th>
+            </tr>
+        </ng-template>
+        <ng-template #body let-row>
+            <ng-container *ngIf="activeTab() === 'products'">
+                <tr class="fixed-row">
+                    <td style="width: 45%">
+                        <div class="font-medium text-900">{{ row.name }}</div>
+                        <div class="text-xs text-500">{{ row.price | currency: 'MXN' }}</div>
+                        <div class="flex flex-wrap gap-1 mt-1" *ngIf="rowCategories(row).length">
+                            <span class="cat-chip-mini" *ngFor="let c of visibleRowCategories(row)">{{ c.name }}</span>
+                            <button type="button" class="cat-chip-more" *ngIf="hiddenCategoryCount(row) > 0"
+                                (click)="toggleCategories(row)"
+                                [pTooltip]="isCategoryRowExpanded(row) ? 'Ocultar categorías' : 'Ver todas las categorías'"
+                                tooltipPosition="top">
+                                {{ isCategoryRowExpanded(row) ? 'ocultar' : '... +' + hiddenCategoryCount(row) }}
+                            </button>
+                        </div>
+                    </td>
+                    <td style="width: 30%">
+                        <span class="stock-badge" [ngClass]="stockBadgeClass(row)">{{ stockBadgeLabel(row) }}</span>
+                    </td>
+                    <td style="width: 25%">
+                        <p-button icon="pi pi-pencil" pTooltip="Editar" tooltipPosition="top" [rounded]="true"
+                            [outlined]="true" class="mr-2" (click)="editProduct(row)" />
+                        <p-button icon="pi pi-trash" severity="danger" pTooltip="Eliminar" tooltipPosition="top"
+                            [rounded]="true" [outlined]="true" (click)="deleteProduct(row)" />
+                    </td>
+                </tr>
+            </ng-container>
+            <ng-container *ngIf="activeTab() === 'bebidas'">
+                <tr class="fixed-row">
+                    <td style="width: 45%">
+                        <div class="font-medium text-900">{{ row.nombre }}</div>
+                        <div class="text-xs text-500">{{ row.unidad || 'pieza' }} · min {{ row.stockMinimo }} · {{ row.precioVenta | currency: 'MXN' }}</div>
+                        <div class="flex flex-wrap gap-1 mt-1" *ngIf="rowCategories(row).length">
+                            <span class="cat-chip-mini" *ngFor="let c of visibleRowCategories(row)">{{ c.name }}</span>
+                            <button type="button" class="cat-chip-more" *ngIf="hiddenCategoryCount(row) > 0"
+                                (click)="toggleCategories(row)"
+                                [pTooltip]="isCategoryRowExpanded(row) ? 'Ocultar categorías' : 'Ver todas las categorías'"
+                                tooltipPosition="top">
+                                {{ isCategoryRowExpanded(row) ? 'ocultar' : '... +' + hiddenCategoryCount(row) }}
+                            </button>
+                        </div>
+                    </td>
+                    <td style="width: 30%">
+                        <span class="stock-badge" [ngClass]="isLowStock(row) ? 'stock-low' : 'stock-ok'">
+                            {{ row.stock }} {{ row.unidad || 'pieza' }}
+                        </span>
+                    </td>
+                    <td style="width: 25%">
+                        <p-button icon="pi pi-refresh" pTooltip="Reabastecer" tooltipPosition="top" [rounded]="true"
+                            [outlined]="true" class="mr-2" (click)="openBebidaRestock(row)"></p-button>
+                        <p-button icon="pi pi-pencil" pTooltip="Editar" tooltipPosition="top" [rounded]="true"
+                            [outlined]="true" class="mr-2" (click)="openEditBebida(row)"></p-button>
+                        <p-button icon="pi pi-trash" severity="danger" pTooltip="Eliminar" tooltipPosition="top"
+                            [rounded]="true" [outlined]="true" (click)="deleteBebida(row)"></p-button>
+                    </td>
+                </tr>
+            </ng-container>
+            <ng-container *ngIf="activeTab() === 'insumos'">
+                <tr class="fixed-row">
+                    <td style="width: 45%">
+                        <div class="font-medium text-900">{{ row.nombre }}</div>
+                        <div class="text-xs text-500">{{ row.unidad || 'pieza' }} · mín {{ row.stockMinimo }}</div>
+                        <div class="flex flex-wrap gap-1 mt-1" *ngIf="rowCategories(row).length">
+                            <span class="cat-chip-mini" *ngFor="let c of visibleRowCategories(row)">{{ c.name }}</span>
+                            <button type="button" class="cat-chip-more" *ngIf="hiddenCategoryCount(row) > 0"
+                                (click)="toggleCategories(row)"
+                                [pTooltip]="isCategoryRowExpanded(row) ? 'Ocultar categorías' : 'Ver todas las categorías'"
+                                tooltipPosition="top">
+                                {{ isCategoryRowExpanded(row) ? 'ocultar' : '... +' + hiddenCategoryCount(row) }}
+                            </button>
+                        </div>
+                    </td>
+                    <td style="width: 30%">
+                        <span class="stock-badge" [ngClass]="isLowStock(row) ? 'stock-low' : 'stock-ok'">
+                            {{ row.stock }} {{ row.unidad || 'pieza' }}
+                        </span>
+                    </td>
+                    <td style="width: 25%">
+                        <p-button icon="pi pi-refresh" pTooltip="Reabastecer" tooltipPosition="top" [rounded]="true"
+                            [outlined]="true" class="mr-2" (click)="openInsumoRestock(row)"></p-button>
+                        <p-button icon="pi pi-pencil" pTooltip="Editar" tooltipPosition="top" [rounded]="true"
+                            [outlined]="true" class="mr-2" (click)="openEditInsumo(row)"></p-button>
+                        <p-button icon="pi pi-trash" severity="danger" pTooltip="Eliminar" tooltipPosition="top"
+                            [rounded]="true" [outlined]="true" (click)="deleteInsumo(row)"></p-button>
+                    </td>
+                </tr>
+            </ng-container>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="3" class="text-center p-8">
+                    <div class="empty-state">
+                        <i class="pi pi-box empty-state-icon"></i>
+                        <h3 class="empty-state-title">
+                            {{ activeTab() === 'products' ? 'No hay productos' : (activeTab() === 'bebidas' ? 'No hay bebidas' : 'No hay insumos') }}
+                        </h3>
+                        <p class="empty-state-description">
+                            {{ activeTab() === 'products'
+                                ? 'Agrega tu primer producto para empezar a mostrar tu menú.'
+                                : (activeTab() === 'bebidas'
+                                    ? 'Agrega bebidas para venderlas en tu carta y registrarlas en el inventario.'
+                                    : 'Agrega insumos para armar las recetas de tus productos.') }}
+                        </p>
+                    </div>
+                </td>
+            </tr>
+        </ng-template>
+    </p-table>
+</div>
 
 <app-product-dialog
     [(visible)]="productDialog"
@@ -237,6 +315,139 @@
     (deleteCrossSelling)="confirmDeleteCrossSelling($event)"
 ></app-product-dialog>
 
+<!-- Diálogo crear/editar insumo -->
+<p-dialog
+    [(visible)]="insumoDialogVisible"
+    [modal]="true"
+    [style]="{ width: '38rem', maxWidth: '95vw' }"
+    styleClass="insumo-dialog minimal-modal"
+    [dismissableMask]="true"
+    (onHide)="insumoDialogVisible = false">
+    <ng-template pTemplate="header">
+        <span class="font-semibold text-lg">{{ editingInsumo ? 'Editar Insumo' : 'Agregar Insumo' }}</span>
+    </ng-template>
+    <div class="flex flex-col gap-3 p-fluid">
+        <div>
+            <label class="block text-sm font-medium mb-1">Nombre</label>
+            <input pInputText type="text" [(ngModel)]="insumoNombre" placeholder="Ej. Harina de trigo" />
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-1">Unidad</label>
+            <p-select [options]="unidades" [(ngModel)]="insumoUnidad" styleClass="w-full" />
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-1">Stock inicial</label>
+            <p-inputnumber [(ngModel)]="insumoStock" [min]="0" [step]="1" styleClass="w-full" />
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-1">Stock mínimo</label>
+            <p-inputnumber [(ngModel)]="insumoMin" [min]="0" [step]="1" styleClass="w-full" />
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-1">Categorías</label>
+            <p-select [options]="insumoAvailableCategories()" [(ngModel)]="insumoCategoryPicker"
+                (ngModelChange)="addInsumoCategory($event)" optionLabel="label" optionValue="value"
+                placeholder="+ Agregar categoría..." styleClass="w-full" />
+            <div class="flex flex-wrap gap-1 mt-2" *ngIf="insumoCategoryIds.length">
+                <span class="cat-chip-mini" *ngFor="let id of insumoCategoryIds">
+                    {{ insumoCategoryName(id) }}
+                    <button type="button" class="cat-chip-x" (click)="removeInsumoCategory(id)"><i class="pi pi-times"></i></button>
+                </span>
+            </div>
+        </div>
+    </div>
+    <ng-template #footer>
+        <p-button label="Cancelar" severity="secondary" [text]="true" (click)="insumoDialogVisible = false"></p-button>
+        <p-button label="Guardar" icon="pi pi-check" styleClass="minimal-submit" [disabled]="!insumoNombre.trim()" (click)="saveInsumo()"></p-button>
+    </ng-template>
+</p-dialog>
+
+<!-- Diálogo crear/editar bebida -->
+<p-dialog
+    [(visible)]="bebidaDialogVisible"
+    [modal]="true"
+    [style]="{ width: '38rem', maxWidth: '95vw' }"
+    styleClass="insumo-dialog bebida-dialog minimal-modal"
+    [dismissableMask]="true"
+    (onHide)="bebidaDialogVisible = false">
+    <ng-template pTemplate="header">
+        <span class="bebida-dialog-title font-semibold text-lg">{{ editingBebida ? 'Editar Bebida' : 'Agregar Bebida' }}</span>
+    </ng-template>
+    <p-message severity="info" styleClass="w-full mb-3"
+        text="Las bebidas se registran por pieza o mililitros, se gestionan en el inventario y aparecen a la venta en Comandix." />
+    <div class="flex flex-col gap-3 p-fluid">
+        <div>
+            <label class="block text-sm font-medium mb-1">Nombre</label>
+            <input pInputText type="text" [(ngModel)]="bebidaNombre" placeholder="Ej. Botella de mezcal" />
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-1">Tipo</label>
+            <p-select [options]="bebidaUnidades" [(ngModel)]="bebidaUnidad" styleClass="w-full" />
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-1">Stock inicial</label>
+            <p-inputnumber [(ngModel)]="bebidaStock" [min]="0" [step]="1" styleClass="w-full" />
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-1">Stock mínimo</label>
+            <p-inputnumber [(ngModel)]="bebidaMin" [min]="0" [step]="1" styleClass="w-full" />
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-1">Precio de venta</label>
+            <p-inputnumber [(ngModel)]="bebidaPrecioVenta" [min]="0" [step]="1" [mode]="'currency'" [currency]="'MXN'" [locale]="'es-MX'" styleClass="w-full" />
+            <small class="block text-xs text-600 mt-1">Precio al público con el que se venderá en Comandix.</small>
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-1">Categorías</label>
+            <p-select [options]="bebidaAvailableCategories()" [(ngModel)]="bebidaCategoryPicker"
+                (ngModelChange)="addBebidaCategory($event)" optionLabel="label" optionValue="value"
+                placeholder="+ Agregar categoría..." styleClass="w-full" />
+            <div class="flex flex-wrap gap-1 mt-2" *ngIf="bebidaCategoryIds.length">
+                <span class="cat-chip-mini" *ngFor="let id of bebidaCategoryIds">
+                    {{ bebidaCategoryName(id) }}
+                    <button type="button" class="cat-chip-x" (click)="removeBebidaCategory(id)"><i class="pi pi-times"></i></button>
+                </span>
+            </div>
+        </div>
+    </div>
+    <ng-template #footer>
+        <p-button label="Cancelar" severity="secondary" [text]="true" (click)="bebidaDialogVisible = false"></p-button>
+        <p-button label="Guardar" icon="pi pi-check" styleClass="minimal-submit" (click)="saveBebida()"></p-button>
+    </ng-template>
+</p-dialog>
+
+<!-- Diálogo reabastecer insumo -->
+<p-dialog
+    [(visible)]="insumoRestockVisible"
+    [modal]="true"
+    [style]="{ width: '34rem', maxWidth: '95vw' }"
+    styleClass="insumo-dialog restock-dialog minimal-modal"
+    [dismissableMask]="true"
+    (onHide)="insumoRestockVisible = false">
+    <ng-template pTemplate="header">
+        <span class="font-semibold text-lg">Reabastecer: {{ insumoRestockTarget?.nombre }}</span>
+    </ng-template>
+    <div class="flex flex-col gap-3">
+        <p-message severity="info"
+            [text]="'Stock actual: ' + (insumoRestockTarget?.stock ?? 0) + ' ' + (insumoRestockTarget?.unidad || 'pieza')"
+            styleClass="w-full" />
+        <div>
+            <label class="block text-sm font-medium mb-1">Cantidad a agregar</label>
+            <p-inputnumber [(ngModel)]="insumoRestockCantidad" [min]="1" [step]="1" styleClass="w-full" />
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-1">Costo total usado (en este restock)</label>
+            <p-inputnumber [(ngModel)]="insumoRestockCostoTotal" [min]="0" [step]="1" [mode]="'currency'" [currency]="'USD'" [locale]="'en-US'" styleClass="w-full" />
+            <small class="block text-xs text-600 mt-1">Importe invertido en este restock (se usará en el cálculo automático de costos).</small>
+        </div>
+    </div>
+    <ng-template #footer>
+        <p-button label="Cancelar" severity="secondary" [text]="true" (click)="insumoRestockVisible = false"></p-button>
+        <p-button label="Reabastecer" icon="pi pi-refresh" severity="success" styleClass="minimal-submit"
+            [disabled]="insumoRestockCantidad <= 0" (click)="doInsumoRestock()"></p-button>
+    </ng-template>
+</p-dialog>
+
 <p-confirmdialog [style]="{ width: '450px' }" />
 
 <app-confetti></app-confetti>
@@ -257,7 +468,7 @@
       <p class="product-description">
         Este es el primer paso para armar tu catálogo. Puedes seguir agregando productos o ver cómo se verá tu página.
       </p>
-      <div class="flex flex-column gap-3 w-full">
+      <div class="flex flex-col gap-3 w-full">
         <p-button
           label="Seguir configurando productos"
           icon="pi pi-plus"

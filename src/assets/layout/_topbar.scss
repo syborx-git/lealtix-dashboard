@@ -1,23 +1,11 @@
 @use 'mixins' as *;
 
 .layout-topbar {
-    position: fixed;
-    height: 4.5rem; // Slightly taller for more breathing room
-    z-index: 997;
-    left: 0;
-    top: 0;
-    width: 100%;
-    padding: 0 2.5rem 0 0.75rem;
-    background-color: var(--lealtix-glass-bg);
-    backdrop-filter: var(--lealtix-glass-blur);
-    -webkit-backdrop-filter: var(--lealtix-glass-blur);
-    border-bottom: 1.5px solid var(--lealtix-glass-border);
-    box-shadow: 
-      0 1px 0 rgba(255,255,255,0.04) inset,
-      0 8px 32px rgba(0, 0, 0, 0.06);
-    transition: left var(--layout-section-transition-duration), background-color 0.3s ease, border-color 0.3s ease;
+    position: static;
+    padding: 0 0 1rem 0;
     display: flex;
     align-items: center;
+    transition: background-color 0.3s ease;
 
     .layout-topbar-logo-container {
         width: 20rem;

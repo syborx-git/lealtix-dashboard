@@ -1,0 +1,143 @@
+<p-toast></p-toast>
+<p-confirmDialog [style]="{ width: '450px' }"></p-confirmDialog>
+
+<p-toolbar>
+    <div class="p-toolbar-group-start">
+        <div class="reservaciones-header">
+            <h2 class="reservaciones-title">Reservaciones</h2>
+            <small class="reservaciones-subtitle">Gestiona las reservaciones de las mesas del local</small>
+        </div>
+    </div>
+    <div class="p-toolbar-group-end">
+        <p-button label="Nueva Reservación" icon="pi pi-plus" (onClick)="openNewReserva()"></p-button>
+    </div>
+</p-toolbar>
+
+<div *ngIf="loading()" class="reservaciones-loading">
+    <p-progressSpinner styleClass="w-4rem h-4rem" strokeWidth="4"></p-progressSpinner>
+</div>
+
+<p-table
+    #dt
+    *ngIf="!loading()"
+    [value]="filteredReservas()"
+    [paginator]="true"
+    [rows]="10"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [globalFilterFields]="['clienteNombre', 'telefono', 'mesaNombre', 'estado']"
+    styleClass="p-datatable-gridlines"
+>
+    <ng-template pTemplate="caption">
+        <div class="reservaciones-caption">
+            <div>
+                <p-select
+                    [options]="estadoOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    [(ngModel)]="estadoFiltro"
+                    placeholder="Filtrar por estado"
+                    [showClear]="true"
+                    styleClass="w-15rem"
+                ></p-select>
+            </div>
+            <div>
+                <span class="p-input-icon-left">
+                    <i class="pi pi-search"></i>
+                    <input pInputText type="text" placeholder="Buscar..." (input)="onGlobalFilter($event)" class="w-full" />
+                </span>
+            </div>
+        </div>
+    </ng-template>
+
+    <ng-template pTemplate="header">
+        <tr>
+            <th pSortableColumn="clienteNombre">Cliente <p-sortIcon field="clienteNombre"></p-sortIcon></th>
+            <th pSortableColumn="telefono">Teléfono <p-sortIcon field="telefono"></p-sortIcon></th>
+            <th pSortableColumn="fecha">Fecha <p-sortIcon field="fecha"></p-sortIcon></th>
+            <th pSortableColumn="numeroPersonas">Personas <p-sortIcon field="numeroPersonas"></p-sortIcon></th>
+            <th>Mesa</th>
+            <th pSortableColumn="estado">Estado <p-sortIcon field="estado"></p-sortIcon></th>
+            <th>Notas</th>
+            <th style="width: 8rem">Acciones</th>
+        </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-reserva>
+        <tr>
+            <td>{{ reserva.clienteNombre }}</td>
+            <td>{{ reserva.telefono || '-' }}</td>
+            <td>{{ reserva.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
+            <td>{{ reserva.numeroPersonas }}</td>
+            <td>{{ reserva.mesaNombre || '-' }}</td>
+            <td><p-tag [value]="reserva.estado" [severity]="getEstadoSeverity(reserva.estado)"></p-tag></td>
+            <td>{{ reserva.notas || '-' }}</td>
+            <td>
+                <div class="reservaciones-actions">
+                    <p-button icon="pi pi-pencil" [text]="true" [rounded]="true" severity="info" pTooltip="Editar" (onClick)="openEditReserva(reserva)"></p-button>
+                    <p-button icon="pi pi-times-circle" [text]="true" [rounded]="true" severity="warn" pTooltip="Cancelar" (onClick)="onCancelReserva(reserva)"></p-button>
+                    <p-button icon="pi pi-trash" [text]="true" [rounded]="true" severity="danger" pTooltip="Eliminar" (onClick)="onDeleteReserva(reserva)"></p-button>
+                </div>
+            </td>
+        </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+        <tr>
+            <td colspan="8" class="text-center p-4">No hay reservaciones registradas.</td>
+        </tr>
+    </ng-template>
+</p-table>
+
+<p-dialog [(visible)]="reservaDialogVisible" [style]="{ width: '480px' }" [modal]="true" [closable]="false" styleClass="minimal-modal">
+    <ng-template pTemplate="header">
+        <div class="inline-flex align-items-center gap-2">
+            <i class="pi pi-calendar mr-2"></i>
+            <span class="font-bold white-space-nowrap">{{ editingReserva ? 'Editar Reservación' : 'Nueva Reservación' }}</span>
+        </div>
+    </ng-template>
+    <div class="reserva-form">
+        <div class="field">
+            <label for="reserva-cliente">Nombre del cliente *</label>
+            <input pInputText id="reserva-cliente" [(ngModel)]="formCliente" class="w-full" placeholder="Nombre del cliente" />
+        </div>
+        <div class="field">
+            <label for="reserva-telefono">Teléfono</label>
+            <input pInputText id="reserva-telefono" [(ngModel)]="formTelefono" class="w-full" placeholder="Teléfono de contacto" />
+        </div>
+        <div class="field">
+            <label for="reserva-fecha">Fecha y hora *</label>
+            <p-datepicker
+                id="reserva-fecha"
+                [(ngModel)]="formFecha"
+                [showTime]="true"
+                [hourFormat]="'24'"
+                dateFormat="dd/mm/yy"
+                [stepMinute]="15"
+                styleClass="w-full"
+            ></p-datepicker>
+        </div>
+        <div class="field">
+            <label for="reserva-personas">Número de personas *</label>
+            <p-inputNumber id="reserva-personas" [(ngModel)]="formPersonas" mode="decimal" [min]="1" class="w-full" inputId="integeronly"></p-inputNumber>
+        </div>
+        <div class="field">
+            <label for="reserva-mesa">Mesa</label>
+            <p-select
+                id="reserva-mesa"
+                [options]="mesas()"
+                optionLabel="nombre"
+                optionValue="id"
+                [(ngModel)]="formMesaId"
+                placeholder="Seleccionar mesa"
+                [showClear]="true"
+                styleClass="w-full"
+            ></p-select>
+        </div>
+        <div class="field">
+            <label for="reserva-notas">Notas</label>
+            <textarea pInputTextarea id="reserva-notas" [(ngModel)]="formNotas" rows="3" class="w-full" placeholder="Notas adicionales"></textarea>
+        </div>
+    </div>
+    <ng-template pTemplate="footer">
+        <p-button label="Cancelar" icon="pi pi-times" [text]="true" (onClick)="reservaDialogVisible = false"></p-button>
+        <p-button [label]="editingReserva ? 'Actualizar' : 'Crear'" icon="pi pi-check" styleClass="minimal-submit" [loading]="saving" (onClick)="saveReserva()"></p-button>
+    </ng-template>
+</p-dialog>

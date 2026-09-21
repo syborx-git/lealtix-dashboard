@@ -1,5 +1,7 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ChartModule } from 'primeng/chart';
 import { TableModule } from 'primeng/table';
@@ -8,16 +10,26 @@ import { BadgeModule } from 'primeng/badge';
 import { PaginatorModule } from 'primeng/paginator';
 import { MessageModule } from 'primeng/message';
 import { TooltipModule } from 'primeng/tooltip';
+import { DialogModule } from 'primeng/dialog';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { ButtonModule } from 'primeng/button';
+import { ToastModule } from 'primeng/toast';
+import { SelectButtonModule } from 'primeng/selectbutton';
+import { MessageService } from 'primeng/api';
 import { forkJoin } from 'rxjs';
 import { DashboardService } from './dashboard.service';
 import { DashboardLoyaltyService } from './dashboard-loyalty.service';
 import { TenantService } from '@/pages/admin-page/service/tenant.service';
 import { AuthService } from '@/auth/auth.service';
 import { LayoutService } from '@/layout/service/layout.service';
+import { InventoryService } from '@/pages/inventario/service/inventory.service';
 import {
   TimeSeriesCountDTO,
   CouponStatsDTO,
   SalesSummaryDTO,
+  SalesByPeriodDTO,
+  TopProductDTO,
+  SalesByCategoryDTO,
   CampaignPerformanceDTO,
   RepeatPurchaseRateDTO,
   IdentifiedVsGeneralDTO,
@@ -33,11 +45,20 @@ interface Insight {
   message: string;
 }
 
+interface Insumo {
+  id: number;
+  nombre: string;
+  unidad: string;
+  stock: number;
+  stockMinimo: number;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     CardModule,
     ChartModule,
     TableModule,
@@ -45,8 +66,14 @@ interface Insight {
     BadgeModule,
     PaginatorModule,
     MessageModule,
-    TooltipModule
+    TooltipModule,
+    DialogModule,
+    InputNumberModule,
+    ButtonModule,
+    ToastModule,
+    SelectButtonModule
   ],
+  providers: [MessageService],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
@@ -69,6 +96,114 @@ export class DashboardComponent implements OnInit {
   ventasResumen = signal<SalesSummaryDTO | null>(null);
   campanasPerformance = signal<CampaignPerformanceDTO[]>([]);
 
+  // Insumos en stock mínimo
+  insumos = signal<Insumo[]>([]);
+  insumosEnStockMinimo = computed(() =>
+    this.insumos().filter(i => i.stock <= i.stockMinimo)
+  );
+  insumosStockMinimoLoading = signal(false);
+
+  // Modal listado de insumos en stock mínimo
+  stockModalVisible = signal(false);
+
+  // Ventas totales: tickets/comandas de los últimos 2 meses
+  ventasTickets = signal<any[]>([]);
+  ventasTicketsLoading = signal(false);
+  ventasModalVisible = signal(false);
+
+  // Modal de restock de insumo
+  restockVisible = signal(false);
+  restockTarget = signal<Insumo | null>(null);
+  restockCantidad = signal(0);
+  restockCostoTotal = signal(0);
+
+  private router = inject(Router);
+
+  // Costos y Ganancias (dos modos: porcentajes manuales o cálculo automático con datos reales)
+  private static readonly STORAGE_KEY = 'lealtix_costos_porcentajes';
+  private static readonly MODE_KEY = 'lealtix_costos_modo';
+  private static readonly DEFAULT_MP = 35;   // % materia prima
+  private static readonly DEFAULT_RH = 20;   // % recurso humano
+  porcentajeMateriaPrima = signal<number>(DashboardComponent.DEFAULT_MP);
+  porcentajeRecursoHumano = signal<number>(DashboardComponent.DEFAULT_RH);
+
+  costosModo = signal<'porcentaje' | 'automatico'>('porcentaje');
+  costosModoOptions = [
+    { label: 'Porcentajes', value: 'porcentaje', icon: 'pi pi-sliders-h' },
+    { label: 'Automático', value: 'automatico', icon: 'pi pi-calculator' }
+  ];
+  costosAutomaticos = signal<any | null>(null);
+  costosAutomaticosLoading = signal(false);
+
+  porcentajeCostoTotal = computed(() =>
+    Math.min(100, this.porcentajeMateriaPrima() + this.porcentajeRecursoHumano())
+  );
+
+  ventasBase = computed(() => this.ventasResumen()?.totalSales ?? 0);
+
+  private autoUsando = computed(() =>
+    this.costosModo() === 'automatico' && !!this.costosAutomaticos()
+  );
+
+  costosMateriaPrima = computed(() =>
+    this.autoUsando()
+      ? Number(this.costosAutomaticos()?.costoMateriaPrima ?? 0)
+      : this.ventasBase() * (this.porcentajeMateriaPrima() / 100)
+  );
+  costosRecursoHumano = computed(() =>
+    this.autoUsando()
+      ? Number(this.costosAutomaticos()?.costoSueldos ?? 0)
+      : this.ventasBase() * (this.porcentajeRecursoHumano() / 100)
+  );
+  costos = computed(() =>
+    this.autoUsando()
+      ? Number(this.costosAutomaticos()?.costoTotal ?? 0)
+      : this.ventasBase() * (this.porcentajeCostoTotal() / 100)
+  );
+  ganancias = computed(() =>
+    this.autoUsando()
+      ? Number(this.costosAutomaticos()?.ganancias ?? 0)
+      : this.ventasBase() - this.costos()
+  );
+  gananciasPct = computed(() => {
+    if (this.autoUsando()) {
+      return Number(this.costosAutomaticos()?.porcentajeGanancias ?? 0);
+    }
+    return (this.porcentajeCostoTotal() >= 100)
+      ? 0
+      : Math.round((100 - this.porcentajeCostoTotal()) * 100) / 100;
+  });
+  costoTotalPct = computed(() => {
+    if (this.autoUsando()) {
+      return Number(this.costosAutomaticos()?.porcentajeCostoTotal ?? 0);
+    }
+    return this.porcentajeCostoTotal();
+  });
+  materiaPrimaPct = computed(() => {
+    if (this.autoUsando()) {
+      return Number(this.costosAutomaticos()?.porcentajeMateriaPrima ?? 0);
+    }
+    return this.porcentajeMateriaPrima();
+  });
+  recursoHumanoPct = computed(() => {
+    if (this.autoUsando()) {
+      return Number(this.costosAutomaticos()?.porcentajeRecursoHumano ?? 0);
+    }
+    return this.porcentajeRecursoHumano();
+  });
+  costosPeriodoDesde = computed(() => {
+    if (this.autoUsando()) return this.costosAutomaticos()?.desde ?? null;
+    return null;
+  });
+  costosPeriodoHasta = computed(() => {
+    if (this.autoUsando()) return this.costosAutomaticos()?.hasta ?? null;
+    return null;
+  });
+
+  // Modales de Costos y Ganancias
+  costosModalVisible = signal(false);
+  gananciasModalVisible = signal(false);
+
   // Loyalty Metrics Signals
   repeatPurchaseRate = signal<RepeatPurchaseRateDTO | null>(null);
   identifiedVsGeneral = signal<IdentifiedVsGeneralDTO | null>(null);
@@ -87,6 +222,20 @@ export class DashboardComponent implements OnInit {
   barChartOptions = signal<any>(null);
   doughnutData = signal<any>(null);
   doughnutOptions = signal<any>(null);
+  salesPeriodData = signal<any>(null);
+  salesPeriodOptions = signal<any>(null);
+  topProductsList = signal<TopProductDTO[]>([]);
+  topClientsData = signal<any>(null);
+  topClientsOptions = signal<any>(null);
+  salesByCategoryData = signal<any>(null);
+  salesByCategoryOptions = signal<any>(null);
+  periodo = signal<string>('week');
+  periodoOptions = [
+    { label: 'Día', value: 'day' },
+    { label: 'Semana', value: 'week' },
+    { label: 'Mes', value: 'month' },
+    { label: 'Año', value: 'year' }
+  ];
   identifiedVsGeneralChartData = signal<any>(null);
   identifiedVsGeneralChartOptions = signal<any>(null);
 
@@ -97,13 +246,31 @@ export class DashboardComponent implements OnInit {
     private dashboardLoyaltyService: DashboardLoyaltyService,
     private tenantService: TenantService,
     private authService: AuthService,
-    private layoutService: LayoutService
+    private layoutService: LayoutService,
+    private inventoryService: InventoryService,
+    private messageService: MessageService
   ) {}
 
   ngOnInit(): void {
     this.setupChartOptions();
     this.layoutService.configUpdate$.subscribe(() => this.setupChartOptions());
+    this.loadPorcentajes();
     this.readTenantId();
+  }
+
+  private loadPorcentajes(): void {
+    try {
+      const raw = localStorage.getItem(DashboardComponent.STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed?.materiaPrima === 'number') this.porcentajeMateriaPrima.set(parsed.materiaPrima);
+        if (typeof parsed?.recursoHumano === 'number') this.porcentajeRecursoHumano.set(parsed.recursoHumano);
+      }
+      const modo = localStorage.getItem(DashboardComponent.MODE_KEY);
+      if (modo === 'automatico') this.costosModo.set('automatico');
+    } catch {
+      // ignorar configuraciones corruptas y usar valores por defecto
+    }
   }
 
   private readTenantId(): void {
@@ -141,8 +308,8 @@ export class DashboardComponent implements OnInit {
   private setupChartOptions(): void {
     const dark = this.layoutService.isDarkTheme();
     const gridColor = dark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.07)';
-    const tickColor = dark ? '#9aa3b5' : '#64748b';
-    const legendColor = dark ? '#cbd2e0' : '#334155';
+    const tickColor = dark ? '#ffffff' : '#64748b';
+    const legendColor = dark ? '#ffffff' : '#334155';
 
     const baseOptions = {
       responsive: true,
@@ -163,7 +330,7 @@ export class DashboardComponent implements OnInit {
           }
         },
         tooltip: {
-          backgroundColor: dark ? 'rgba(20,20,28,0.95)' : 'rgba(15,23,42,0.9)',
+          backgroundColor: dark ? 'rgba(36,44,64,0.95)' : 'rgba(15,23,42,0.9)',
           padding: 12,
           cornerRadius: 8,
           titleFont: { size: 13, weight: 'bold' },
@@ -245,7 +412,7 @@ export class DashboardComponent implements OnInit {
           }
         },
         tooltip: {
-          backgroundColor: dark ? 'rgba(20,20,28,0.95)' : 'rgba(15,23,42,0.9)',
+          backgroundColor: dark ? 'rgba(36,44,64,0.95)' : 'rgba(15,23,42,0.9)',
           padding: 12,
           cornerRadius: 8,
           titleFont: { size: 13, weight: 'bold' },
@@ -260,9 +427,23 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  private isDark(): boolean {
+    return !!this.layoutService.isDarkTheme();
+  }
+
+  private tickTextColor(): string {
+    return this.isDark() ? '#ffffff' : '#64748b';
+  }
+
+  private gridLineColor(): string {
+    return this.isDark() ? 'rgba(255,255,255,0.08)' : '#f1f5f9';
+  }
+
   private cargarDatos(): void {
     this.loading.set(true);
     this.error.set(null);
+    this.cargarInsumosStockMinimo();
+    this.cargarVentasTickets();
 
     const today = new Date();
     // Desde el primer día del mes anterior hasta hoy
@@ -276,6 +457,9 @@ export class DashboardComponent implements OnInit {
       nuevos: this.dashboardService.clientesNuevosPorPeriodo(this.tenantId, fromIso, toIso),
       cupones: this.dashboardService.statsCupones(this.tenantId, fromIso, toIso),
       ventas: this.dashboardService.resumenVentas(this.tenantId, fromIso, toIso),
+      ventasPeriodo: this.dashboardService.ventasPorPeriodo(this.tenantId, 'week', fromIso, toIso),
+      topProducts: this.dashboardService.topProductos(this.tenantId, fromIso, toIso),
+      ventasCategoria: this.dashboardService.ventasPorCategoria(this.tenantId, fromIso, toIso),
       performance: this.dashboardService.rendimientoCampanas(this.tenantId, fromIso, toIso),
       // Nuevas métricas de lealtad
       repeatPurchase: this.dashboardLoyaltyService.repeatPurchaseRate(this.tenantId, fromIso, toIso),
@@ -291,6 +475,9 @@ export class DashboardComponent implements OnInit {
         const nuevos = this.extractArray(res.nuevos);
         const cupones = this.extractArray(res.cupones);
         const ventas = this.extractValue(res.ventas);
+        const ventasPeriodo = this.extractArray(res.ventasPeriodo);
+        const topProducts = this.extractArray(res.topProducts);
+        const ventasCategoria = this.extractArray(res.ventasCategoria);
         const performance = this.extractArray(res.performance);
 
         this.totalClientes.set(total);
@@ -318,6 +505,10 @@ export class DashboardComponent implements OnInit {
         this.buildBarChart(cupones);
         this.buildDoughnut(cupones);
         this.buildIdentifiedVsGeneralChart(idVsGen);
+        this.buildSalesPeriodChart(ventasPeriodo);
+        this.buildTopProductsList(topProducts);
+        this.buildTopClientsChart(ltv);
+        this.buildSalesByCategoryChart(ventasCategoria);
 
         this.generateInsights();
         this.loading.set(false);
@@ -326,6 +517,306 @@ export class DashboardComponent implements OnInit {
         console.error('Dashboard load error', err);
         this.error.set('Error cargando datos del dashboard');
         this.loading.set(false);
+      }
+    });
+  }
+
+  private buildSalesPeriodChart(series: SalesByPeriodDTO[]): void {
+    if (!series || series.length < 2) {
+      this.buildSimulatedSalesPeriodChart(this.periodo());
+      return;
+    }
+    const labels = series.map(s => s.periodStart);
+    const total = series.map(s => s.totalSales);
+    const identified = series.map(s => s.identifiedSales);
+    const general = series.map(s => s.generalSales);
+    this.salesPeriodData.set({
+      labels,
+      datasets: [
+        {
+          label: 'Ventas',
+          data: total,
+          fill: true,
+          tension: 0.4,
+          borderColor: '#6366F1',
+          backgroundColor: 'rgba(99,102,241,0.12)'
+        },
+        {
+          label: 'Identificadas',
+          data: identified,
+          fill: false,
+          tension: 0.4,
+          borderColor: '#10B981',
+          backgroundColor: 'transparent'
+        },
+        {
+          label: 'Generales',
+          data: general,
+          fill: false,
+          tension: 0.4,
+          borderColor: '#94A3B8',
+          backgroundColor: 'transparent'
+        }
+      ]
+    });
+    this.setSalesPeriodOptions();
+  }
+
+  /** Datos simulados para visualizar la gráfica (se reemplaza con datos reales cuando haya). */
+  private buildSimulatedSalesPeriodChart(period: string = 'week'): void {
+    const now = new Date();
+    const labels: string[] = [];
+    const total: number[] = [];
+    const identified: number[] = [];
+    const general: number[] = [];
+
+    const pointCounts: Record<string, number> = { day: 14, week: 8, month: 12, year: 5 };
+    const steps: Record<string, number> = { day: 1, week: 7, month: 30, year: 365 };
+    const points = pointCounts[period] ?? 8;
+    const step = steps[period] ?? 7;
+    const base = 8200;
+
+    for (let i = points - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i * step);
+      labels.push(d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }));
+      const growth = 1 + (points - 1 - i) * 0.085 + (i % 2 === 0 ? 0.03 : -0.015);
+      const t = Math.round(base * growth);
+      const idt = Math.round(t * (0.62 + (points - 1 - i) * 0.012));
+      total.push(t);
+      identified.push(idt);
+      general.push(t - idt);
+    }
+
+    this.salesPeriodData.set({
+      labels,
+      datasets: [
+        {
+          label: 'Ventas',
+          data: total,
+          fill: true,
+          tension: 0.4,
+          borderColor: '#6366F1',
+          backgroundColor: 'rgba(99,102,241,0.12)'
+        },
+        {
+          label: 'Identificadas',
+          data: identified,
+          fill: false,
+          tension: 0.4,
+          borderColor: '#10B981',
+          backgroundColor: 'transparent'
+        },
+        {
+          label: 'Generales',
+          data: general,
+          fill: false,
+          tension: 0.4,
+          borderColor: '#94A3B8',
+          backgroundColor: 'transparent'
+        }
+      ]
+    });
+    this.setSalesPeriodOptions();
+  }
+
+  cambiarPeriodo(p: string): void {
+    if (this.periodo() === p) return;
+    this.periodo.set(p);
+    this.loadSalesPeriod();
+  }
+
+  periodoLabel(): string {
+    const found = this.periodoOptions.find(o => o.value === this.periodo());
+    return found ? found.label.toLowerCase() : 'periodo';
+  }
+
+  private loadSalesPeriod(): void {
+    if (!this.tenantId) return;
+    const { fromIso, toIso } = this.getPeriodRange(this.periodo());
+    this.dashboardService.ventasPorPeriodo(this.tenantId, this.periodo(), fromIso, toIso).subscribe({
+      next: (res) => this.buildSalesPeriodChart(res || []),
+      error: () => this.buildSimulatedSalesPeriodChart(this.periodo())
+    });
+  }
+
+  private getPeriodRange(p: string): { fromIso: string; toIso: string } {
+    const to = new Date();
+    const from = new Date(to);
+    switch (p) {
+      case 'day': from.setDate(from.getDate() - 30); break;
+      case 'month': from.setMonth(from.getMonth() - 11); break;
+      case 'year': from.setFullYear(from.getFullYear() - 4); break;
+      default: from.setDate(from.getDate() - 84);
+    }
+    return { fromIso: from.toISOString(), toIso: to.toISOString() };
+  }
+
+  private setSalesPeriodOptions(): void {
+    this.salesPeriodOptions.set({
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: {
+        padding: { top: 15, bottom: 5, left: 10, right: 10 }
+      },
+      plugins: {
+        legend: { display: false },
+        datalabels: { display: false },
+        tooltip: {
+          enabled: true,
+          padding: 10,
+          titleFont: { size: 13 },
+          bodyFont: { size: 12 }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 11 }, color: this.tickTextColor() }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: this.gridLineColor() },
+          ticks: { font: { size: 11 }, color: this.tickTextColor(), callback: (value: any) => '$' + Number(value).toLocaleString() }
+        }
+      }
+    });
+  }
+
+  private buildTopProductsList(products: TopProductDTO[]): void {
+    const list = (products && products.length > 0)
+      ? products.slice(0, 5)
+      : [
+          { productName: 'Enchiladas', totalQuantity: 142, totalRevenue: 0 },
+          { productName: 'Tacos al Pastor', totalQuantity: 118, totalRevenue: 0 },
+          { productName: 'Quesadillas', totalQuantity: 96, totalRevenue: 0 },
+          { productName: 'Hamburguesa', totalQuantity: 84, totalRevenue: 0 },
+          { productName: 'Refresco', totalQuantity: 71, totalRevenue: 0 }
+        ];
+    this.topProductsList.set(list);
+  }
+
+  private buildTopClientsChart(customers: CustomerLTVDTO[]): void {
+    const top = [...(customers || [])]
+      .sort((a, b) => b.lifetimeValue - a.lifetimeValue)
+      .slice(0, 6);
+
+    if (top.length < 2) {
+      const simulated = [
+        { customerName: 'Valeria Méndez', lifetimeValue: 18450, totalOrders: 0, averageOrderValue: 0 },
+        { customerName: 'Carlos Santillán', lifetimeValue: 15230, totalOrders: 0, averageOrderValue: 0 },
+        { customerName: 'Mariana Duarte', lifetimeValue: 12980, totalOrders: 0, averageOrderValue: 0 },
+        { customerName: 'Rodrigo Garza', lifetimeValue: 10410, totalOrders: 0, averageOrderValue: 0 },
+        { customerName: 'Ana Sofía Ruiz', lifetimeValue: 8760, totalOrders: 0, averageOrderValue: 0 },
+        { customerName: 'Jorge Ramírez', lifetimeValue: 6420, totalOrders: 0, averageOrderValue: 0 }
+      ];
+      this.setTopClientsChart(simulated.map(c => c.customerName), simulated.map(c => c.lifetimeValue));
+      return;
+    }
+
+    this.setTopClientsChart(
+      top.map(c => c.customerName),
+      top.map(c => c.lifetimeValue)
+    );
+  }
+
+  private setTopClientsChart(labels: string[], data: number[]): void {
+    this.topClientsData.set({
+      labels,
+      datasets: [
+        {
+          label: 'LTV ($)',
+          data,
+          backgroundColor: 'rgba(99,102,241,0.85)',
+          hoverBackgroundColor: '#4f46e5',
+          borderRadius: 8,
+          maxBarThickness: 42
+        }
+      ]
+    });
+    this.topClientsOptions.set({
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: {
+        padding: { top: 15, bottom: 5, left: 10, right: 10 }
+      },
+      plugins: {
+        legend: { display: false },
+        datalabels: { display: false },
+        tooltip: {
+          enabled: true,
+          padding: 10,
+          titleFont: { size: 13 },
+          bodyFont: { size: 12 }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { maxRotation: 45, minRotation: 0, font: { size: 11, weight: '500' }, color: this.tickTextColor() }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: this.gridLineColor() },
+          ticks: { font: { size: 11 }, color: this.tickTextColor(), callback: (value: any) => '$' + Number(value).toLocaleString() }
+        }
+      }
+    });
+  }
+
+  private buildSalesByCategoryChart(categories: SalesByCategoryDTO[]): void {
+    const palette = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
+    const list = (categories && categories.length > 0)
+      ? categories.slice(0, 8)
+      : [
+          { categoryName: 'Desayunos', totalSales: 42000 },
+          { categoryName: 'Comidas', totalSales: 68000 },
+          { categoryName: 'Bebidas', totalSales: 31000 },
+          { categoryName: 'Postres', totalSales: 19000 },
+          { categoryName: 'Botanas', totalSales: 15000 }
+        ];
+
+    this.salesByCategoryData.set({
+      labels: list.map(c => c.categoryName),
+      datasets: [
+        {
+          label: 'Ventas ($)',
+          data: list.map(c => c.totalSales),
+          backgroundColor: list.map((_, i) => palette[i % palette.length]),
+          hoverBackgroundColor: list.map((_, i) => palette[i % palette.length]),
+          borderRadius: 8,
+          maxBarThickness: 46,
+          clip: false
+        }
+      ]
+    });
+    this.salesByCategoryOptions.set({
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: {
+        padding: { top: 15, bottom: 5, left: 10, right: 10 }
+      },
+      plugins: {
+        legend: { display: false },
+        datalabels: { display: false },
+        tooltip: {
+          enabled: true,
+          padding: 10,
+          titleFont: { size: 13 },
+          bodyFont: { size: 12 }
+        }
+      },
+      scales: {
+        x: {
+          display: false,
+          beginAtZero: true,
+          grid: { display: false },
+          ticks: { display: false }
+        },
+        y: {
+          grid: { color: this.gridLineColor() },
+          ticks: { font: { size: 11 }, color: this.tickTextColor() }
+        }
       }
     });
   }
@@ -570,6 +1061,209 @@ export class DashboardComponent implements OnInit {
     if (data.identifiedPercentage > 70) return 'success';
     if (data.identifiedPercentage >= 50) return 'warn';
     return 'danger';
+  }
+
+  /* ============ Costos y Ganancias (configurables) ============ */
+
+  openCostosModal(): void {
+    this.costosModalVisible.set(true);
+    if (this.costosModo() === 'automatico' && !this.costosAutomaticos()) {
+      this.cargarCostosAutomaticos();
+    }
+  }
+
+  closeCostosModal(): void {
+    this.costosModalVisible.set(false);
+  }
+
+  openGananciasModal(): void {
+    this.gananciasModalVisible.set(true);
+    if (this.costosModo() === 'automatico' && !this.costosAutomaticos()) {
+      this.cargarCostosAutomaticos();
+    }
+  }
+
+  closeGananciasModal(): void {
+    this.gananciasModalVisible.set(false);
+  }
+
+  cargarCostosAutomaticos(): void {
+    if (!this.tenantId) return;
+    this.costosAutomaticosLoading.set(true);
+    this.dashboardService.costosAutomaticos(this.tenantId, 2).subscribe({
+      next: (res) => {
+        this.costosAutomaticos.set(res?.object ?? res);
+        this.costosAutomaticosLoading.set(false);
+      },
+      error: () => {
+        this.costosAutomaticos.set(null);
+        this.costosAutomaticosLoading.set(false);
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Costos automáticos',
+          detail: 'No se pudieron calcular los costos con datos reales. Revisa que haya restocks y sueldos registrados.'
+        });
+      }
+    });
+  }
+
+  cambiarModoCostos(modo: 'porcentaje' | 'automatico'): void {
+    this.costosModo.set(modo);
+    try {
+      localStorage.setItem(DashboardComponent.MODE_KEY, modo);
+    } catch {
+      // almacenamiento no disponible
+    }
+    if (modo === 'automatico' && !this.costosAutomaticos() && this.tenantId) {
+      this.cargarCostosAutomaticos();
+    }
+  }
+
+  formatoPeriodo(fecha: any): string {
+    if (!fecha) return '—';
+    return new Date(fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  guardarPorcentajes(): void {
+    let mp = Math.max(0, Math.min(100, this.porcentajeMateriaPrima() || 0));
+    let rh = Math.max(0, Math.min(100, this.porcentajeRecursoHumano() || 0));
+    // Si el total supera 100, recortar el de mayor peso para respetar el tope
+    if (mp + rh > 100) {
+      if (mp >= rh) mp = 100 - rh;
+      else rh = 100 - mp;
+    }
+    this.porcentajeMateriaPrima.set(mp);
+    this.porcentajeRecursoHumano.set(rh);
+    // Guardar porcentajes implica volver al modo manual
+    this.cambiarModoCostos('porcentaje');
+    try {
+      localStorage.setItem(
+        DashboardComponent.STORAGE_KEY,
+        JSON.stringify({ materiaPrima: mp, recursoHumano: rh })
+      );
+    } catch {
+      // almacenamiento no disponible, se omite la persistencia
+    }
+    this.messageService.add({ severity: 'success', summary: 'Guardado', detail: 'Porcentajes de costos actualizados' });
+  }
+
+  reiniciarPorcentajes(): void {
+    this.porcentajeMateriaPrima.set(DashboardComponent.DEFAULT_MP);
+    this.porcentajeRecursoHumano.set(DashboardComponent.DEFAULT_RH);
+    this.guardarPorcentajes();
+  }
+
+  formatoMoneda(valor: any): string {
+    const n = Number(valor ?? 0);
+    return n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+  }
+
+  /* ============ Insumos en stock mínimo ============ */
+
+  private cargarInsumosStockMinimo(): void {
+    this.insumosStockMinimoLoading.set(true);
+    this.inventoryService.getInsumos(this.tenantId).subscribe({
+      next: (res) => {
+        this.insumos.set(Array.isArray(res?.object) ? res.object : (res || []));
+        this.insumosStockMinimoLoading.set(false);
+      },
+      error: () => {
+        this.insumos.set([]);
+        this.insumosStockMinimoLoading.set(false);
+      }
+    });
+  }
+
+  /* ============ Ventas totales: tickets de los últimos 2 meses ============ */
+
+  private cargarVentasTickets(): void {
+    this.ventasTicketsLoading.set(true);
+    this.dashboardService.ventasTickets(this.tenantId).subscribe({
+      next: (res) => {
+        const page = res?.object ?? res;
+        const content = Array.isArray(page?.content) ? page.content : [];
+        const cutoff = new Date();
+        cutoff.setMonth(cutoff.getMonth() - 2);
+        this.ventasTickets.set(
+          content.filter((o: any) => o && o.fecha && new Date(o.fecha) >= cutoff)
+        );
+        this.ventasTicketsLoading.set(false);
+      },
+      error: () => {
+        this.ventasTickets.set([]);
+        this.ventasTicketsLoading.set(false);
+      }
+    });
+  }
+
+  openVentasModal(): void {
+    this.ventasModalVisible.set(true);
+  }
+
+  closeVentasModal(): void {
+    this.ventasModalVisible.set(false);
+  }
+
+  formatoTicketTotal(total: any): string {
+    const n = Number(total ?? 0);
+    return n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+  }
+
+  formatoTicketFecha(fecha: any): string {
+    if (!fecha) return '—';
+    return new Date(fecha).toLocaleString('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  openStockModal(): void {
+    this.stockModalVisible.set(true);
+  }
+
+  closeStockModal(): void {
+    this.stockModalVisible.set(false);
+  }
+
+  insumoLowClass(insumo: Insumo): string {
+    return insumo.stock <= insumo.stockMinimo ? 'stock-low' : 'stock-ok';
+  }
+
+  /* ============ Restock de insumo ============ */
+
+  openRestock(insumo: Insumo): void {
+    this.restockTarget.set(insumo);
+    this.restockCantidad.set(0);
+    this.restockCostoTotal.set(0);
+    this.restockVisible.set(true);
+  }
+
+  closeRestock(): void {
+    this.restockVisible.set(false);
+  }
+
+  doRestock(): void {
+    const target = this.restockTarget();
+    if (!target || this.restockCantidad() <= 0) return;
+    this.inventoryService.restockInsumo(target.id, this.restockCantidad(), this.restockCostoTotal()).subscribe({
+      next: (res) => {
+        this.messageService.add({ severity: 'success', summary: 'Exitoso', detail: `Stock actualizado: ${res?.object}` });
+        this.closeRestock();
+        this.cargarInsumosStockMinimo();
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo reabastecer el insumo' });
+      }
+    });
+  }
+
+  /* ============ Navegación ============ */
+
+  irAClientes(): void {
+    this.router.navigate(['/dashboard/clientes']);
   }
 }
 

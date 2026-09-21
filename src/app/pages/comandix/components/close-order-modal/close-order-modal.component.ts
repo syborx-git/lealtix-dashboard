@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 
 import { ButtonModule } from 'primeng/button';
@@ -14,7 +14,8 @@ import { TagModule } from 'primeng/tag';
 import {
   PaymentMethod,
   PendingOrder,
-  RecordPaymentRequest
+  RecordPaymentRequest,
+  TipInfo
 } from '../../models/order.model';
 import { OrderService } from '../../services/order.service';
 import { AuthService } from '@/auth/auth.service';
@@ -31,6 +32,7 @@ interface PaymentMethodOption {
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     ReactiveFormsModule,
     DialogModule,
     ButtonModule,
@@ -54,6 +56,7 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
     reference?: string | null;
     paidAt: string;
   }>();
+  @Output() cobroSeparado = new EventEmitter<{ order: PendingOrder; tip?: TipInfo | null }>();
 
   readonly paymentMethods: PaymentMethodOption[] = [
     { value: 'CASH', label: 'CASH', icon: 'pi pi-wallet', hint: 'Sin referencia' },
@@ -66,6 +69,12 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
   loading = false;
   errorMessage = '';
   successMessage = '';
+
+  // ==================== PROPINA (capa visual) ====================
+  readonly tipOptions = [10, 15, 20];
+  selectedTipPercent = 0;
+  customTipMode: 'percent' | 'amount' = 'percent';
+  customTipValue: number | null = null;
 
   private closeTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -114,6 +123,40 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
       return 0;
     }
     return Number(this.order.totalFinal ?? this.order.subtotal ?? 0);
+  }
+
+  get tipAmount(): number {
+    if (this.selectedTipPercent > 0) {
+      return (this.totalToPay * this.selectedTipPercent) / 100;
+    }
+    if (this.customTipMode === 'percent' && this.customTipValue != null) {
+      return (this.totalToPay * (this.customTipValue || 0)) / 100;
+    }
+    return Number(this.customTipValue ?? 0);
+  }
+
+  get totalWithTip(): number {
+    return this.totalToPay + this.tipAmount;
+  }
+
+  get selectedTip(): TipInfo {
+    if (this.customTipMode === 'amount' && this.customTipValue != null && this.customTipValue > 0) {
+      return { amount: this.customTipValue };
+    }
+    const percent =
+      this.selectedTipPercent > 0
+        ? this.selectedTipPercent
+        : this.customTipMode === 'percent' && this.customTipValue != null
+          ? this.customTipValue
+          : null;
+    return percent ? { percent } : {};
+  }
+
+  onCobroSeparado(): void {
+    if (!this.order || this.loading) {
+      return;
+    }
+    this.cobroSeparado.emit({ order: this.order, tip: this.selectedTip });
   }
 
   onClose(): void {
@@ -213,6 +256,9 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
     this.errorMessage = '';
     this.successMessage = '';
     this.loading = false;
+    this.selectedTipPercent = 0;
+    this.customTipMode = 'percent';
+    this.customTipValue = null;
   }
 
   private applyReferenceValidators(method: PaymentMethod): void {

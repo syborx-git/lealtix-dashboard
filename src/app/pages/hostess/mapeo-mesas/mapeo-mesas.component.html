@@ -1,0 +1,115 @@
+<p-toast></p-toast>
+<p-confirmDialog [style]="{ width: '450px' }"></p-confirmDialog>
+
+<p-toolbar>
+    <div class="p-toolbar-group-start">
+        <div class="mapeo-header">
+            <h2 class="mapeo-title">Mapeo de Mesas</h2>
+            <small class="mapeo-subtitle">Administra las mesas del local y asigna meseros</small>
+        </div>
+    </div>
+    <div class="p-toolbar-group-end">
+        <p-button label="Nueva Mesa" icon="pi pi-plus" (onClick)="openNewMesa()"></p-button>
+    </div>
+</p-toolbar>
+
+<div *ngIf="loading()" class="mapeo-loading">
+    <p-progressSpinner styleClass="w-4rem h-4rem" strokeWidth="4"></p-progressSpinner>
+</div>
+
+<div *ngIf="!loading() && mesas().length === 0" class="mapeo-empty">
+    <i class="pi pi-table"></i>
+    <h3>No hay mesas registradas</h3>
+    <p>Crea la primera mesa para comenzar el mapeo del local.</p>
+    <p-button label="Crear Mesa" icon="pi pi-plus" (onClick)="openNewMesa()"></p-button>
+</div>
+
+<div *ngIf="!loading() && mesas().length > 0" class="mesas-grid">
+    <div *ngFor="let mesa of mesas()" class="mesa-card">
+        <div class="mesa-card-head">
+            <span class="mesa-name">{{ mesa.nombre }}</span>
+            <p-tag [value]="mesa.estado" [severity]="getEstadoSeverity(mesa.estado)"></p-tag>
+        </div>
+        <div class="mesa-meta">
+            <span>Mesa #{{ mesa.numero ?? '-' }}</span>
+            <span>Capacidad: {{ mesa.capacidad }}</span>
+        </div>
+        <div class="mesa-mesero">
+            <i class="pi pi-user"></i>
+            <span>{{ mesa.meseroNombre || 'Sin mesero asignado' }}</span>
+        </div>
+        <div class="mesa-mesero-select">
+            <p-select
+                [options]="meseros()"
+                optionLabel="nombre"
+                optionValue="id"
+                [ngModel]="mesa.meseroUserId ?? null"
+                placeholder="Asignar mesero"
+                styleClass="w-full"
+                (ngModelChange)="onAssignMesero(mesa, $event)"
+            ></p-select>
+        </div>
+        <div class="mesa-card-actions">
+            <p-button
+                icon="pi pi-refresh"
+                pTooltip="Cambiar estado"
+                [text]="true"
+                [rounded]="true"
+                severity="secondary"
+                (onClick)="cycleEstado(mesa)"
+            ></p-button>
+            <p-button
+                icon="pi pi-pencil"
+                [text]="true"
+                [rounded]="true"
+                severity="info"
+                (onClick)="openEditMesa(mesa)"
+            ></p-button>
+            <p-button
+                icon="pi pi-trash"
+                [text]="true"
+                [rounded]="true"
+                severity="danger"
+                (onClick)="onDeleteMesa(mesa)"
+            ></p-button>
+        </div>
+    </div>
+</div>
+
+<p-dialog [(visible)]="mesaDialogVisible" [style]="{ width: '450px' }" [modal]="true" [closable]="false" styleClass="minimal-modal">
+    <ng-template pTemplate="header">
+        <div class="inline-flex align-items-center gap-2">
+            <i class="pi pi-table mr-2"></i>
+            <span class="font-bold white-space-nowrap">{{ editingMesa ? 'Editar Mesa' : 'Nueva Mesa' }}</span>
+        </div>
+    </ng-template>
+    <div class="mesa-form">
+        <div class="field">
+            <label for="mesa-nombre">Nombre *</label>
+            <input pInputText id="mesa-nombre" [(ngModel)]="formNombre" class="w-full" placeholder="Ej. Mesa central" />
+        </div>
+        <div class="field">
+            <label for="mesa-numero">Número</label>
+            <p-inputNumber id="mesa-numero" [(ngModel)]="formNumero" mode="decimal" class="w-full" inputId="integeronly"></p-inputNumber>
+        </div>
+        <div class="field">
+            <label for="mesa-capacidad">Capacidad *</label>
+            <p-inputNumber id="mesa-capacidad" [(ngModel)]="formCapacidad" mode="decimal" [min]="1" class="w-full" inputId="integeronly"></p-inputNumber>
+        </div>
+        <div class="field">
+            <label for="mesa-estado">Estado</label>
+            <p-select
+                id="mesa-estado"
+                [options]="estadoOptions"
+                optionLabel="label"
+                optionValue="value"
+                [(ngModel)]="formEstado"
+                styleClass="w-full"
+            ></p-select>
+        </div>
+    </div>
+    <ng-template pTemplate="footer">
+        <p-button label="Cancelar" icon="pi pi-times" [text]="true" (onClick)="mesaDialogVisible = false"></p-button>
+        <p-button [label]="editingMesa ? 'Actualizar' : 'Crear'" icon="pi pi-check" styleClass="minimal-submit" [loading]="saving" (onClick)="saveMesa()"></p-button>
+    </ng-template>
+</p-dialog>

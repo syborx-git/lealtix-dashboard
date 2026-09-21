@@ -1,0 +1,57 @@
+:host {
+    display: block;
+    padding: 0.5rem;
+}
+
+.reservaciones-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.reservaciones-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.reservaciones-subtitle {
+    color: var(--p-text-muted-color);
+}
+
+.reservaciones-loading {
+    display: flex;
+    justify-content: center;
+    padding: 3rem 0;
+}
+
+.reservaciones-caption {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.reservaciones-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.1rem;
+}
+
+.reserva-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    .field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+
+        label {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+    }
+}

@@ -1,6 +1,6 @@
 export const environment = {
     production: false,
-    apiUrl: 'http://5.161.82.24:8082/api',
-    landingPageBaseUrl: 'http://5.161.82.24:3000/landing-page',
+    apiUrl: 'http://localhost:8080/api',
+    landingPageBaseUrl: 'http://localhost:4200/landing-page',
     kitchenMockEnabled: true
 };

@@ -65,10 +65,10 @@ export class CampaignTemplatesListComponent implements OnInit {
 
     // If it's a Cloudinary URL, add transformation parameters
     if (url.includes('cloudinary.com')) {
-      // Insert transformation after /upload/
+      // Proporción uniforme 4:5 (la de la tarjeta) con crop inteligente
       const transformedUrl = url.replace(
         '/upload/',
-        '/upload/w_600,h_300,c_fill,f_auto,q_auto/'
+        '/upload/w_400,h_500,c_fill,g_auto,f_auto,q_auto/'
       );
       return transformedUrl;
     }

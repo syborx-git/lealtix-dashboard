@@ -1,0 +1,252 @@
+<div class="inventario-container">
+  <div class="inventario-header">
+    <div>
+      <h2>{{ mode === 'cocina' ? 'Inventario de Cocina' : 'Inventario de Barra' }}</h2>
+      <p>{{ mode === 'cocina' ? 'Control de stock de platillos e insumos de cocina' : 'Control de stock de bebidas e insumos para bebidas' }}</p>
+    </div>
+    <button pButton label="Actualizar" icon="pi pi-refresh" severity="secondary" (click)="load(); loadInsumos(); loadBebidas()"></button>
+  </div>
+
+  <div class="catalog-panel surface-card border-round-lg p-3">
+    <div class="catalog-tabs mb-3">
+      <button type="button" class="catalog-tab" *ngFor="let tab of tabs()"
+        [ngClass]="{ 'catalog-tab-active': activeTab() === tab.key }"
+        (click)="setActiveTab(tab.key)">
+        <i [class]="tab.icon"></i>
+        <span>{{ tab.label }}</span>
+      </button>
+    </div>
+
+    <p-table #dt [value]="tableRows()" [loading]="tableLoading()"
+      [paginator]="true" [rows]="10" [rowsPerPageOptions]="[10,30,50]"
+      [globalFilterFields]="globalFilterFields()"
+      responsiveLayout="scroll" styleClass="p-datatable-sm catalog-table"
+      [tableStyle]="{ 'width': '100%', 'table-layout': 'fixed' }" [rowHover]="true"
+      [showCurrentPageReport]="true" [currentPageReportTemplate]="currentPageReport()">
+      <ng-template pTemplate="caption">
+        <div class="flex items-center justify-between">
+          <h5 class="m-0">{{ tableRows().length }} {{ tableRowsLabel() }}</h5>
+          <p-iconfield>
+            <p-inputicon styleClass="pi pi-search" />
+            <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" placeholder="Buscar..." />
+          </p-iconfield>
+        </div>
+      </ng-template>
+      <ng-template #header>
+        <ng-container *ngIf="activeTab() === 'products'">
+          <tr>
+            <th pSortableColumn="name" style="width: 45%">
+              Platillo
+              <p-sortIcon field="name" />
+            </th>
+            <th pSortableColumn="categoryName" style="width: 30%">
+              Categoría
+              <p-sortIcon field="categoryName" />
+            </th>
+            <th pSortableColumn="stock" style="width: 25%">
+              Stock
+              <p-sortIcon field="stock" />
+            </th>
+          </tr>
+        </ng-container>
+        <ng-container *ngIf="activeTab() === 'bebidas'">
+          <tr>
+            <th pSortableColumn="nombre" style="width: 28%">
+              Bebida
+              <p-sortIcon field="nombre" />
+            </th>
+            <th pSortableColumn="stock" style="width: 18%">
+              Stock
+              <p-sortIcon field="stock" />
+            </th>
+            <th pSortableColumn="precioVenta" style="width: 20%">
+              Precio venta
+              <p-sortIcon field="precioVenta" />
+            </th>
+            <th style="width: 18%">Ubicación</th>
+            <th style="width: 16%">Acciones</th>
+          </tr>
+        </ng-container>
+        <ng-container *ngIf="activeTab() === 'insumos' || activeTab() === 'insumos-bebida'">
+          <tr>
+            <th pSortableColumn="nombre" style="width: 28%">
+              {{ activeTab() === 'insumos-bebida' ? 'Insumo de bebida' : 'Insumo' }}
+              <p-sortIcon field="nombre" />
+            </th>
+            <th pSortableColumn="stock" style="width: 14%">
+              Stock
+              <p-sortIcon field="stock" />
+            </th>
+            <th pSortableColumn="stockMinimo" style="width: 15%">
+              Stock mínimo
+              <p-sortIcon field="stockMinimo" />
+            </th>
+            <th style="width: 12%">Ubicación</th>
+            <th style="width: 31%">Acciones</th>
+          </tr>
+        </ng-container>
+      </ng-template>
+      <ng-template pTemplate="body" let-row>
+        <ng-container *ngIf="activeTab() === 'products'">
+          <tr>
+            <td style="width: 45%">
+              <div class="font-medium text-900">{{ row.name }}</div>
+              <div class="flex flex-wrap gap-1 mt-1" *ngIf="rowCategories(row).length">
+                <span class="cat-chip-mini" *ngFor="let c of visibleRowCategories(row)">{{ c.name }}</span>
+                <button type="button" class="cat-chip-more" *ngIf="hiddenCategoryCount(row) > 0"
+                  (click)="toggleCategories(row)"
+                  [pTooltip]="isCategoryRowExpanded(row) ? 'Ocultar categorías' : 'Ver todas las categorías'"
+                  tooltipPosition="top">
+                  {{ isCategoryRowExpanded(row) ? 'ocultar' : '... +' + hiddenCategoryCount(row) }}
+                </button>
+              </div>
+            </td>
+            <td style="width: 30%">
+              <div class="text-sm text-500">{{ row.categoryName || '—' }}</div>
+            </td>
+            <td style="width: 25%">
+              <span class="stock-badge" [ngClass]="productBadgeClass(row)">{{ productBadgeLabel(row) }}</span>
+            </td>
+          </tr>
+        </ng-container>
+        <ng-container *ngIf="activeTab() === 'bebidas'">
+          <tr>
+            <td style="width: 28%">
+              <div class="font-medium text-900">{{ row.nombre }}</div>
+              <div class="text-xs text-500">{{ row.unidad || 'pieza' }}</div>
+              <div class="flex flex-wrap gap-1 mt-1" *ngIf="rowCategories(row).length">
+                <span class="cat-chip-mini" *ngFor="let c of visibleRowCategories(row)">{{ c.name }}</span>
+                <button type="button" class="cat-chip-more" *ngIf="hiddenCategoryCount(row) > 0"
+                  (click)="toggleCategories(row)"
+                  [pTooltip]="isCategoryRowExpanded(row) ? 'Ocultar categorías' : 'Ver todas las categorías'"
+                  tooltipPosition="top">
+                  {{ isCategoryRowExpanded(row) ? 'ocultar' : '... +' + hiddenCategoryCount(row) }}
+                </button>
+              </div>
+            </td>
+            <td style="width: 18%">
+              <span class="stock-badge" [ngClass]="insumoLowClass(row)">
+                {{ insumoLocalStock(row) }} {{ row.unidad || 'pieza' }}
+              </span>
+            </td>
+            <td style="width: 20%">
+              <div class="text-sm text-500">{{ row.precioVenta | currency: 'MXN' }}</div>
+            </td>
+            <td style="width: 18%">
+              <span class="text-xs text-500">Barra</span>
+            </td>
+            <td style="width: 16%">
+              <button pButton icon="pi pi-trash" size="small" severity="danger" [outlined]="true"
+                pTooltip="Eliminar bebida" tooltipPosition="top" (click)="deleteBebida(row)"></button>
+            </td>
+          </tr>
+        </ng-container>
+        <ng-container *ngIf="activeTab() === 'insumos' || activeTab() === 'insumos-bebida'">
+          <tr>
+            <td style="width: 28%">
+              <div class="font-medium text-900">{{ row.nombre }}</div>
+              <div class="flex flex-wrap gap-1 mt-1" *ngIf="rowCategories(row).length">
+                <span class="cat-chip-mini" *ngFor="let c of visibleRowCategories(row)">{{ c.name }}</span>
+                <button type="button" class="cat-chip-more" *ngIf="hiddenCategoryCount(row) > 0"
+                  (click)="toggleCategories(row)"
+                  [pTooltip]="isCategoryRowExpanded(row) ? 'Ocultar categorías' : 'Ver todas las categorías'"
+                  tooltipPosition="top">
+                  {{ isCategoryRowExpanded(row) ? 'ocultar' : '... +' + hiddenCategoryCount(row) }}
+                </button>
+              </div>
+            </td>
+            <td style="width: 14%">
+              <span class="stock-badge" [ngClass]="insumoLowClass(row)">
+                {{ insumoLocalStock(row) }} {{ row.unidad || 'pieza' }}
+              </span>
+            </td>
+            <td style="width: 15%">
+              <div class="text-sm text-500">{{ row.stockMinimo }}</div>
+            </td>
+            <td style="width: 12%">
+              <span class="text-xs text-500">{{ mode === 'cocina' ? 'Cocina' : 'Barra' }}</span>
+            </td>
+            <td style="width: 31%">
+              <div class="flex gap-2">
+                <button pButton label="Solicitar stock" icon="pi pi-send" size="small" severity="secondary"
+                  class="solicitar-stock-btn" (click)="openSolicitud(row)"></button>
+                <button pButton icon="pi pi-trash" size="small" severity="danger" [outlined]="true"
+                  pTooltip="Eliminar insumo" tooltipPosition="top" (click)="deleteInsumo(row)"></button>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td [attr.colspan]="tableColspan()" class="text-center p-8">
+            {{ emptyMessage() }}
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <p-dialog header="Solicitar stock" [style]="{ width: '26rem' }" [(visible)]="solicitudVisible"
+    styleClass="solicitud-dialog" [modal]="true" [closable]="!enviandoSolicitud"
+    [closeOnEscape]="!enviandoSolicitud" [dismissableMask]="!enviandoSolicitud" (onHide)="cerrarSolicitud()">
+    <ng-template pTemplate="header">
+      <div class="solicitud-header">
+        <div class="solicitud-header-icon"><i class="pi pi-send"></i></div>
+        <div>
+          <div class="solicitud-header-title">Solicitar stock</div>
+          <div class="solicitud-header-sub">Pedido a Bodega central</div>
+        </div>
+      </div>
+    </ng-template>
+
+    <div class="solicitud-body">
+      <div class="solicitud-insumo-card" *ngIf="solicitudInsumo">
+        <div class="solicitud-insumo-nombre">{{ solicitudInsumo.nombre }}</div>
+        <div class="solicitud-insumo-meta">
+          <span *ngIf="insumoLocalStock(solicitudInsumo) > 0">
+            Disponible: {{ insumoLocalStock(solicitudInsumo) }} {{ solicitudInsumo.unidad || 'pieza' }}
+          </span>
+          <span *ngIf="insumoLocalStock(solicitudInsumo) <= 0" class="solicitud-sin-stock">Agotado en {{ mode === 'cocina' ? 'cocina' : 'barra' }}</span>
+        </div>
+      </div>
+
+      <div class="solicitud-field">
+        <label>Stock mínimo</label>
+        <p-inputNumber inputId="solicitudStock"
+          class="solicitud-stock-minimo"
+          [ngModel]="solicitudInsumo?.stockMinimo"
+          [style]="{ 'pointer-events': 'none' }"
+          [readonly]="true"
+          [inputStyleClass]="'solicitud-stock-minimo-input'" />
+      </div>
+
+      <div class="solicitud-field">
+        <label>Cantidad a solicitar</label>
+        <p-inputNumber inputId="solicitudCantidad" [(ngModel)]="solicitudCantidad"
+          (onInput)="onSolicitudCantidadInput($event.value)"
+          [min]="0" [maxFractionDigits]="3" [showButtons]="true" [buttonLayout]="'horizontal'"
+          inputStyleClass="solicitud-input"
+          class="solicitud-qty" />
+      </div>
+
+      <div class="solicitud-field">
+        <label>Prioridad</label>
+        <p-select [options]="prioridadOptions" optionLabel="label" optionValue="value"
+          [(ngModel)]="solicitudPrioridad" styleClass="w-full" />
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="solicitud-footer">
+        <button pButton label="Cancelar" severity="secondary" [disabled]="enviandoSolicitud"
+          (click)="cerrarSolicitud()" class="solicitud-cancel"></button>
+        <button pButton label="Enviar solicitud" icon="pi pi-send" [loading]="enviandoSolicitud"
+          [disabled]="!puedeEnviarSolicitud()" (click)="enviarSolicitud()" class="solicitud-submit"></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <p-confirmdialog [style]="{ width: '450px' }" />
+  <p-toast></p-toast>
+</div>

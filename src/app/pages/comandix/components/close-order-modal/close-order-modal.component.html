@@ -5,7 +5,7 @@
   [closable]="!loading"
   [header]="'Cerrar Comanda'"
   [style]="{ width: '100%', 'max-width': '640px' }"
-  styleClass="close-order-dialog"
+  styleClass="close-order-dialog minimal-modal"
   (onHide)="onClose()"
 >
   <ng-container *ngIf="order as currentOrder">
@@ -27,6 +27,63 @@
           <div class="summary-label">Total a pagar</div>
           <div class="summary-total">${{ totalToPay | number:'1.2-2' }}</div>
         </div>
+      </div>
+    </div>
+
+    <div class="tip-section">
+      <div class="summary-label mb-2">
+        Propina
+        <span *ngIf="tipAmount > 0" class="tip-amount">+${{ tipAmount | number:'1.2-2' }}</span>
+      </div>
+      <div class="tip-options">
+        <button
+          *ngFor="let opt of tipOptions"
+          type="button"
+          class="tip-option"
+          [class.active]="selectedTipPercent === opt"
+          (click)="selectedTipPercent = selectedTipPercent === opt ? 0 : opt"
+        >{{ opt }}%</button>
+        <button
+          type="button"
+          class="tip-option"
+          [class.active]="selectedTipPercent === 0 && customTipMode === 'amount'"
+          (click)="selectedTipPercent = 0; customTipMode = 'amount'; customTipValue = 0"
+        >Otro</button>
+      </div>
+      <div
+        *ngIf="selectedTipPercent === 0"
+        class="custom-tip-row"
+        [class.visible]="customTipMode === 'amount' || customTipValue != null"
+      >
+        <div class="custom-tip-mode">
+          <button
+            type="button"
+            class="mode-option"
+            [class.active]="customTipMode === 'percent'"
+            (click)="customTipMode = 'percent'; customTipValue = 0"
+          >%</button>
+          <button
+            type="button"
+            class="mode-option"
+            [class.active]="customTipMode === 'amount'"
+            (click)="customTipMode = 'amount'; customTipValue = 0"
+          >$</button>
+        </div>
+        <div class="custom-tip-input">
+          <span *ngIf="customTipMode === 'percent'" class="custom-tip-suffix">%</span>
+          <span *ngIf="customTipMode === 'amount'" class="custom-tip-suffix">$</span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            [(ngModel)]="customTipValue"
+            (input)="selectedTipPercent = 0"
+            placeholder="0"
+          />
+        </div>
+      </div>
+      <div *ngIf="tipAmount > 0" class="summary-total-with-tip">
+        Total a cobrar: <strong>${{ totalWithTip | number:'1.2-2' }}</strong>
       </div>
     </div>
 
@@ -67,6 +124,20 @@
             <span class="method-hint">{{ method.hint }}</span>
           </div>
         </button>
+      </div>
+
+      <div class="split-btn-row mt-3">
+        <p-button
+          label="Cobrar por separado"
+          icon="pi pi-users"
+          severity="help"
+          [outlined]="true"
+          class="w-full"
+          styleClass="w-full"
+          [disabled]="loading"
+          (onClick)="onCobroSeparado()"
+        ></p-button>
+        <div class="split-btn-hint">Divide la cuenta marcando los artículos que van a una comanda nueva.</div>
       </div>
 
       <div class="mt-3">
@@ -114,6 +185,7 @@
           label="Confirmar Pago"
           icon="pi pi-check"
           severity="success"
+          styleClass="minimal-submit"
           [disabled]="loading || form.invalid"
         ></p-button>
       </div>

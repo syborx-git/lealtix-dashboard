@@ -21,22 +21,28 @@ import { TreeNode } from 'primeng/api';
     standalone: true,
     imports: [CommonModule, ReactiveFormsModule, FormsModule, DialogModule, ButtonModule, FileUploadModule, InputTextModule, TextareaModule, InputNumberModule, MessageModule, CheckboxModule, SelectModule, TreeSelectModule, TooltipModule, TouchTooltipDirective],
     template: `
-    <p-dialog [(visible)]="visible" [style]="{ width: '32rem', maxWidth: '90vw' }" header="Detalle de Producto" [modal]="true" styleClass="product-dialog" contentStyleClass="product-dialog-content" (onHide)="onHide()">
+    <p-dialog [(visible)]="visible" [style]="{ width: '46rem', maxWidth: '94vw' }" header="Detalle de Producto" [modal]="true" styleClass="product-dialog minimal-modal" contentStyleClass="product-dialog-content" (onHide)="onHide()">
         <ng-template #content>
             <div class="product-form-container">
                 <!-- Categories Row -->
                 <div class="mb-4">
                     <div class="flex align-items-center justify-between mb-2">
-                        <label class="field-label">Categoria</label>
-                        <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Selecciona la categoría donde quieres ubicar este producto. Si aún no existe, debes crear una nueva categoría." tooltipPosition="top" appTouchTooltip></button>
+                        <label class="field-label">Categorías</label>
+                        <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Asigna una o varias categorías a este producto. Aparecerá en todas las seleccionadas; la primera será la categoría principal." tooltipPosition="top" appTouchTooltip></button>
                     </div>
                     <div class="flex items-center gap-3">
                         <div class="flex-1">
-                            <p-select [(ngModel)]="product.categoryId" (ngModelChange)="categoryChange.emit($event)" [options]="categoriesArrayValue" optionLabel="label" optionValue="value" placeholder="Seleccione..." styleClass="w-full"></p-select>
+                            <p-select [(ngModel)]="categoryPicker" (ngModelChange)="addCategory($event)" [options]="availableCategories" optionLabel="label" optionValue="value" placeholder="+ Agregar categoría..." styleClass="w-full"></p-select>
                         </div>
                     </div>
+                    <div class="mt-2 flex flex-wrap gap-2" *ngIf="selectedCategories().length">
+                        <span class="cat-chip" *ngFor="let c of selectedCategories()">
+                            <span class="cat-chip-label">{{ c.name }}</span>
+                            <button type="button" class="cat-chip-x" (click)="removeCategory(c.id)" pTooltip="Quitar" tooltipPosition="top"><i class="pi pi-times"></i></button>
+                        </span>
+                    </div>
                     <div class="mt-2">
-                        <p-message *ngIf="(!product || product.categoryId === null || product.categoryId === undefined) && submitted" severity="error" [text]="'Categoria es requerida'"></p-message>
+                        <p-message *ngIf="(!selectedCategories().length) && submitted" severity="error" [text]="'Selecciona al menos una categoría'"></p-message>
                     </div>
                 </div>
 
@@ -77,6 +83,16 @@ import { TreeNode } from 'primeng/api';
                             <div class="flex align-items-center gap-2">
                                 <p-checkbox formControlName="isActive" binary="true" inputId="isActive" (onChange)="onActiveChange($event.checked)"></p-checkbox>
                                 <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Activa para mostrar el producto en el menú. Desactiva si quieres ocultarlo temporalmente." tooltipPosition="top" appTouchTooltip></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-field" style="flex:1">
+                            <label for="autoAvailability" class="field-label">Control de stock automático</label>
+                            <div class="flex align-items-center gap-2">
+                                <p-checkbox formControlName="autoAvailability" binary="true" inputId="autoAvailability" (onChange)="onAutoAvailabilityChange($event.checked)"></p-checkbox>
+                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Si está activo, el producto se oculta automáticamente del menú cuando no hay insumos suficientes para prepararlo, y se vuelve a mostrar cuando se abastece. Desactívalo para controlar 'Activo' manualmente." tooltipPosition="top" appTouchTooltip></button>
                             </div>
                         </div>
                     </div>
@@ -182,6 +198,9 @@ import { TreeNode } from 'primeng/api';
                             </ng-template>
                         </div>
                     </div>
+
+                    <!-- Receta (insumos) ahora se gestiona desde el botón "Ver receta" en la tabla -->
+                    <p-message severity="info" [text]="recipeInfoMessage" styleClass="recipe-info"></p-message>
                 </form>
             </div>
         </ng-template>
@@ -189,35 +208,112 @@ import { TreeNode } from 'primeng/api';
         <ng-template #footer>
             <div class="product-dialog-footer">
                 <p-button label="Cancelar" icon="pi pi-times" severity="secondary" [outlined]="true" (onClick)="hide.emit()" />
-                <p-button label="Guardar" icon="pi pi-check" severity="success" (onClick)="save.emit()" />
+                <p-button label="Guardar" icon="pi pi-check" severity="success" styleClass="minimal-submit" (onClick)="save.emit()" />
             </div>
         </ng-template>
     </p-dialog>
     `,
     styles: [`
         /* === DIALOGO PRODUCTO (homologado) === */
+        ::ng-deep .product-dialog {
+            border-radius: 1.5rem !important;
+            overflow: hidden;
+            box-shadow: var(--lealtix-shadow-2xl) !important;
+            border: 1px solid var(--lealtix-slate-200) !important;
+        }
+
         ::ng-deep .product-dialog .p-dialog-header {
             background: linear-gradient(135deg, var(--lealtix-primary-500, #6366f1) 0%, var(--lealtix-primary-600, #4f46e5) 100%);
             color: white;
-            padding: 1.25rem 1.5rem;
-            border-radius: 1rem 1rem 0 0;
+            padding: 1.5rem 2rem;
+            border-radius: 1.5rem 1.5rem 0 0;
+            border-bottom: none;
+        }
+
+        ::ng-deep .product-dialog .p-dialog-title {
+            font-size: 1.25rem;
+            font-weight: 700;
         }
 
         .product-dialog-content { padding: 0 !important; }
 
-        .product-form-container { padding: 1.5rem; }
+        .product-form-container { padding: 2rem; }
 
-        .product-form { display:flex; flex-direction:column; gap:1.25rem; }
+        .product-form { display:flex; flex-direction:column; gap:1.5rem; }
 
-        .form-field { display:flex; flex-direction:column; gap:0.5rem; }
+        .form-field { display:flex; flex-direction:column; gap:0.6rem; }
 
-        .field-label { font-weight:600; color:var(--lealtix-slate-800); }
+        .field-label { font-weight:700; color:var(--lealtix-slate-800); font-size:0.9375rem; }
 
         .form-row { display:flex; gap:1rem; }
         .form-col { flex:1; }
         .form-col-narrow { width:8rem; }
 
         ::ng-deep .info-button { width:2rem !important; height:2rem !important; padding:0 !important; color:var(--lealtix-primary-500) !important; }
+
+        ::ng-deep .product-dialog .p-dialog-content .p-inputtext,
+        ::ng-deep .product-dialog .p-dialog-content .p-inputtextarea,
+        ::ng-deep .product-dialog .p-dialog-content .p-inputnumber,
+        ::ng-deep .product-dialog .p-dialog-content .p-selectlabel,
+        ::ng-deep .product-dialog .p-dialog-content .p-select {
+            border-radius: 1rem !important;
+            border: 2px solid var(--lealtix-slate-300) !important;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+        }
+
+        ::ng-deep .product-dialog .p-dialog-content .p-inputtext,
+        ::ng-deep .product-dialog .p-dialog-content .p-inputtextarea,
+        ::ng-deep .product-dialog .p-dialog-content .p-select {
+            font-size: 1rem !important;
+            padding: 0.9rem 1.1rem !important;
+        }
+
+        ::ng-deep .product-dialog .p-dialog-content .p-inputtext:focus,
+        ::ng-deep .product-dialog .p-dialog-content .p-inputtextarea:focus {
+            border-color: var(--lealtix-primary-500) !important;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18) !important;
+        }
+
+        ::ng-deep .p-message { margin-top:0.5rem; }
+
+        .product-dialog-footer { display:flex; justify-content:flex-end; gap:0.75rem; padding:1.25rem 2rem; border-top:1px solid var(--lealtix-slate-200); background:var(--lealtix-slate-50); }
+
+        /* === CHIPS DE CATEGORÍAS === */
+        .cat-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--lealtix-primary-50, #eef2ff);
+            border: 1px solid var(--lealtix-primary-200, #c7d2fe);
+            color: var(--lealtix-primary-700, #4338ca);
+            border-radius: 999px;
+            padding: 0.35rem 0.6rem 0.35rem 0.85rem;
+            font-size: 0.8125rem;
+            font-weight: 600;
+        }
+        .cat-chip-x {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: none;
+            background: transparent;
+            color: var(--lealtix-primary-700, #4338ca);
+            border-radius: 999px;
+            cursor: pointer;
+            padding: 0;
+            font-size: 0.75rem;
+        }
+        .cat-chip-x:hover { background: var(--lealtix-primary-200, #c7d2fe); color: #b91c1c; }
+
+        .product-dialog-footer .p-button {
+            padding: 0.85rem 1.75rem !important;
+            font-size: 0.9375rem !important;
+            font-weight: 700 !important;
+            border-radius: 1rem !important;
+            letter-spacing: 0.01em;
+        }
 
         /* === BOTÓN DANGER HOMOLOGADO === */
         ::ng-deep .p-button-danger {
@@ -237,13 +333,7 @@ import { TreeNode } from 'primeng/api';
             }
         }
 
-        ::ng-deep .product-preview { max-width:100px; max-height:64px; object-fit:contain; border-radius:0.5rem; box-shadow:var(--lealtix-shadow-sm); border:1px solid var(--lealtix-slate-200); }
-
-        ::ng-deep .p-inputtext, ::ng-deep .p-inputtextarea, ::ng-deep .p-inputnumber { border-radius:0.75rem !important; border-color:var(--lealtix-slate-300) !important; }
-
-        ::ng-deep .p-message { margin-top:0.5rem; }
-
-        .product-dialog-footer { display:flex; justify-content:flex-end; gap:0.75rem; padding:1rem 1.5rem; border-top:1px solid var(--lealtix-slate-200); background:var(--lealtix-slate-50); }
+        ::ng-deep .product-preview { max-width:100px; max-height:64px; object-fit:contain; border-radius:0.75rem; box-shadow:var(--lealtix-shadow-sm); border:1px solid var(--lealtix-slate-200); }
 
         /* === VENTA CRUZADA === */
         .cross-selling-section { margin-top:1.5rem; padding-top:1.25rem; border-top:1px dashed var(--lealtix-slate-200); display:flex; flex-direction:column; gap:1rem; }
@@ -269,6 +359,14 @@ import { TreeNode } from 'primeng/api';
         .cs-active-col { min-width:7rem; }
 
         ::ng-deep .cross-selling-info .p-message-text { color: #ffffff !important; }
+
+        /* === RECETA (INSUMOS) === */
+        .recipe-section { margin-top:1.5rem; padding-top:1.25rem; border-top:1px dashed var(--lealtix-slate-200); display:flex; flex-direction:column; gap:1rem; }
+        .recipe-form { padding:1rem; border:1px solid var(--lealtix-slate-200); border-radius:0.75rem; background:var(--lealtix-slate-50); display:flex; flex-direction:column; gap:0.75rem; }
+        .recipe-actions { display:flex; gap:0.5rem; justify-content:flex-end; }
+        .recipe-list { display:flex; flex-direction:column; gap:0.75rem; }
+        .recipe-item { display:flex; align-items:center; justify-content:space-between; padding:0.75rem 1rem; border:1px solid var(--lealtix-slate-200); border-radius:0.75rem; background:white; box-shadow:var(--lealtix-shadow-xs); }
+        .recipe-hint { color:var(--lealtix-slate-500); font-size:0.8rem; }
     `]
 })
 export class ProductDialogComponent implements OnChanges {
@@ -304,7 +402,102 @@ export class ProductDialogComponent implements OnChanges {
     @Output() onProductFileSelect = new EventEmitter<any>();
     @Output() categoryChange = new EventEmitter<any>();
     @Output() activeChange = new EventEmitter<boolean>();
+    @Output() autoAvailabilityChange = new EventEmitter<boolean>();
     @Output() removeImage = new EventEmitter<void>();
+
+    categoryPicker: any = null;
+
+    get availableCategories(): any[] {
+        const selected = new Set(this.selectedCategoryIds());
+        return (this.categoriesArrayValue || []).filter((c) => !selected.has(Number(c.value)));
+    }
+
+    selectedCategoryIds(): number[] {
+        const product = this.product || {};
+        if (!Array.isArray(product.categoryIds)) return [];
+        return product.categoryIds
+            .map((id: any) => Number(id))
+            .filter((n: number) => !Number.isNaN(n));
+    }
+
+    selectedCategories(): { id: number; name: string }[] {
+        const ids = this.selectedCategoryIds();
+        if (!ids.length) return [];
+
+        const map = new Map<number, { id: number; name: string }>();
+        const product = this.product || {};
+        if (Array.isArray(product.categories)) {
+            product.categories.forEach((c: any) => {
+                if (c && c.id !== null && c.id !== undefined && !map.has(Number(c.id))) {
+                    map.set(Number(c.id), { id: Number(c.id), name: c.name || '' });
+                }
+            });
+        }
+        (this.categoriesArrayValue || []).forEach((c) => {
+            const id = Number(c.value);
+            if (!Number.isNaN(id) && c.label && !map.has(id)) {
+                map.set(id, { id, name: c.label });
+            }
+        });
+
+        return ids
+            .map((id) => map.get(id))
+            .filter((c): c is { id: number; name: string } => !!c && !!c.name);
+    }
+
+    addCategory(value: any) {
+        this.categoryPicker = null;
+        if (value === null || value === undefined) return;
+
+        const id = Number(value);
+        if (Number.isNaN(id)) return;
+
+        const product = this.product = this.product || {};
+        if (!Array.isArray(product.categoryIds)) {
+            product.categoryIds = [];
+        }
+
+        const ids = product.categoryIds.map((v: any) => Number(v)).filter((n: number) => !Number.isNaN(n));
+        if (ids.includes(id)) return;
+
+        product.categoryIds.push(id);
+
+        // La primera categoría agregada se convierte en la categoría principal
+        if (product.categoryId === null || product.categoryId === undefined) {
+            product.categoryId = id;
+            const cat = (this.categoriesArrayValue || []).find((c) => String(c.value) === String(id));
+            product.categoryName = cat?.label ?? product.categoryName;
+        }
+
+        if (!Array.isArray(product.categories)) {
+            product.categories = [];
+        }
+        product.categories = this.selectedCategories();
+    }
+
+    removeCategory(idValue: number) {
+        const id = Number(idValue);
+        const product = this.product = this.product || {};
+
+        if (Array.isArray(product.categoryIds)) {
+            product.categoryIds = product.categoryIds.filter((v: any) => Number(v) !== id);
+        }
+        if (Array.isArray(product.categories)) {
+            product.categories = product.categories.filter((c: any) => Number(c?.id) !== id);
+        }
+
+        // Si se quitó la categoría principal, promover la siguiente
+        if (Number(product.categoryId) === id) {
+            const nextId = Array.isArray(product.categoryIds) && product.categoryIds.length
+                ? Number(product.categoryIds[0])
+                : null;
+            product.categoryId = nextId;
+            const cat = nextId != null
+                ? (this.categoriesArrayValue || []).find((c) => String(c.value) === String(nextId))
+                : null;
+            product.categoryName = cat?.label ?? null;
+        }
+    }
 
     crossSellingDraft: CrossSellingDraft = {
         suggestedProductId: null,
@@ -314,6 +507,8 @@ export class ProductDialogComponent implements OnChanges {
     crossSellingSelectedNode: TreeNode | null = null;
     crossSellingEditingId: number | null = null;
     crossSellingError: string | null = null;
+
+    recipeInfoMessage = 'La receta (insumos) se gestiona desde el módulo "Recetas" del menú lateral.';
 
     onHide() {
         this.visibleChange.emit(false);
@@ -379,12 +574,27 @@ export class ProductDialogComponent implements OnChanges {
                 this.activeChange.emit(true);
             }
 
+            // Auto-disponibilidad: default true (null de registros viejos se trata como activado)
+            if (this.product.autoAvailability === undefined || this.product.autoAvailability === null) {
+                this.product.autoAvailability = true;
+                this.autoAvailabilityChange.emit(true);
+            }
+
             // If a reactive form with 'isActive' control is provided, set its value from the product
             if (this.productForm && this.productForm.get) {
                 const isActiveControl = this.productForm.get('isActive');
                 if (isActiveControl) {
                     try {
                         isActiveControl.setValue(this.product.isActive, { emitEvent: false });
+                    } catch (e) {
+                        // ignore if unable to set
+                    }
+                }
+
+                const autoAvailabilityControl = this.productForm.get('autoAvailability');
+                if (autoAvailabilityControl) {
+                    try {
+                        autoAvailabilityControl.setValue(this.product.autoAvailability, { emitEvent: false });
                     } catch (e) {
                         // ignore if unable to set
                     }
@@ -420,6 +630,20 @@ export class ProductDialogComponent implements OnChanges {
             this.product = this.product || {};
             this.product.isActive = value;
             this.activeChange.emit(value);
+        }
+    }
+
+    onAutoAvailabilityChange(value: boolean) {
+        if (this.productForm && this.productForm.get && this.productForm.get('autoAvailability')) {
+            try {
+                this.productForm.get('autoAvailability').setValue(value);
+            } catch (e) {
+                // ignore
+            }
+        } else {
+            this.product = this.product || {};
+            this.product.autoAvailability = value;
+            this.autoAvailabilityChange.emit(value);
         }
     }
 

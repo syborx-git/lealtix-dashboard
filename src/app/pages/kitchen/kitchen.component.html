@@ -73,6 +73,65 @@
                             <span class="comments-label">📝 Comentarios:</span>
                             <span class="comments-text">{{ item.comments }}</span>
                         </div>
+
+                        <div *ngIf="recipeCatalogReady() && item.productId" class="item-recipe-groups">
+                            <div
+                                *ngIf="itemHasRecipeInfo(item); else itemWithoutRecipe"
+                                class="item-recipe-groups-inner"
+                            >
+                                <div *ngIf="getItemBaseIngredients(item).length > 0" class="recipe-group recipe-group-base">
+                                    <span class="recipe-group-label">
+                                        <i class="pi pi-database"></i>
+                                        Receta base
+                                    </span>
+                                    <div class="recipe-group-tags">
+                                        <span class="recipe-tag" *ngFor="let ing of getItemBaseIngredients(item)">
+                                            {{ ingredientLabel(ing) }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div *ngIf="getItemModifiableIngredients(item).length > 0" class="recipe-group recipe-group-modifiable">
+                                    <span class="recipe-group-label">
+                                        <i class="pi pi-pencil"></i>
+                                        Modificables (se mantienen)
+                                    </span>
+                                    <div class="recipe-group-tags">
+                                        <span class="recipe-tag" *ngFor="let ing of getItemModifiableIngredients(item)">
+                                            {{ ingredientLabel(ing) }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div *ngIf="getItemRemovedIngredients(item).length > 0" class="recipe-group recipe-group-removed">
+                                    <span class="recipe-group-label">
+                                        <i class="pi pi-times"></i>
+                                        Modificables que NO quiere
+                                    </span>
+                                    <div class="recipe-group-tags">
+                                        <span class="recipe-tag recipe-tag-removed" *ngFor="let ing of getItemRemovedIngredients(item)">
+                                            {{ ingredientLabel(ing) }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div *ngIf="getItemAdditionalIngredients(item).length > 0" class="recipe-group recipe-group-extra">
+                                    <span class="recipe-group-label">
+                                        <i class="pi pi-plus"></i>
+                                        Adicionales
+                                    </span>
+                                    <div class="recipe-group-tags">
+                                        <span class="recipe-tag recipe-tag-extra" *ngFor="let ing of getItemAdditionalIngredients(item)">
+                                            {{ ingredientLabel(ing) }}
+                                            <span *ngIf="ing.precio" class="recipe-tag-price">+{{ ing.precio | number: '1.2-2' }}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <ng-template #itemWithoutRecipe>
+                                <div class="recipe-groups-empty">Sin receta configurada para este producto.</div>
+                            </ng-template>
+                        </div>
                     </div>
                 </div>
             </div>

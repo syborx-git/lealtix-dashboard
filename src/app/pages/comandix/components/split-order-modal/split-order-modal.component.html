@@ -1,0 +1,314 @@
+<p-dialog
+  [visible]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true"
+  [closable]="!loading"
+  [header]="'Cobrar por separado / Sub-comandas'"
+  [style]="{ width: '100%', 'max-width': '720px' }"
+  styleClass="split-order-dialog minimal-modal"
+  (onHide)="onClose()"
+>
+  <ng-container *ngIf="order as currentOrder">
+    <div class="split-mode-tabs">
+      <button
+        type="button"
+        class="split-mode-tab"
+        [class.split-mode-active]="splitMode === 'seats'"
+        (click)="splitMode = 'seats'"
+      >
+        <i class="pi pi-users"></i>
+        <span>Por Persona / Asiento</span>
+      </button>
+
+      <button
+        type="button"
+        class="split-mode-tab"
+        [class.split-mode-active]="splitMode === 'items'"
+        (click)="splitMode = 'items'"
+      >
+        <i class="pi pi-list"></i>
+        <span>Por Artículos</span>
+      </button>
+
+      <button
+        type="button"
+        class="split-mode-tab"
+        [class.split-mode-active]="splitMode === 'equal'"
+        (click)="splitMode = 'equal'"
+      >
+        <i class="pi pi-percentage"></i>
+        <span>Equitativo</span>
+      </button>
+    </div>
+
+    <div class="split-header-summary">
+      <div class="summary-grid">
+        <div>
+          <div class="summary-label">Comanda Principal</div>
+          <div class="summary-value text-primary font-bold">{{ ticket }}</div>
+        </div>
+        <div>
+          <div class="summary-label">Cliente / Mesa</div>
+          <div class="summary-value">{{ clienteLabel }} · {{ currentOrder.mesaNombre ?? 'Mesa no asignada' }}</div>
+        </div>
+      </div>
+      <div class="split-hint" *ngIf="splitMode === 'seats'">
+        <i class="pi pi-info-circle mr-2"></i>
+        Selecciona las personas que desean pagar juntas o por separado. Se generará un sub-ticket derivado (ej. {{ ticket }}-A, {{ ticket }}-B) manteniendo la comanda padre.
+      </div>
+      <div class="split-hint" *ngIf="splitMode === 'items'">
+        <i class="pi pi-info-circle mr-2"></i>
+        Marca los artículos individuales que irán a la nueva cuenta o sub-comanda.
+      </div>
+      <div class="split-hint" *ngIf="splitMode === 'equal'">
+        <i class="pi pi-info-circle mr-2"></i>
+        Reparte los artículos en N comandas con montos lo más balanceados posible.
+      </div>
+    </div>
+
+    <p-divider></p-divider>
+
+    <!-- MODO 1: POR ASIENTO / PERSONA -->
+    <ng-container *ngIf="splitMode === 'seats'">
+      <div class="seats-wrapper">
+        <div class="flex align-items-center justify-content-between mb-2">
+          <span class="summary-label">Comensales en la comanda</span>
+          <button
+            type="button"
+            class="text-xs text-primary font-semibold border-none bg-transparent cursor-pointer hover:underline"
+            (click)="seleccionarTodosAsientos()"
+          >
+            Seleccionar todos / ninguno
+          </button>
+        </div>
+
+        <div *ngIf="seatGroups.length === 0" class="no-items">
+          No hay personas identificadas en esta comanda.
+        </div>
+
+        <div *ngIf="seatGroups.length > 0" class="seats-split-list flex flex-column gap-3">
+          <div
+            *ngFor="let group of seatGroups; let idx = index"
+            class="seat-group-card p-3 border-round-xl border-1 surface-border"
+            [class.border-primary]="group.seleccionado"
+            [style.background]="group.seleccionado ? 'rgba(218, 159, 91, 0.08)' : 'var(--surface-card)'"
+          >
+            <div class="flex align-items-center justify-content-between gap-3 cursor-pointer" (click)="toggleSeatGroup(group)">
+              <div class="flex align-items-center gap-3">
+                <p-checkbox
+                  [binary]="true"
+                  [ngModel]="group.seleccionado"
+                  (ngModelChange)="toggleSeatGroup(group)"
+                  (click)="$event.stopPropagation()"
+                ></p-checkbox>
+                <div class="seat-avatar flex align-items-center justify-content-center border-round-circle" style="width: 36px; height: 36px; background: #ebdccb; color: #6d4c41;">
+                  <i class="pi pi-user font-bold"></i>
+                </div>
+                <div>
+                  <div class="flex align-items-center gap-2">
+                    <span class="font-bold text-base text-900">{{ group.alias }}</span>
+                    <span class="seat-subfolio-tag font-mono font-bold text-xs px-2 py-1 border-round" style="background: #2b1f1d; color: #fdfaf7;">
+                      Sub-ticket: {{ group.subFolio }}
+                    </span>
+                  </div>
+                  <span class="text-xs text-color-secondary">{{ group.items.length }} producto{{ group.items.length === 1 ? '' : 's' }} ordenados</span>
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="text-xs text-color-secondary block">Subtotal</span>
+                <span class="font-bold text-lg text-900">${{ group.subtotal | number:'1.2-2' }}</span>
+              </div>
+            </div>
+
+            <!-- Desglose de platillos del comensal -->
+            <div class="mt-2 pt-2 border-top-1 surface-border">
+              <div *ngFor="let it of group.items" class="flex justify-content-between text-xs py-1 text-color-secondary">
+                <span>{{ it.cantidad }}x {{ it.productName }}</span>
+                <span>${{ (it.precioUnitario * it.cantidad) | number:'1.2-2' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p-divider></p-divider>
+
+        <div class="split-footer-info">
+          <div>
+            <div class="summary-label">Personas seleccionadas para separar</div>
+            <div class="summary-value">
+              {{ selectedSeatsCount }} persona{{ selectedSeatsCount === 1 ? '' : 's' }}
+              <span *ngIf="selectedSeatsAliases" class="text-xs text-primary block mt-1">({{ selectedSeatsAliases }})</span>
+            </div>
+          </div>
+          <div>
+            <div class="summary-label">Total Sub-comanda</div>
+            <div class="summary-total">${{ (tip ? seleccionMontoConTip : seleccionMonto) | number:'1.2-2' }}</div>
+            <div *ngIf="tip && seleccionMonto > 0" class="split-tip-sub">
+              Incluye propina (+${{ (tip.percent ? seleccionMonto * tip.percent / 100 : tip.amount ?? 0) | number:'1.2-2' }})
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- MODO 2: POR ARTÍCULOS INDIVIDUALES -->
+    <ng-container *ngIf="splitMode === 'items'">
+      <div class="items-wrapper">
+        <div class="summary-label mb-2">Artículos de la comanda</div>
+
+        <div *ngIf="items.length === 0" class="no-items">
+          No hay artículos disponibles en esta comanda.
+        </div>
+
+        <div *ngIf="items.length > 0" class="split-items-list">
+          <div
+            *ngFor="let item of items; let i = index; trackBy: trackByItem"
+            class="split-item-row"
+            [class.selected]="item.seleccionado"
+          >
+            <p-checkbox
+              [binary]="true"
+              [(ngModel)]="item.seleccionado"
+              inputId="split-item-{{ i }}"
+            ></p-checkbox>
+            <div class="split-item-main">
+              <div class="flex align-items-center gap-2">
+                <span class="split-item-name">{{ item.productName }}</span>
+                <span *ngIf="item.asientoAlias" class="text-xs px-2 py-0 border-round bg-orange-100 text-orange-800 font-semibold">
+                  👤 {{ item.asientoAlias }}
+                </span>
+              </div>
+              <span *ngIf="getComentarios(item)" class="split-item-coment">
+                📝 {{ getComentarios(item) }}
+              </span>
+              <span class="split-item-meta">
+                x{{ item.cantidad }}
+                <ng-container *ngIf="item.additionalIngredientIds?.length">
+                  &middot; con extras
+                </ng-container>
+                <ng-container *ngIf="item.excludedIngredientIds?.length">
+                  &middot; sin modificables
+                </ng-container>
+              </span>
+            </div>
+            <span class="split-item-price">
+              ${{ (item.precioUnitario * item.cantidad) | number:'1.2-2' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <p-divider></p-divider>
+
+      <div class="split-footer-info">
+        <div>
+          <div class="summary-label">Artículos seleccionados</div>
+          <div class="summary-value">{{ seleccionTotal }} ({{ seleccionCantidad }} pzas)</div>
+        </div>
+        <div>
+          <div class="summary-label">Monto de la nueva cuenta</div>
+          <div class="summary-total">${{ (tip ? seleccionMontoConTip : seleccionMonto) | number:'1.2-2' }}</div>
+          <div *ngIf="tip && seleccionMonto > 0" class="split-tip-sub">
+            Incluye propina (+${{ (tip.percent ? seleccionMonto * tip.percent / 100 : tip.amount ?? 0) | number:'1.2-2' }})
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- MODO 3: EQUITATIVO -->
+    <ng-container *ngIf="splitMode === 'equal'">
+      <div class="equal-panel">
+        <div class="summary-label mb-2">¿Entre cuántas personas?</div>
+        <div class="people-stepper">
+          <button
+            type="button"
+            class="stepper-btn"
+            (click)="decrementarPersonas()"
+            [disabled]="numPersonas <= 2 || loading"
+          >−</button>
+          <p-inputNumber
+            [(ngModel)]="numPersonas"
+            [min]="2"
+            [max]="maxPersonas"
+            [useGrouping]="false"
+            inputId="split-personas"
+            styleClass="w-full"
+            class="people-input"
+          ></p-inputNumber>
+          <button
+            type="button"
+            class="stepper-btn"
+            (click)="incrementarPersonas()"
+            [disabled]="numPersonas >= maxPersonas || loading"
+          >+</button>
+        </div>
+        <small class="people-hint">Máximo {{ maxPersonas }} (una por artículo).</small>
+
+        <div class="split-footer-info mt-3">
+          <div>
+            <div class="summary-label">Total de la cuenta</div>
+            <div class="summary-total">${{ totalCuenta | number:'1.2-2' }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Monto por persona</div>
+            <div class="summary-total">${{ (tip ? montoPorPersonaConTip : montoPorPersona) | number:'1.2-2' }}</div>
+            <div *ngIf="tip" class="split-tip-sub">
+              Incluye propina (+${{ propinaPorPersona | number:'1.2-2' }} c/u)
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <p-divider></p-divider>
+
+    <p-message *ngIf="errorMessage" severity="error" [text]="errorMessage" styleClass="mt-2"></p-message>
+    <p-message *ngIf="successMessage" severity="success" [text]="successMessage" styleClass="mt-2"></p-message>
+
+    <div class="footer-actions mt-4">
+      <p-button
+        label="Cancelar"
+        icon="pi pi-times"
+        severity="secondary"
+        [outlined]="true"
+        [disabled]="loading"
+        (onClick)="onClose()"
+      ></p-button>
+
+      <p-button
+        *ngIf="splitMode === 'seats'"
+        [label]="selectedSeatsCount > 0 ? 'Generar Sub-comanda ' + (selectedSeatsSubFolios || '') : 'Selecciona una o más personas'"
+        icon="pi pi-user-plus"
+        severity="help"
+        styleClass="minimal-submit"
+        [disabled]="loading || selectedSeatsCount === 0 || selectedSeatsCount >= seatGroups.length"
+        (onClick)="onCrearCuenta()"
+      ></p-button>
+
+      <p-button
+        *ngIf="splitMode === 'items'"
+        label="Crear sub-comanda con items"
+        icon="pi pi-plus"
+        severity="help"
+        styleClass="minimal-submit"
+        [disabled]="loading || !tieneSeleccion || items.length === 0"
+        (onClick)="onCrearCuenta()"
+      ></p-button>
+
+      <p-button
+        *ngIf="splitMode === 'equal'"
+        [label]="'Dividir en ' + numPersonas + ' sub-comandas'"
+        icon="pi pi-percentage"
+        severity="help"
+        styleClass="minimal-submit"
+        [disabled]="loading || numPersonas < 2 || numPersonas > maxPersonas"
+        (onClick)="onDividirEquitativamente()"
+      ></p-button>
+    </div>
+
+    <div *ngIf="loading" class="loading-overlay">
+      <p-progressSpinner strokeWidth="4" [style]="{ width: '42px', height: '42px' }"></p-progressSpinner>
+      <span>Procesando sub-comanda...</span>
+    </div>
+  </ng-container>
+</p-dialog>

@@ -1,0 +1,194 @@
+<div class="horarios-wrapper">
+    <div class="horarios-header">
+        <div>
+            <h1 class="page-title">Horarios</h1>
+            <p class="text-sm text-500 m-0">
+                Crea jornadas de trabajo y asigna turnos a tu equipo. El calendario se llena en tiempo real.
+            </p>
+        </div>
+        <p-button
+            icon="pi pi-refresh"
+            label="Actualizar"
+            severity="secondary"
+            [outlined]="true"
+            [loading]="empleadosLoading()"
+            (onClick)="cargarEmpleados()"
+        ></p-button>
+    </div>
+
+    <p-toast></p-toast>
+    <p-confirmDialog></p-confirmDialog>
+
+    <!-- Acciones principales -->
+    <div class="horarios-actions">
+        <p-button
+            label="Crear jornada"
+            icon="pi pi-plus-circle"
+            styleClass="big-btn jornada-btn"
+            (onClick)="abrirCrearJornada()"
+        ></p-button>
+        <p-button
+            label="Asignar turno"
+            icon="pi pi-user-plus"
+            styleClass="big-btn turno-btn"
+            [disabled]="!jornadas().length"
+            (onClick)="abrirAsignarTurno()"
+        ></p-button>
+    </div>
+
+    <div class="horarios-card">
+        <!-- Jornadas registradas -->
+        <div class="jornadas-row" *ngIf="jornadas().length">
+            <span class="text-sm font-medium text-600">Jornadas:</span>
+            <div class="jornada-chip" *ngFor="let j of jornadas()" [style.background]="j.color">
+                <i class="pi pi-clock"></i>
+                <span class="jornada-chip-title">{{ j.titulo }}</span>
+                <span class="jornada-chip-time">{{ j.horaInicio }} – {{ j.horaFin }}</span>
+                <button type="button" class="jornada-chip-del" pTooltip="Eliminar jornada" tooltipPosition="top"
+                    (click)="borrarJornada(j)">×</button>
+            </div>
+        </div>
+        <div class="text-sm text-500 mb-3" *ngIf="!jornadas().length">
+            Aún no hay jornadas registradas. Crea una con el botón <strong>Crear jornada</strong>.
+        </div>
+
+        <!-- Calendario semanal -->
+        <div class="calendar-scroll">
+            <div class="calendar-grid" *ngIf="jornadas().length || asignaciones().length">
+                <div class="day-col" *ngFor="let d of dias">
+                    <div class="day-header">{{ d.label }}</div>
+                    <div class="day-body">
+                        <div class="shift-chip" *ngFor="let a of asignacionesPorDia(d.value)"
+                            [style.--chip-color]="jornadaDe(a)?.color">
+                            <div class="shift-top">
+                                <span class="shift-emp">{{ a.empleadoNombre }}</span>
+                                <span class="shift-remove" pTooltip="Quitar turno" tooltipPosition="left"
+                                    (click)="quitarAsignacion(a)">×</span>
+                            </div>
+                            <div class="shift-jornada" *ngIf="jornadaDe(a)">
+                                {{ jornadaDe(a)!.titulo }} ·
+                                <span class="shift-time">{{ jornadaDe(a)!.horaInicio }} – {{ jornadaDe(a)!.horaFin }}</span>
+                            </div>
+                        </div>
+                        <div class="day-empty" *ngIf="asignacionesPorDia(d.value).length === 0">Sin turnos</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: crear jornada -->
+<p-dialog
+    [(visible)]="jornadaVisible"
+    [modal]="true"
+    [style]="{ width: '38rem', maxWidth: '95vw' }"
+    styleClass="horarios-jornada-dialog minimal-modal"
+    [dismissableMask]="true"
+    (onHide)="jornadaVisible = false">
+    <ng-template pTemplate="header">
+        <div class="flex align-items-center gap-2">
+            <i class="pi pi-plus-circle text-primary"></i>
+            <span class="font-semibold text-lg">Crear jornada</span>
+        </div>
+    </ng-template>
+
+    <div class="flex flex-column gap-3">
+        <div>
+            <label class="block text-sm font-medium mb-1">Título de la jornada</label>
+            <input pInputText type="text" class="w-full" [(ngModel)]="jornadaTitulo"
+                placeholder="Ej. Matutino, Intermedio, Vespertino…" />
+        </div>
+
+        <div class="grid">
+            <div class="col-12">
+                <label class="block text-sm font-medium mb-1">Hora de inicio</label>
+                <p-datepicker [(ngModel)]="jornadaInicio" timeOnly="true" hourFormat="24" [showIcon]="true"
+                    [showButtonBar]="true" hideOnDateTimeSelect="true" placeholder="10:00" styleClass="w-full" [inputStyleClass]="'w-full'" [appendTo]="'body'" />
+            </div>
+            <div class="col-12">
+                <label class="block text-sm font-medium mb-1">Hora de finalización</label>
+                <p-datepicker [(ngModel)]="jornadaFin" timeOnly="true" hourFormat="24" [showIcon]="true"
+                    [showButtonBar]="true" hideOnDateTimeSelect="true" placeholder="18:00" styleClass="w-full" [inputStyleClass]="'w-full'" [appendTo]="'body'" />
+            </div>
+        </div>
+
+        <div class="preview-row" *ngIf="jornadaTitulo.trim() || jornadaInicio || jornadaFin">
+            <i class="pi pi-calendar-clock text-primary"></i>
+            <span class="text-sm text-600">
+                {{ jornadaTitulo.trim() || 'Nueva jornada' }}
+                <span class="text-500" *ngIf="jornadaInicio">
+                    ({{ (jornadaInicio.getHours() ?? 0) | number:'2.0-0' }}:{{ (jornadaInicio.getMinutes() ?? 0) | number:'2.0-0' }}
+                    – {{ (jornadaFin?.getHours() ?? 0) | number:'2.0-0' }}:{{ (jornadaFin?.getMinutes() ?? 0) | number:'2.0-0' }})
+                </span>
+            </span>
+        </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <div class="flex gap-2 justify-content-end">
+            <p-button label="Cancelar" icon="pi pi-times" severity="secondary" [text]="true"
+                (onClick)="jornadaVisible = false"></p-button>
+            <p-button label="Crear jornada" icon="pi pi-check" styleClass="minimal-submit" [loading]="jornadaSaving()"
+                [disabled]="jornadaSaving()" (onClick)="crearJornada()"></p-button>
+        </div>
+    </ng-template>
+</p-dialog>
+
+<!-- Modal: asignar turno -->
+<p-dialog
+    [(visible)]="asignarVisible"
+    [modal]="true"
+    [style]="{ width: '42rem', maxWidth: '95vw' }"
+    styleClass="horarios-asignar-dialog minimal-modal"
+    [dismissableMask]="true"
+    (onHide)="asignarVisible = false">
+    <ng-template pTemplate="header">
+        <div class="flex align-items-center gap-2">
+            <i class="pi pi-user-plus text-primary"></i>
+            <span class="font-semibold text-lg">Asignar turno</span>
+        </div>
+    </ng-template>
+
+    <div class="flex flex-column gap-3">
+        <div *ngIf="empleadosLoading()" class="flex align-items-center justify-content-center gap-2 text-sm text-500 p-3">
+            <p-progressSpinner strokeWidth="4" styleClass="w-2rem h-2rem"></p-progressSpinner>
+            <span>Cargando empleados…</span>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium mb-1">Empleado</label>
+            <p-select [options]="empleados()" optionLabel="nombre" optionValue="id"
+                [(ngModel)]="asignarEmpleadoId" placeholder="Selecciona un empleado"
+                styleClass="w-full" [loading]="empleadosLoading()" [appendTo]="'body'"></p-select>
+        </div>
+
+        <div class="grid">
+            <div class="col-12">
+                <label class="block text-sm font-medium mb-1">Día de la semana</label>
+                <p-select [options]="dias" optionLabel="label" optionValue="value"
+                    [(ngModel)]="asignarDia" placeholder="Día" styleClass="w-full" [appendTo]="'body'"></p-select>
+            </div>
+            <div class="col-12">
+                <label class="block text-sm font-medium mb-1">Jornada</label>
+                <p-select [options]="jornadas()" optionLabel="titulo" optionValue="id"
+                    [(ngModel)]="asignarJornadaId" placeholder="Jornada" styleClass="w-full" [appendTo]="'body'"></p-select>
+            </div>
+        </div>
+
+        <div class="preview-row" *ngIf="resumenAsignacion()">
+            <i class="pi pi-calendar-clock text-primary"></i>
+            <span class="text-sm text-700 font-medium">{{ resumenAsignacion() }}</span>
+        </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <div class="flex gap-2 justify-content-end">
+            <p-button label="Cancelar" icon="pi pi-times" severity="secondary" [text]="true"
+                (onClick)="asignarVisible = false"></p-button>
+            <p-button label="Asignar turno" icon="pi pi-check" styleClass="minimal-submit" [loading]="asignarSaving()"
+                [disabled]="asignarEmpleadoId == null || asignarDia == null || asignarJornadaId == null || asignarSaving()"
+                (onClick)="asignarTurno()"></p-button>
+        </div>
+    </ng-template>
+</p-dialog>

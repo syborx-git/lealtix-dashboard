@@ -1,0 +1,460 @@
+<div class="recetas-wrapper">
+    <div class="recetas-header">
+        <div>
+            <h1 class="page-title">Recetas</h1>
+            <p class="text-sm text-500 m-0">Configura los insumos que componen cada platillo, bebida o preparación (sub-receta).</p>
+        </div>
+        <p-button
+            icon="pi pi-refresh"
+            label="Actualizar"
+            severity="secondary"
+            [outlined]="true"
+            [loading]="loading()"
+            (onClick)="loadProducts(); loadBebidas(); loadSubRecetas()"
+        ></p-button>
+    </div>
+
+    <p-toast></p-toast>
+    <p-confirmDialog></p-confirmDialog>
+
+    <!-- Acciones rápidas -->
+    <div class="recetas-actions">
+        <p-button
+            label="Receta de Producto"
+            icon="pi pi-hamburger"
+            styleClass="big-btn product-btn"
+            (onClick)="openPicker('PRODUCTO')"
+        ></p-button>
+        <p-button
+            label="Receta de Bebida"
+            icon="pi pi-glass"
+            styleClass="big-btn bebida-btn"
+            (onClick)="openPicker('BEBIDA')"
+        ></p-button>
+        <p-button
+            label="Crear Sub-Receta"
+            icon="pi pi-palette"
+            styleClass="big-btn subreceta-btn"
+            (onClick)="openSubRecetaModal()"
+        ></p-button>
+    </div>
+
+    <div class="catalog-panel surface-card border-round-lg p-3">
+        <!-- Pestañas de recetas -->
+        <div class="catalog-tabs mb-3">
+            <button type="button" class="catalog-tab"
+                [ngClass]="{ 'catalog-tab-active': activeTab() === 'platillos' }"
+                (click)="setActiveTab('platillos')">
+                <i class="pi pi-hamburger"></i>
+                <span>Recetas de platillos</span>
+            </button>
+            <button type="button" class="catalog-tab"
+                [ngClass]="{ 'catalog-tab-active': activeTab() === 'bebidas' }"
+                (click)="setActiveTab('bebidas')">
+                <i class="pi pi-glass"></i>
+                <span>Recetas de bebidas</span>
+            </button>
+            <button type="button" class="catalog-tab"
+                [ngClass]="{ 'catalog-tab-active': activeTab() === 'subrecetas' }"
+                (click)="setActiveTab('subrecetas')">
+                <i class="pi pi-palette"></i>
+                <span>Sub-recetas</span>
+            </button>
+        </div>
+
+        <div *ngIf="loading()" class="recetas-loading">
+            <p-progressSpinner strokeWidth="4" styleClass="w-2rem h-2rem"></p-progressSpinner>
+            <span>Cargando catálogo…</span>
+        </div>
+
+        <p-table
+            *ngIf="!loading()"
+            [value]="filteredProducts()"
+            [paginator]="true"
+            [rows]="10"
+            [rowsPerPageOptions]="[10, 30, 50]"
+            [globalFilterFields]="['name','categoryName']"
+            responsiveLayout="scroll"
+            styleClass="p-datatable-sm catalog-table"
+            [tableStyle]="{ 'width': '100%', 'table-layout': 'fixed' }"
+            dataKey="id"
+            [rowHover]="true"
+            [showCurrentPageReport]="true"
+            [currentPageReportTemplate]="'Mostrando {first} a {last} de {totalRecords} elementos'"
+        >
+            <ng-template pTemplate="caption">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <h5 class="m-0">{{ filteredProducts().length }}
+                        {{ activeTab() === 'platillos' ? 'recetas de platillos' : (activeTab() === 'bebidas' ? 'recetas de bebidas' : 'sub-recetas') }}</h5>
+                    <div class="flex items-center gap-2">
+                        <p-select
+                            *ngIf="activeTab() !== 'subrecetas'"
+                            [options]="categoryOptions()"
+                            optionLabel="label"
+                            optionValue="value"
+                            [ngModel]="selectedCategory()"
+                            (ngModelChange)="onCategoryChange($event)"
+                            placeholder="Todas las categorías"
+                            [showClear]="true"
+                            styleClass="catalog-category-select"
+                        ></p-select>
+                        <p-iconfield>
+                            <p-inputicon styleClass="pi pi-search"></p-inputicon>
+                            <input
+                                pInputText
+                                type="text"
+                                (input)="onGlobalFilter($event)"
+                                placeholder="Buscar…"
+                            />
+                        </p-iconfield>
+                    </div>
+                </div>
+            </ng-template>
+            <ng-template pTemplate="header">
+                <tr>
+                    <th>{{ activeTab() === 'subrecetas' ? 'Preparación' : 'Producto' }}</th>
+                    <th>Categoría</th>
+                    <th>Precio</th>
+                    <th>Ingredientes en receta</th>
+                    <th style="width: 170px;">Acciones</th>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-product>
+                <tr>
+                    <td>
+                        <div class="flex align-items-center gap-2">
+                            <div class="receta-product-icon">
+                                <i class="pi" [ngClass]="activeTab() === 'bebidas' ? 'pi-glass' : 'pi-hamburger'"></i>
+                            </div>
+                            <span class="font-semibold">{{ product.name }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="cat-chip-mini" *ngIf="activeTab() === 'subrecetas'">
+                            <i class="pi pi-palette"></i> preparación
+                        </span>
+                        <p-tag
+                            *ngIf="product.categoryName"
+                            [value]="product.categoryName"
+                            severity="info"
+                            styleClass="category-tag"
+                        ></p-tag>
+                        <span *ngIf="!product.categoryName" class="text-500">—</span>
+                    </td>
+                    <td *ngIf="activeTab() !== 'subrecetas'"><span class="font-semibold">${{ product.price ?? 0 | number:'1.2-2' }}</span></td>
+                    <td *ngIf="activeTab() === 'subrecetas'" class="text-500">—</td>
+                    <td>
+                        <p-tag
+                            [value]="recipeIngredientCount(product) + ' ingrediente(s)'"
+                            [severity]="recipeIngredientCount(product) > 0 ? 'success' : 'secondary'"
+                        ></p-tag>
+                    </td>
+                    <td>
+                        <p-button
+                            icon="pi pi-book"
+                            label="Ver receta"
+                            severity="secondary"
+                            size="small"
+                            [outlined]="true"
+                            (onClick)="openRecipe(product)"
+                        ></p-button>
+                    </td>
+                </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+                <tr>
+                    <td [attr.colspan]="5" class="text-center p-4">
+                        <div class="flex flex-column align-items-center gap-2 text-500">
+                            <i class="pi pi-inbox text-3xl"></i>
+                            <span *ngIf="activeTab() === 'subrecetas'">No hay sub-recetas todavía. Crea una desde el botón "Crear Sub-Receta".</span>
+                            <span *ngIf="activeTab() === 'bebidas'">No hay bebidas con receta en este catálogo.</span>
+                            <span *ngIf="activeTab() === 'platillos'">No hay platillos que coincidan con la búsqueda.</span>
+                        </div>
+                    </td>
+                </tr>
+            </ng-template>
+        </p-table>
+    </div>
+</div>
+
+<!-- Diálogo Ver receta (asignar insumos por platillo) -->
+<p-dialog
+    [(visible)]="recipeVisible"
+    [modal]="true"
+    [style]="{ width: '60rem', maxWidth: '95vw' }"
+    styleClass="recipe-dialog recetas-recipe-dialog minimal-modal"
+    [dismissableMask]="false"
+    (onHide)="recipeVisible = false">
+    <ng-template pTemplate="header">
+        <div class="flex align-items-center gap-2">
+            <i class="pi pi-book text-primary"></i>
+            <span class="font-semibold text-lg">Receta → {{ recipeItem?.name }}</span>
+        </div>
+    </ng-template>
+
+    <div class="recipe-dialog-sections">
+        <!-- APARTADO 1: Ingredientes (insumos) -->
+        <div class="apartado">
+            <div class="apartado-header">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-box text-primary"></i>
+                    <span class="font-semibold">Ingredientes (insumos)</span>
+                </div>
+                <p-tag
+                    [value]="recipeIngredients().length + ' insumo(s)'"
+                    [severity]="recipeIngredients().length > 0 ? 'info' : 'secondary'"
+                ></p-tag>
+            </div>
+
+            <div class="recipe-add-form">
+                <div class="flex flex-column gap-3">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Insumo</label>
+                        <p-select [options]="insumos()" optionLabel="nombre" optionValue="id"
+                            [(ngModel)]="recipeInsumoId" placeholder="Selecciona el insumo" styleClass="w-full" appendTo="body" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Cantidad</label>
+                        <p-inputnumber [(ngModel)]="recipeCantidad" [min]="0" [step]="1" styleClass="w-full" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Tipo de ingrediente</label>
+                        <p-select [options]="tipoIngredienteOptions" optionLabel="label" optionValue="value"
+                            [(ngModel)]="recipeTipoIngrediente" styleClass="w-full" appendTo="body" />
+                    </div>
+                    <div *ngIf="recipeTipoIngrediente === 'ADICIONAL'">
+                        <label class="block text-sm font-medium mb-1">Precio extra ($)</label>
+                        <p-inputnumber [(ngModel)]="recipePrecio" [min]="0" [step]="0.5" mode="currency" currency="MXN"
+                            locale="en-US" styleClass="w-full" />
+                    </div>
+                    <div>
+                        <p-button label="Agregar a la receta" icon="pi pi-plus" severity="primary" styleClass="w-full minimal-submit"
+                            [loading]="recipeAddLoading()" [disabled]="!recipeInsumoId || recipeCantidad <= 0"
+                            (onClick)="addRecipeIngredient()"></p-button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="recipe-lines" *ngIf="loadingRecipes()">
+                <div class="flex align-items-center justify-content-center p-4">
+                    <p-progressSpinner strokeWidth="4" styleClass="w-2rem h-2rem"></p-progressSpinner>
+                </div>
+            </div>
+
+            <div class="recipe-lines" *ngIf="!loadingRecipes()">
+                <div class="recipe-line" *ngFor="let ing of recipeIngredients(); let i = index">
+                    <ng-container *ngIf="editingRecipe !== ing; else editRow">
+                        <div class="recipe-line-info">
+                            <span class="recipe-line-name">{{ ing.insumoName }}</span>
+                            <span class="recipe-line-detail">
+                                ×{{ ing.cantidad }}
+                                <ng-container *ngIf="ing.tipoIngrediente === 'ADICIONAL'; else tipoMod">
+                                    <span class="ing-type-badge badge-adicional">+${{ ing.precio ?? 0 }}</span>
+                                </ng-container>
+                                <ng-template #tipoMod>
+                                    <span class="ing-type-badge" [ngClass]="ing.tipoIngrediente === 'MODIFICABLE' ? 'badge-modificable' : 'badge-base'">
+                                        {{ ing.tipoIngrediente === 'MODIFICABLE' ? 'modificable' : 'base' }}
+                                    </span>
+                                </ng-template>
+                            </span>
+                        </div>
+                        <div class="recipe-line-actions">
+                            <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" pTooltip="Editar"
+                                tooltipPosition="top" (onClick)="startEditIngredient(ing)"></p-button>
+                            <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [text]="true"
+                                pTooltip="Quitar" tooltipPosition="top" (onClick)="removeRecipeIngredient(ing)"></p-button>
+                        </div>
+                    </ng-container>
+                    <ng-template #editRow>
+                        <div class="recipe-line-edit">
+                            <span class="recipe-line-name">{{ ing.insumoName }}</span>
+                            <p-inputnumber [(ngModel)]="editRecipeCantidad" [min]="0" [step]="1" styleClass="recipe-edit-qty" />
+                            <ng-container *ngIf="ing.kind === 'ADDITIONAL'; else recipeEditBlock">
+                                <p-inputnumber [(ngModel)]="editRecipePrecio" [min]="0" [step]="0.5" mode="currency"
+                                    currency="MXN" locale="en-US" styleClass="recipe-edit-qty" />
+                            </ng-container>
+                            <ng-template #recipeEditBlock>
+                                <p-checkbox [(ngModel)]="editRecipeModificable" inputId="editRecipeMod" label="Modificable" />
+                            </ng-template>
+                            <p-button icon="pi pi-check" severity="success" [rounded]="true" [text]="true"
+                                pTooltip="Guardar" tooltipPosition="top" [disabled]="editRecipeCantidad <= 0"
+                                (onClick)="saveEditIngredient()"></p-button>
+                            <p-button icon="pi pi-times" severity="secondary" [rounded]="true" [text]="true"
+                                pTooltip="Cancelar" tooltipPosition="top" (onClick)="cancelEditIngredient()"></p-button>
+                        </div>
+                    </ng-template>
+                </div>
+                <div class="text-center p-4 text-500 text-sm" *ngIf="!recipeIngredients().length">
+                    Esta receta aún no tiene ingredientes. Agrégalos arriba.
+                </div>
+            </div>
+        </div>
+
+        <!-- APARTADO 2: Sub-recetas asignadas a este producto -->
+        <ng-container *ngIf="!recipeItem?.esSubReceta">
+            <p-divider></p-divider>
+            <div class="apartado">
+                <div class="apartado-header">
+                    <div class="flex align-items-center gap-2">
+                        <i class="pi pi-palette text-primary"></i>
+                        <span class="font-semibold">Sub-recetas incluidas (preparaciones)</span>
+                    </div>
+                </div>
+
+                <div class="subrecetas-section">
+                    <p class="text-sm text-500 m-0 mb-2">
+                        Las sub-recetas suman sus insumos a este producto para el cálculo de stock y mermas.
+                    </p>
+
+                    <div class="flex align-items-center gap-2 mb-2">
+                        <p-select
+                            [options]="subRecetas()"
+                            optionLabel="name"
+                            optionValue="id"
+                            [(ngModel)]="selectedSubRecetaId"
+                            placeholder="Selecciona una sub-receta…"
+                            styleClass="w-full"
+                            appendTo="body"
+                        ></p-select>
+                        <p-button
+                            icon="pi pi-plus"
+                            label="Asignar"
+                            [loading]="subRecetaAssignLoading()"
+                            [disabled]="!selectedSubRecetaId || subRecetas().length === 0"
+                            (onClick)="assignSubRecetaToCurrent()"
+                        ></p-button>
+                    </div>
+
+                    <div class="subreceta-assigned" *ngFor="let sr of assignedSubRecetas()">
+                        <span class="font-medium">{{ sr.name }}</span>
+                        <span class="text-sm text-500">{{ sr.insumos?.length || 0 }} insumo(s)</span>
+                        <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [text]="true"
+                            pTooltip="Quitar sub-receta" tooltipPosition="top" (onClick)="removeAssignedSubReceta(sr)"></p-button>
+                    </div>
+                    <div class="text-sm text-500" *ngIf="!assignedSubRecetas().length">
+                        Sin sub-recetas asignadas a este producto.
+                    </div>
+                </div>
+            </div>
+        </ng-container>
+    </div>
+</p-dialog>
+
+<!-- Selector de producto / bebida -->
+<p-dialog
+    [(visible)]="pickerVisible"
+    [modal]="true"
+    [style]="{ width: '48rem', maxWidth: '95vw' }"
+    styleClass="recetas-picker-dialog minimal-modal"
+    [dismissableMask]="false"
+    (onHide)="pickerVisible = false">
+    <ng-template pTemplate="header">
+        <div class="flex align-items-center gap-2">
+            <i class="pi" [ngClass]="pickerMode === 'BEBIDA' ? 'pi-glass text-primary' : 'pi-hamburger text-primary'"></i>
+            <span class="font-semibold text-lg">
+                {{ pickerMode === 'BEBIDA' ? 'Receta de Bebida' : 'Receta de Producto' }}
+            </span>
+        </div>
+    </ng-template>
+
+    <div *ngIf="pickerLoading()" class="recetas-loading">
+        <p-progressSpinner strokeWidth="4" styleClass="w-2rem h-2rem"></p-progressSpinner>
+        <span>Cargando…</span>
+    </div>
+
+    <div *ngIf="!pickerLoading()" class="flex flex-column gap-2">
+        <label class="block text-sm font-medium">Selecciona el {{ pickerMode === 'BEBIDA' ? 'producto de la bebida' : 'producto' }}</label>
+        <p-select
+            [options]="pickerItems()"
+            optionLabel="name"
+            optionValue="id"
+            [(ngModel)]="pickerSelectedId"
+            placeholder="{{ pickerMode === 'BEBIDA' ? 'Elige una bebida…' : 'Elige un producto…' }}"
+            styleClass="w-full"
+            appendTo="body"
+        ></p-select>
+        <div class="text-sm text-500" *ngIf="pickerItems().length === 0">
+            No hay {{ pickerMode === 'BEBIDA' ? 'bebidas' : 'productos' }} disponibles.
+        </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <div class="flex gap-2 justify-content-end">
+            <p-button label="Cancelar" icon="pi pi-times" severity="secondary" [text]="true"
+                (onClick)="pickerVisible = false"></p-button>
+            <p-button label="Configurar receta" icon="pi pi-book" styleClass="minimal-submit" [disabled]="!pickerSelectedId || pickerLoading()"
+                (onClick)="confirmPicker()"></p-button>
+        </div>
+    </ng-template>
+</p-dialog>
+
+<!-- Crear sub-receta -->
+<p-dialog
+    [(visible)]="subRecetaVisible"
+    [modal]="true"
+    [style]="{ width: '52rem', maxWidth: '95vw' }"
+    styleClass="recetas-subreceta-dialog minimal-modal"
+    [dismissableMask]="false"
+    (onHide)="subRecetaVisible = false">
+    <ng-template pTemplate="header">
+        <div class="flex align-items-center gap-2">
+            <i class="pi pi-palette text-primary"></i>
+            <span class="font-semibold text-lg">Crear Sub-Receta</span>
+        </div>
+    </ng-template>
+    <ng-template pTemplate="subheader">
+        <span class="text-sm text-500">
+            Preparación intermedia (ej. salsa, masa, crema) que no se vende individual pero puede asignarse a platillos o bebidas.
+        </span>
+    </ng-template>
+
+    <div class="flex flex-column gap-3">
+        <div>
+            <label class="block text-sm font-medium mb-1">Nombre de la preparación</label>
+            <input pInputText type="text" class="w-full" [(ngModel)]="subRecetaNombre"
+                placeholder="Ej. Salsa roja, Masa de pizza, Crema base…" />
+        </div>
+
+        <p-divider></p-divider>
+
+        <div class="flex align-items-center gap-2">
+            <p-select
+                [options]="insumos()"
+                optionLabel="nombre"
+                optionValue="id"
+                [(ngModel)]="subRecetaInsumoId"
+                placeholder="Selecciona el insumo"
+                styleClass="w-full"
+                [loading]="insumosLoading()"
+                appendTo="body"
+            ></p-select>
+            <p-inputnumber [(ngModel)]="subRecetaCantidad" [min]="0" [step]="0.5" placeholder="Cantidad" styleClass="subreceta-qty" />
+            <p-button icon="pi pi-plus" label="Agregar" [disabled]="!subRecetaInsumoId || subRecetaCantidad <= 0"
+                (onClick)="addSubRecetaLine()"></p-button>
+        </div>
+
+        <div class="subreceta-lines" *ngIf="!subRecetaLines().length">
+            <span class="text-sm text-500">Aún no hay insumos en esta sub-receta.</span>
+        </div>
+
+        <div class="subreceta-lines" *ngIf="subRecetaLines().length">
+            <div class="subreceta-line" *ngFor="let line of subRecetaLines(); let i = index">
+                <i class="pi pi-arrow-right text-primary"></i>
+                <span class="font-medium">{{ line.insumoName }}</span>
+                <span class="text-sm text-500">× {{ line.cantidad }} {{ line.unidad }}</span>
+                <p-button icon="pi pi-times" severity="danger" [rounded]="true" [text]="true"
+                    pTooltip="Quitar" tooltipPosition="top" (onClick)="removeSubRecetaLine(i)"></p-button>
+            </div>
+        </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <div class="flex gap-2 justify-content-end">
+            <p-button label="Cancelar" icon="pi pi-times" severity="secondary" [text]="true"
+                (onClick)="subRecetaVisible = false"></p-button>
+            <p-button label="Crear sub-receta" icon="pi pi-check" styleClass="minimal-submit" [loading]="subRecetaSaving()"
+                [disabled]="!subRecetaNombre?.trim() || !subRecetaLines().length || subRecetaSaving()"
+                (onClick)="saveSubReceta()"></p-button>
+        </div>
+    </ng-template>
+</p-dialog>

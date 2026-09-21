@@ -15,6 +15,7 @@ export interface Cliente {
   activo: boolean;
   fechaCreacion: string | Date;
   fechaActualizacion?: string | Date;
+  alergias?: string[];
 }
 
 export interface CreateClienteRequest {
@@ -23,6 +24,7 @@ export interface CreateClienteRequest {
   fechaNacimiento: string | Date;
   genero: GeneroEnum;
   telefono?: string;
+  alergias?: string;
 }
 
 export interface UpdateClienteRequest {
@@ -32,6 +34,7 @@ export interface UpdateClienteRequest {
   genero?: GeneroEnum;
   telefono?: string;
   activo?: boolean;
+  alergias?: string;
 }
 
 export interface ClienteListResponse {

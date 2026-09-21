@@ -1,0 +1,3415 @@
+
+> lealtix_dashboard@20.0.0 start
+> ng serve
+
+[33m>[39m Building...
+[32m√[39m Building...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m        [2m | [22m [1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m         [2m | [22m  [36m3.29 MB[39m[2m | [22m
+[32mstyles.css[39m         [2m | [22m[2mstyles[22m       [2m | [22m[36m143.49 kB[39m[2m | [22m
+[32mchunk-4T55QU7S.js[39m  [2m | [22m[2m-[22m            [2m | [22m [36m31.32 kB[39m[2m | [22m
+[32mpolyfills.js[39m       [2m | [22m[2mpolyfills[22m    [2m | [22m [36m95 bytes[39m[2m | [22m
+
+[1m [22m                  [2m | [22m[1mInitial total[22m[2m | [22m  [1m3.47 MB[22m
+
+[1mLazy chunk files[22m   [2m | [22m[1mNames[22m        [2m | [22m [1mRaw size[22m
+[32mchunk-T7WBG56I.js[39m  [2m | [22m[2mredeem-module[22m[2m | [22m[36m138.39 kB[39m[2m | [22m
+
+Application bundle generation complete. [49.582 seconds] - 2026-09-10T20:38:36.094Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:434:46:
+[37m      434 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+[39m[22m
+Watch mode enabled. Watching for file changes...
+NOTE: Raw file sizes do not reflect development server per-request transformations.
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m4201[22m/[39m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m[2m | [22m[1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m [2m | [22m [36m3.29 MB[39m[2m | [22m
+
+Application bundle generation complete. [38.772 seconds] - 2026-09-10T21:40:11.864Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:434:46:
+[37m      434 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+Page reload sent to client(s).
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m[2m | [22m[1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m [2m | [22m [36m3.29 MB[39m[2m | [22m
+
+Application bundle generation complete. [11.002 seconds] - 2026-09-10T21:40:22.901Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:434:46:
+[37m      434 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+Page reload sent to client(s).
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m[2m | [22m[1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m [2m | [22m [36m3.30 MB[39m[2m | [22m
+
+Application bundle generation complete. [11.404 seconds] - 2026-09-10T21:40:34.324Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:434:46:
+[37m      434 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+Component update sent to client(s).
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m[2m | [22m[1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m [2m | [22m [36m3.30 MB[39m[2m | [22m
+
+Application bundle generation complete. [9.750 seconds] - 2026-09-10T21:40:44.097Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:434:46:
+[37m      434 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+Component update sent to client(s).
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m[2m | [22m[1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m [2m | [22m [36m3.31 MB[39m[2m | [22m
+
+Application bundle generation complete. [3.954 seconds] - 2026-09-10T22:21:28.866Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:437:46:
+[37m      437 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+Component update sent to client(s).
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m        [2m | [22m [1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m         [2m | [22m  [36m3.31 MB[39m[2m | [22m
+[32mstyles.css[39m         [2m | [22m[2mstyles[22m       [2m | [22m[36m143.49 kB[39m[2m | [22m
+[32mchunk-4T55QU7S.js[39m  [2m | [22m[2m-[22m            [2m | [22m [36m31.32 kB[39m[2m | [22m
+[32mpolyfills.js[39m       [2m | [22m[2mpolyfills[22m    [2m | [22m [36m95 bytes[39m[2m | [22m
+
+[1m [22m                  [2m | [22m[1mInitial total[22m[2m | [22m  [1m3.48 MB[22m
+
+[1mLazy chunk files[22m   [2m | [22m[1mNames[22m        [2m | [22m [1mRaw size[22m
+[32mchunk-T7WBG56I.js[39m  [2m | [22m[2mredeem-module[22m[2m | [22m[36m138.39 kB[39m[2m | [22m
+
+Application bundle generation complete. [3.534 seconds] - 2026-09-10T22:21:36.119Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:437:46:
+[37m      437 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+Component update sent to client(s).
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m[2m | [22m[1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m [2m | [22m [36m3.31 MB[39m[2m | [22m
+
+Application bundle generation complete. [9.105 seconds] - 2026-09-12T01:11:07.874Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:437:46:
+[37m      437 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+Component update sent to client(s).
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m[2m | [22m[1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m [2m | [22m [36m3.31 MB[39m[2m | [22m
+
+Application bundle generation complete. [9.127 seconds] - 2026-09-12T01:11:17.022Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:437:46:
+[37m      437 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+Page reload sent to client(s).
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m[2m | [22m[1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m [2m | [22m [36m3.31 MB[39m[2m | [22m
+
+Application bundle generation complete. [10.038 seconds] - 2026-09-12T01:11:27.088Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:437:46:
+[37m      437 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+Component update sent to client(s).
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m        [2m | [22m [1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m         [2m | [22m  [36m3.31 MB[39m[2m | [22m
+[32mstyles.css[39m         [2m | [22m[2mstyles[22m       [2m | [22m[36m143.49 kB[39m[2m | [22m
+[32mchunk-4T55QU7S.js[39m  [2m | [22m[2m-[22m            [2m | [22m [36m31.32 kB[39m[2m | [22m
+[32mpolyfills.js[39m       [2m | [22m[2mpolyfills[22m    [2m | [22m [36m95 bytes[39m[2m | [22m
+
+[1m [22m                  [2m | [22m[1mInitial total[22m[2m | [22m  [1m3.49 MB[22m
+
+[1mLazy chunk files[22m   [2m | [22m[1mNames[22m        [2m | [22m [1mRaw size[22m
+[32mchunk-T7WBG56I.js[39m  [2m | [22m[2mredeem-module[22m[2m | [22m[36m138.39 kB[39m[2m | [22m
+
+Application bundle generation complete. [7.171 seconds] - 2026-09-12T01:19:46.001Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:437:46:
+[37m      437 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+
+No output file changes.
+
+Application bundle generation complete. [2.653 seconds] - 2026-09-12T01:19:48.679Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:437:46:
+[37m      437 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m[2m | [22m[1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m [2m | [22m [36m3.31 MB[39m[2m | [22m
+
+Application bundle generation complete. [3.051 seconds] - 2026-09-12T01:19:51.741Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:437:46:
+[37m      437 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+Page reload sent to client(s).
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m[2m | [22m[1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m [2m | [22m [36m3.31 MB[39m[2m | [22m
+
+Application bundle generation complete. [4.660 seconds] - 2026-09-12T01:20:43.730Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:437:46:
+[37m      437 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+Page reload sent to client(s).
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m[2m | [22m[1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m [2m | [22m [36m3.32 MB[39m[2m | [22m
+
+Application bundle generation complete. [6.980 seconds] - 2026-09-12T01:20:50.731Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:437:46:
+[37m      437 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+Page reload sent to client(s).
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m        [2m | [22m [1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m         [2m | [22m  [36m3.32 MB[39m[2m | [22m
+[32mstyles.css[39m         [2m | [22m[2mstyles[22m       [2m | [22m[36m143.49 kB[39m[2m | [22m
+[32mchunk-4T55QU7S.js[39m  [2m | [22m[2m-[22m            [2m | [22m [36m31.32 kB[39m[2m | [22m
+[32mpolyfills.js[39m       [2m | [22m[2mpolyfills[22m    [2m | [22m [36m95 bytes[39m[2m | [22m
+
+[1m [22m                  [2m | [22m[1mInitial total[22m[2m | [22m  [1m3.49 MB[22m
+
+[1mLazy chunk files[22m   [2m | [22m[1mNames[22m        [2m | [22m [1mRaw size[22m
+[32mchunk-T7WBG56I.js[39m  [2m | [22m[2mredeem-module[22m[2m | [22m[36m138.39 kB[39m[2m | [22m
+
+Application bundle generation complete. [5.867 seconds] - 2026-09-12T01:20:56.619Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:437:46:
+[37m      437 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+Component update sent to client(s).
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m[2m | [22m[1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m [2m | [22m [36m3.32 MB[39m[2m | [22m
+
+Application bundle generation complete. [2.815 seconds] - 2026-09-12T01:20:59.449Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:437:46:
+[37m      437 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+Component update sent to client(s).
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+Application bundle generation failed. [12.569 seconds] - 2026-09-12T01:21:13.056Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:437:46:
+[37m      437 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'number' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/split-order-modal/split-order-modal.component.ts:157:63:
+[37m      157 │ ...uentaCreada.emit({ originalOrderId: this.order.id, [32mnewOrderId[37m });
+          ╵                                                       [32m~~~~~~~~~~[0m
+
+[39m[22m
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+Application bundle generation failed. [12.068 seconds] - 2026-09-12T01:21:36.147Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: SplitOrderModalComponent is not used within the template of ComandixComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/comandix.component.ts:103:4:
+[37m      103 │     [32mSplitOrderModalComponent[37m
+          ╵     [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:437:46:
+[37m      437 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'number' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/split-order-modal/split-order-modal.component.ts:157:63:
+[37m      157 │ ...uentaCreada.emit({ originalOrderId: this.order.id, [32mnewOrderId[37m });
+          ╵                                                       [32m~~~~~~~~~~[0m
+
+[39m[22m
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+Application bundle generation failed. [11.402 seconds] - 2026-09-12T01:21:47.557Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: SplitOrderModalComponent is not used within the template of ComandixComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/comandix.component.ts:103:4:
+[37m      103 │     [32mSplitOrderModalComponent[37m
+          ╵     [32m~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:437:46:
+[37m      437 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'number' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/split-order-modal/split-order-modal.component.ts:157:63:
+[37m      157 │ ...uentaCreada.emit({ originalOrderId: this.order.id, [32mnewOrderId[37m });
+          ╵                                                       [32m~~~~~~~~~~[0m
+
+[39m[22m
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+Application bundle generation failed. [10.899 seconds] - 2026-09-12T01:21:58.467Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:437:46:
+[37m      437 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2322: Type 'number' is not assignable to type 'string'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/split-order-modal/split-order-modal.component.ts:157:63:
+[37m      157 │ ...uentaCreada.emit({ originalOrderId: this.order.id, [32mnewOrderId[37m });
+          ╵                                                       [32m~~~~~~~~~~[0m
+
+[39m[22m
+[33m>[39m Changes detected. Rebuilding...
+[32m√[39m Changes detected. Rebuilding...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m        [2m | [22m [1mRaw size[22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m         [2m | [22m  [36m3.35 MB[39m[2m | [22m
+[32mstyles.css[39m         [2m | [22m[2mstyles[22m       [2m | [22m[36m143.49 kB[39m[2m | [22m
+[32mchunk-4T55QU7S.js[39m  [2m | [22m[2m-[22m            [2m | [22m [36m31.32 kB[39m[2m | [22m
+[32mpolyfills.js[39m       [2m | [22m[2mpolyfills[22m    [2m | [22m [36m95 bytes[39m[2m | [22m
+
+[1m [22m                  [2m | [22m[1mInitial total[22m[2m | [22m  [1m3.52 MB[22m
+
+[1mLazy chunk files[22m   [2m | [22m[1mNames[22m        [2m | [22m [1mRaw size[22m
+[32mchunk-T7WBG56I.js[39m  [2m | [22m[2mredeem-module[22m[2m | [22m[36m138.39 kB[39m[2m | [22m
+
+Application bundle generation complete. [9.229 seconds] - 2026-09-12T01:22:35.110Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAll "@import" rules must come first[0m [invalid-@import]
+
+    src/assets/styles.scss:1334:0:
+[37m      1334 │ [32m@import[37m url("https://fonts.googleapis.com/css2?family=Inter:wght...
+           ╵ [32m~~~~~~~[0m
+
+  This rule cannot come before an "@import" rule
+
+    src/assets/styles.scss:5:0:
+[37m      5 │ [32m[37m@layer theme {
+        ╵ [32m^[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppFloatingConfigurator is not used within the template of LoginComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/login/login.component.ts:29:8:
+[37m      29 │         [32mAppFloatingConfigurator[37m,
+         ╵         [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: AppConfigurator is not used within the template of AppTopbar[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/layout/component/app.topbar.ts:13:60:
+[37m      13 │ ...nModule, StyleClassModule, [32mAppConfigurator[37m, UserProfileComponent],
+         ╵                               [32m~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:77:23:
+[37m      77 │               [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+         ╵                        [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.html:82:18:
+[37m      82 │             ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnitario ?? 0...
+         ╵                   [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component RegistrarMermaModalComponent.
+
+    src/app/pages/comandix/components/registrar-merma-modal/registrar-merma-modal.component.ts:36:15:
+[37m      36 │   templateUrl: [32m'./registrar-merma-modal.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:25:
+[37m      121 │ ...            ({{ ([32mjornadaInicio.getHours() ?? 0[37m) | number:'2.0-...
+          ╵                     [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/horarios/horarios.component.html:121:80:
+[37m      121 │ ...:'2.0-0' }}:{{ ([32mjornadaInicio.getMinutes() ?? 0[37m) | number:'2.0...
+          ╵                    [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component HorariosComponent.
+
+    src/app/pages/horarios/horarios.component.ts:63:15:
+[37m      63 │   templateUrl: [32m'./horarios.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad ?? 0[37m"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:151:41:
+[37m      151 │ ...                  [value]="[32mcantidades[i] ?? insumo.cantidad[37m ?? 0"
+          ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/mermas/mermas.component.html:158:34:
+[37m      158 │ ...                ${{ (([32mcantidades[i] ?? 0[37m) * (insumo.costoUnita...
+          ╵                          [32m~~~~~~~~~~~~~~~~~~[0m
+
+  Warning occurs in the template of component MermasComponent.
+
+    src/app/pages/mermas/mermas.component.ts:43:15:
+[37m      43 │   templateUrl: [32m'./mermas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/pages/recetas/recetas.component.html:437:46:
+[37m      437 │ ...disabled]="!subRecetaNombre?.[32mtrim[37m() || !subRecetaLines().lengt...
+          ╵                                 [32m~~~~[0m
+
+  Warning occurs in the template of component RecetasComponent.
+
+    src/app/pages/recetas/recetas.component.ts:48:15:
+[37m      48 │   templateUrl: [32m'./recetas.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+Page reload sent to client(s).

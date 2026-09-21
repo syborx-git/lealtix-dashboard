@@ -17,6 +17,24 @@ export interface SalesSummaryDTO {
   transactionCount: number;
 }
 
+export interface SalesByPeriodDTO {
+  periodStart: string;
+  totalSales: number;
+  identifiedSales: number;
+  generalSales: number;
+}
+
+export interface TopProductDTO {
+  productName: string;
+  totalQuantity: number;
+  totalRevenue: number;
+}
+
+export interface SalesByCategoryDTO {
+  categoryName: string;
+  totalSales: number;
+}
+
 export interface CampaignPerformanceDTO {
   campaignId: number;
   campaignName: string;

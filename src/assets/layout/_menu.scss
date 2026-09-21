@@ -5,17 +5,18 @@
 .layout-sidebar {
     position: fixed;
     width: 20rem;
-    height: calc(100vh - 4.5rem); // Desde la topbar hasta abajo
+    height: 100vh;
     z-index: 999;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     user-select: none;
-    top: 4.5rem; // Justo debajo de la topbar
-    left: 0; // Pegado al borde izquierdo
+    top: 0;
+    left: 0;
     border-radius: 0;
     border-right: 1px solid var(--lealtix-glass-border);
     transition:
+        width var(--layout-section-transition-duration),
         transform var(--layout-section-transition-duration),
         left var(--layout-section-transition-duration),
         background-color 0.3s ease,
@@ -35,7 +36,6 @@
     min-height: 0;
     padding-right: 2px;
 }
-
 .layout-menu {
     margin: 0;
     padding: 0;
@@ -115,7 +115,7 @@
 
             .layout-menuitem-icon {
                 margin-right: 0.7rem;
-                font-size: 1.1rem;
+                font-size: 1.5rem;
                 color: var(--lealtix-slate-400);
                 transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             }
@@ -281,3 +281,121 @@
     background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, transparent 100%);
   }
 }
+
+/* ===== Encabezado del Sidebar (marca Lealtix + botón pin) ===== */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.25rem 0.4rem 0.75rem 0.4rem;
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #696cff 0%, #a1a3ff 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.logo-img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.logo-text {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #566a7f;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+}
+
+.toggle-pin-btn {
+  background: transparent;
+  border: none;
+  color: #696cff;
+  cursor: pointer;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+}
+
+/* ===== Mini Sidebar (colapsado) ===== */
+.layout-sidebar {
+  transition:
+    width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    transform var(--layout-section-transition-duration),
+    left var(--layout-section-transition-duration),
+    background-color 0.3s ease,
+    border-color 0.3s ease;
+}
+
+.layout-sidebar.sidebar-collapsed {
+  width: 80px !important;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+.layout-sidebar.sidebar-collapsed .logo-text,
+.layout-sidebar.sidebar-collapsed .layout-menuitem-text,
+.layout-sidebar.sidebar-collapsed .layout-menuitem-root-text,
+.layout-sidebar.sidebar-collapsed .sidebar-footer {
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.layout-sidebar.sidebar-collapsed .layout-menuitem-root-text {
+  display: none;
+}
+
+.layout-sidebar.sidebar-collapsed .layout-menuitem-link,
+.layout-sidebar.sidebar-collapsed .menu-link {
+  justify-content: center;
+}
+
+.layout-sidebar.sidebar-collapsed .layout-menuitem-icon {
+  margin-right: 0;
+}
+
+/* ===== Hover (despliegue temporal) ===== */
+.layout-sidebar.sidebar-collapsed.hover-expanded {
+  width: 20rem !important;
+  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.15);
+}
+
+.layout-sidebar.sidebar-collapsed.hover-expanded .logo-text,
+.layout-sidebar.sidebar-collapsed.hover-expanded .layout-menuitem-text,
+.layout-sidebar.sidebar-collapsed.hover-expanded .layout-menuitem-root-text,
+.layout-sidebar.sidebar-collapsed.hover-expanded .sidebar-footer {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.layout-sidebar.sidebar-collapsed.hover-expanded .layout-menuitem-root-text {
+  display: flex;
+}
+
+.layout-sidebar.sidebar-collapsed.hover-expanded .layout-menuitem-link,
+.layout-sidebar.sidebar-collapsed.hover-expanded .menu-link {
+  justify-content: flex-start;
+}
+

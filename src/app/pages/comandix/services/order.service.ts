@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { throwError } from 'rxjs';
 import {
   TenantClientOrderCreateRequest,
@@ -11,8 +11,21 @@ import {
   UpdateOrderStatusResponse,
   UpdateOrderStatusRequest,
   RecordPaymentRequest,
-  RecordPaymentResponse
+  RecordPaymentResponse,
+  SplitOrderRequest,
+  SplitOrderResponse,
+  SeatListResponse,
+  AddSeatRequest,
+  AddSeatResponse,
+  UpdateSeatAliasRequest,
+  UpdateSeatAliasResponse,
+  AssignItemToSeatRequest,
+  AssignItemToSeatResponse,
+  SettleSeatsRequest,
+  SettleSeatsResponse,
+  SalesReportRow
 } from '../models/order.model';
+import { GenericResponse } from '@/models/generic-response.model';
 import { environment } from '@/pages/commons/environment';
 
 @Injectable({
@@ -34,7 +47,12 @@ export class OrderService {
    * Crea una nueva orden de cliente
    */
   createOrder(order: TenantClientOrderCreateRequest): Observable<TenantClientOrderResponse> {
-    return this.http.post<TenantClientOrderResponse>(this.baseUrl, order).pipe(
+    return this.http.post<{ object?: TenantClientOrderResponse } | TenantClientOrderResponse>(this.baseUrl, order).pipe(
+      map((response): TenantClientOrderResponse =>
+        'object' in response && response.object
+          ? response.object
+          : response as TenantClientOrderResponse
+      ),
       catchError((error) => {
         console.error('Error al crear orden:', error);
         return throwError(() => error);
@@ -44,17 +62,25 @@ export class OrderService {
 
   /**
    * Actualiza una orden existente (items, cantidades, comentarios, totales)
-   * Intenta PUT /{orderId} y si el backend no lo soporta, hace fallback a PATCH /{orderId}
+   * Usa PUT /{orderId} y si el backend anterior no lo soporta (404/405),
+   * hace fallback a PATCH /{orderId}. Otros errores (p. ej. prórroga vencida 400)
+   * se propagan sin sobrescribirlos para mostrar el mensaje real.
    */
   updateOrder(orderId: string, order: TenantClientOrderUpdateRequest): Observable<TenantClientOrderResponse> {
     return this.http.put<TenantClientOrderResponse>(`${this.baseUrl}/${orderId}`, order).pipe(
       catchError((putError) => {
-        console.warn('PUT no disponible para actualización de orden, intentando PATCH:', putError);
-        return this.http.patch<TenantClientOrderResponse>(`${this.baseUrl}/${orderId}`, order);
-      }),
-      catchError((error) => {
-        console.error('Error al actualizar orden:', error);
-        return throwError(() => error);
+        const status = putError?.status;
+        if (status === 404 || status === 405) {
+          console.warn('PUT no disponible para actualización de orden, intentando PATCH:', putError);
+          return this.http.patch<TenantClientOrderResponse>(`${this.baseUrl}/${orderId}`, order).pipe(
+            catchError((patchError) => {
+              console.error('Error al actualizar orden:', patchError);
+              return throwError(() => patchError);
+            })
+          );
+        }
+        console.error('Error al actualizar orden:', putError);
+        return throwError(() => putError);
       })
     );
   }
@@ -132,6 +158,116 @@ export class OrderService {
       }),
       catchError((error) => {
         console.error('Error al registrar pago de orden:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Divide una cuenta: mueve los artículos indicados de la comanda a una
+   * comanda nueva lista para pagar.
+   * POST /{orderId}/split
+   */
+  splitOrder(orderId: string, request: SplitOrderRequest): Observable<SplitOrderResponse> {
+    return this.http.post<SplitOrderResponse>(`${this.baseUrl}/${orderId}/split`, request).pipe(
+      catchError((error) => {
+        console.error('Error al dividir cuenta:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  // ==================== ASIENTOS (comanda por personas) ====================
+
+  /**
+   * Lista los asientos (personas) de una comanda.
+   * GET /{orderId}/seats
+   */
+  getSeats(orderId: string): Observable<SeatListResponse> {
+    return this.http.get<SeatListResponse>(`${this.baseUrl}/${orderId}/seats`).pipe(
+      catchError((error) => {
+        console.warn('No se pudieron cargar los asientos de la comanda:', orderId, error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Añade un asiento (persona) a la comanda.
+   * POST /{orderId}/seats
+   */
+  addSeat(orderId: string, request: AddSeatRequest): Observable<AddSeatResponse> {
+    const body: AddSeatRequest = { ...request, orderId };
+    return this.http.post<AddSeatResponse>(`${this.baseUrl}/${orderId}/seats`, body).pipe(
+      catchError((error) => {
+        console.warn('No se pudo añadir el asiento:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Renombra el alias (apodo) de un asiento.
+   * PATCH /seats/{seatId}/alias
+   */
+  updateSeatAlias(seatId: string, alias: string): Observable<UpdateSeatAliasResponse> {
+    const body: UpdateSeatAliasRequest = { alias };
+    return this.http.patch<UpdateSeatAliasResponse>(`${this.baseUrl}/seats/${seatId}/alias`, body).pipe(
+      catchError((error) => {
+        console.warn('No se pudo renombrar el asiento:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Asigna artículos de la comanda a un asiento.
+   * POST /{orderId}/seats/{seatId}/items
+   */
+  assignItemToSeat(
+    orderId: string,
+    seatId: string,
+    itemIds: (string | number)[]
+  ): Observable<AssignItemToSeatResponse> {
+    const body: AssignItemToSeatRequest = { seatId, itemIds };
+    return this.http.post<AssignItemToSeatResponse>(`${this.baseUrl}/${orderId}/seats/${seatId}/items`, body).pipe(
+      catchError((error) => {
+        console.warn('No se pudo asignar el artículo al asiento:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Liquida los asientos seleccionados de una comanda (cierre por persona).
+   * POST /{orderId}/seats/settle
+   */
+  settleSeats(orderId: string, request: SettleSeatsRequest): Observable<SettleSeatsResponse> {
+    return this.http.post<SettleSeatsResponse>(`${this.baseUrl}/${orderId}/seats/settle`, request).pipe(
+      catchError((error) => {
+        console.warn('No se pudieron liquidar los asientos:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Reporte general de ventas/comandas de un tenant en un rango de fechas.
+   * GET /tenant/{tenantId}/report?from=&to=   → List<SalesReportRowDTO>
+   */
+  getSalesReport(
+    tenantId: number,
+    from: string,
+    to: string
+  ): Observable<SalesReportRow[]> {
+    let params = new HttpParams()
+      .set('tenantId', tenantId.toString())
+      .set('from', from)
+      .set('to', to);
+    return this.http.get<GenericResponse<SalesReportRow[]>>(`${this.baseUrl}/tenant/${tenantId}/report`, { params }).pipe(
+      map((response) => response.object || []),
+      catchError((error) => {
+        console.error('Error al obtener reporte de ventas:', error);
         return throwError(() => error);
       })
     );
