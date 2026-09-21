@@ -76,6 +76,40 @@ export class LandingEditorComponent implements OnInit {
             }
         } else if (event.data?.type === 'lealtix-save-site') {
             this.saveCustomSite(event.data.html);
+        } else if (event.data?.type === 'lealtix-ready') {
+            this.pushMenuToBuilder();
+        }
+    }
+
+    // Envía los productos registrados en la BD al Web Studio (menú bloqueado)
+    pushMenuToBuilder(): void {
+        if (!this.tenantId || this.tenantId <= 0) {
+            return;
+        }
+        this.productService.getProductsByTenantId(this.tenantId).subscribe({
+            next: (resp: any) => {
+                const raw = resp?.object ?? resp ?? [];
+                const products = (Array.isArray(raw) ? raw : []).map((p: any) => ({
+                    name: p.name,
+                    description: p.description,
+                    price: p.price,
+                    imageUrl: p.imageUrl,
+                    categoryName: p.categoryName
+                }));
+                this.postToBuilder({ type: 'lealtix-menu-from-db', payload: { products } });
+                this.postToBuilder({ type: 'lealtix-menu-lock', locked: true });
+            },
+            error: () => {
+                this.postToBuilder({ type: 'lealtix-menu-lock', locked: true });
+            }
+        });
+    }
+
+    private postToBuilder(message: any): void {
+        try {
+            this.modFrame?.nativeElement?.contentWindow?.postMessage(message, '*');
+        } catch (e) {
+            // ignore
         }
     }
 
@@ -236,6 +270,7 @@ export class LandingEditorComponent implements OnInit {
 
         if (this.tenantId > 0) {
             this.checkBannerConditions();
+            this.pushMenuToBuilder();
         }
     }
 
