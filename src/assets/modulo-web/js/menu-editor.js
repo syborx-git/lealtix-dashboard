@@ -25,10 +25,11 @@ export class MenuEditor {
             </h3>
             <p class="editor-section-desc">Organiza tus categorías y platillos para que tus clientes exploren tu carta.</p>
           </div>
+          ${this.locked ? '' : `
           <button class="btn-builder-primary btn-sm" id="btn-open-add-product">
             <i class="pi pi-plus"></i>
             <span>Nuevo Platillo</span>
-          </button>
+          </button>`}
         </div>
 
         <!-- Barra de Categorías -->
@@ -38,16 +39,18 @@ export class MenuEditor {
               <div class="category-chip ${cat.active ? 'active' : ''}">
                 <span>${cat.icon || '🍽️'} ${cat.name}</span>
                 <span class="category-count">(${products.filter(p => p.categoryId === cat.id).length})</span>
+                ${this.locked ? '' : `
                 <button class="btn-cat-delete" data-cat-id="${cat.id}" title="Eliminar categoría">
                   <i class="pi pi-times"></i>
-                </button>
+                </button>`}
               </div>
             `).join('')}
           </div>
+          ${this.locked ? '' : `
           <button class="btn-builder-ghost btn-sm" id="btn-add-category">
             <i class="pi pi-plus-circle"></i>
             <span>Agregar Categoría</span>
-          </button>
+          </button>`}
         </div>
 
         <!-- Lista de Productos -->
@@ -70,6 +73,7 @@ export class MenuEditor {
                       <h4 class="product-item-name">${prod.name}</h4>
                       <p class="product-item-desc">${prod.description || 'Sin descripción'}</p>
                     </div>
+                    ${this.locked ? '' : `
                     <div class="product-item-actions">
                       <button class="btn-icon-action btn-edit-product" data-prod-id="${prod.id}" title="Editar">
                         <i class="pi pi-pencil"></i>
@@ -77,7 +81,7 @@ export class MenuEditor {
                       <button class="btn-icon-action btn-delete-product text-danger" data-prod-id="${prod.id}" title="Eliminar">
                         <i class="pi pi-trash"></i>
                       </button>
-                    </div>
+                    </div>`}
                   </div>
                 `;
               }).join('')}
@@ -87,10 +91,11 @@ export class MenuEditor {
               <i class="pi pi-inbox"></i>
               <h4>No tienes platillos agregados</h4>
               <p>Comienza agregando tu primer producto para mostrarlo en el menú de tu sitio web.</p>
+              ${this.locked ? '' : `
               <button class="btn-builder-primary btn-sm mt-3" id="btn-empty-add-product">
                 <i class="pi pi-plus"></i>
                 <span>Crear Primer Platillo</span>
-              </button>
+              </button>`}
             </div>
           `}
         </div>
