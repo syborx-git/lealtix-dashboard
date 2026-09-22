@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lealtix Site Builder - Creador de Sitios Web Modular</title>
+
+  <!-- Google Fonts Preconnect -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- 7 Curated Google Fonts & Icons -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+    rel="stylesheet">
+
+  <!-- PrimeIcons & Tailwind for utility classes -->
+  <link rel="stylesheet" href="https://unpkg.com/primeicons/primeicons.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Studio Builder CSS & Dynamic Preview CSS -->
+  <link rel="stylesheet" href="css/builder.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/preview.css">
+</head>
+
+<body>
+
+  <!-- =========================================================================
+       TOP STUDIO HEADER
+       ========================================================================= -->
+  <header class="studio-header">
+    <!-- Brand Logo & Module Name -->
+    <div class="studio-logo-area">
+      <div class="studio-logo-badge">
+        <svg viewBox="0 0 100 100" fill="none">
+          <polygon points="50,6 94,50 50,94 6,50" stroke="#d4af37" stroke-width="8.5" fill="none" />
+          <polygon points="50,28 72,50 50,72 28,50" stroke="#fced96" stroke-width="7.5" fill="none" />
+        </svg>
+      </div>
+      <div class="studio-title-box">
+        <div class="flex items-center gap-2">
+          <span class="studio-brand">LEALTIX</span>
+          <span
+            class="text-[10px] bg-[#2dd4bf]/15 text-[#2dd4bf] border border-[#2dd4bf]/30 font-mono px-1.5 py-0.5 rounded font-bold">WEB
+            STUDIO</span>
+        </div>
+        <span class="studio-tagline">CONSTRUCTOR MODULAR PARA CLIENTES</span>
+      </div>
+    </div>
+
+    <!-- Responsive Viewport Switcher -->
+    <div class="viewport-switcher">
+      <button class="btn-viewport active" data-device="desktop" title="Vista Escritorio">
+        <i class="pi pi-desktop"></i>
+        <span class="hidden sm:inline">Escritorio</span>
+      </button>
+      <button class="btn-viewport" data-device="tablet" title="Vista Tablet">
+        <i class="pi pi-tablet"></i>
+        <span class="hidden sm:inline">Tablet</span>
+      </button>
+      <button class="btn-viewport" data-device="mobile" title="Vista Móvil">
+        <i class="pi pi-mobile"></i>
+        <span class="hidden sm:inline">Móvil</span>
+      </button>
+    </div>
+
+    <!-- Quick Studio Actions -->
+    <div class="studio-actions">
+      <button id="mod-fullscreen-btn" class="btn-builder-ghost" type="button"
+        title="Expandir/regresar del Dashboard de Lealtix">
+        <i class="pi pi-expand" id="mod-fullscreen-icon"></i>
+        <span class="hidden md:inline" id="mod-fullscreen-label">Pantalla completa</span>
+      </button>
+      <button class="btn-builder-ghost" id="btn-reset-defaults" title="Restablecer valores por defecto">
+        <i class="pi pi-refresh"></i>
+        <span class="hidden md:inline">Restablecer</span>
+      </button>
+      <button class="btn-builder-ghost" id="btn-preview-fullscreen" title="Vista Previa Pantalla Completa">
+        <i class="pi pi-eye"></i>
+        <span class="hidden md:inline">Vista Previa</span>
+      </button>
+      <button class="btn-builder-primary" id="btn-save-site">
+        <i class="pi pi-save"></i>
+        <span>Guardar Cambios</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       MAIN WORKSPACE (SPLIT: 1. PUZZLE EDITOR / 2. LIVE CANVAS)
+       ========================================================================= -->
+  <main class="studio-workspace">
+
+    <!-- LEFT PANEL: MODULAR PUZZLE & CUSTOMIZATION TABS -->
+    <aside class="studio-sidebar">
+      <nav class="sidebar-tabs">
+        <button class="sidebar-tab-btn active" data-tab="tab-pieces">
+          <i class="pi pi-th-large"></i>
+          <span>Secciones</span>
+        </button>
+        <button class="sidebar-tab-btn" data-tab="tab-colors">
+          <i class="pi pi-palette"></i>
+          <span>Colores</span>
+        </button>
+        <button class="sidebar-tab-btn" data-tab="tab-fonts">
+          <i class="pi pi-font"></i>
+          <span>Tipografías</span>
+        </button>
+        <button class="sidebar-tab-btn" data-tab="tab-content">
+          <i class="pi pi-images"></i>
+          <span>Imágenes & Textos</span>
+        </button>
+        <button class="sidebar-tab-btn" data-tab="tab-menu">
+          <i class="pi pi-book"></i>
+          <span>Menú & Carta</span>
+        </button>
+      </nav>
+
+      <!-- Dynamic Tab Content Area -->
+      <div class="sidebar-content-area" id="sidebar-content-area">
+        <!-- Rendered by JS -->
+      </div>
+    </aside>
+
+    <!-- RIGHT PANEL: INTERACTIVE LIVE CANVAS PREVIEW -->
+    <section class="studio-canvas-area" id="studio-canvas-area">
+
+      <!-- Exit Fullscreen Button (Only visible in fullscreen mode) -->
+      <button class="btn-exit-fullscreen" id="btn-exit-fullscreen">
+        <i class="pi pi-times"></i>
+        <span>Salir de Vista Previa</span>
+      </button>
+
+      <!-- Simulated Device Frame -->
+      <div class="preview-device-frame mode-desktop" id="preview-device-frame">
+        <div class="device-notch">
+          <div class="device-notch-bar"></div>
+        </div>
+
+        <!-- Rendered Website Canvas -->
+        <div class="site-preview-canvas" id="site-preview-canvas">
+          <!-- Live pieces injected here -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- =========================================================================
+       MODAL CONTAINER FOR PRODUCT/CATEGORY EDITING
+       ========================================================================= -->
+  <div class="builder-modal-backdrop hidden" id="builder-modal-backdrop">
+    <div class="builder-modal-box" id="builder-modal-content">
+      <!-- Modal Content rendered by MenuEditor JS -->
+    </div>
+  </div>
+
+  <!-- Toast Notification Feedback -->
+  <div class="builder-toast" id="builder-toast">
+    <i class="pi pi-check-circle"></i>
+    <span id="toast-message">Operación exitosa</span>
+  </div>
+
+  <!-- App Bootstrap JS -->
+  <script type="module" src="js/app.js"></script>
+
+  <!-- Comunicación con el Dashboard de Lealtix (pantalla completa) -->
+  <script>
+    (function () {
+      const btn = document.getElementById('mod-fullscreen-btn');
+      const icon = document.getElementById('mod-fullscreen-icon');
+      const label = document.getElementById('mod-fullscreen-label');
+      if (btn) {
+        btn.addEventListener('click', function () {
+          try {
+            window.parent.postMessage({ type: 'lealtix-toggle-fullscreen' }, '*');
+          } catch (e) {}
+        });
+      }
+      window.addEventListener('message', function (event) {
+        if (event.data && event.data.type === 'lealtix-fullscreen-state') {
+          const full = !!event.data.fullscreen;
+          if (label) label.textContent = full ? 'Ver en Dashboard' : 'Pantalla completa';
+          if (icon) icon.className = full ? 'pi pi-desktop' : 'pi pi-expand';
+        }
+        if (event.data && event.data.type === 'lealtix-save-result') {
+          const toast = document.getElementById('builder-toast');
+          const toastMsg = document.getElementById('toast-message');
+          if (toast && toastMsg) {
+            toastMsg.textContent = event.data.ok ? 'Sitio guardado correctamente' : 'Error al guardar el sitio';
+            toast.classList.add('show');
+            setTimeout(function () { toast.classList.remove('show'); }, 2800);
+          }
+        }
+        if (event.data && event.data.type === 'lealtix-menu-from-db' && window.lealtixApp) {
+          window.lealtixApp.setMenuFromDb(event.data.payload);
+        }
+        if (event.data && event.data.type === 'lealtix-menu-lock' && window.lealtixApp) {
+          window.lealtixApp.setMenuLocked(!!event.data.locked);
+        }
+        if (event.data && event.data.type === 'lealtix-ready-check' && window.lealtixApp) {
+          try { window.parent.postMessage({ type: 'lealtix-ready' }, '*'); } catch (e) {}
+        }
+      });
+    })();
+  </script>
+</body>
+
+</html>
