@@ -1825,6 +1825,88 @@ body .p-dialog.minimal-modal .p-selectbutton {
   width: 100% !important;
 }
 
+/* Panel de opciones de p-select con scroll propio (appendTo="body") */
+body .p-select-overlay.mesa-select-panel {
+  z-index: 1200 !important;
+}
+
+body .p-select-overlay.mesa-select-panel .p-select-list-container,
+body .p-select-overlay.mesa-select-panel .p-select-list {
+  max-height: 320px !important;
+  overflow-y: auto !important;
+}
+
+/* --- Popover de mesas: uniformidad + contraste de botones --- */
+body .mesa-popover .estado-btns .p-button,
+body .mesa-popover .popover-actions p-button .p-button {
+  width: 100% !important;
+  justify-content: center !important;
+  font-weight: 600 !important;
+}
+
+body .mesa-popover .estado-btns .p-button {
+  padding-left: 0.3rem !important;
+  padding-right: 0.3rem !important;
+  font-size: 0.8rem !important;
+  white-space: nowrap;
+}
+
+/* Activo (relleno sólido): texto blanco puro sobre color lo bastante oscuro */
+body .mesa-popover .estado-btns .p-button:not(.p-button-outlined) {
+  color: #ffffff !important;
+}
+
+body .mesa-popover .estado-btns .p-button-success:not(.p-button-outlined) {
+  background-color: #15803d !important;
+  border-color: #15803d !important;
+}
+
+body .mesa-popover .estado-btns .p-button-danger:not(.p-button-outlined) {
+  background-color: #dc2626 !important;
+  border-color: #dc2626 !important;
+}
+
+body .mesa-popover .estado-btns .p-button-warn:not(.p-button-outlined) {
+  background-color: #b45309 !important;
+  border-color: #b45309 !important;
+}
+
+/* Inactivo (outlined): texto con el color del borde, sin fondo sólido */
+body .mesa-popover .estado-btns .p-button.p-button-outlined {
+  background: transparent !important;
+}
+
+body .mesa-popover .estado-btns .p-button-success.p-button-outlined {
+  color: #15803d !important;
+  border-color: #15803d !important;
+}
+
+body .mesa-popover .estado-btns .p-button-danger.p-button-outlined {
+  color: #b91c1c !important;
+  border-color: #dc2626 !important;
+}
+
+body .mesa-popover .estado-btns .p-button-warn.p-button-outlined {
+  color: #b45309 !important;
+  border-color: #b45309 !important;
+}
+
+/* Eliminar: relleno rojo con texto blanco (contraste AA) */
+body .mesa-popover .popover-actions .p-button-danger {
+  background-color: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+body .mesa-popover .popover-actions p-button.popover-separar .p-button {
+  font-weight: 500 !important;
+}
+
+body .mesa-popover p-button.popover-full .p-button {
+  width: 100% !important;
+  font-weight: 500 !important;
+}
+
 /* --- Distribución vertical 100% --- */
 body .p-dialog.minimal-modal .p-dialog-content .grid {
   display: grid;

@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { GenericResponse } from '@/models/generic-response.model';
 import { environment } from '@/pages/commons/environment';
-import { MesaDTO, MesaRequest, AsignarMeseroRequest, MesaEstado } from '../models/mesa.model';
+import { MesaDTO, MesaRequest, AsignarMeseroRequest, MesaEstado, MesaForma, PosicionRequest, GrupoRequest } from '../models/mesa.model';
 
 @Injectable({ providedIn: 'root' })
 export class MesaService {
@@ -24,7 +24,7 @@ export class MesaService {
             .pipe(map(resp => resp.object));
     }
 
-    updateMesa(id: number, tenantId: number, request: MesaRequest): Observable<MesaDTO> {
+    updateMesa(id: number, tenantId: number, request: Partial<MesaRequest>): Observable<MesaDTO> {
         return this.http
             .put<GenericResponse<MesaDTO>>(`${this.baseUrl}/${id}`, request, { params: { tenantId: tenantId.toString() } })
             .pipe(map(resp => resp.object));
@@ -43,6 +43,33 @@ export class MesaService {
                 headers: { 'Content-Type': 'application/json' }
             })
             .pipe(map(resp => resp.object));
+    }
+
+    updatePosicion(id: number, tenantId: number, request: PosicionRequest): Observable<MesaDTO> {
+        return this.http
+            .put<GenericResponse<MesaDTO>>(`${this.baseUrl}/${id}/posicion`, request, { params: { tenantId: tenantId.toString() } })
+            .pipe(map(resp => resp.object));
+    }
+
+    updateForma(id: number, tenantId: number, forma: MesaForma): Observable<MesaDTO> {
+        return this.http
+            .put<GenericResponse<MesaDTO>>(`${this.baseUrl}/${id}/forma`, JSON.stringify(forma), {
+                params: { tenantId: tenantId.toString() },
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .pipe(map(resp => resp.object));
+    }
+
+    unirMesas(tenantId: number, request: GrupoRequest): Observable<MesaDTO[]> {
+        return this.http
+            .post<GenericResponse<MesaDTO[]>>(`${this.baseUrl}/grupo/unir`, request, { params: { tenantId: tenantId.toString() } })
+            .pipe(map(resp => resp.object || []));
+    }
+
+    separarGrupo(tenantId: number, grupoId: string): Observable<MesaDTO[]> {
+        return this.http
+            .delete<GenericResponse<MesaDTO[]>>(`${this.baseUrl}/grupo`, { params: { tenantId: tenantId.toString(), grupoId } })
+            .pipe(map(resp => resp.object || []));
     }
 
     deleteMesa(id: number, tenantId: number): Observable<any> {

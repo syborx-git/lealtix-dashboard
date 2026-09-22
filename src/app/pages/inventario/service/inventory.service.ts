@@ -95,8 +95,8 @@ createBebida(tenantId: number, nombre: string, unidad: string, stock: number, st
     return this.http.delete<any>(`${this.baseUrl}/recipes/${recipeId}`);
   }
 
-  updateRecipeIngredient(recipeId: number, cantidad: number, modificable: boolean): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/recipes/${recipeId}`, { cantidad, modificable });
+  updateRecipeIngredient(recipeId: number, cantidad: number, importancia: string, precio: number = 0): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/recipes/${recipeId}`, { cantidad, importancia, precio });
   }
 
   getAdditionals(dishId: number): Observable<any> {
@@ -107,8 +107,8 @@ createBebida(tenantId: number, nombre: string, unidad: string, stock: number, st
     return this.http.post<any>(`${this.baseUrl}/dish/${dishId}/additionals`, { insumoId, cantidad, precio });
   }
 
-  updateAdditional(additionalId: number, cantidad: number, precio: number): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/additionals/${additionalId}`, { cantidad, precio });
+  updateAdditional(additionalId: number, cantidad: number, importancia: string, precio: number = 0): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/additionals/${additionalId}`, { cantidad, importancia, precio });
   }
 
   removeAdditional(additionalId: number): Observable<any> {
@@ -135,8 +135,12 @@ createBebida(tenantId: number, nombre: string, unidad: string, stock: number, st
     return this.http.get<any>(`${this.baseUrl}/dish/${dishId}/sub-recetas`);
   }
 
-  assignSubReceta(dishId: number, subRecetaId: number): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/dish/${dishId}/sub-recetas/${subRecetaId}`, null);
+  assignSubReceta(dishId: number, subRecetaId: number, importancia: string = 'BASE', precio: number = 0): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/dish/${dishId}/sub-recetas/${subRecetaId}`, { importancia, precio });
+  }
+
+  updateSubRecetaImportance(dishId: number, subRecetaId: number, importancia: string, precio: number = 0): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/dish/${dishId}/sub-recetas/${subRecetaId}`, { importancia, precio });
   }
 
   removeSubRecetaFromDish(dishId: number, subRecetaId: number): Observable<any> {

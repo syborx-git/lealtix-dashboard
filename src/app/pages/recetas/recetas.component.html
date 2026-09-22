@@ -218,8 +218,8 @@
                         <p-inputnumber [(ngModel)]="recipeCantidad" [min]="0" [step]="1" styleClass="w-full" />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-1">Tipo de ingrediente</label>
-                        <p-select [options]="tipoIngredienteOptions" optionLabel="label" optionValue="value"
+                        <label class="block text-sm font-medium mb-1">Importancia en la receta</label>
+                        <p-select [options]="importanciaOptions" optionLabel="label" optionValue="value"
                             [(ngModel)]="recipeTipoIngrediente" styleClass="w-full" appendTo="body" />
                     </div>
                     <div *ngIf="recipeTipoIngrediente === 'ADICIONAL'">
@@ -266,21 +266,24 @@
                         </div>
                     </ng-container>
                     <ng-template #editRow>
-                        <div class="recipe-line-edit">
-                            <span class="recipe-line-name">{{ ing.insumoName }}</span>
-                            <p-inputnumber [(ngModel)]="editRecipeCantidad" [min]="0" [step]="1" styleClass="recipe-edit-qty" />
-                            <ng-container *ngIf="ing.kind === 'ADDITIONAL'; else recipeEditBlock">
-                                <p-inputnumber [(ngModel)]="editRecipePrecio" [min]="0" [step]="0.5" mode="currency"
-                                    currency="MXN" locale="en-US" styleClass="recipe-edit-qty" />
-                            </ng-container>
-                            <ng-template #recipeEditBlock>
-                                <p-checkbox [(ngModel)]="editRecipeModificable" inputId="editRecipeMod" label="Modificable" />
-                            </ng-template>
-                            <p-button icon="pi pi-check" severity="success" [rounded]="true" [text]="true"
-                                pTooltip="Guardar" tooltipPosition="top" [disabled]="editRecipeCantidad <= 0"
-                                (onClick)="saveEditIngredient()"></p-button>
-                            <p-button icon="pi pi-times" severity="secondary" [rounded]="true" [text]="true"
-                                pTooltip="Cancelar" tooltipPosition="top" (onClick)="cancelEditIngredient()"></p-button>
+                        <div class="recipe-line-edit recipe-line-edit-full">
+                            <div class="recipe-edit-row-1">
+                                <span class="recipe-line-name">{{ ing.insumoName }}</span>
+                                <p-inputnumber [(ngModel)]="editRecipeCantidad" [min]="0" [step]="1" styleClass="recipe-edit-qty" />
+                                <p-select [options]="importanciaOptions" optionLabel="label" optionValue="value"
+                                    [(ngModel)]="editRecipeImportancia" styleClass="recipe-edit-importancia" appendTo="body" />
+                            </div>
+                            <div class="recipe-edit-row-2">
+                                <p-inputnumber *ngIf="editRecipeImportancia === 'ADICIONAL'"
+                                    [(ngModel)]="editRecipePrecio" [min]="0" [step]="0.5" mode="currency"
+                                    currency="MXN" locale="en-US" styleClass="recipe-edit-qty" placeholder="Precio extra" />
+                                <span *ngIf="editRecipeImportancia === 'ADICIONAL'" class="text-sm text-500">Precio extra ($) a cobrar al cliente</span>
+                                <p-button icon="pi pi-check" severity="success" [rounded]="true" [text]="true"
+                                    pTooltip="Guardar" tooltipPosition="top" [disabled]="editRecipeCantidad <= 0"
+                                    (onClick)="saveEditIngredient()"></p-button>
+                                <p-button icon="pi pi-times" severity="secondary" [rounded]="true" [text]="true"
+                                    pTooltip="Cancelar" tooltipPosition="top" (onClick)="cancelEditIngredient()"></p-button>
+                            </div>
                         </div>
                     </ng-template>
                 </div>
@@ -306,30 +309,64 @@
                         Las sub-recetas suman sus insumos a este producto para el cálculo de stock y mermas.
                     </p>
 
-                    <div class="flex align-items-center gap-2 mb-2">
-                        <p-select
-                            [options]="subRecetas()"
-                            optionLabel="name"
-                            optionValue="id"
-                            [(ngModel)]="selectedSubRecetaId"
-                            placeholder="Selecciona una sub-receta…"
-                            styleClass="w-full"
-                            appendTo="body"
-                        ></p-select>
-                        <p-button
-                            icon="pi pi-plus"
-                            label="Asignar"
-                            [loading]="subRecetaAssignLoading()"
-                            [disabled]="!selectedSubRecetaId || subRecetas().length === 0"
-                            (onClick)="assignSubRecetaToCurrent()"
-                        ></p-button>
+                    <div class="subrecetas-assign-form">
+                        <div class="flex align-items-center gap-2 mb-2">
+                            <p-select
+                                [options]="subRecetas()"
+                                optionLabel="name"
+                                optionValue="id"
+                                [(ngModel)]="selectedSubRecetaId"
+                                placeholder="Selecciona una sub-receta…"
+                                styleClass="w-full"
+                                appendTo="body"
+                            ></p-select>
+                        </div>
+                        <div class="flex align-items-center gap-2">
+                            <p-select
+                                [options]="importanciaOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                [(ngModel)]="selectedSubImportancia"
+                                styleClass="subreceta-importancia-select"
+                                appendTo="body"
+                            ></p-select>
+                            <p-inputnumber *ngIf="selectedSubImportancia === 'ADICIONAL'"
+                                [(ngModel)]="selectedSubPrecio" [min]="0" [step]="0.5" mode="currency"
+                                currency="MXN" locale="en-US" styleClass="subreceta-precio" placeholder="Precio extra" />
+                            <span *ngIf="selectedSubImportancia === 'ADICIONAL'" class="text-sm text-500">costo extra al cliente</span>
+                            <p-button
+                                icon="pi pi-plus"
+                                label="Asignar"
+                                [loading]="subRecetaAssignLoading()"
+                                [disabled]="!selectedSubRecetaId || subRecetas().length === 0"
+                                (onClick)="assignSubRecetaToCurrent()"
+                            ></p-button>
+                        </div>
                     </div>
 
                     <div class="subreceta-assigned" *ngFor="let sr of assignedSubRecetas()">
-                        <span class="font-medium">{{ sr.name }}</span>
-                        <span class="text-sm text-500">{{ sr.insumos?.length || 0 }} insumo(s)</span>
-                        <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [text]="true"
-                            pTooltip="Quitar sub-receta" tooltipPosition="top" (onClick)="removeAssignedSubReceta(sr)"></p-button>
+                        <div class="subreceta-assigned-info">
+                            <span class="font-medium">{{ sr.name }}</span>
+                            <span class="text-sm text-500">{{ sr.insumos?.length || 0 }} insumo(s)</span>
+                            <span class="ing-type-badge" [ngClass]="sr.importancia === 'ADICIONAL' ? 'badge-adicional' : (sr.importancia === 'MODIFICABLE' ? 'badge-modificable' : 'badge-base')">
+                                {{ sr.importancia === 'ADICIONAL' ? ('+$' + (sr.precio ?? 0)) : (sr.importancia === 'MODIFICABLE' ? 'modificable' : 'base') }}
+                            </span>
+                            <p-select
+                                [options]="importanciaOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                [(ngModel)]="sr.importancia"
+                                (onChange)="saveAssignedSubImportancia(sr)"
+                                styleClass="subreceta-edit-importancia"
+                                appendTo="body"
+                            ></p-select>
+                            <p-inputnumber *ngIf="sr.importancia === 'ADICIONAL'"
+                                [(ngModel)]="sr.precio" [min]="0" [step]="0.5" mode="currency"
+                                currency="MXN" locale="en-US" styleClass="subreceta-edit-precio"
+                                placeholder="Precio extra" (onBlur)="saveAssignedSubImportancia(sr)" />
+                            <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [text]="true"
+                                pTooltip="Quitar sub-receta" tooltipPosition="top" (onClick)="removeAssignedSubReceta(sr)"></p-button>
+                        </div>
                     </div>
                     <div class="text-sm text-500" *ngIf="!assignedSubRecetas().length">
                         Sin sub-recetas asignadas a este producto.
