@@ -251,7 +251,7 @@ configEditingItem: CartItem | null = null;
   ticketBusinessName = '';
   ticketBusinessAddress = '';
   ticketBusinessPhone = '';
-  ticketInvoiceBaseUrl = 'http://localhost:4200/facturar/';
+  ticketInvoiceBaseUrl = ((environment.landingPageBaseUrl || '').replace(/\/landing-page\/?$/, '') || 'http://localhost:4200') + '/facturar/';
   ticketInvoiceUuid = signal('');
 
   onFacturaGenerated(event: { uuid: string; invoiceId: string } | null): void {
