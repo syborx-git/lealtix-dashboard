@@ -3,6 +3,10 @@
     padding: 0.5rem;
 }
 
+// ==========================================================================
+// HEADER
+// ==========================================================================
+
 .mapeo-header {
     display: flex;
     flex-direction: column;
@@ -18,6 +22,21 @@
 .mapeo-subtitle {
     color: var(--p-text-muted-color);
 }
+
+.mapeo-toolbar-end {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+
+    .mapeo-modo-toggle {
+        margin-right: 0.25rem;
+    }
+}
+
+// ==========================================================================
+// ESTADOS DE CARGA / VACÍO
+// ==========================================================================
 
 .mapeo-loading {
     display: flex;
@@ -48,59 +67,433 @@
     }
 }
 
-.mesas-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 1rem;
-    margin-top: 1rem;
-}
+// ==========================================================================
+// LEGENDA
+// ==========================================================================
 
-.mesa-card {
-    border: 1px solid var(--p-surface-border);
-    border-radius: 12px;
-    padding: 1rem;
-    background: var(--p-surface-card);
-    box-shadow: var(--p-card-shadow);
-    display: flex;
-    flex-direction: column;
-    gap: 0.65rem;
-}
-
-.mesa-card-head {
+.sala-legenda {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
+    gap: 0.9rem;
+    flex-wrap: wrap;
+    margin: 0.75rem 0 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+    background: var(--p-surface-card);
+    border: 1px solid var(--p-surface-border);
+    font-size: 0.85rem;
+    color: var(--p-text-color);
+
+    .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 0.35rem;
+        vertical-align: middle;
+    }
+
+    .dot-libre {
+        background: #22c55e;
+    }
+
+    .dot-reservada {
+        background: #f59e0b;
+    }
+
+    .dot-ocupada {
+        background: #ef4444;
+    }
+
+    .dot-grupo {
+        background: #3b82f6;
+    }
+
+    .legenda-chip {
+        display: inline-flex;
+        align-items: center;
+
+        .count {
+            margin-left: 0.35rem;
+            font-weight: 700;
+            background: var(--p-surface-muted);
+            border-radius: 999px;
+            padding: 0.05rem 0.5rem;
+            font-size: 0.75rem;
+        }
+    }
+
+    .legenda-hint {
+        margin-left: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: var(--p-text-muted-color);
+        font-size: 0.8rem;
+    }
 }
 
-.mesa-name {
-    font-weight: 700;
-    font-size: 1.05rem;
-    white-space: nowrap;
+// ==========================================================================
+// PLANO (WORKSPACE)
+// ==========================================================================
+
+.plano-wrap {
+    margin-top: 0.5rem;
+    overflow: auto;
+    border-radius: 12px;
+    border: 1px solid var(--p-surface-border);
+    background: #eef2f7;
+}
+
+.workspace {
+    position: relative;
+    width: 1200px;
+    height: 720px;
+    min-width: 1200px;
+    min-height: 720px;
     overflow: hidden;
+    touch-action: none;
+    background-color: #f6f8fb;
+    background-image: radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.06) 1px, transparent 0);
+    background-size: 20px 20px;
+
+    &.modo-edicion {
+        cursor: crosshair;
+    }
+
+    &.modo-operacion {
+        cursor: default;
+    }
+}
+
+.workspace-grid {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+        linear-gradient(rgba(59, 130, 246, 0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59, 130, 246, 0.07) 1px, transparent 1px);
+    background-size: 80px 80px;
+}
+
+.workspace-edit-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(37, 99, 235, 0.12);
+    border: 1px solid rgba(37, 99, 235, 0.35);
+    color: #1d4ed8;
+    font-size: 0.78rem;
+    font-weight: 600;
+    pointer-events: none;
+    z-index: 5;
+}
+
+// ==========================================================================
+// MESAS EN EL PLANO
+// ==========================================================================
+
+.mesa-floor {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border-radius: 14px;
+    border: 2px solid rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 9px rgba(0, 0, 0, 0.2);
+    color: #fff;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    z-index: 2;
+
+    &:active {
+        cursor: grabbing;
+    }
+}
+
+.workspace.modo-edicion .mesa-floor {
+    cursor: grab;
+
+    &:active {
+        cursor: grabbing;
+    }
+}
+
+.workspace.modo-operacion .mesa-floor {
+    cursor: pointer;
+}
+
+// Formas
+.forma-redonda {
+    border-radius: 50%;
+}
+
+.forma-cuadrada {
+    border-radius: 7px;
+}
+
+.forma-rectangular {
+    border-radius: 6px;
+}
+
+// Mesa rectangular "de pie": ancho/alto reales ya intercambiados desde TS
+// (sin rotate()); el texto interior se mantiene siempre horizontal.
+.mesa-floor.mesa-vertical {
+    gap: 4px;
+    padding: 6px 4px;
+
+    .mesa-label {
+        max-width: 92%;
+        line-height: 1.05;
+    }
+
+    .mesa-cap {
+        max-width: 92%;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+}
+
+// Colores por estado
+.estado-libre {
+    background: linear-gradient(145deg, #4ade80, #16a34a);
+    border-color: #14532d;
+}
+
+.estado-reservada {
+    background: linear-gradient(145deg, #fbbf24, #d97706);
+    border-color: #92400e;
+}
+
+.estado-ocupada {
+    background: linear-gradient(145deg, #f87171, #dc2626);
+    border-color: #7f1d1d;
+}
+
+// Mesa agrupada
+.mesa-floor.en-grupo {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.55), 0 6px 14px rgba(0, 0, 0, 0.18);
+}
+
+// Dragging
+.mesa-floor.dragging {
+    z-index: 50;
+    transition: none;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.3);
+    cursor: grabbing;
+}
+
+// Labels internos
+.mesa-label {
+    font-weight: 800;
+    font-size: 0.78rem;
+    line-height: 1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    max-width: 90%;
+    overflow: hidden;
+    white-space: nowrap;
     text-overflow: ellipsis;
 }
 
-.mesa-meta {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.85rem;
-    color: var(--p-text-muted-color);
+.mesa-cap {
+    font-size: 0.68rem;
+    font-weight: 600;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 999px;
+    padding: 0.06rem 0.4rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+
+    .mesa-user-icon {
+        font-size: 0.6rem;
+    }
 }
 
-.mesa-mesero {
+.mesa-mesero-chip {
+    position: absolute;
+    bottom: -3px;
+    right: -3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    color: #1d4ed8;
+    border: 1px solid #1d4ed8;
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    font-size: 0.9rem;
+    justify-content: center;
+    font-size: 0.6rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    z-index: 3;
 }
 
-.mesa-card-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.25rem;
-    margin-top: auto;
+// Selección (modo unir)
+.mesa-floor.seleccionable {
+    cursor: pointer;
+
+    &:hover {
+        filter: brightness(1.08);
+    }
 }
+
+.mesa-floor.bloqueada {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.mesa-floor.seleccionada {
+    box-shadow: 0 0 0 4px #fff, 0 0 0 7px #3b82f6, 0 8px 18px rgba(0, 0, 0, 0.35);
+    z-index: 10;
+}
+
+.mesa-select-indicator {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    color: #3b82f6;
+    border: 1px solid #3b82f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.55rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    z-index: 4;
+}
+
+.mesa-floor.seleccionada .mesa-select-indicator {
+    background: #3b82f6;
+    color: #fff;
+}
+
+// ==========================================================================
+// BORDE CONTENEDOR DE GRUPO
+// ==========================================================================
+
+.mesa-grupo-borde {
+    position: absolute;
+    border: 2px dashed rgba(59, 130, 246, 0.6);
+    border-radius: 16px;
+    background: rgba(59, 130, 246, 0.06);
+    box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.12);
+    z-index: 1;
+    pointer-events: none;
+
+    .grupo-etiqueta {
+        position: absolute;
+        bottom: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #3b82f6;
+        color: #fff;
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 0.1rem 0.6rem;
+        border-radius: 999px;
+        white-space: nowrap;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    }
+}
+
+// ==========================================================================
+// MENÚ RÁPIDO (POPOVER)
+// ==========================================================================
+
+.mesa-popover {
+    position: fixed;
+    z-index: 1000;
+    width: 300px;
+    padding: 0.85rem;
+    background: var(--p-surface-card, #ffffff);
+    background-color: #ffffff;
+    border: 1px solid var(--p-surface-border, #d1d5db);
+    border-radius: 12px;
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+
+    .popover-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .popover-title {
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    .popover-grupo-tag {
+        align-self: flex-start;
+    }
+
+    .popover-section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+
+        label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: var(--p-text-muted-color);
+        }
+    }
+
+    // Estados: grid uniforme de 3 columnas (crece vertical, nunca desborda lateral)
+    .estado-btns {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.4rem;
+        width: 100%;
+    }
+
+    // Separar grupo ocupa solo su propia fila (w-full)
+    .popover-separar {
+        width: 100%;
+    }
+
+    // Acciones de fila completa (Rotar, Separar grupo)
+    .popover-full {
+        width: 100%;
+    }
+
+    // Acciones: fila 1 "Separar grupo", fila 2 "Editar"/"Eliminar" 50/50
+    .popover-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        border-top: 1px solid var(--p-surface-border);
+        padding-top: 0.5rem;
+
+        .popover-actions-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.5rem;
+            width: 100%;
+        }
+    }
+}
+
+// ==========================================================================
+// FORM (dialog crear/editar)
+// ==========================================================================
 
 .mesa-form {
     display: flex;
@@ -116,5 +509,10 @@
             font-weight: 600;
             font-size: 0.9rem;
         }
+    }
+
+    .field-hint {
+        color: var(--p-text-muted-color);
+        font-size: 0.78rem;
     }
 }

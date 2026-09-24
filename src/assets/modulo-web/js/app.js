@@ -14,6 +14,7 @@ class SiteBuilderApp {
     this.currentTab = 'tab-pieces';
     this.currentDevice = 'desktop';
     this.activeMenuCategory = null;
+    this.menuLocked = false;
     this.menuEditor = new MenuEditor(this.stateManager, () => this.handleStateUpdated());
 
     this.init();
@@ -32,6 +33,13 @@ class SiteBuilderApp {
       this.applyThemeAndTypography();
       this.renderLivePreview();
     });
+
+    // Avisar al dashboard que el builder está listo (para recibir productos de la BD)
+    try {
+      window.parent.postMessage({ type: 'lealtix-ready' }, '*');
+    } catch (e) {
+      // ignore
+    }
   }
 
   handleStateUpdated() {
@@ -123,9 +131,64 @@ class SiteBuilderApp {
         this.renderContentTab(container);
         break;
       case 'tab-menu':
+        this.menuEditor.locked = this.menuLocked;
         this.menuEditor.renderMenuEditorView(container);
         break;
     }
+  }
+
+  /* ------------------------------------------------------------------------
+     INTEGRACIÓN CON EL DASHBOARD: productos desde la BD y bloqueo del menú
+     ------------------------------------------------------------------------ */
+  setMenuLocked(locked) {
+    this.menuLocked = !!locked;
+    if (this.currentTab === 'tab-menu') {
+      this.renderCurrentTab();
+    }
+  }
+
+  setMenuFromDb(payload) {
+    if (!payload) return;
+    const rawProducts = payload.products || [];
+
+    const categoryNames = [];
+    rawProducts.forEach(p => {
+      const name = p.categoryName || 'General';
+      if (!categoryNames.includes(name)) categoryNames.push(name);
+    });
+    (payload.categories || []).forEach(name => {
+      if (name && !categoryNames.includes(name)) categoryNames.push(name);
+    });
+
+    const categories = categoryNames.map((name, i) => ({
+      id: 'db-cat-' + i,
+      name,
+      icon: '🍽️',
+      active: true
+    }));
+
+    const products = rawProducts.map((p, i) => {
+      const cat = categories.find(c => c.name === (p.categoryName || 'General'));
+      return {
+        id: 'db-prod-' + i,
+        categoryId: cat ? cat.id : (categories[0] ? categories[0].id : 'db-cat-0'),
+        name: p.name || '',
+        price: (typeof p.price === 'number') ? ('$' + p.price) : (p.price || ''),
+        description: p.description || '',
+        badge: '',
+        image: p.imageUrl || ''
+      };
+    });
+
+    this.stateManager.state.menuCategories = categories;
+    this.stateManager.state.menuProducts = products;
+    this.stateManager.saveState();
+    this.stateManager.notify();
+
+    if (this.currentTab === 'tab-menu') {
+      this.renderCurrentTab();
+    }
+    this.renderLivePreview();
   }
 
   /* ------------------------------------------------------------------------

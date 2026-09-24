@@ -193,6 +193,15 @@
             setTimeout(function () { toast.classList.remove('show'); }, 2800);
           }
         }
+        if (event.data && event.data.type === 'lealtix-menu-from-db' && window.lealtixApp) {
+          window.lealtixApp.setMenuFromDb(event.data.payload);
+        }
+        if (event.data && event.data.type === 'lealtix-menu-lock' && window.lealtixApp) {
+          window.lealtixApp.setMenuLocked(!!event.data.locked);
+        }
+        if (event.data && event.data.type === 'lealtix-ready-check' && window.lealtixApp) {
+          try { window.parent.postMessage({ type: 'lealtix-ready' }, '*'); } catch (e) {}
+        }
       });
     })();
   </script>

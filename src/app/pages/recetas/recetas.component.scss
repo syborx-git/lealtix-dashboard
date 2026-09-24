@@ -280,6 +280,37 @@
   width: 90px;
 }
 
+/* ===== Edición inline de insumo: importancia + precio ===== */
+.recipe-line-edit-full {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.recipe-edit-row-1 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.recipe-edit-row-1 .recipe-line-name {
+  min-width: 140px;
+}
+
+.recipe-edit-row-2 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+:host ::ng-deep .recipe-edit-importancia {
+  width: 240px;
+  max-width: 100%;
+}
+
 /* ===== Botones grandes (estilo gestión de Clientes) ===== */
 .recetas-actions {
   display: grid;
@@ -356,6 +387,31 @@
   border-radius: 0.6rem;
   background: var(--surface-card);
   margin-bottom: 0.45rem;
+}
+
+.subreceta-assigned-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.subreceta-assign-form {
+  margin-bottom: 0.5rem;
+}
+
+:host ::ng-deep .subreceta-importancia-select {
+  min-width: 190px;
+}
+
+:host ::ng-deep .subreceta-edit-importancia {
+  min-width: 170px;
+}
+
+.subreceta-precio,
+.subreceta-edit-precio {
+  width: 120px;
 }
 
 /* ===== Modal crear sub-receta ===== */

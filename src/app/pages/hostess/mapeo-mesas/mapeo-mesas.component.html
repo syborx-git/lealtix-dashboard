@@ -5,13 +5,82 @@
     <div class="p-toolbar-group-start">
         <div class="mapeo-header">
             <h2 class="mapeo-title">Mapeo de Mesas</h2>
-            <small class="mapeo-subtitle">Administra las mesas del local y asigna meseros</small>
+            <small class="mapeo-subtitle">Plano interactivo del local · administra mesas, estados y meseros</small>
         </div>
     </div>
-    <div class="p-toolbar-group-end">
-        <p-button label="Nueva Mesa" icon="pi pi-plus" (onClick)="openNewMesa()"></p-button>
+    <div class="p-toolbar-group-end mapeo-toolbar-end">
+        <!-- Selector de modo: Edición (drag) / Operación (hostess) -->
+        <p-selectButton
+            [options]="modoOptions"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="modo"
+            (ngModelChange)="setModo($event)"
+            styleClass="mapeo-modo-toggle"
+        ></p-selectButton>
+
+        <ng-container *ngIf="modo === 'operacion'">
+            <p-button
+                *ngIf="!unirMode"
+                icon="pi pi-objects-column"
+                label="Unir Mesas"
+                severity="secondary"
+                [outlined]="true"
+                pTooltip="Selecciona dos o más mesas libres y únelas"
+                (onClick)="activarUnionMode()"
+            ></p-button>
+            <p-button
+                *ngIf="unirMode"
+                [label]="'Unir (' + numSeleccionadas() + ')'"
+                icon="pi pi-check"
+                [disabled]="!seleccionActiva()"
+                (onClick)="unirMesas()"
+            ></p-button>
+            <p-button
+                *ngIf="unirMode"
+                icon="pi pi-times"
+                severity="secondary"
+                [text]="true"
+                [rounded]="true"
+                pTooltip="Cancelar selección"
+                (onClick)="cancelarUnion()"
+            ></p-button>
+        </ng-container>
+
+        <p-button label="Nueva Mesa" icon="pi pi-plus" (onClick)="crearNuevaMesa()"></p-button>
     </div>
 </p-toolbar>
+
+<!-- Barra de estado de la sala -->
+<div *ngIf="!loading() && mesas().length > 0" class="sala-legenda">
+    <div class="legenda-chip">
+        <span class="dot dot-libre"></span> Libres
+        <span class="count">{{ conteoEstado('LIBRE') }}</span>
+    </div>
+    <div class="legenda-chip">
+        <span class="dot dot-reservada"></span> Reservadas
+        <span class="count">{{ conteoEstado('RESERVADA') }}</span>
+    </div>
+    <div class="legenda-chip">
+        <span class="dot dot-ocupada"></span> Ocupadas
+        <span class="count">{{ conteoEstado('OCUPADA') }}</span>
+    </div>
+    <div class="legenda-chip" *ngIf="grupoTemporal().length > 0">
+        <span class="dot dot-grupo"></span> Mesas unidas
+        <span class="count">{{ grupoTemporal().length }}</span>
+    </div>
+    <div class="legenda-hint">
+        <ng-container *ngIf="modo === 'edicion'">
+            <i class="pi pi-arrows-alt"></i> Arrastra las mesas para dibujar el layout del local
+        </ng-container>
+        <ng-container *ngIf="modo === 'operacion' && unirMode">
+            <i class="pi pi-objects-column"></i> Toca las mesas <b>libres</b> para seleccionarlas ({{ numSeleccionadas() }})
+        </ng-container>
+        <ng-container *ngIf="modo === 'operacion' && !unirMode">
+            <i class="pi pi-info-circle"></i> Toca una mesa para cambiar estado o asignar mesero
+        </ng-container>
+    </div>
+</div>
 
 <div *ngIf="loading()" class="mapeo-loading">
     <p-progressSpinner styleClass="w-4rem h-4rem" strokeWidth="4"></p-progressSpinner>
@@ -21,61 +90,142 @@
     <i class="pi pi-table"></i>
     <h3>No hay mesas registradas</h3>
     <p>Crea la primera mesa para comenzar el mapeo del local.</p>
-    <p-button label="Crear Mesa" icon="pi pi-plus" (onClick)="openNewMesa()"></p-button>
+    <p-button label="Crear Mesa" icon="pi pi-plus" (onClick)="crearNuevaMesa()"></p-button>
 </div>
 
-<div *ngIf="!loading() && mesas().length > 0" class="mesas-grid">
-    <div *ngFor="let mesa of mesas()" class="mesa-card">
-        <div class="mesa-card-head">
-            <span class="mesa-name">{{ mesa.nombre }}</span>
-            <p-tag [value]="mesa.estado" [severity]="getEstadoSeverity(mesa.estado)"></p-tag>
+<!-- ==================== PLANO INTERACTIVO ==================== -->
+<div *ngIf="!loading() && mesas().length > 0" class="plano-wrap">
+    <div
+        class="workspace"
+        [class.modo-edicion]="modo === 'edicion'"
+        [class.modo-operacion]="modo === 'operacion'"
+        (pointermove)="onWorkspacePointerMove($event)"
+        (pointerup)="onDragEnd()"
+        (pointercancel)="onDragEnd()"
+        (click)="onWorkspaceClick($event)"
+    >
+        <!-- Pista/medidas esquemáticas del espacio -->
+        <div class="workspace-grid"></div>
+
+        <!-- Borde contenedor de mesas unidas -->
+        <div *ngFor="let grupo of grupoTemporal()" class="mesa-grupo-borde" [ngStyle]="{ left: grupo.x + 'px', top: grupo.y + 'px', width: grupo.width + 'px', height: grupo.height + 'px' }">
+            <span class="grupo-etiqueta">{{ grupo.etiqueta }} · {{ grupo.capacidadTotal }} pax</span>
         </div>
-        <div class="mesa-meta">
-            <span>Mesa #{{ mesa.numero ?? '-' }}</span>
-            <span>Capacidad: {{ mesa.capacidad }}</span>
+
+        <!-- Mesas -->
+        <div
+            *ngFor="let mesa of mesas()"
+            class="mesa-floor"
+            [class.estado-libre]="mesa.estado === 'LIBRE'"
+            [class.estado-ocupada]="mesa.estado === 'OCUPADA'"
+            [class.estado-reservada]="mesa.estado === 'RESERVADA'"
+            [class.forma-redonda]="(mesa.forma ?? 'cuadrada') === 'redonda'"
+            [class.forma-cuadrada]="(mesa.forma ?? 'cuadrada') === 'cuadrada'"
+            [class.forma-rectangular]="(mesa.forma ?? 'cuadrada') === 'rectangular'"
+            [class.mesa-vertical]="esVertical(mesa)"
+            [class.en-grupo]="!!mesa.idGrupoTemporal"
+            [class.dragging]="isDragging(mesa.id)"
+            [class.seleccionable]="unirMode && mesa.estado === 'LIBRE'"
+            [class.bloqueada]="unirMode && mesa.estado !== 'LIBRE'"
+            [class.seleccionada]="isSelected(mesa.id)"
+            [style.left.px]="mesaLeft(mesa)"
+            [style.top.px]="mesaTop(mesa)"
+            [style.width.px]="mesaWidth(mesa)"
+            [style.height.px]="mesaHeight(mesa)"
+            [style.transform]="mesaTransform(mesa)"
+            (pointerdown)="onMesaPointerDown($event, mesa)"
+            (click)="onMesaClick($event, mesa)"
+            [pTooltip]="tooltipMesa(mesa)"
+            tooltipPosition="top"
+        >
+            <!-- Indicador de selección en modo unir -->
+            <span *ngIf="unirMode" class="mesa-select-indicator">
+                <i [class]="isSelected(mesa.id) ? 'pi pi-check' : 'pi pi-plus'"></i>
+            </span>
+
+            <span class="mesa-label">{{ labelMesa(mesa) }}</span>
+            <span class="mesa-cap"><i class="pi pi-user mesa-user-icon"></i>{{ mesa.capacidad }}</span>
+
+            <span *ngIf="mesa.meseroNombre" class="mesa-mesero-chip" title="{{ mesa.meseroNombre }}">
+                <i class="pi pi-user"></i>
+            </span>
         </div>
-        <div class="mesa-mesero">
-            <i class="pi pi-user"></i>
-            <span>{{ mesa.meseroNombre || 'Sin mesero asignado' }}</span>
-        </div>
-        <div class="mesa-mesero-select">
-            <p-select
-                [options]="meseros()"
-                optionLabel="nombre"
-                optionValue="id"
-                [ngModel]="mesa.meseroUserId ?? null"
-                placeholder="Asignar mesero"
-                styleClass="w-full"
-                (ngModelChange)="onAssignMesero(mesa, $event)"
-            ></p-select>
-        </div>
-        <div class="mesa-card-actions">
-            <p-button
-                icon="pi pi-refresh"
-                pTooltip="Cambiar estado"
-                [text]="true"
-                [rounded]="true"
-                severity="secondary"
-                (onClick)="cycleEstado(mesa)"
-            ></p-button>
-            <p-button
-                icon="pi pi-pencil"
-                [text]="true"
-                [rounded]="true"
-                severity="info"
-                (onClick)="openEditMesa(mesa)"
-            ></p-button>
-            <p-button
-                icon="pi pi-trash"
-                [text]="true"
-                [rounded]="true"
-                severity="danger"
-                (onClick)="onDeleteMesa(mesa)"
-            ></p-button>
+
+        <!-- Overlay de estado del modo -->
+        <div *ngIf="modo === 'edicion'" class="workspace-edit-badge">
+            <i class="pi pi-pencil"></i> Modo Edición
         </div>
     </div>
 </div>
 
+<!-- ==================== MENÚ RÁPIDO DE MESA (hostess) ==================== -->
+<div *ngIf="popoverMesa() as mesaPop" class="mesa-popover" [ngStyle]="popoverStyle()" (click)="$event.stopPropagation()">
+    <div class="popover-head">
+        <span class="popover-title">{{ labelMesa(mesaPop) }} · {{ mesaPop.nombre }}</span>
+        <p-tag [value]="mesaPop.estado" [severity]="getEstadoSeverity(mesaPop.estado)"></p-tag>
+    </div>
+    <p-tag *ngIf="mesaPop.idGrupoTemporal" value="En grupo" severity="info" styleClass="popover-grupo-tag"></p-tag>
+
+    <div class="popover-section">
+        <label>Estado</label>
+        <div class="estado-btns">
+            <p-button
+                *ngFor="let opt of estadoOptions"
+                [label]="opt.label"
+                size="small"
+                [severity]="estadoSeverityFor(opt.value)"
+                [text]="false"
+                [outlined]="mesaPop.estado !== opt.value"
+                (onClick)="changeEstadoFromPopover(mesaPop, opt.value)"
+            ></p-button>
+        </div>
+    </div>
+
+    <div class="popover-section">
+        <label>Mesero</label>
+        <p-select
+            [options]="meseros()"
+            optionLabel="nombre"
+            optionValue="id"
+            [ngModel]="mesaPop.meseroUserId ?? null"
+            placeholder="Asignar mesero"
+            styleClass="w-full"
+            (ngModelChange)="onAssignMesero(mesaPop, $event)"
+        ></p-select>
+    </div>
+
+    <p-button
+            icon="pi pi-replay"
+            class="popover-full"
+            label="Rotar 90°"
+            severity="secondary"
+            [outlined]="true"
+            [text]="false"
+            size="small"
+            styleClass="w-full"
+            (onClick)="rotarMesa(mesaPop)"
+        ></p-button>
+        <div class="popover-actions">
+        <p-button
+            *ngIf="mesaPop.idGrupoTemporal"
+            class="popover-separar"
+            icon="pi pi-objects-column"
+            label="Separar grupo"
+            severity="secondary"
+            [outlined]="true"
+            [text]="false"
+            size="small"
+            styleClass="w-full"
+            (onClick)="separarGrupo(mesaPop.idGrupoTemporal)"
+        ></p-button>
+        <div class="popover-actions-grid">
+            <p-button icon="pi pi-pencil" label="Editar" severity="info" [text]="true" size="small" (onClick)="openEditFromPopover(mesaPop)"></p-button>
+            <p-button icon="pi pi-trash" label="Eliminar" severity="danger" size="small" (onClick)="onDeleteMesa(mesaPop)"></p-button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== DIÁLOGO CREAR / EDITAR ==================== -->
 <p-dialog [(visible)]="mesaDialogVisible" [style]="{ width: '450px' }" [modal]="true" [closable]="false" styleClass="minimal-modal">
     <ng-template pTemplate="header">
         <div class="inline-flex align-items-center gap-2">
@@ -97,6 +247,10 @@
             <p-inputNumber id="mesa-capacidad" [(ngModel)]="formCapacidad" mode="decimal" [min]="1" class="w-full" inputId="integeronly"></p-inputNumber>
         </div>
         <div class="field">
+            <label for="mesa-forma">Forma</label>
+            <p-select id="mesa-forma" [options]="formaOptions" optionLabel="label" optionValue="value" [(ngModel)]="formForma" appendTo="body" panelStyleClass="mesa-select-panel" styleClass="w-full"></p-select>
+        </div>
+        <div class="field">
             <label for="mesa-estado">Estado</label>
             <p-select
                 id="mesa-estado"
@@ -104,9 +258,22 @@
                 optionLabel="label"
                 optionValue="value"
                 [(ngModel)]="formEstado"
+                appendTo="body"
+                panelStyleClass="mesa-select-panel"
                 styleClass="w-full"
             ></p-select>
         </div>
+        <div class="field">
+            <label>Orientación</label>
+            <p-selectbutton
+                [options]="rotacionOptions"
+                optionLabel="label"
+                optionValue="value"
+                [(ngModel)]="formRotacion"
+                styleClass="w-full"
+            ></p-selectbutton>
+        </div>
+        <small class="field-hint" *ngIf="!editingMesa">La mesa nueva se colocará en el centro del plano; arrástrala en modo Edición.</small>
     </div>
     <ng-template pTemplate="footer">
         <p-button label="Cancelar" icon="pi pi-times" [text]="true" (onClick)="mesaDialogVisible = false"></p-button>

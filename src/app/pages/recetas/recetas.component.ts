@@ -83,12 +83,14 @@ export class RecetasComponent implements OnInit {
   recipeAddLoading = signal<boolean>(false);
   editingRecipe: any | null = null;
   editRecipeCantidad = 0;
-  editRecipeModificable = false;
+  editRecipeImportancia = 'BASE';
   editRecipePrecio = 0;
 
   // Sub-recetas asignadas en el diálogo de receta
   assignedSubRecetas = signal<any[]>([]);
   selectedSubRecetaId: number | null = null;
+  selectedSubImportancia = 'BASE';
+  selectedSubPrecio = 0;
   subRecetaAssignLoading = signal<boolean>(false);
 
   // Selector de producto / bebida (botones grandes)
@@ -106,7 +108,7 @@ export class RecetasComponent implements OnInit {
   subRecetaCantidad = 0;
   subRecetaLines = signal<any[]>([]);
 
-  readonly tipoIngredienteOptions = [
+  readonly importanciaOptions = [
     { label: 'Base (siempre en la receta)', value: 'BASE' },
     { label: 'Modificable (puede retirarse)', value: 'MODIFICABLE' },
     { label: 'Adicional (costo extra)', value: 'ADICIONAL' }
@@ -402,11 +404,17 @@ export class RecetasComponent implements OnInit {
       return;
     }
     this.subRecetaAssignLoading.set(true);
-    this.inventoryService.assignSubReceta(dishId, this.selectedSubRecetaId).subscribe({
-      next: () => {
+    this.inventoryService.assignSubReceta(dishId, this.selectedSubRecetaId, this.selectedSubImportancia, this.selectedSubPrecio || 0).subscribe({
+      next: (res) => {
         this.subRecetaAssignLoading.set(false);
         this.selectedSubRecetaId = null;
+        this.selectedSubImportancia = 'BASE';
+        this.selectedSubPrecio = 0;
         this.loadAssignedSubRecetas(dishId);
+        if (res?.code !== 200) {
+          this.messageService.add({ severity: 'warn', summary: 'Atención', detail: res?.message || 'No se pudo asignar la sub-receta', life: 3000 });
+          return;
+        }
         this.messageService.add({ severity: 'success', summary: 'Sub-receta asignada', detail: 'La preparación ahora suma sus insumos a este producto', life: 3000 });
       },
       error: (err) => {
@@ -414,6 +422,31 @@ export class RecetasComponent implements OnInit {
         this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo asignar la sub-receta', life: 3000 });
       }
     });
+  }
+
+  saveAssignedSubImportancia(sr: any): void {
+    const dishId = this.normalizeProductId(this.recipeItem?.id);
+    if (dishId == null) {
+      return;
+    }
+    this.inventoryService.updateSubRecetaImportance(dishId, sr.id, sr.importancia || 'BASE', Number(sr.precio ?? 0)).subscribe({
+      next: (res) => {
+        if (res?.code !== 200) {
+          this.messageService.add({ severity: 'warn', summary: 'Atención', detail: res?.message || 'No se pudo actualizar la importancia', life: 3000 });
+        }
+        this.loadAssignedSubRecetas(dishId);
+        this.messageService.add({ severity: 'success', summary: 'Importancia actualizada', detail: `"${sr.name}" quedó como ${this.importanciaLabel(sr.importancia || 'BASE')}`, life: 3000 });
+      },
+      error: (err) => {
+        this.loadAssignedSubRecetas(dishId);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo actualizar la importancia', life: 3000 });
+      }
+    });
+  }
+
+  private importanciaLabel(importancia: string): string {
+    const opt = this.importanciaOptions.find((o) => o.value === importancia);
+    return opt ? opt.label.toLowerCase() : importancia.toLowerCase();
   }
 
   removeAssignedSubReceta(sr: any): void {
@@ -501,7 +534,7 @@ export class RecetasComponent implements OnInit {
   startEditIngredient(ing: any): void {
     this.editingRecipe = ing;
     this.editRecipeCantidad = ing.cantidad;
-    this.editRecipeModificable = !!ing.modificable;
+    this.editRecipeImportancia = ing.tipoIngrediente || 'BASE';
     this.editRecipePrecio = Number(ing.precio ?? 0);
   }
 
@@ -515,16 +548,21 @@ export class RecetasComponent implements OnInit {
     }
     const dishId = this.normalizeProductId(this.recipeItem?.id);
     const ing = this.editingRecipe;
+    const importancia = this.editRecipeImportancia || 'BASE';
     const action = ing.kind === 'ADDITIONAL'
-      ? this.inventoryService.updateAdditional(ing.id, this.editRecipeCantidad, this.editRecipePrecio)
-      : this.inventoryService.updateRecipeIngredient(ing.id, this.editRecipeCantidad, this.editRecipeModificable);
+      ? this.inventoryService.updateAdditional(ing.id, this.editRecipeCantidad, importancia, this.editRecipePrecio || 0)
+      : this.inventoryService.updateRecipeIngredient(ing.id, this.editRecipeCantidad, importancia, this.editRecipePrecio || 0);
     action.subscribe({
-      next: () => {
+      next: (res) => {
         this.editingRecipe = null;
         if (dishId != null) {
           this.loadRecipeLines(dishId);
         }
-        this.messageService.add({ severity: 'success', summary: 'Actualizado', detail: 'Insumo de la receta actualizado', life: 3000 });
+        if (res?.code === 400) {
+          this.messageService.add({ severity: 'warn', summary: 'Atención', detail: res?.message || 'No se pudo actualizar', life: 3000 });
+          return;
+        }
+        this.messageService.add({ severity: 'success', summary: 'Actualizado', detail: `Importancia: ${this.importanciaLabel(importancia)}`, life: 3000 });
       },
       error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar', life: 3000 })
     });
