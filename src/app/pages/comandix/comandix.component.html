@@ -1327,8 +1327,19 @@
     [order]="selectedOrderForPayment()"
     (visibleChange)="onCloseOrderModalVisibilityChange($event)"
     (paymentRecorded)="onPaymentRecorded($event)"
-    (cobroSeparado)="onCobroSeparado($event)"
+    (facturaGenerated)="onFacturaGenerated($event)"
   ></app-close-order-modal>
+
+  <app-ticket-modal
+    [visible]="showTicketModal()"
+    [order]="selectedOrderForTicket()"
+    [businessName]="ticketBusinessName"
+    [businessAddress]="ticketBusinessAddress"
+    [businessPhone]="ticketBusinessPhone"
+    [invoiceBaseUrl]="ticketInvoiceBaseUrl"
+    [invoiceUuid]="ticketInvoiceUuid()"
+    (visibleChange)="showTicketModal.set($event)"
+  ></app-ticket-modal>
 
   <app-registrar-merma-modal
     [visible]="showMermaModal()"

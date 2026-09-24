@@ -56,6 +56,8 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
     reference?: string | null;
     paidAt: string;
   }>();
+
+  @Output() facturaGenerated = new EventEmitter<{ uuid: string; invoiceId: string } | null>();
   @Output() cobroSeparado = new EventEmitter<{ order: PendingOrder; tip?: TipInfo | null }>();
 
   readonly paymentMethods: PaymentMethodOption[] = [
@@ -302,8 +304,10 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
         + (uuid ? ` (UUID: ${uuid})` : '')
         + (invoiceId ? ` - Factura ${invoiceId}` : '')
         + '.';
+      this.facturaGenerated.emit({ uuid, invoiceId });
     } catch (e: any) {
       this.successMessage = 'Pago registrado, pero no se pudo generar la factura: ' + (e?.error?.message || e?.message || 'error');
+      this.facturaGenerated.emit(null);
     }
   }
 
