@@ -952,13 +952,21 @@ configEditingItem: CartItem | null = null;
   }
 
   onPaymentRecorded(event: { orderId: string; method: PaymentMethod; reference?: string | null; paidAt: string }): void {
-    const existing = this.pendingOrders().find((order) => order.id === event.orderId);
-    if (!existing) {
+    const source: PendingOrder | undefined =
+      this.selectedOrderForPayment() ??
+      this.pendingOrders().find((order) => order.id === event.orderId) ??
+      this.selectedOrder() ??
+      undefined;
+
+    if (!source) {
+      // No hay datos de la orden; aun así cerramos el modal de cobro
+      this.closeCloseOrderModal();
       return;
     }
 
     const updatedOrder: PendingOrder = {
-      ...existing,
+      ...source,
+      id: event.orderId,
       estado: 'PAGADA',
       payment: {
         method: event.method,
@@ -976,7 +984,7 @@ configEditingItem: CartItem | null = null;
       this.selectedOrder.set(updatedOrder);
     }
 
-    // Mostrar el ticket imprimible con el QR de autofacturación
+    // Mostrar SIEMPRE el ticket imprimible con el QR de autofacturación
     this.selectedOrderForTicket.set(updatedOrder);
     this.showTicketModal.set(true);
 
