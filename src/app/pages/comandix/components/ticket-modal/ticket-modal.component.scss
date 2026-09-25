@@ -1,0 +1,126 @@
+.ticket-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.ticket-modal-root {
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px;
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+.ticket {
+  width: 300px;
+  margin: 0 auto;
+  color: #000;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.ticket-business {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.ticket-line {
+  font-size: 11px;
+}
+
+.ticket-sep {
+  border-top: 1px dashed #000;
+  margin: 8px 0;
+}
+
+.ticket-meta {
+  text-align: left;
+  font-size: 11px;
+}
+
+.ticket-items {
+  text-align: left;
+}
+
+.ticket-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ticket-item-name {
+  flex: 1;
+  word-break: break-word;
+}
+
+.ticket-totals {
+  text-align: left;
+}
+
+.ticket-total-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.ticket-total-final {
+  font-weight: 700;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.ticket-qr-section {
+  margin-top: 6px;
+}
+
+.ticket-qr-label {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.ticket-qr-help {
+  font-size: 10px;
+  margin-top: 4px;
+}
+
+.ticket-footer {
+  margin-top: 8px;
+  font-size: 11px;
+}
+
+.ticket-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.ticket-btn {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ticket-btn-primary {
+  background: #111827;
+  color: #fff;
+  border-color: #111827;
+}
+
+.ticket-invoice-uuid {
+  font-size: 10px;
+  word-break: break-all;
+}

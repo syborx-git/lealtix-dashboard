@@ -42,6 +42,7 @@ import { environment } from '@/pages/commons/environment';
 // Componentes
 import { ClienteDialogComponent } from '@/pages/clientes/components/cliente-dialog/cliente-dialog.component';
 import { CloseOrderModalComponent } from './components/close-order-modal/close-order-modal.component';
+import { TicketModalComponent } from './components/ticket-modal/ticket-modal.component';
 import { RegistrarMermaModalComponent } from './components/registrar-merma-modal/registrar-merma-modal.component';
 import { SplitOrderModalComponent } from './components/split-order-modal/split-order-modal.component';
 
@@ -109,6 +110,7 @@ interface StockInfo {
     TableModule,
     ClienteDialogComponent,
     CloseOrderModalComponent,
+    TicketModalComponent,
     RegistrarMermaModalComponent,
     SplitOrderModalComponent
   ],
@@ -242,6 +244,19 @@ configEditingItem: CartItem | null = null;
   selectedOrderForCancellation = signal<PendingOrder | null>(null);
   cancellingOrder = signal<boolean>(false);
   cancellationReason: string = '';
+
+  // ==================== TICKET ====================
+  showTicketModal = signal(false);
+  selectedOrderForTicket = signal<PendingOrder | null>(null);
+  ticketBusinessName = '';
+  ticketBusinessAddress = '';
+  ticketBusinessPhone = '';
+  ticketInvoiceBaseUrl = ((environment.landingPageBaseUrl || '').replace(/\/landing-page\/?$/, '') || 'http://localhost:4200') + '/facturar/';
+  ticketInvoiceUuid = signal('');
+
+  onFacturaGenerated(event: { uuid: string; invoiceId: string } | null): void {
+    this.ticketInvoiceUuid.set(event?.uuid || '');
+  }
 
   canCloseOrders = false;
   canRegistrarMerma = false;
@@ -897,6 +912,7 @@ configEditingItem: CartItem | null = null;
 
     this.selectedOrderForPayment.set(order);
     this.showCloseOrderModal.set(true);
+    this.ticketInvoiceUuid.set('');
   }
 
   closeCloseOrderModal(): void {
@@ -936,13 +952,21 @@ configEditingItem: CartItem | null = null;
   }
 
   onPaymentRecorded(event: { orderId: string; method: PaymentMethod; reference?: string | null; paidAt: string }): void {
-    const existing = this.pendingOrders().find((order) => order.id === event.orderId);
-    if (!existing) {
+    const source: PendingOrder | undefined =
+      this.selectedOrderForPayment() ??
+      this.pendingOrders().find((order) => order.id === event.orderId) ??
+      this.selectedOrder() ??
+      undefined;
+
+    if (!source) {
+      // No hay datos de la orden; aun así cerramos el modal de cobro
+      this.closeCloseOrderModal();
       return;
     }
 
     const updatedOrder: PendingOrder = {
-      ...existing,
+      ...source,
+      id: event.orderId,
       estado: 'PAGADA',
       payment: {
         method: event.method,
@@ -959,6 +983,10 @@ configEditingItem: CartItem | null = null;
     if (this.selectedOrder()?.id === event.orderId) {
       this.selectedOrder.set(updatedOrder);
     }
+
+    // Mostrar SIEMPRE el ticket imprimible con el QR de autofacturación
+    this.selectedOrderForTicket.set(updatedOrder);
+    this.showTicketModal.set(true);
 
     this.closeCloseOrderModal();
 
@@ -1353,6 +1381,7 @@ configEditingItem: CartItem | null = null;
       this.currentUserEmail = currentUser?.email ?? 'usuario';
       this.canCloseOrders = this.authService.hasAnyPermission(['process_payment', 'create_order']);
       this.canRegistrarMerma = this.authService.hasAnyPermission(['manage_mermas']);
+      this.loadTicketBusinessInfo();
     } catch (error) {
       console.error('Error obteniendo tenant:', error);
       this.messageService.add({
@@ -1364,8 +1393,23 @@ configEditingItem: CartItem | null = null;
     }
   }
 
-  // ==================== CATÁLOGO (existente) ====================
+  private loadTicketBusinessInfo(): void {
+    if (!this.tenantId) {
+      return;
+    }
+    this.tenantService.getTenantById(this.tenantId).subscribe({
+      next: (t: any) => {
+        this.ticketBusinessName = t?.bussinessName || t?.nombreNegocio || 'Lealtix';
+        this.ticketBusinessAddress = t?.direccion || '';
+        this.ticketBusinessPhone = t?.telefono || '';
+      },
+      error: () => {
+        // noop
+      }
+    });
+  }
 
+  // ==================== CATÁLOGO (existente) ====================
   private loadCatalog(): void {
     this.loading.set(true);
     this.loadSubRecetaIds();

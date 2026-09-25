@@ -2059,3 +2059,22 @@ body.modulo-fullscreen-active .layout-main-container {
 body.modulo-fullscreen-active .layout-main {
   padding: 0 !important;
 }
+
+/* ===== Ticket de compra (impresión térmica) ===== */
+@media print {
+  body.ticket-print-mode * { visibility: hidden !important; }
+  body.ticket-print-mode .ticket-modal-root,
+  body.ticket-print-mode .ticket-modal-root * { visibility: visible !important; }
+  body.ticket-print-mode .ticket-modal-root {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    box-shadow: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border-radius: 0 !important;
+  }
+  body.ticket-print-mode .ticket-actions { display: none !important; }
+  body.ticket-print-mode { width: 80mm; }
+  @page { margin: 6mm; }
+}

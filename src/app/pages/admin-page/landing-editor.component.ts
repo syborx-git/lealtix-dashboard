@@ -41,6 +41,16 @@ export class LandingEditorComponent implements OnInit {
     isMobile: boolean = false;
     fullscreen = false;
 
+    // El Web Studio se sirve desde el mismo origen en producción; en local
+    // se usa el mini-servidor del builder (puerto 4300).
+    get builderUrl(): string {
+        const host = window.location.hostname;
+        if (host === 'localhost' || host === '127.0.0.1') {
+            return 'http://localhost:4300/index.html';
+        }
+        return 'assets/modulo-web/index.html';
+    }
+
     @ViewChild('modFrame') modFrame!: ElementRef<HTMLIFrameElement>;
 
     enterFullscreen(): void {
@@ -284,7 +294,6 @@ export class LandingEditorComponent implements OnInit {
 
     nextStep() {
         if (this.isStepValid(this.step)) {
-            debugger;
             const currentStep = this.step;
             // persist current step to backend before advancing
             this.createTenant(currentStep);
