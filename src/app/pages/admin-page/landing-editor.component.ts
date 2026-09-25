@@ -294,7 +294,6 @@ export class LandingEditorComponent implements OnInit {
 
     nextStep() {
         if (this.isStepValid(this.step)) {
-            debugger;
             const currentStep = this.step;
             // persist current step to backend before advancing
             this.createTenant(currentStep);
