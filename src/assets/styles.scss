@@ -2060,21 +2060,52 @@ body.modulo-fullscreen-active .layout-main {
   padding: 0 !important;
 }
 
-/* ===== Ticket de compra (impresión térmica) ===== */
+/* ===== Ticket de compra (impresión térmica 80 mm) ===== */
 @media print {
+  /* Papel térmico de 80 mm de ancho; alto continuo */
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+
+  /* Ocultar todo excepto el ticket */
   body.ticket-print-mode * { visibility: hidden !important; }
   body.ticket-print-mode .ticket-modal-root,
   body.ticket-print-mode .ticket-modal-root * { visibility: visible !important; }
+
+  body.ticket-print-mode .ticket-overlay {
+    position: static !important;
+    background: #fff !important;
+    padding: 0 !important;
+  }
+
   body.ticket-print-mode .ticket-modal-root {
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    margin: 0 !important;
+    padding: 0 2mm !important;
     box-shadow: none !important;
     max-height: none !important;
     overflow: visible !important;
     border-radius: 0 !important;
+    background: #fff !important;
   }
+
+  /* El ticket ocupa todo el ancho imprimible del papel */
+  body.ticket-print-mode .ticket {
+    width: 100% !important;
+    font-size: 12px !important;
+  }
+
+  /* El QR en tamaño legible (aprox. 20 mm) */
+  body.ticket-print-mode .ticket-qr-section canvas,
+  body.ticket-print-mode .ticket-qr-section img {
+    width: 30mm !important;
+    height: 30mm !important;
+  }
+
   body.ticket-print-mode .ticket-actions { display: none !important; }
-  body.ticket-print-mode { width: 80mm; }
-  @page { margin: 6mm; }
 }
