@@ -298,14 +298,21 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
 
     try {
       const resp = await firstValueFrom(this.orderService.createFacturapiInvoice(payload));
-      const uuid = resp?.uuid ?? '';
-      const invoiceId = resp?.id ?? '';
+      const uuid = resp?.uuid ?? resp?.object?.uuid ?? '';
+      const invoiceId = resp?.id ?? resp?.object?.id ?? '';
+      console.log('[Factura] Respuesta Facturapi:', { uuid, invoiceId, resp });
+
+      if (!uuid && !invoiceId) {
+        throw new Error('Facturapi no devolvió folio de la factura');
+      }
+
       this.successMessage = 'Pago registrado y factura generada'
         + (uuid ? ` (UUID: ${uuid})` : '')
         + (invoiceId ? ` - Factura ${invoiceId}` : '')
         + '.';
       this.facturaGenerated.emit({ uuid, invoiceId });
     } catch (e: any) {
+      console.error('[Factura] Error al generar factura:', e);
       this.successMessage = 'Pago registrado, pero no se pudo generar la factura: ' + (e?.error?.message || e?.message || 'error');
       this.facturaGenerated.emit(null);
     }
