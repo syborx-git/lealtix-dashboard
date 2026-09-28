@@ -1,5 +1,6 @@
 import { Component, ChangeDetectorRef, OnInit, signal, HostListener, ViewChild, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -40,6 +41,20 @@ export class LandingEditorComponent implements OnInit {
     step: number = 1;
     isMobile: boolean = false;
     fullscreen = false;
+
+    // El Web Studio se sirve desde el mismo origen en producción; en local
+    // se usa el mini-servidor del builder (puerto 4300).
+    // Se expone como SafeResourceUrl porque Angular (contexto RESOURCE_URL)
+    // rechaza un string plano en el src de un <iframe> con el error NG0904.
+    builderUrlSafe: SafeResourceUrl;
+
+    private computeBuilderUrl(): string {
+        const host = window.location.hostname;
+        if (host === 'localhost' || host === '127.0.0.1') {
+            return 'http://localhost:4300/index.html';
+        }
+        return 'assets/modulo-web/index.html';
+    }
 
     @ViewChild('modFrame') modFrame!: ElementRef<HTMLIFrameElement>;
 
@@ -167,8 +182,10 @@ export class LandingEditorComponent implements OnInit {
         private router: Router,
         private productService: ProductService,
         private campaignService: CampaignService,
-        private authService: AuthService
+        private authService: AuthService,
+        private sanitizer: DomSanitizer
     ) {
+        this.builderUrlSafe = this.sanitizer.bypassSecurityTrustResourceUrl(this.computeBuilderUrl());
         this.landingForm = this.fb.group({
             logo: [null],
             businessName: ['', Validators.required],
@@ -284,7 +301,6 @@ export class LandingEditorComponent implements OnInit {
 
     nextStep() {
         if (this.isStepValid(this.step)) {
-            debugger;
             const currentStep = this.step;
             // persist current step to backend before advancing
             this.createTenant(currentStep);

@@ -1,0 +1,70 @@
+<div class="ticket-overlay" *ngIf="visible && order">
+  <div class="ticket-modal-root">
+    <div class="ticket" *ngIf="order as currentOrder">
+      <div class="ticket-header">
+        <div class="ticket-business">{{ businessName }}</div>
+        <div class="ticket-line" *ngIf="businessAddress">{{ businessAddress }}</div>
+        <div class="ticket-line" *ngIf="businessPhone">Tel: {{ businessPhone }}</div>
+      </div>
+
+      <div class="ticket-sep"></div>
+
+      <div class="ticket-meta">
+        <div>Ticket: #{{ currentOrder.id.slice(0, 8).toUpperCase() }}</div>
+        <div>Cliente: {{ currentOrder.customerName ?? currentOrder.nombre ?? 'Cliente General' }}</div>
+        <div>Fecha: {{ (currentOrder.payment?.paidAt || currentOrder.fechaCreacion) | date:'dd/MM/yyyy HH:mm' }}</div>
+      </div>
+
+      <div class="ticket-sep"></div>
+
+      <div class="ticket-items">
+        <div class="ticket-item" *ngFor="let item of currentOrder.items">
+          <div class="ticket-item-name">{{ item.cantidad }}x {{ item.productName ?? item.prod }}</div>
+          <div class="ticket-item-price">{{ fmt(itemPrice(item)) }}</div>
+        </div>
+      </div>
+
+      <div class="ticket-sep"></div>
+
+      <div class="ticket-totals">
+        <div class="ticket-total-row" *ngIf="currentOrder.descuento">
+          <span>Descuento</span><span>-{{ fmt(currentOrder.descuento || 0) }}</span>
+        </div>
+        <div class="ticket-total-row ticket-total-final">
+          <span>TOTAL</span><span>{{ fmt(total) }}</span>
+        </div>
+        <div class="ticket-total-row" *ngIf="currentOrder.payment?.method">
+          <span>Pago</span><span>{{ currentOrder.payment?.method }}</span>
+        </div>
+      </div>
+
+      <div class="ticket-sep"></div>
+
+      <div class="ticket-qr-section" *ngIf="!invoiceUuid">
+        <div class="ticket-qr-label">¿Necesitas factura?</div>
+        <qrcode
+          [qrdata]="invoiceUrl"
+          [width]="150"
+          [margin]="1"
+          errorCorrectionLevel="M"
+          elementType="canvas"
+        ></qrcode>
+        <div class="ticket-qr-help">Escanea el código para facturar</div>
+      </div>
+
+      <div class="ticket-qr-section" *ngIf="invoiceUuid">
+        <div class="ticket-qr-label">Factura emitida</div>
+        <div class="ticket-invoice-uuid">UUID: {{ invoiceUuid }}</div>
+      </div>
+
+      <div class="ticket-footer">
+        <div>¡Gracias por tu compra!</div>
+      </div>
+    </div>
+
+    <div class="ticket-actions">
+      <button type="button" class="ticket-btn ticket-btn-primary" (click)="print()">Imprimir ticket</button>
+      <button type="button" class="ticket-btn" (click)="close()">Cerrar</button>
+    </div>
+  </div>
+</div>
