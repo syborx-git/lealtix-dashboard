@@ -20,6 +20,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
     private readonly READY_AUTO_CLEAR_MS = 15000;
     private tenantId = 0;
     private knownOrderIds = new Set<string>();
+    private pollingBusy = false;
 
     readonly orders$ = this.ordersSubject.asObservable();
     readonly loading$ = this.loadingSubject.asObservable();
@@ -78,7 +79,9 @@ export class KitchenOrderFacadeService implements OnDestroy {
 
 
     private startPolling(): void {
-        this.pollingTimer = setInterval(() => this.loadOrders(), 30_000);
+        // Refresco de respaldo cada 3s para que la comanda aparezca casi al instante
+        // aunque el SSE no entregue el evento (evita depender del poll de 30s).
+        this.pollingTimer = setInterval(() => void this.loadOrders(false), 3_000);
     }
 
     private startRealtime(): void {
@@ -97,8 +100,14 @@ export class KitchenOrderFacadeService implements OnDestroy {
             .subscribe((event) => this.handleOrderStatusChangedEvent(event));
     }
 
-    private async loadOrders(): Promise<void> {
-        this.loadingSubject.next(true);
+    private async loadOrders(showLoader = true): Promise<void> {
+        if (this.pollingBusy) {
+            return;
+        }
+        this.pollingBusy = true;
+        if (showLoader) {
+            this.loadingSubject.next(true);
+        }
         try {
             // Cargar órdenes de cada status independientemente
             const confirmedOrders = await firstValueFrom(
@@ -121,7 +130,10 @@ export class KitchenOrderFacadeService implements OnDestroy {
             // No hay fallback a mock, simplemente mostrar error
             this.ordersSubject.next([]);
         } finally {
-            this.loadingSubject.next(false);
+            this.pollingBusy = false;
+            if (showLoader) {
+                this.loadingSubject.next(false);
+            }
         }
     }
 
