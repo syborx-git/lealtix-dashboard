@@ -1,0 +1,29 @@
+@use './reportes-comun' as *;
+
+:host {
+  display: block;
+}
+
+// El comportamiento de las tablas viene de PrimeNG, hay que bajar un nivel.
+:host ::ng-deep .tabla-reporte {
+  .p-datatable-thead > tr > th {
+    background: #f8fafc;
+    color: var(--lealtix-slate-600);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+
+  .p-datatable-tbody > tr > td {
+    font-size: 0.85rem;
+  }
+}
+
+:host-context(.app-dark) ::ng-deep .tabla-reporte {
+  .p-datatable-thead > tr > th {
+    background: #0f172a;
+    color: #94a3b8;
+  }
+}

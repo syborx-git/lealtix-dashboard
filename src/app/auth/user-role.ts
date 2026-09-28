@@ -4,7 +4,7 @@ export const ROLE_HOME_ROUTES: Record<UserRoleName, string> = {
     ADMIN: '/dashboard/kpis',
     MESERO: '/dashboard/comandix',
     COCINA: '/dashboard/cocina',
-    CAJA: '/dashboard/kpis',
+    CAJA: '/dashboard/caja',
     MARKETING: '/dashboard/kpis',
     HOSTESS: '/dashboard/mesas'
 };

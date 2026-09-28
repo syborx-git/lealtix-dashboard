@@ -1,0 +1,114 @@
+.caja-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+.caja-header {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  color: white;
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.15);
+
+  .caja-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.caja-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding-bottom: 0.25rem;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  .caja-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.825rem;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: white;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    &.active {
+      color: #4f46e5;
+      background: white;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .tab-badge {
+      background: #ef4444;
+      color: white;
+      font-size: 0.7rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-weight: 700;
+
+      &.tab-badge-neutral {
+        background: rgba(255, 255, 255, 0.25);
+        color: white;
+      }
+
+      &.tab-badge-danger {
+        background: #f43f5e;
+        color: white;
+      }
+    }
+
+    &.active .tab-badge.tab-badge-neutral {
+      background: #e2e8f0;
+      color: #334155;
+    }
+  }
+}
+
+.ticket-thermal-preview {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .ticket-thermal-preview, .ticket-thermal-preview * {
+    visibility: visible;
+  }
+  .ticket-thermal-preview {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    margin: 0;
+    padding: 10px;
+    border: none !important;
+  }
+}

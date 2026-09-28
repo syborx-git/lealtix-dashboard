@@ -94,37 +94,56 @@
             [style.background]="group.seleccionado ? 'rgba(218, 159, 91, 0.08)' : 'var(--surface-card)'"
           >
             <div class="flex align-items-center justify-content-between gap-3 cursor-pointer" (click)="toggleSeatGroup(group)">
-              <div class="flex align-items-center gap-3">
+              <div class="flex align-items-center gap-3 min-w-0">
                 <p-checkbox
                   [binary]="true"
                   [ngModel]="group.seleccionado"
                   (ngModelChange)="toggleSeatGroup(group)"
                   (click)="$event.stopPropagation()"
                 ></p-checkbox>
-                <div class="seat-avatar flex align-items-center justify-content-center border-round-circle" style="width: 36px; height: 36px; background: #ebdccb; color: #6d4c41;">
-                  <i class="pi pi-user font-bold"></i>
+                <div
+                  class="seat-avatar flex align-items-center justify-content-center border-round-circle flex-shrink-0"
+                  style="width: 36px; height: 36px; background: #ebdccb; color: #6d4c41;"
+                >
+                  <i class="pi pi-user text-sm"></i>
                 </div>
-                <div>
+                <div class="min-w-0">
                   <div class="flex align-items-center gap-2">
-                    <span class="font-bold text-base text-900">{{ group.alias }}</span>
-                    <span class="seat-subfolio-tag font-mono font-bold text-xs px-2 py-1 border-round" style="background: #2b1f1d; color: #fdfaf7;">
+                    <span class="font-bold text-base text-900 truncate">{{ group.alias }}</span>
+                    <span class="seat-subfolio-tag font-mono font-bold text-xs px-2 py-1 border-round flex-shrink-0" style="background: #2b1f1d; color: #fdfaf7;">
                       Sub-ticket: {{ group.subFolio }}
                     </span>
                   </div>
-                  <span class="text-xs text-color-secondary">{{ group.items.length }} producto{{ group.items.length === 1 ? '' : 's' }} ordenados</span>
+                  <div class="text-xs text-color-secondary truncate">{{ group.items.length }} producto{{ group.items.length === 1 ? '' : 's' }} ordenados</div>
                 </div>
               </div>
-              <div class="text-right">
-                <span class="text-xs text-color-secondary block">Subtotal</span>
-                <span class="font-bold text-lg text-900">${{ group.subtotal | number:'1.2-2' }}</span>
-              </div>
+
+              <!-- Badge "Sub-total" morado centrado -->
+              <span
+                class="subtotal-badge text-[11px] font-bold tracking-wide uppercase rounded-full px-3 py-1 flex-shrink-0"
+                [ngClass]="group.seleccionado ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-700'"
+              >
+                <i class="pi pi-receipt text-[11px] mr-1"></i>Sub-total
+              </span>
+
+              <!-- Subtotal a la derecha, grande y bold -->
+              <span class="text-xl font-extrabold tabular-nums flex-shrink-0 text-900">${{ group.subtotal | number:'1.2-2' }}</span>
             </div>
 
-            <!-- Desglose de platillos del comensal -->
+            <!-- Desglose de platillos del comensal (ticket: nombre izq · precio der) -->
             <div class="mt-2 pt-2 border-top-1 surface-border">
-              <div *ngFor="let it of group.items" class="flex justify-content-between text-xs py-1 text-color-secondary">
-                <span>{{ it.cantidad }}x {{ it.productName }}</span>
-                <span>${{ (it.precioUnitario * it.cantidad) | number:'1.2-2' }}</span>
+              <div
+                *ngFor="let it of group.items"
+                class="flex align-items-center justify-content-between gap-2 py-1.5 text-xs border-bottom-1 surface-border last:border-bottom-none"
+              >
+                <div class="flex align-items-center gap-2 min-w-0">
+                  <img
+                    [src]="platilloImagen(it)" alt="" class="w-9 h-9 border-round object-cover flex-shrink-0"
+                    referrerpolicy="no-referrer" (error)="onImagenError($event)"
+                  />
+                  <span class="text-color-secondary truncate">{{ it.cantidad }}x {{ it.productName }}</span>
+                </div>
+                <span class="font-bold text-900 flex-shrink-0">${{ (it.precioUnitario * it.cantidad) | number:'1.2-2' }}</span>
               </div>
             </div>
           </div>

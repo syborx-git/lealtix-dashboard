@@ -1,0 +1,1311 @@
+<div class="caja-container p-3 md:p-4">
+  <p-toast></p-toast>
+
+  <!-- ==================== HEADER CAJA Y TURNOS ==================== -->
+  <div class="caja-header mb-4">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="caja-icon">
+          <i class="pi pi-wallet text-2xl text-white"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-2xl md:text-3xl font-bold m-0 text-white">Caja y Cortes</h1>
+            <span *ngIf="turnoActivo()" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-200 border border-emerald-400/40">
+              ● Turno #{{ turnoActivo()!.idTurno }} ABIERTO
+            </span>
+            <span *ngIf="!turnoActivo()" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-200 border border-rose-400/40">
+              ● CAJA CERRADA
+            </span>
+          </div>
+          <p class="text-xs text-purple-200 m-0 mt-0.5">Operador: <strong>{{ userName }}</strong> · Terminal de Cobro Principal</p>
+        </div>
+      </div>
+
+      <!-- Métricas rápidas y Acciones del Turno -->
+      <div class="flex items-center gap-2.5 flex-wrap">
+        <div *ngIf="turnoActivo()" class="bg-white/10 backdrop-blur-xs rounded-xl px-3 py-1.5 border border-white/20 text-right mr-2 hidden sm:block">
+          <span class="text-[10px] font-bold text-purple-200 uppercase tracking-wider block">Ingresos Turno</span>
+          <span class="text-base font-black text-white">${{ turnoActivo()!.totalIngresos | number:'1.2-2' }}</span>
+        </div>
+
+        <button
+          *ngIf="!turnoActivo()"
+          type="button"
+          (click)="abrirModalApertura()"
+          class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+        >
+          <i class="pi pi-key"></i>
+          <span>Abrir Turno de Caja</span>
+        </button>
+
+        <button
+          *ngIf="turnoActivo()"
+          type="button"
+          (click)="abrirModalCierre()"
+          class="px-4 py-2.5 rounded-xl bg-rose-500/90 hover:bg-rose-600 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+        >
+          <i class="pi pi-lock"></i>
+          <span>Cerrar Turno (Corte)</span>
+        </button>
+
+        <button
+          type="button"
+          (click)="cargarTablero()"
+          class="w-10 h-10 rounded-xl bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-all cursor-pointer"
+          title="Actualizar datos"
+        >
+          <i class="pi pi-refresh" [class.pi-spin]="loading()"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Toggle de Pestañas: Tablero, Cerradas, Canceladas, Cortes y Propinas, Reporte de Ventas -->
+    <div class="caja-tabs mt-4">
+      <button
+        type="button"
+        class="caja-tab-btn"
+        [class.active]="vistaActiva() === 'tablero'"
+        (click)="cambiarVista('tablero')"
+      >
+        <i class="pi pi-th-large"></i>
+        <span>Tablero de Comandas</span>
+        <span *ngIf="tablero().cuentasPorCobrar.length > 0" class="tab-badge">
+          {{ tablero().cuentasPorCobrar.length }} por cobrar
+        </span>
+      </button>
+
+      <button
+        type="button"
+        class="caja-tab-btn"
+        [class.active]="vistaActiva() === 'cerradas'"
+        (click)="cambiarVista('cerradas')"
+      >
+        <i class="pi pi-check-circle"></i>
+        <span>Comandas Cerradas</span>
+        <span *ngIf="comandasCerradas().length > 0" class="tab-badge tab-badge-neutral">
+          {{ comandasCerradas().length }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        class="caja-tab-btn"
+        [class.active]="vistaActiva() === 'canceladas'"
+        (click)="cambiarVista('canceladas')"
+      >
+        <i class="pi pi-times-circle"></i>
+        <span>Canceladas</span>
+        <span *ngIf="comandasCanceladas().length > 0" class="tab-badge tab-badge-danger">
+          {{ comandasCanceladas().length }}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        class="caja-tab-btn"
+        [class.active]="vistaActiva() === 'cortes_propinas'"
+        (click)="cambiarVista('cortes_propinas')"
+      >
+        <i class="pi pi-chart-pie"></i>
+        <span>Cortes y Propinas</span>
+      </button>
+
+      <button
+        type="button"
+        class="caja-tab-btn"
+        [class.active]="vistaActiva() === 'reporte'"
+        (click)="cambiarVista('reporte')"
+      >
+        <i class="pi pi-chart-line"></i>
+        <span>Reporte de Ventas</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== VISTA 1: TABLERO DE COMANDAS ==================== -->
+  <div *ngIf="vistaActiva() === 'tablero'" class="tablero-grid grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+    <!-- COLUMNA 1: CUENTAS ABIERTAS (En consumo en sala) -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 md:p-5 flex flex-col">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
+          <h2 class="text-sm font-bold uppercase tracking-wider text-slate-800 m-0">
+            Cuentas Abiertas ({{ tablero().cuentasAbiertas.length }})
+          </h2>
+        </div>
+        <span class="text-xs text-slate-400 font-medium">Consumo activo</span>
+      </div>
+
+      <!-- Lista de cuentas abiertas -->
+      <div class="space-y-3 overflow-y-auto max-h-[calc(100vh-320px)] pr-1">
+        <div
+          *ngFor="let comanda of tablero().cuentasAbiertas"
+          class="p-4 rounded-2xl border border-slate-200/90 hover:border-amber-400 bg-white hover:bg-amber-50/20 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs"
+        >
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="font-bold text-slate-900 text-base">{{ comanda.mesaNombre }}</span>
+              <span class="text-xs text-slate-400 font-semibold">#{{ comanda.folioComanda }}</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 uppercase">
+                {{ comanda.estado }}
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 m-0 flex items-center gap-2">
+              <span><i class="pi pi-user text-slate-400 mr-1"></i>{{ comanda.meseroNombre }}</span>
+              <span>·</span>
+              <span>{{ comanda.totalItems }} platillos</span>
+            </p>
+          </div>
+
+          <div class="flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex-wrap">
+            <span class="text-lg font-black text-slate-800 mr-1">${{ comanda.total | number:'1.2-2' }}</span>
+            <button
+              type="button"
+              (click)="abrirDetalleOrden(comanda)"
+              class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer"
+              title="Ver detalle de comanda"
+            >
+              <i class="pi pi-eye text-xs"></i>
+            </button>
+            <button
+              type="button"
+              (click)="abrirModalSplit(comanda)"
+              class="w-9 h-9 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 flex items-center justify-center transition-all cursor-pointer"
+              title="Dividir cuenta (separar comanda)"
+            >
+              <i class="pi pi-share-alt text-xs"></i>
+            </button>
+            <button
+              type="button"
+              (click)="abrirModalCancelar(comanda)"
+              class="w-9 h-9 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center transition-all cursor-pointer"
+              title="Cancelar comanda"
+            >
+              <i class="pi pi-times text-xs"></i>
+            </button>
+            <button
+              type="button"
+              (click)="imprimirTicket(comanda)"
+              [disabled]="procesando()"
+              class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer whitespace-nowrap"
+              title="Imprimir ticket y entregar a mesa para cobro"
+            >
+              <i class="pi pi-print"></i>
+              <span>Imprimir Ticket</span>
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="tablero().cuentasAbiertas.length === 0" class="py-16 text-center text-slate-400 text-xs">
+          <i class="pi pi-check-circle text-4xl mb-2 text-slate-300 block"></i>
+          No hay cuentas en consumo en este momento
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUMNA 2: CUENTAS POR COBRAR (Ticket ya en mesa) -->
+    <div class="bg-white rounded-2xl shadow-sm border-2 border-purple-200 p-4 md:p-5 flex flex-col bg-purple-50/15">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-purple-100">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-full bg-purple-600"></span>
+          <h2 class="text-sm font-bold uppercase tracking-wider text-purple-900 m-0">
+            Cuentas por Cobrar ({{ tablero().cuentasPorCobrar.length }})
+          </h2>
+        </div>
+        <span class="text-xs font-bold text-purple-700 bg-purple-100 px-2.5 py-0.5 rounded-full">
+          Ticket impreso en mesa
+        </span>
+      </div>
+
+      <!-- Lista de cuentas por cobrar -->
+      <div class="space-y-3 overflow-y-auto max-h-[calc(100vh-320px)] pr-1">
+        <div
+          *ngFor="let comanda of tablero().cuentasPorCobrar"
+          class="p-4 rounded-2xl border-2 border-purple-300 bg-white shadow-xs hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+        >
+          <div>
+            <div class="flex items-center gap-2 mb-1">
+              <span class="font-extrabold text-purple-950 text-base">{{ comanda.mesaNombre }}</span>
+              <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-600 text-white">
+                Ticket Entregado
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 m-0">
+              Mesero: <strong>{{ comanda.meseroNombre }}</strong> · Impreso hace {{ minutosDesde(comanda.fechaImpresionTicket) }} min
+            </p>
+          </div>
+
+          <div class="flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-purple-100 flex-wrap">
+            <span class="text-xl font-black text-purple-700 mr-1">${{ comanda.total | number:'1.2-2' }}</span>
+            <button
+              type="button"
+              (click)="abrirDetalleOrden(comanda)"
+              class="w-9 h-9 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 flex items-center justify-center transition-all cursor-pointer"
+              title="Ver detalle de comanda"
+            >
+              <i class="pi pi-eye text-xs"></i>
+            </button>
+            <button
+              type="button"
+              (click)="abrirModalSplit(comanda)"
+              class="w-9 h-9 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 flex items-center justify-center transition-all cursor-pointer"
+              title="Dividir cuenta"
+            >
+              <i class="pi pi-share-alt text-xs"></i>
+            </button>
+            <button
+              type="button"
+              (click)="imprimirTicket(comanda)"
+              class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer"
+              title="Reimprimir ticket"
+            >
+              <i class="pi pi-print text-xs"></i>
+            </button>
+            <button
+              type="button"
+              (click)="abrirModalCobro(comanda)"
+              [disabled]="procesando()"
+              class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs flex items-center gap-1.5 shadow-sm hover:shadow transition-all cursor-pointer whitespace-nowrap"
+            >
+              <i class="pi pi-dollar"></i>
+              <span>Cobrar Cuenta</span>
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="tablero().cuentasPorCobrar.length === 0" class="py-16 text-center text-slate-400 text-xs">
+          <i class="pi pi-inbox text-4xl mb-2 text-slate-300 block"></i>
+          Sin cuentas pendientes de cobro
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================== VISTA 2: CORTES Y PROPINAS ==================== -->
+  <div *ngIf="vistaActiva() === 'cortes_propinas'" class="space-y-6">
+
+    <!-- SECCIÓN A: AUDITORÍA Y CORTE POR MESERO -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+        <div>
+          <h2 class="text-base font-bold text-slate-800 m-0">Rendimiento y Propinas por Mesero</h2>
+          <p class="text-xs text-slate-400 m-0 mt-0.5">Auditoría del turno activo y cálculo de liquidación neta</p>
+        </div>
+
+        <!-- Selector de Mesero -->
+        <div class="flex items-center gap-2">
+          <label class="text-xs font-bold text-slate-500 uppercase">Mesero:</label>
+          <select
+            [(ngModel)]="meseroSeleccionadoId"
+            (change)="cargarRendimientoMesero()"
+            class="text-xs font-semibold p-2.5 border border-slate-200 rounded-xl bg-slate-50 min-w-[200px]"
+          >
+            <option [ngValue]="null" disabled selected>Selecciona un mesero...</option>
+            <option *ngFor="let m of meseros()" [ngValue]="m.id">{{ m.nombre }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Métricas del Mesero -->
+      <div *ngIf="corteMesero() as cm" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Vendido</span>
+            <span class="text-2xl font-black text-slate-800">${{ cm.totalVentas | number:'1.2-2' }}</span>
+            <span class="text-[11px] text-slate-400 block mt-1">{{ cm.totalComandasAtendidas }} comandas cobradas</span>
+          </div>
+
+          <div class="bg-purple-50 border border-purple-200 rounded-xl p-3.5">
+            <span class="text-[10px] font-bold text-purple-700 uppercase tracking-wider block">Propinas Brutas</span>
+            <span class="text-2xl font-black text-purple-900">${{ cm.totalPropinas | number:'1.2-2' }}</span>
+            <span class="text-[11px] text-purple-600 block mt-1">Acumuladas en sus cuentas</span>
+          </div>
+
+          <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex flex-col justify-between">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="text-[10px] font-bold text-amber-700 uppercase tracking-wider block">Saldo Pendiente</span>
+                <span class="text-2xl font-black text-amber-900">${{ cm.propinasPendientesLiquidar | number:'1.2-2' }}</span>
+              </div>
+              <div class="text-right">
+                <span class="text-[10px] font-bold text-slate-500 uppercase block">Retención</span>
+                <input
+                  type="number"
+                  [(ngModel)]="retencionPropinasPorc"
+                  class="w-14 text-center text-xs font-bold p-1 bg-white border border-amber-300 rounded-lg"
+                  title="% de retención para barra/cocina"
+                />%
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between mt-3 pt-2 border-t border-amber-200">
+              <span class="text-xs font-bold text-amber-900">
+                Neto a Entregar: <strong>${{ propinaNetaMesero | number:'1.2-2' }}</strong>
+              </span>
+              <button
+                type="button"
+                (click)="liquidarPropinasMesero()"
+                [disabled]="procesando() || cm.propinasPendientesLiquidar <= 0"
+                class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-xs disabled:opacity-40 cursor-pointer"
+              >
+                <i class="pi pi-check-circle mr-1"></i>Liquidar Propinas
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de Pagos Registrados del Mesero -->
+        <div class="mt-4">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Comandas Cobradas</h4>
+          <p-table [value]="cm.pagosRealizados" responsiveLayout="scroll" styleClass="p-datatable-sm">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>ID / Folio</th>
+                <th>Método de Pago</th>
+                <th class="text-right">Monto Cuenta</th>
+                <th class="text-right">Propina</th>
+                <th>Referencia</th>
+                <th>Fecha Cobro</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-p>
+              <tr>
+                <td class="font-bold text-slate-800">#{{ p.idComanda.slice(0, 8).toUpperCase() }}</td>
+                <td><span class="px-2 py-0.5 rounded-md bg-slate-100 font-semibold text-xs">{{ p.metodoPago }}</span></td>
+                <td class="text-right font-semibold">${{ p.montoCuenta | number:'1.2-2' }}</td>
+                <td class="text-right font-black text-purple-700">${{ p.montoPropina | number:'1.2-2' }}</td>
+                <td class="text-slate-400 text-xs">{{ p.referencia || '-' }}</td>
+                <td class="text-slate-500 text-xs">{{ p.fecha | date:'HH:mm:ss' }}</td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="6" class="text-center py-4 text-slate-400">Sin comandas cobradas en este turno</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== VISTA 3: COMANDAS CERRADAS ==================== -->
+  <div *ngIf="vistaActiva() === 'cerradas'" class="space-y-4">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 md:p-5">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+        <div>
+          <h2 class="text-base font-bold text-slate-800 m-0">Historial de Comandas Cerradas</h2>
+          <p class="text-xs text-slate-400 m-0 mt-0.5">Órdenes pagadas y liquidadas en caja</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="relative">
+            <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input
+              type="text"
+              [ngModel]="busquedaCerradas()"
+              (ngModelChange)="busquedaCerradas.set($event)"
+              placeholder="Buscar por mesa, mesero, cliente..."
+              class="text-xs pl-8 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-purple-500 w-64 transition-all"
+            />
+          </div>
+          <button
+            type="button"
+            (click)="cargarHistorialComandas(true)"
+            class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer"
+            title="Actualizar"
+          >
+            <i class="pi pi-refresh" [class.pi-spin]="loadingHistorial()"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" *ngIf="cerradasFiltradas().length > 0">
+        <div
+          *ngFor="let order of cerradasFiltradas()"
+          class="bg-white rounded-2xl border border-slate-200/80 hover:border-emerald-400 p-4 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+        >
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-900 text-base">#{{ order.id.slice(0, 8).toUpperCase() }}</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 uppercase">
+                  PAGADA
+                </span>
+              </div>
+              <span class="text-xs text-slate-400">
+                {{ (order.payment?.paidAt || order.fechaCreacion) | date:'dd/MM HH:mm' }}
+              </span>
+            </div>
+
+            <div class="space-y-1 text-xs text-slate-600 mb-3">
+              <div class="flex items-center gap-1.5">
+                <i class="pi pi-table text-purple-600"></i>
+                <span class="font-semibold text-slate-800">{{ order.mesaNombre || 'Mesa General' }}</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <i class="pi pi-user text-slate-400"></i>
+                <span>Mesero: <strong>{{ order.meseroNombre || 'No asignado' }}</strong></span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <i class="pi pi-id-card text-slate-400"></i>
+                <span>Cliente: {{ getClientLabel(order) }}</span>
+              </div>
+              <div *ngIf="order.payment?.method" class="flex items-center gap-1.5 text-slate-500">
+                <i class="pi pi-wallet text-amber-600"></i>
+                <span>Pago: <strong>{{ order.payment?.method }}</strong> <span *ngIf="order.payment?.reference">({{ order.payment?.reference }})</span></span>
+              </div>
+            </div>
+
+            <!-- Items preview -->
+            <div *ngIf="order.items && order.items.length > 0" class="bg-slate-50 rounded-xl p-2.5 mb-3 text-xs">
+              <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                {{ order.items.length }} producto{{ order.items.length === 1 ? '' : 's' }}
+              </div>
+              <div class="space-y-0.5 max-h-24 overflow-y-auto pr-1">
+                <div *ngFor="let it of order.items" class="flex justify-between text-slate-600">
+                  <span class="truncate">{{ it.cantidad }}x {{ getProductLabel(it) }}</span>
+                  <span class="font-medium text-slate-800 ml-2">${{ (getItemPrice(it) * it.cantidad) | number:'1.2-2' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase font-bold block">Total Pagado</span>
+              <span class="text-xl font-black text-emerald-600">
+                ${{ (order.totalFinal ?? order.subtotal ?? 0) | number:'1.2-2' }}
+              </span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button
+                type="button"
+                (click)="reimprimirTicketCerrada(order)"
+                class="px-2.5 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                title="Reimprimir ticket"
+              >
+                <i class="pi pi-print"></i>
+                <span class="hidden sm:inline">Ticket</span>
+              </button>
+              <button
+                type="button"
+                (click)="abrirDetalleOrden(order)"
+                class="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+              >
+                <i class="pi pi-eye"></i>
+                <span>Detalle</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="cerradasFiltradas().length === 0" class="py-16 text-center text-slate-400 text-xs">
+        <i class="pi pi-inbox text-4xl mb-2 text-slate-300 block"></i>
+        No se encontraron comandas cerradas
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== VISTA 4: COMANDAS CANCELADAS ==================== -->
+  <div *ngIf="vistaActiva() === 'canceladas'" class="space-y-4">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 md:p-5">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+        <div>
+          <h2 class="text-base font-bold text-slate-800 m-0">Comandas Canceladas / Rechazadas</h2>
+          <p class="text-xs text-slate-400 m-0 mt-0.5">Historial de órdenes canceladas con motivos registrados</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="relative">
+            <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input
+              type="text"
+              [ngModel]="busquedaCanceladas()"
+              (ngModelChange)="busquedaCanceladas.set($event)"
+              placeholder="Buscar canceladas..."
+              class="text-xs pl-8 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-rose-500 w-64 transition-all"
+            />
+          </div>
+          <button
+            type="button"
+            (click)="cargarHistorialComandas(true)"
+            class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer"
+            title="Actualizar"
+          >
+            <i class="pi pi-refresh" [class.pi-spin]="loadingHistorial()"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" *ngIf="canceladasFiltradas().length > 0">
+        <div
+          *ngFor="let order of canceladasFiltradas()"
+          class="bg-white rounded-2xl border border-rose-200 hover:border-rose-400 p-4 shadow-xs transition-all flex flex-col justify-between"
+        >
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-900 text-base">#{{ order.id.slice(0, 8).toUpperCase() }}</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 uppercase">
+                  {{ order.estado }}
+                </span>
+              </div>
+              <span class="text-xs text-slate-400">
+                {{ order.fechaCreacion | date:'dd/MM HH:mm' }}
+              </span>
+            </div>
+
+            <div class="space-y-1 text-xs text-slate-600 mb-3">
+              <div class="flex items-center gap-1.5">
+                <i class="pi pi-table text-purple-600"></i>
+                <span class="font-semibold text-slate-800">{{ order.mesaNombre || 'Mesa General' }}</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <i class="pi pi-user text-slate-400"></i>
+                <span>Mesero: <strong>{{ order.meseroNombre || 'No asignado' }}</strong></span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <i class="pi pi-id-card text-slate-400"></i>
+                <span>Cliente: {{ getClientLabel(order) }}</span>
+              </div>
+            </div>
+
+            <!-- Items count -->
+            <div *ngIf="order.items && order.items.length > 0" class="text-xs text-slate-500 mb-2">
+              {{ order.items.length }} producto{{ order.items.length === 1 ? '' : 's' }}
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+            <div>
+              <span class="text-[10px] text-slate-400 uppercase font-bold block">Monto Anulado</span>
+              <span class="text-xl font-black text-rose-600">
+                ${{ (order.totalFinal ?? order.subtotal ?? 0) | number:'1.2-2' }}
+              </span>
+            </div>
+            <button
+              type="button"
+              (click)="abrirDetalleOrden(order)"
+              class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+            >
+              <i class="pi pi-eye"></i>
+              <span>Detalle</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="canceladasFiltradas().length === 0" class="py-16 text-center text-slate-400 text-xs">
+        <i class="pi pi-check-circle text-4xl mb-2 text-slate-300 block"></i>
+        No hay comandas canceladas registradas
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== VISTA 5: REPORTE GENERAL DE VENTAS Y COMANDAS ==================== -->
+  <div *ngIf="vistaActiva() === 'reporte'" class="space-y-4">
+    <!-- Encabezado del reporte -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 md:p-5">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+        <div>
+          <h2 class="text-xl font-bold m-0 text-slate-800 flex items-center gap-2">
+            <i class="pi pi-chart-line text-purple-600"></i>
+            <span>Reporte General de Ventas y Comandas</span>
+          </h2>
+          <p class="text-xs text-slate-400 m-0 mt-1">
+            Consolidado financiero y operativo: trazabilidad por mesa, mesero, cliente y subcomandas
+          </p>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            [ngClass]="reporteFiltroFecha() === 'hoy' ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'"
+            (click)="reporteFiltroFecha.set('hoy')"
+          >
+            Hoy
+          </button>
+          <button
+            type="button"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            [ngClass]="reporteFiltroFecha() === 'semana' ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'"
+            (click)="reporteFiltroFecha.set('semana')"
+          >
+            Últimos 7 días
+          </button>
+          <button
+            type="button"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            [ngClass]="reporteFiltroFecha() === 'todos' ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'"
+            (click)="reporteFiltroFecha.set('todos')"
+          >
+            Historial completo
+          </button>
+          <button
+            type="button"
+            (click)="cargarHistorialComandas(true)"
+            class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer"
+            title="Actualizar datos"
+          >
+            <i class="pi pi-refresh" [class.pi-spin]="loadingHistorial()"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-xl flex-shrink-0">
+          <i class="pi pi-dollar"></i>
+        </div>
+        <div>
+          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Ventas Pagadas</div>
+          <div class="text-2xl font-black text-emerald-600">${{ reporteTotalVendido() | number:'1.2-2' }}</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-600 flex items-center justify-center text-xl flex-shrink-0">
+          <i class="pi pi-receipt"></i>
+        </div>
+        <div>
+          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Comandas Totales</div>
+          <div class="text-2xl font-black text-slate-800">{{ reporteTotalComandas() }}</div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center text-xl flex-shrink-0">
+          <i class="pi pi-percentage"></i>
+        </div>
+        <div>
+          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Ticket Promedio</div>
+          <div class="text-2xl font-black text-amber-600">${{ reporteTicketPromedio() | number:'1.2-2' }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Barra de búsqueda y conteo -->
+    <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+      <div class="relative w-full md:w-80">
+        <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+        <input
+          type="text"
+          [ngModel]="reporteFiltroBusqueda()"
+          (ngModelChange)="reporteFiltroBusqueda.set($event)"
+          placeholder="Buscar por folio, mesa, mesero, cliente..."
+          class="w-full text-xs pl-8 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-purple-500 transition-all"
+        />
+      </div>
+      <span class="text-xs text-slate-400 font-medium">
+        Mostrando {{ reporteComandas().length }} registros
+      </span>
+    </div>
+
+    <!-- Tabla de Reporte -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+      <p-table
+        [value]="reporteComandas()"
+        [paginator]="true"
+        [rows]="10"
+        responsiveLayout="scroll"
+        styleClass="p-datatable-sm"
+      >
+        <ng-template pTemplate="header">
+          <tr class="bg-slate-50 text-slate-600 text-xs uppercase tracking-wider font-bold">
+            <th class="py-3 px-4">Folio / Comanda</th>
+            <th class="py-3 px-4">Horario</th>
+            <th class="py-3 px-4">Mesa</th>
+            <th class="py-3 px-4">Mesero</th>
+            <th class="py-3 px-4 text-right">Total</th>
+            <th class="py-3 px-4">Cliente</th>
+            <th class="py-3 px-4 text-center">Estado</th>
+            <th class="py-3 px-4 text-center">Acciones</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-row>
+          <tr class="border-b border-slate-100 hover:bg-purple-50/20 text-xs">
+            <!-- Folio -->
+            <td class="py-3 px-4 font-bold text-slate-900">
+              <div class="flex items-center gap-2">
+                <span>#{{ row.folio_comanda }}</span>
+                <span *ngIf="row.subcomandas?.length" class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-100 text-purple-700">
+                  {{ row.subcomandas.length }} sub-cuentas
+                </span>
+              </div>
+            </td>
+
+            <!-- Horario -->
+            <td class="py-3 px-4 text-slate-500">
+              <div>
+                <span class="font-semibold text-slate-700">{{ row.hora_apertura | date:'dd/MM HH:mm' }}</span>
+                <span *ngIf="row.hora_cierre" class="block text-[11px] text-slate-400">Cierre: {{ row.hora_cierre | date:'HH:mm' }}</span>
+                <span *ngIf="!row.hora_cierre" class="block text-[11px] text-amber-600 font-bold">En curso</span>
+              </div>
+            </td>
+
+            <!-- Mesa -->
+            <td class="py-3 px-4 font-semibold text-slate-800">
+              <i class="pi pi-table text-purple-600 mr-1"></i>
+              {{ row.mesa_nombre }}
+            </td>
+
+            <!-- Mesero -->
+            <td class="py-3 px-4 text-slate-600">
+              <i class="pi pi-user text-slate-400 mr-1"></i>
+              {{ row.mesero_nombre }}
+            </td>
+
+            <!-- Total -->
+            <td class="py-3 px-4 text-right">
+              <span class="font-black text-sm text-emerald-600">
+                ${{ row.total_pagado | number:'1.2-2' }}
+              </span>
+            </td>
+
+            <!-- Cliente -->
+            <td class="py-3 px-4 text-slate-600">
+              <span *ngIf="row.cliente_nombre !== 'Cliente no registrado'" class="font-semibold text-purple-900">
+                <i class="pi pi-star-fill text-amber-500 mr-1 text-xs"></i>
+                {{ row.cliente_nombre }}
+              </span>
+              <span *ngIf="row.cliente_nombre === 'Cliente no registrado'" class="text-slate-400 italic">
+                Cliente no registrado
+              </span>
+            </td>
+
+            <!-- Estado -->
+            <td class="py-3 px-4 text-center">
+              <p-tag [value]="row.estado_comanda" [styleClass]="getStatusClass(row.estado_comanda)"></p-tag>
+            </td>
+
+            <!-- Acciones -->
+            <td class="py-3 px-4 text-center">
+              <button
+                type="button"
+                (click)="abrirDetalleReporte(row)"
+                class="px-2.5 py-1 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1"
+                title="Ver detalle de comanda"
+              >
+                <i class="pi pi-eye"></i>
+                <span>Ver</span>
+              </button>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="8" class="text-center py-12 text-slate-400 text-xs">
+              <i class="pi pi-inbox text-3xl mb-2 text-slate-300 block"></i>
+              No se encontraron registros de comandas para este filtro
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: ABRIR TURNO DE CAJA ==================== -->
+  <p-dialog
+    [(visible)]="modalAbrirTurnoVisible"
+    [modal]="true"
+    [header]="'Apertura de Turno de Caja'"
+    [style]="{ width: '100%', maxWidth: '440px' }"
+  >
+    <div class="space-y-4 py-2">
+      <div class="bg-purple-50 p-3.5 rounded-2xl border border-purple-200 text-xs text-purple-900">
+        <i class="pi pi-info-circle mr-1 text-purple-600"></i>
+        Ingresa el <strong>Fondo Inicial (cambio en efectivo)</strong> con el que comienzas tu turno.
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Fondo Inicial ($) *</label>
+        <input
+          type="number"
+          [(ngModel)]="fondoInicialInput"
+          placeholder="0.00"
+          class="w-full text-xl font-black p-3 rounded-xl border border-slate-300 text-slate-900 bg-white"
+        />
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Observaciones / Notas</label>
+        <textarea
+          [(ngModel)]="observacionesApertura"
+          rows="2"
+          placeholder="Ej: Turno vespertino, cambio en billetes de 50..."
+          class="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white resize-none"
+        ></textarea>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-end gap-2">
+        <button
+          type="button"
+          (click)="modalAbrirTurnoVisible.set(false)"
+          class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          (click)="confirmarAbrirTurno()"
+          [disabled]="procesando()"
+          class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
+        >
+          <i *ngIf="procesando()" class="pi pi-spin pi-spinner"></i>
+          <span>Abrir Turno</span>
+        </button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- ==================== MODAL: CERRAR TURNO (CORTE Y ARQUEO) ==================== -->
+  <p-dialog
+    [(visible)]="modalCerrarTurnoVisible"
+    [modal]="true"
+    [header]="'Cierre de Turno y Corte de Caja'"
+    [style]="{ width: '100%', maxWidth: '520px' }"
+  >
+    <div *ngIf="resumenCorte() as rc" class="space-y-4 py-2">
+      <!-- Resumen Financiero del Turno -->
+      <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-xs">
+        <div>
+          <span class="text-slate-400 block font-semibold">Fondo Inicial:</span>
+          <strong class="text-slate-800 text-sm">${{ rc.fondoInicial | number:'1.2-2' }}</strong>
+        </div>
+        <div>
+          <span class="text-slate-400 block font-semibold">Total Ventas:</span>
+          <strong class="text-slate-800 text-sm">${{ rc.totalVentas | number:'1.2-2' }}</strong>
+        </div>
+        <div>
+          <span class="text-slate-400 block font-semibold">Total Propinas:</span>
+          <strong class="text-purple-700 text-sm">${{ rc.totalPropinas | number:'1.2-2' }}</strong>
+        </div>
+        <div>
+          <span class="text-slate-400 block font-semibold">Artículos Vendidos:</span>
+          <strong class="text-slate-800 text-sm">{{ rc.totalArticulosVendidos }} piezas</strong>
+        </div>
+      </div>
+
+      <!-- Desglose por Método de Pago -->
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Desglose de Cobros</h4>
+        <div class="space-y-1.5">
+          <div *ngFor="let dm of rc.desgloseMetodos" class="flex justify-between items-center text-xs bg-white p-2 rounded-lg border border-slate-100">
+            <span class="font-bold text-slate-700">{{ dm.metodoPago }} ({{ dm.transacciones }} pagos)</span>
+            <span class="font-extrabold text-slate-900">${{ dm.totalRecaudado | number:'1.2-2' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Arqueo de Efectivo Físico -->
+      <div class="bg-amber-50/80 p-4 rounded-2xl border border-amber-200 space-y-3">
+        <div class="flex justify-between items-center text-xs">
+          <span class="font-bold text-amber-900">Efectivo Esperado en Cajón:</span>
+          <span class="text-base font-black text-amber-950">${{ rc.efectivoEsperadoEnCaja | number:'1.2-2' }}</span>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Efectivo Contado en Físico ($) *</label>
+          <input
+            type="number"
+            [(ngModel)]="efectivoDeclaradoInput"
+            class="w-full text-lg font-black p-2.5 rounded-xl border border-amber-300 bg-white"
+          />
+        </div>
+
+        <div class="flex justify-between items-center text-xs pt-2 border-t border-amber-200">
+          <span class="font-bold text-slate-700">Diferencia de Caja:</span>
+          <span class="text-sm font-black" [class.text-emerald-600]="diferenciaCorte >= 0" [class.text-rose-600]="diferenciaCorte < 0">
+            {{ diferenciaCorte >= 0 ? '+$' : '-$' }}{{ (diferenciaCorte >= 0 ? diferenciaCorte : -diferenciaCorte) | number:'1.2-2' }}
+            ({{ diferenciaCorte >= 0 ? 'Sobrante/Cuadrado' : 'Faltante' }})
+          </span>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Notas de Cierre</label>
+        <textarea
+          [(ngModel)]="observacionesCierre"
+          rows="2"
+          placeholder="Observaciones finales del corte..."
+          class="w-full text-xs p-2 rounded-xl border border-slate-300 bg-white resize-none"
+        ></textarea>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-end gap-2">
+        <button
+          type="button"
+          (click)="modalCerrarTurnoVisible.set(false)"
+          class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          (click)="confirmarCerrarTurno()"
+          [disabled]="procesando()"
+          class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
+        >
+          <i *ngIf="procesando()" class="pi pi-spin pi-spinner"></i>
+          <span>Confirmar y Cerrar Caja</span>
+        </button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- ==================== MODAL: TICKET PRE-CUENTA (IMPRIMIBLE) ==================== -->
+  <p-dialog
+    [(visible)]="modalTicketVisible"
+    [modal]="true"
+    [header]="'Ticket Pre-Cuenta (En Mesa)'"
+    [style]="{ width: '100%', maxWidth: '420px' }"
+  >
+    <div *ngIf="ticketActual() as t" class="ticket-thermal-preview bg-white p-4 rounded-xl border border-dashed border-slate-300 font-mono text-xs text-slate-800 space-y-3">
+      <div class="text-center pb-2 border-b border-dashed border-slate-300">
+        <h3 class="font-extrabold text-sm m-0">PRE-CUENTA</h3>
+        <p class="text-[11px] text-slate-500 m-0">Comanda #{{ t.folioComanda }}</p>
+        <p class="text-[11px] text-slate-500 m-0">{{ t.mesaNombre }} · {{ t.meseroNombre }}</p>
+      </div>
+
+      <!-- Items -->
+      <div class="space-y-1.5 py-1 border-b border-dashed border-slate-300">
+        <div *ngFor="let it of t.items" class="flex justify-between">
+          <span>{{ it.cantidad }}x {{ it.nombreProducto }}</span>
+          <strong>${{ it.totalLinea | number:'1.2-2' }}</strong>
+        </div>
+      </div>
+
+      <!-- Totales -->
+      <div class="space-y-1 pt-1 text-right">
+        <div class="flex justify-between font-bold text-sm">
+          <span>TOTAL:</span>
+          <span>${{ t.total | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <!-- Propinas Sugeridas -->
+      <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-[11px] space-y-1 mt-3">
+        <span class="font-bold text-slate-600 block text-center uppercase tracking-wider text-[10px]">Propina Sugerida</span>
+        <div class="flex justify-between"><span>10%:</span> <strong>${{ t.propinaSugerida10 | number:'1.2-2' }}</strong></div>
+        <div class="flex justify-between"><span>15%:</span> <strong>${{ t.propinaSugerida15 | number:'1.2-2' }}</strong></div>
+        <div class="flex justify-between"><span>20%:</span> <strong>${{ t.propinaSugerida20 | number:'1.2-2' }}</strong></div>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-end gap-2">
+        <button
+          type="button"
+          (click)="modalTicketVisible.set(false)"
+          class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+        >
+          Cerrar
+        </button>
+        <button
+          type="button"
+          (click)="imprimirVentanaTicket()"
+          class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
+        >
+          <i class="pi pi-print"></i>
+          <span>Imprimir</span>
+        </button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- ==================== MODAL: COBRO DE COMANDA (PAGAR) ==================== -->
+  <p-dialog
+    [(visible)]="modalPagoVisible"
+    [modal]="true"
+    [header]="'Cobro de Comanda'"
+    [style]="{ width: '100%', maxWidth: '480px' }"
+  >
+    <div *ngIf="comandaSeleccionada() as c" class="space-y-4 py-2">
+      <!-- Banner Comanda -->
+      <div class="bg-purple-50 p-3 rounded-xl border border-purple-200 flex justify-between items-center">
+        <div>
+          <span class="text-xs font-bold text-purple-900 block">{{ c.mesaNombre }} · #{{ c.folioComanda }}</span>
+          <span class="text-[11px] text-purple-600">Mesero: {{ c.meseroNombre }}</span>
+        </div>
+        <div class="text-right">
+          <span class="text-[10px] font-bold text-purple-700 uppercase block">Total Cuenta</span>
+          <span class="text-xl font-black text-purple-950">${{ c.total | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <!-- Selector Método de Pago -->
+      <div>
+        <label class="block text-xs font-bold text-slate-600 uppercase mb-1.5">Método de Pago *</label>
+        <div class="grid grid-cols-3 gap-2">
+          <button
+            type="button"
+            *ngFor="let m of ['EFECTIVO', 'VISA', 'MASTERCARD', 'TRANSFERENCIA', 'VALES']"
+            (click)="metodoPagoSeleccionado = m"
+            [class]="metodoPagoSeleccionado === m
+              ? 'bg-purple-600 text-white border-purple-600 font-bold'
+              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 font-medium'"
+            class="py-2 px-2.5 rounded-xl border text-xs text-center transition-all cursor-pointer"
+          >
+            {{ m }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Entrada de Propina Rápida -->
+      <div>
+        <div class="flex justify-between items-center mb-1">
+          <label class="text-xs font-bold text-slate-600 uppercase">Monto Propina ($)</label>
+          <span class="text-xs font-black text-purple-700">+${{ montoPropinaInput | number:'1.2-2' }}</span>
+        </div>
+        <div class="flex gap-2">
+          <button type="button" (click)="aplicarPropinaRapida(0.10)" class="flex-1 py-1 text-xs bg-purple-50 text-purple-700 font-bold rounded-lg border border-purple-200 hover:bg-purple-100">10%</button>
+          <button type="button" (click)="aplicarPropinaRapida(0.15)" class="flex-1 py-1 text-xs bg-purple-50 text-purple-700 font-bold rounded-lg border border-purple-200 hover:bg-purple-100">15%</button>
+          <button type="button" (click)="montoPropinaInput = 0" class="flex-1 py-1 text-xs bg-slate-100 text-slate-600 font-bold rounded-lg border border-slate-200 hover:bg-slate-200">$0</button>
+          <input
+            type="number"
+            [(ngModel)]="montoPropinaInput"
+            placeholder="Otra"
+            class="w-24 text-right text-xs p-1.5 rounded-lg border border-slate-200 font-bold"
+          />
+        </div>
+      </div>
+
+      <!-- Efectivo y Cálculo de Cambio -->
+      <div *ngIf="metodoPagoSeleccionado === 'EFECTIVO'" class="bg-emerald-50 p-3 rounded-xl border border-emerald-200 space-y-2">
+        <div class="flex justify-between items-center text-xs">
+          <span class="font-bold text-emerald-900">Efectivo Recibido ($):</span>
+          <input
+            type="number"
+            [(ngModel)]="efectivoRecibidoInput"
+            class="w-28 text-right font-black text-sm p-1.5 bg-white border border-emerald-300 rounded-lg text-emerald-950"
+          />
+        </div>
+        <div class="flex justify-between items-center text-xs pt-1 border-t border-emerald-200">
+          <span class="font-bold text-slate-600">Cambio a entregar:</span>
+          <span class="font-black text-sm text-emerald-700">${{ cambioEfectivo | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <!-- Referencia para terminal o transferencias -->
+      <div *ngIf="metodoPagoSeleccionado !== 'EFECTIVO'">
+        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Referencia / Voucher Terminal</label>
+        <input
+          type="text"
+          [(ngModel)]="referenciaPagoInput"
+          placeholder="Ej: Autorización #928371"
+          class="w-full text-xs p-2.5 rounded-xl border border-slate-200"
+        />
+      </div>
+
+      <!-- Total Final a Registrar -->
+      <div class="flex justify-between items-center pt-2 border-t border-slate-100">
+        <span class="text-xs font-bold text-slate-500 uppercase">Total a Registrar:</span>
+        <span class="text-2xl font-black text-purple-900">${{ (montoCuentaInput + montoPropinaInput) | number:'1.2-2' }}</span>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-end gap-2">
+        <button
+          type="button"
+          (click)="modalPagoVisible.set(false)"
+          class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          (click)="procesarCobro()"
+          [disabled]="procesando()"
+          class="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black shadow-md cursor-pointer flex items-center gap-1.5"
+        >
+          <i *ngIf="procesando()" class="pi pi-spin pi-spinner"></i>
+          <span>Cobrar y Liquidar</span>
+        </button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- ==================== MODAL: DETALLE DE COMANDA ==================== -->
+  <p-dialog
+    [(visible)]="modalDetalleVisible"
+    [modal]="true"
+    [header]="'Detalle de Comanda'"
+    [style]="{ width: '100%', maxWidth: '640px' }"
+    (onHide)="cerrarDetalleOrden()"
+  >
+    <div *ngIf="selectedOrderDetalle() as order" class="space-y-4 py-1">
+      <!-- Info Header -->
+      <div class="bg-purple-50/60 p-4 rounded-2xl border border-purple-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-xs font-bold text-purple-600 uppercase">Orden</span>
+            <span class="text-lg font-black text-slate-900">#{{ order.id.slice(0, 8).toUpperCase() }}</span>
+            <p-tag [value]="order.estado" [styleClass]="getStatusClass(order.estado)"></p-tag>
+          </div>
+          <div class="text-xs text-slate-600 flex items-center gap-2 flex-wrap">
+            <span><i class="pi pi-table text-purple-600 mr-1"></i>{{ order.mesaNombre || 'Mesa General' }}</span>
+            <span>·</span>
+            <span><i class="pi pi-user text-slate-400 mr-1"></i>{{ order.meseroNombre || 'Mesero General' }}</span>
+            <span>·</span>
+            <span><i class="pi pi-id-card text-slate-400 mr-1"></i>{{ getClientLabel(order) }}</span>
+          </div>
+        </div>
+
+        <div class="text-right">
+          <span class="text-[10px] text-slate-400 uppercase font-bold block">Total Comanda</span>
+          <span class="text-2xl font-black text-purple-900">
+            ${{ (order.totalFinal ?? order.subtotal ?? 0) | number:'1.2-2' }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Items List -->
+      <div class="space-y-2">
+        <h4 class="text-xs font-bold text-slate-600 uppercase tracking-wider m-0">Platillos y Bebidas</h4>
+        <div class="border border-slate-200 rounded-2xl divide-y divide-slate-100 max-h-60 overflow-y-auto">
+          <div *ngFor="let item of order.items" class="p-3 flex items-center justify-between text-xs hover:bg-slate-50">
+            <div class="flex-1 min-w-0 pr-3">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-bold text-slate-800">{{ getProductLabel(item) }}</span>
+                <span *ngIf="item.asientoAlias" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                  👤 {{ item.asientoAlias }}
+                </span>
+                <span class="text-xs text-slate-400">x{{ item.cantidad }}</span>
+              </div>
+              <div *ngIf="item.comentarios" class="text-slate-500 italic mt-0.5 text-[11px]">
+                Nota: {{ item.comentarios }}
+              </div>
+            </div>
+            <div class="font-black text-slate-800 whitespace-nowrap">
+              ${{ (getItemPrice(item) * item.cantidad) | number:'1.2-2' }}
+            </div>
+          </div>
+          <div *ngIf="!order.items || order.items.length === 0" class="p-4 text-center text-slate-400 text-xs">
+            Sin platillos registrados en la orden
+          </div>
+        </div>
+      </div>
+
+      <!-- Totales y Pago -->
+      <div class="bg-slate-50 p-3.5 rounded-2xl space-y-1.5 text-xs">
+        <div class="flex justify-between text-slate-500" *ngIf="order.subtotal">
+          <span>Subtotal</span>
+          <span>${{ order.subtotal | number:'1.2-2' }}</span>
+        </div>
+        <div class="flex justify-between text-emerald-600" *ngIf="order.descuento && order.descuento > 0">
+          <span>Descuento</span>
+          <span>-${{ order.descuento | number:'1.2-2' }}</span>
+        </div>
+        <div class="flex justify-between font-black text-slate-900 text-sm pt-1 border-t border-slate-200">
+          <span>Total</span>
+          <span>${{ (order.totalFinal ?? order.subtotal ?? 0) | number:'1.2-2' }}</span>
+        </div>
+        <div *ngIf="order.payment?.method" class="pt-2 border-t border-slate-200 flex justify-between text-slate-600">
+          <span>Método de Pago: <strong>{{ order.payment?.method }}</strong></span>
+          <span *ngIf="order.payment?.reference">Ref: {{ order.payment?.reference }}</span>
+        </div>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-end">
+        <button
+          type="button"
+          (click)="cerrarDetalleOrden()"
+          class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+        >
+          Cerrar
+        </button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- ==================== DIÁLOGO: CANCELAR COMANDA ==================== -->
+  <p-dialog
+    [(visible)]="modalCancelarVisible"
+    [modal]="true"
+    [header]="'Cancelar Comanda'"
+    [style]="{ width: '100%', maxWidth: '480px' }"
+    (onHide)="cerrarModalCancelar()"
+  >
+    <div *ngIf="comandaACancelar() as target" class="space-y-4 py-2">
+      <!-- Info Comanda -->
+      <div class="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex justify-between items-center">
+        <div>
+          <span class="text-[10px] font-bold text-rose-700 uppercase tracking-wider block">Comanda</span>
+          <span class="text-xl font-black text-rose-950">#{{ target.folio }}</span>
+          <span *ngIf="target.mesaNombre" class="text-xs text-rose-800 font-semibold block mt-0.5">{{ target.mesaNombre }}</span>
+        </div>
+        <div class="text-right">
+          <span class="text-[10px] font-bold text-rose-700 uppercase tracking-wider block">Total</span>
+          <span class="text-2xl font-black text-rose-600">${{ target.total | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <!-- Advertencia -->
+      <div class="flex items-start gap-2.5 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
+        <i class="pi pi-exclamation-triangle text-amber-600 text-sm mt-0.5 flex-shrink-0"></i>
+        <div>
+          <strong>Acción Administrativa Irreversible:</strong> Al cancelar esta comanda quedará registrada en la auditoría de cancelaciones de caja.
+        </div>
+      </div>
+
+      <!-- Motivo -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+          Motivo de Cancelación *
+        </label>
+        <textarea
+          [(ngModel)]="motivoCancelacion"
+          rows="3"
+          placeholder="Describe la razón de la cancelación (error en mesa, cliente se retiró, etc.)..."
+          class="w-full text-xs p-3 rounded-xl border border-slate-300 focus:border-rose-500 bg-white resize-none"
+        ></textarea>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-end gap-2">
+        <button
+          type="button"
+          (click)="cerrarModalCancelar()"
+          [disabled]="procesando()"
+          class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+        >
+          No, Mantener
+        </button>
+        <button
+          type="button"
+          (click)="confirmarCancelarComanda()"
+          [disabled]="procesando() || !motivoCancelacion.trim()"
+          class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
+        >
+          <i *ngIf="procesando()" class="pi pi-spin pi-spinner"></i>
+          <span>Confirmar Cancelación</span>
+        </button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- ==================== MODAL: DIVIDIR COMANDA (SPLIT) ==================== -->
+  <app-split-order-modal
+    [visible]="modalSplitVisible()"
+    [order]="orderParaSplit()"
+    [tip]="splitOrderTip()"
+    (visibleChange)="onSplitModalVisibilityChange($event)"
+    (cuentaCreada)="onCuentaCreadaEnCaja($event)"
+  ></app-split-order-modal>
+</div>

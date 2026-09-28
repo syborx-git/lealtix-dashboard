@@ -41,9 +41,6 @@ import { environment } from '@/pages/commons/environment';
 
 // Componentes
 import { ClienteDialogComponent } from '@/pages/clientes/components/cliente-dialog/cliente-dialog.component';
-import { CloseOrderModalComponent } from './components/close-order-modal/close-order-modal.component';
-import { RegistrarMermaModalComponent } from './components/registrar-merma-modal/registrar-merma-modal.component';
-import { SplitOrderModalComponent } from './components/split-order-modal/split-order-modal.component';
 
 // Modelos
 import { MenuCategory, Product, IngredientOption } from './models/menu.model';
@@ -55,10 +52,7 @@ import {
   PendingOrder,
   PendingOrderItem,
   OrderStatus,
-  PaymentMethod,
-  TipInfo,
-  ComandaAsiento,
-  ReporteVentaRow
+  ComandaAsiento
 } from './models/order.model';
 import { Cliente, GENERO_OPTIONS, CreateClienteRequest } from '@/models/cliente.model';
 import { RedemptionRequest, RedemptionChannel } from '@/pages/redeem/models/redemption-request.model';
@@ -107,10 +101,7 @@ interface StockInfo {
     CheckboxModule,
     TooltipModule,
     TableModule,
-    ClienteDialogComponent,
-    CloseOrderModalComponent,
-    RegistrarMermaModalComponent,
-    SplitOrderModalComponent
+    ClienteDialogComponent
   ],
   providers: [MessageService],
   templateUrl: './comandix.component.html',
@@ -227,33 +218,10 @@ export class ComandixComponent implements OnInit, OnDestroy {
 configAdditionalIds = new Set<number>();
 configEditingItem: CartItem | null = null;
 
-  // ==================== SIGNALS DASHBOARD DE ÓRDENES (nuevo) ====================
-  activeView = signal<'pos' | 'orders' | 'report'>('pos');
-  ordersView = signal<'active' | 'closed' | 'cancelled'>('active');
-  pendingOrders = signal<PendingOrder[]>([]);
-  loadingOrders = signal<boolean>(false);
-  selectedOrder = signal<PendingOrder | null>(null);
-  showOrderDetail = signal<boolean>(false);
-  processingOrderAction = signal<boolean>(false);
+  // ==================== ESTADO OPERATIVO (NUEVA ORDEN) ====================
   editingPendingOrder = signal<PendingOrder | null>(null);
-  showCloseOrderModal = signal<boolean>(false);
-  selectedOrderForPayment = signal<PendingOrder | null>(null);
-  showCancelOrderDialog = signal<boolean>(false);
-  selectedOrderForCancellation = signal<PendingOrder | null>(null);
-  cancellingOrder = signal<boolean>(false);
-  cancellationReason: string = '';
-
-  canCloseOrders = false;
-  canRegistrarMerma = false;
+  pendingOrders = signal<PendingOrder[]>([]);
   currentUserEmail: string = '';
-
-  // Modal de merma
-  showMermaModal = signal<boolean>(false);
-  selectedOrderForMerma = signal<PendingOrder | null>(null);
-  showSplitModal = signal<boolean>(false);
-  selectedOrderForSplit = signal<PendingOrder | null>(null);
-  // Propina de cierre que se mantiene al dividir comandas
-  splitOrderTip = signal<TipInfo | null>(null);
 
   // ==================== ASIENTOS / PERSONAS (Seat Management) ====================
   asientos = signal<ComandaAsiento[]>([
@@ -270,146 +238,6 @@ configEditingItem: CartItem | null = null;
   // ==================== TRAZABILIDAD (Mesa y Mesero) ====================
   mesas = signal<MesaDTO[]>([]);
   selectedMesa = signal<MesaDTO | null>(null);
-
-  // ==================== REPORTE GENERAL DE VENTAS / COMANDAS ====================
-  reporteFiltroFecha = signal<'hoy' | 'semana' | 'todos'>('hoy');
-  reporteFiltroBusqueda = signal<string>('');
-
-  // Computed: Órdenes activas (excluyendo PAGADA y CANCELADA)
-  activeOrders = computed(() => {
-    return this.pendingOrders().filter(order => {
-      const normalized = this.normalizeOrderStatus(order.estado);
-      return normalized !== 'PAGADA' && normalized !== 'CANCELADA' && normalized !== 'RECHAZADO';
-    });
-  });
-
-  // Computed: Órdenes cerradas (PAGADA del día actual, filtradas por usuario actual)
-  closedOrders = computed(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    return this.pendingOrders()
-      .filter(order => this.normalizeOrderStatus(order.estado) === 'PAGADA')
-      .filter(order => {
-        // Validar que la orden fue pagada hoy
-        if (!order.payment?.paidAt) {
-          return false;
-        }
-        const paidDate = new Date(order.payment.paidAt);
-        paidDate.setHours(0, 0, 0, 0);
-        return paidDate.getTime() === today.getTime();
-      })
-      .filter(order => {
-        // Filtrar por usuario actual que procesó el pago
-        // Si paidBy está vacío o es 'usuario', mostrar igual (asumiendo que fue este usuario)
-        const paidBy = order.payment?.paidBy ?? '';
-        if (!paidBy || paidBy === 'usuario') {
-          return true; // Mostrar si está vacío o es 'usuario'
-        }
-        // Si tiene email específico, verificar que sea el usuario actual
-        return paidBy === this.currentUserEmail;
-      })
-      .sort((a, b) => {
-        const dateA = a.payment?.paidAt ? new Date(a.payment.paidAt).getTime() : 0;
-        const dateB = b.payment?.paidAt ? new Date(b.payment.paidAt).getTime() : 0;
-        return dateB - dateA; // Más recientes primero
-      });
-  });
-
-  // Órdenes canceladas por el usuario actual
-  cancelledOrders = computed(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return this.pendingOrders()
-      .filter(order => this.normalizeOrderStatus(order.estado) === 'CANCELADA')
-      .sort((a, b) => {
-        const dateA = a.fechaCreacion ? new Date(a.fechaCreacion).getTime() : 0;
-        const dateB = b.fechaCreacion ? new Date(b.fechaCreacion).getTime() : 0;
-        return dateB - dateA; // Más recientes primero
-      });
-  });
-
-  pendingOrdersCount = computed(() => this.activeOrders().length);
-  closedOrdersCount = computed(() => this.closedOrders().length);
-  cancelledOrdersCount = computed(() => this.cancelledOrders().length);
-
-  reporteComandas = computed<ReporteVentaRow[]>(() => {
-    const orders = this.pendingOrders();
-    const filtroFecha = this.reporteFiltroFecha();
-    const busqueda = (this.reporteFiltroBusqueda() || '').toLowerCase().trim();
-
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-
-    const semanaAtras = new Date(hoy);
-    semanaAtras.setDate(semanaAtras.getDate() - 7);
-
-    return orders
-      .filter((o) => {
-        if (filtroFecha === 'hoy') {
-          const f = o.horaApertura || o.fechaCreacion;
-          if (!f) return true;
-          const d = new Date(f);
-          d.setHours(0, 0, 0, 0);
-          return d.getTime() === hoy.getTime();
-        } else if (filtroFecha === 'semana') {
-          const f = o.horaApertura || o.fechaCreacion;
-          if (!f) return true;
-          const d = new Date(f);
-          return d >= semanaAtras;
-        }
-        return true;
-      })
-      .map((o) => {
-        const clienteNombre = o.customerName || o.nombre || (o.customerId ? `Cliente #${o.customerId}` : 'Cliente no registrado');
-        const mesaLabel = o.mesaNombre ? `${o.mesaNombre}${o.mesaNumero ? ' (M-' + o.mesaNumero + ')' : ''}` : 'Mesa General';
-        const meseroLabel = o.meseroNombre || (o.payment?.paidBy ? String(o.payment.paidBy) : 'Mesero General');
-        const horaApertura = o.horaApertura || o.fechaCreacion || new Date().toISOString();
-        const horaCierre = o.horaCierre || (o.payment?.paidAt ? o.payment.paidAt : null);
-        const totalPagado = o.totalFinal ?? o.subtotal ?? 0;
-
-        return {
-          id_comanda: o.id,
-          folio_comanda: o.id.length > 8 ? o.id.slice(0, 8).toUpperCase() : o.id,
-          hora_apertura: horaApertura,
-          hora_cierre: horaCierre,
-          mesa_nombre: mesaLabel,
-          mesa_numero: o.mesaNumero,
-          mesero_nombre: meseroLabel,
-          cliente_nombre: clienteNombre,
-          total_pagado: totalPagado,
-          estado_comanda: o.estado,
-          subcomandas: o.subcomandas
-        };
-      })
-      .filter((row) => {
-        if (!busqueda) return true;
-        return (
-          row.folio_comanda.toLowerCase().includes(busqueda) ||
-          row.cliente_nombre.toLowerCase().includes(busqueda) ||
-          row.mesero_nombre.toLowerCase().includes(busqueda) ||
-          row.mesa_nombre.toLowerCase().includes(busqueda)
-        );
-      });
-  });
-
-  reporteTotalVendido = computed(() => {
-    return this.reporteComandas()
-      .filter((r) => r.estado_comanda === 'PAGADA')
-      .reduce((sum, r) => sum + r.total_pagado, 0);
-  });
-
-  reporteTotalComandas = computed(() => {
-    return this.reporteComandas().length;
-  });
-
-  reporteTicketPromedio = computed(() => {
-    const pagadas = this.reporteComandas().filter((r) => r.estado_comanda === 'PAGADA');
-    return pagadas.length > 0 ? this.reporteTotalVendido() / pagadas.length : 0;
-  });
 
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
   private editCountdownTimer: ReturnType<typeof setInterval> | null = null;
@@ -445,20 +273,13 @@ configEditingItem: CartItem | null = null;
   }
 
   async ngOnInit(): Promise<void> {
-    const initialView = this.route.snapshot.data['initialView'] || this.route.snapshot.queryParams['view'];
-    if (initialView === 'report' || window.location.pathname.includes('reportes/ventas')) {
-      this.switchView('report');
-    }
-
     this.restoreCartDraft();
-    this.startEditCountdown();
     await this.initializeTenant();
     if (this.tenantId > 0) {
       this.loadCatalog();
       this.loadStockInfo();
       this.loadClientes();
       this.loadMesas();
-      this.startPolling();
       this.startSseConnection();
       this.subscribeToSseEvents();
     } else {
@@ -467,30 +288,12 @@ configEditingItem: CartItem | null = null;
   }
 
   ngOnDestroy(): void {
-    this.stopPolling();
     if (this.editCountdownTimer) {
       clearInterval(this.editCountdownTimer);
       this.editCountdownTimer = null;
     }
-    // NO desconectar el SSE aquí: la conexión es global (AppLayout la mantiene
-    // viva en todos los módulos). Desconectarla al salir de esta página cortaría
-    // las notificaciones en el resto del dashboard.
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  // ==================== VISTA ACTIVA ====================
-
-  switchView(view: 'pos' | 'orders' | 'report'): void {
-    this.activeView.set(view);
-    if (view === 'orders') {
-      this.ordersView.set('active');
-    }
-  }
-
-  switchOrdersView(view: 'active' | 'closed' | 'cancelled'): void {
-    this.activeView.set('orders');
-    this.ordersView.set(view);
   }
 
   // ==================== GESTIÓN DE ASIENTOS / PERSONAS ====================
@@ -557,6 +360,26 @@ configEditingItem: CartItem | null = null;
     return this.cart()
       .filter((i) => i.asientoId === asientoId)
       .reduce((sum, i) => sum + (this.getCartItemUnitPrice(i) * i.cantidad), 0);
+  }
+
+  itemsPorAsiento(asientoId: string): CartItem[] {
+    return this.cart().filter((i) => i.asientoId === asientoId);
+  }
+
+  /** URL de imagen de platillo: usa la del producto; si falta, ubica una referente en internet. */
+  platilloImage(item: CartItem): string | null {
+    const url = item.product?.imageUrl?.trim();
+    if (url) return url;
+    const seed = (item.product?.name || 'platillo').replace(/[\s']/g, '').toLowerCase();
+    return `https://loremflickr.com/320/240/food,dish?lock=${Math.abs(this.hashCode(seed))}`;
+  }
+
+  private hashCode(s: string): number {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) {
+      h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+    }
+    return h;
   }
 
   // ==================== CARGA DE MESAS ====================
@@ -823,12 +646,50 @@ configEditingItem: CartItem | null = null;
             return [pendingOrder, ...orders]; // Agregar al inicio para que sea visible
           });
 
-          // Dispara la alerta (sonido DOBLE + confetti + DIALOG DETALLADO)
-          // Muestra los datos completos de la orden (con estado correctamente mapeado)
-          this.triggerNewOrderAlertWithDetailsAndDialog(pendingOrder);
+          console.log('[Comandix] Nueva orden detectada en tiempo real:', pendingOrder.id);
         },
         error: (error) => {
           console.error('[Comandix] Error en SSE newOrder$:', error);
+        }
+      });
+
+    // Escuchar eventos de cambio de estado en tiempo real (Caja / Cocina)
+    this.orderSseService.orderStatusChanged$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (sseEvent) => {
+          if (!sseEvent.order || sseEvent.tenantId !== this.tenantId) {
+            return;
+          }
+
+          const orderId = sseEvent.order.id;
+          const normalizedState = this.normalizeOrderStatus(sseEvent.order.estado);
+          console.log('[Comandix] Actualización en tiempo real recibida para comanda:', orderId, normalizedState);
+
+          // 1. Actualizar el estado en pendingOrders
+          this.pendingOrders.update(orders =>
+            orders.map(o => o.id === orderId ? { ...o, estado: normalizedState } : o)
+          );
+
+          // 2. Si la orden fue PAGADA
+          if (normalizedState === 'PAGADA') {
+            const isEditingThis = this.editingPendingOrder()?.id === orderId;
+
+            if (isEditingThis) {
+              this.editingPendingOrder.set(null);
+              this.cart.set([]); // Bloquea y limpia el carrito inmediatamente
+
+              this.messageService.add({
+                severity: 'warn',
+                summary: 'Cuenta Pagada en Caja',
+                detail: 'La comanda de esta mesa fue liquidada por el cajero. Se ha bloqueado la adición de nuevos platillos.',
+                life: 6000
+              });
+            }
+          }
+        },
+        error: (error) => {
+          console.error('[Comandix] Error en SSE orderStatusChanged$:', error);
         }
       });
 
@@ -839,7 +700,7 @@ configEditingItem: CartItem | null = null;
         next: (status) => {
           console.log('[Comandix] Estado SSE:', status);
           if (status === 'connected') {
-            console.log('[Comandix] ✓ Conectado a notificaciones del CHATBOT en tiempo real');
+            console.log('[Comandix] ✓ Conectado a notificaciones en tiempo real');
           } else if (status === 'disconnected') {
             console.warn('[Comandix] ✗ Desconectado de SSE');
           } else if (status === 'error') {
@@ -864,177 +725,9 @@ configEditingItem: CartItem | null = null;
       });
   }
 
-  /**
-   * Dispara la alerta con detalles específicos de la orden SSE
-   * Sonido DOBLE + Confetti + Dialog detallado
-   */
-  private triggerNewOrderAlertWithDetailsAndDialog(order: any): void {
-    // El sonido + confetti + toast global ya lo maneja AppLayout (funciona en cualquier página).
-    // Aquí solo abrimos el detalle de la orden dentro de la pantalla del mesero.
-    this.openOrderDetail(order);
-  }
-
-  // ==================== ALERTA DE NUEVA ORDEN ====================
-  // La notificación (sonido + confetti + toast) la maneja AppLayout vía SSE en
-  // todos los módulos, para que llegue una sola vez sin importar la página.
-
-  // ==================== DETALLE DE ORDEN ====================
-
-  openOrderDetail(order: PendingOrder): void {
-    this.selectedOrder.set(order);
-    this.showOrderDetail.set(true);
-  }
-
-  closeOrderDetail(): void {
-    this.showOrderDetail.set(false);
-    this.selectedOrder.set(null);
-  }
-
-  openCloseOrderModal(order: PendingOrder): void {
-    if (!this.canCloseOrder(order) || this.processingOrderAction()) {
-      return;
-    }
-
-    this.selectedOrderForPayment.set(order);
-    this.showCloseOrderModal.set(true);
-  }
-
-  closeCloseOrderModal(): void {
-    this.showCloseOrderModal.set(false);
-    this.selectedOrderForPayment.set(null);
-  }
-
-  onCloseOrderModalVisibilityChange(visible: boolean): void {
-    this.showCloseOrderModal.set(visible);
-    if (!visible) {
-      this.selectedOrderForPayment.set(null);
-    }
-  }
-
-  openMermaModal(order: PendingOrder): void {
-    if (!this.canRegistrarMerma || this.processingOrderAction()) {
-      return;
-    }
-    this.selectedOrderForMerma.set(order);
-    this.showMermaModal.set(true);
-  }
-
-  onMermaModalVisibilityChange(visible: boolean): void {
-    this.showMermaModal.set(visible);
-    if (!visible) {
-      this.selectedOrderForMerma.set(null);
-    }
-  }
-
-  onMermaRegistrada(orderId: string): void {
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Merma registrada',
-      detail: `Merma registrada para la orden #${orderId.slice(0, 8)}`,
-      life: 4000
-    });
-  }
-
-  onPaymentRecorded(event: { orderId: string; method: PaymentMethod; reference?: string | null; paidAt: string }): void {
-    const existing = this.pendingOrders().find((order) => order.id === event.orderId);
-    if (!existing) {
-      return;
-    }
-
-    const updatedOrder: PendingOrder = {
-      ...existing,
-      estado: 'PAGADA',
-      payment: {
-        method: event.method,
-        reference: event.reference ?? null,
-        paidAt: event.paidAt,
-        paidBy: this.currentUserEmail
-      }
-    };
-
-    this.pendingOrders.update((orders) =>
-      orders.map((order) => (order.id === event.orderId ? updatedOrder : order))
-    );
-
-    if (this.selectedOrder()?.id === event.orderId) {
-      this.selectedOrder.set(updatedOrder);
-    }
-
-    this.closeCloseOrderModal();
-
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Pago registrado',
-      detail: `La orden #${event.orderId.slice(0, 8)} quedó en estado PAGADA`,
-      life: 4000
-    });
-  }
-
-  // ==================== DIVISIÓN DE CUENTA (pagar por separado) ====================
-
-  onCobroSeparado(event: { order: PendingOrder; tip?: TipInfo | null }): void {
-    this.closeCloseOrderModal();
-    this.selectedOrderForSplit.set(event.order);
-    this.splitOrderTip.set(event.tip ?? null);
-    this.showSplitModal.set(true);
-  }
-
-  onSplitModalVisibilityChange(visible: boolean): void {
-    this.showSplitModal.set(visible);
-    if (!visible) {
-      this.selectedOrderForSplit.set(null);
-      this.splitOrderTip.set(null);
-    }
-  }
-
-  async onCuentaCreada(event: { originalOrderId: string; newOrderId: string; newOrderIds?: string[] }): Promise<void> {
-    const totalComandas = event.newOrderIds?.length ?? 1;
-    this.messageService.add({
-      severity: 'success',
-      summary: totalComandas > 1 ? 'Cuenta dividida equitativamente' : 'Cuenta dividida',
-      detail:
-        totalComandas > 1
-          ? `La cuenta #${event.originalOrderId.slice(0, 8)} se repartió en ${totalComandas + 1} comandas de monto balanceado`
-          : `La cuenta #${event.originalOrderId.slice(0, 8)} se separó y se creó la comanda #${event.newOrderId.slice(0, 8)}`,
-      life: 4500
-    });
-
-    await this.pollOrders();
-  }
-
-  editPendingOrderInPos(order: PendingOrder): void {
-    if (!this.canEditOrder(order)) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Prórroga vencida',
-        detail: 'La comanda se envió hace más de 3 minutos y ya no puede editarse',
-        life: 3000
-      });
-      return;
-    }
-
-    const latestOrder = this.pendingOrders().find((existingOrder) => existingOrder.id === order.id) ?? order;
-
-    this.selectedCliente = this.resolveClienteFromOrder(latestOrder);
-    this.codigoCupon = latestOrder.couponCode ?? '';
-    this.descuentoAplicado.set(Number(latestOrder.descuento ?? 0));
-    this.cart.set(this.buildCartFromPendingOrder(latestOrder));
-    this.editingPendingOrder.set(latestOrder);
-    this.closeOrderDetail();
-    this.switchView('pos');
-
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Editando orden',
-      detail: `La orden #${latestOrder.id.slice(0, 8)} fue cargada en la comanda`,
-      life: 3000
-    });
-  }
-
   cancelPendingOrderEdition(): void {
     const currentOrder = this.editingPendingOrder();
     this.resetForm();
-    this.switchView('orders');
 
     if (currentOrder) {
       this.messageService.add({
@@ -1196,154 +889,6 @@ configEditingItem: CartItem | null = null;
     return result;
   }
 
-  canCloseOrder(order: PendingOrder): boolean {
-    if (!this.canCloseOrders) {
-      return false;
-    }
-    return order.estado === 'CONFIRMADA' || order.estado === 'LISTO';
-  }
-
-  getStatusClass(estado: string | undefined): string {
-    const normalized = this.normalizeOrderStatus(estado);
-    if (normalized === 'PENDIENTE') return 'status-comanda';
-    if (normalized === 'CONFIRMADA') return 'status-confirmada';
-    if (normalized === 'EN_PREPARACION') return 'status-en_preparacion';
-    if (normalized === 'LISTO') return 'status-listo';
-    if (normalized === 'PAGADA') return 'status-pagada';
-    if (normalized === 'CANCELADA') return 'status-cancelada';
-    return 'status-comanda';
-  }
-
-  // ==================== ACCIONES DEL MESERO ====================
-
-  async confirmarOrden(order: PendingOrder): Promise<void> {
-    if (this.processingOrderAction()) return;
-    this.processingOrderAction.set(true);
-    try {
-      await firstValueFrom(this.orderService.updateOrderStatus(order.id, 'CONFIRMED'));
-
-      // Si la orden tiene cupón aplicado, redimirlo
-      const couponCode = order.couponCode;
-      const couponId = order.coupon_id != null && order.coupon_id !== ''
-        ? Number(order.coupon_id)
-        : null;
-
-      if (couponCode || couponId !== null) {
-        try {
-          const redemptionReq: RedemptionRequest = {
-            redeemedBy: order.customerId?.toString() ?? 'COMANDIX',
-            channel: RedemptionChannel.QR_ADMIN,
-            originalAmount: order.subtotal,
-            metadata: `Orden confirmada #${order.id}`
-          };
-
-          if (couponCode) {
-            await firstValueFrom(
-              this.redemptionService.redeemCouponByCode(couponCode, redemptionReq, this.tenantId)
-            );
-          } else if (couponId !== null && !Number.isNaN(couponId)) {
-            await firstValueFrom(
-              this.redemptionService.redeemCouponById(couponId, redemptionReq, this.tenantId)
-            );
-          }
-
-          this.messageService.add({
-            severity: 'info',
-            summary: 'Cupón redimido',
-            detail: `Cupón ${couponCode ?? couponId} aplicado exitosamente`,
-            life: 3000
-          });
-        } catch (couponError) {
-          console.warn('Advertencia al redimir cupón:', couponError);
-          this.messageService.add({
-            severity: 'warn',
-            summary: 'Cupón',
-            detail: 'La orden se confirmó pero el cupón no pudo redimirse',
-            life: 4000
-          });
-        }
-      }
-
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Orden confirmada',
-        detail: `Orden #${order.id.slice(0, 8)}… confirmada exitosamente`,
-        life: 3000
-      });
-
-      this.patchOrderStatus(order.id, 'CONFIRMADA');
-      this.closeOrderDetail();
-    } catch (error: any) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error al confirmar',
-        detail: error.message ?? 'No se pudo confirmar la orden',
-        life: 3000
-      });
-    } finally {
-      this.processingOrderAction.set(false);
-    }
-  }
-
-  async rechazarOrden(order: PendingOrder): Promise<void> {
-    this.selectedOrderForCancellation.set(order);
-    this.showCancelOrderDialog.set(true);
-  }
-
-  async onCancelOrderConfirmed(reason: string): Promise<void> {
-    const order = this.selectedOrderForCancellation();
-    if (!order || this.cancellingOrder()) return;
-
-    this.cancellingOrder.set(true);
-    try {
-      await firstValueFrom(
-        this.orderService.updateOrderStatus(
-          order.id,
-          'CANCELADA',
-          this.currentUserEmail,
-          reason
-        )
-      );
-
-      this.messageService.add({
-        severity: 'info',
-        summary: 'Orden cancelada',
-        detail: `Orden #${order.id.slice(0, 8)}… cancelada`,
-        life: 3000
-      });
-
-      this.removeOrderFromList(order.id);
-      this.showCancelOrderDialog.set(false);
-      this.selectedOrderForCancellation.set(null);
-      this.closeOrderDetail();
-    } catch (error: any) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Error al cancelar',
-        detail: error.message ?? 'No se pudo cancelar la orden',
-        life: 3000
-      });
-    } finally {
-      this.cancellingOrder.set(false);
-    }
-  }
-
-  onCancelOrderDialogCancel(): void {
-    this.showCancelOrderDialog.set(false);
-    this.selectedOrderForCancellation.set(null);
-  }
-
-  private removeOrderFromList(orderId: string): void {
-    this.knownOrderIds.delete(orderId);
-    this.pendingOrders.update(orders => orders.filter(o => o.id !== orderId));
-  }
-
-  private patchOrderStatus(orderId: string, estado: OrderStatus): void {
-    this.pendingOrders.update((orders) =>
-      orders.map((order) => (order.id === orderId ? { ...order, estado } : order))
-    );
-  }
-
   // ==================== TENANT ====================
 
   private async initializeTenant(): Promise<void> {
@@ -1351,8 +896,6 @@ configEditingItem: CartItem | null = null;
       const currentUser = this.authService.getCurrentUser();
       this.tenantId = currentUser?.tenantId ?? 0;
       this.currentUserEmail = currentUser?.email ?? 'usuario';
-      this.canCloseOrders = this.authService.hasAnyPermission(['process_payment', 'create_order']);
-      this.canRegistrarMerma = this.authService.hasAnyPermission(['manage_mermas']);
     } catch (error) {
       console.error('Error obteniendo tenant:', error);
       this.messageService.add({
@@ -2141,7 +1684,6 @@ trackByProductId = (index: number, item: CartItem): string => {
         });
 
         this.resetForm();
-        this.switchView('orders');
         return;
       }
 
@@ -2198,14 +1740,12 @@ trackByProductId = (index: number, item: CartItem): string => {
 
       this.messageService.add({
         severity: 'success',
-        summary: '¡Venta registrada!',
-        detail: `Orden #${response.id} creada exitosamente`,
+        summary: '¡Comanda en Cocina!',
+        detail: `Orden #${response.id} enviada a preparación exitosamente`,
         life: 4000
       });
 
       this.resetForm();
-      this.switchView('orders');
-      void this.pollOrders();
     } catch (error: any) {
       const detail = error?.error?.message || error?.error?.error || error?.message || 'Error al registrar la venta';
       this.messageService.add({

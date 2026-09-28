@@ -1,0 +1,237 @@
+<!-- ============ REPORTE 1.2: CORTE DE CAJA Y CONCILIACION ============ -->
+
+@if (loading() && !reporte()) {
+  <div class="reporte-panel">
+    <div class="kpi-grid">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="kpi-card">
+          <p-skeleton width="55%" height="0.8rem" />
+          <p-skeleton width="70%" height="1.6rem" styleClass="mt-3" />
+          <p-skeleton width="45%" height="0.75rem" styleClass="mt-2" />
+        </div>
+      }
+    </div>
+    <div class="panel">
+      <p-skeleton width="30%" height="1.1rem" />
+      <p-skeleton height="16rem" styleClass="mt-3" />
+    </div>
+  </div>
+} @else if (error() && !reporte()) {
+  <div class="panel panel--error">
+    <i class="pi pi-exclamation-triangle"></i>
+    <h3>No se pudo cargar el corte de caja</h3>
+    <p>{{ error() }}</p>
+    <button pButton type="button" label="Reintentar" icon="pi pi-refresh" (click)="recargar()"></button>
+  </div>
+} @else if (reporte(); as datos) {
+  <div class="reporte-panel">
+    <!-- ============ SUBENCABEZADO ============ -->
+    <div class="reporte-subheader">
+      <div>
+        <h3>{{ datos.meta.nombre }}</h3>
+        <p class="reporte-subheader__rango">
+          {{ datos.meta.rangoActual.etiqueta }}
+          <i class="pi pi-arrow-right"></i>
+          comparado con {{ datos.meta.rangoAnterior.etiqueta }}
+        </p>
+      </div>      <div class="reporte-subheader__acciones">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          severity="secondary"
+          [outlined]="true"
+          size="small"
+          [loading]="loading()"
+          pTooltip="Recargar"
+          (click)="recargar()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-file-excel"
+          label="Exportar"
+          size="small"
+          [loading]="exportando()"
+          (click)="exportar()"
+        ></button>
+      </div>
+    </div>
+
+    <!-- ============ NOTA DE CONCILIACION ============ -->
+    <p class="reporte-nota">
+      <i class="pi pi-info-circle"></i>
+      Este corte cuenta <strong>cobros</strong> (comandas con pago registrado), no ventas producidas.
+      El reporte 1.1 Dashboard de Ventas incluye las comandas en estado
+      <em>Listo</em> que aun no se cobran, por eso sus totales no coinciden con estos.
+      Las propinas se reportan aparte porque no son ingreso del restaurante.
+    </p>
+
+    <!-- ============ KPIs DEL CORTE ============ -->
+    <app-kpi-grid [kpis]="datos.kpis" />
+
+    <!-- ============ MEZCLA DE COBRO + CONCILIACION POR CAJERO ============ -->
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Mezcla del cobro por metodo</h4>
+            <p class="panel__subtitulo">
+              Suma de pagos simples y cobros parciales de division de cuenta, sin duplicar importes.
+            </p>
+          </div>
+        </div>
+        @if (datos.porMetodo.filas.length) {
+          <div class="panel__grafica panel__grafica--alta">
+            <p-chart type="doughnut" [data]="metodoChartData()" [options]="metodoChartOptions" />
+          </div>
+        } @else {
+          <div class="panel__vacio">
+            <i class="pi pi-wallet"></i>
+            <p>No se registraron cobros en el periodo</p>
+          </div>
+        }
+      </div>
+
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Detalle por metodo de pago</h4>
+            <p class="panel__subtitulo">Participacion y ticket promedio de cada metodo.</p>
+          </div>
+        </div>
+        <p-table
+          [value]="datos.porMetodo.filas"
+          [rows]="6"
+          [paginator]="datos.porMetodo.filas.length > 6"
+          styleClass="tabla-reporte"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              @for (columna of datos.porMetodo.columnas; track columna.key) {
+                <th [class.align-right]="alineacion(columna) === 'right'">{{ columna.label }}</th>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-fila>
+            <tr>
+              @for (columna of datos.porMetodo.columnas; track columna.key) {
+                <td [class.align-right]="alineacion(columna) === 'right'">
+                  @if (columna.tipo === 'TEXTO') {
+                    <span class="celda-texto">{{ fila[columna.key] ?? '-' }}</span>
+                  } @else {
+                    {{ valorCelda(fila, columna) }}
+                  }
+                </td>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td [attr.colspan]="datos.porMetodo.columnas.length" class="celda-vacia">Sin cobros en el periodo</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+
+    <!-- ============ CONCILIACION POR CAJERO ============ -->
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <h4>Conciliacion por cajero</h4>
+          <p class="panel__subtitulo">
+            Base para cuadrar el efectivo que cada usuario declara contra lo que registro el sistema.
+          </p>
+        </div>
+      </div>
+      <p-table
+        [value]="datos.porCajero.filas"
+        [rows]="10"
+        [paginator]="datos.porCajero.filas.length > 10"
+        [scrollable]="true"
+        scrollHeight="26rem"
+        styleClass="tabla-reporte"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            @for (columna of datos.porCajero.columnas; track columna.key) {
+              <th [class.align-right]="alineacion(columna) === 'right'">{{ columna.label }}</th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-fila>
+          <tr>
+            @for (columna of datos.porCajero.columnas; track columna.key) {
+              <td [class.align-right]="alineacion(columna) === 'right'">
+                @if (columna.key === 'cajero') {
+                  <div class="celda-persona">
+                    <span class="celda-texto">{{ fila['cajero'] }}</span>
+                    @if (fila['email']) {
+                      <span class="celda-sub">{{ fila['email'] }}</span>
+                    }
+                  </div>
+                } @else if (columna.tipo === 'TEXTO') {
+                  {{ fila[columna.key] ?? '-' }}
+                } @else {
+                  {{ valorCelda(fila, columna) }}
+                }
+              </td>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td [attr.colspan]="datos.porCajero.columnas.length" class="celda-vacia">Sin movimientos de cobro</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- ============ ANULACIONES ============ -->
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <h4>Anulaciones del periodo</h4>
+          <p class="panel__subtitulo">
+            Ordenes canceladas con su motivo, para cruzar el corte contra lo que se dio por perdido.
+          </p>
+        </div>
+      </div>
+      <p-table
+        [value]="datos.anulaciones.filas"
+        [rows]="8"
+        [paginator]="datos.anulaciones.filas.length > 8"
+        styleClass="tabla-reporte"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            @for (columna of datos.anulaciones.columnas; track columna.key) {
+              <th [class.align-right]="alineacion(columna) === 'right'">{{ columna.label }}</th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-fila>
+          <tr>
+            @for (columna of datos.anulaciones.columnas; track columna.key) {
+              <td [class.align-right]="alineacion(columna) === 'right'">
+                @if (columna.tipo === 'TEXTO') {
+                  <span class="celda-texto">{{ fila[columna.key] ?? '-' }}</span>
+                } @else {
+                  {{ valorCelda(fila, columna) }}
+                }
+              </td>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td [attr.colspan]="datos.anulaciones.columnas.length" class="celda-vacia">
+              Sin anulaciones en el periodo
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+}

@@ -1,0 +1,241 @@
+// =============================================================================
+// ESTILOS COMPARTIDOS DE REPORTES Y ANALITICA
+// Los 12 reportes usan exactamente esta estructura visual: subencabezado con
+// rango, cuadro de KPIs, paneles con grafica y tablas alineadas por tipo.
+// Se incluye con @use desde el SCSS de cada reporte.
+// =============================================================================
+
+.reporte-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+// ==================== SUBENCABEZADO ====================
+
+.reporte-subheader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  h3 {
+    margin: 0 0 0.25rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--lealtix-slate-800);
+  }
+
+  &__rango {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--lealtix-slate-500);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  &__acciones {
+    display: flex;
+    gap: 0.5rem;
+  }
+}
+
+// Aviso de criterio de conteo (por ejemplo, por que el corte no coincide con ventas).
+.reporte-nota {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--lealtix-slate-200);
+  border-left: 3px solid var(--lealtix-violet-400, #a78bfa);
+  border-radius: var(--lealtix-radius-md);
+  background: rgba(167, 139, 250, 0.06);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--lealtix-slate-600);
+
+  i {
+    margin-top: 0.1rem;
+    flex-shrink: 0;
+  }
+
+  strong {
+    font-weight: 700;
+  }
+}
+
+// ==================== ESQUELETO DE CARGA (mismo aspecto que las tarjetas KPI) ====================
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.85rem;
+}
+
+.kpi-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1rem 1.1rem;
+  background: #fff;
+  border: 1px solid var(--lealtix-slate-200);
+  border-radius: var(--lealtix-radius-md);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+// ==================== PANELES ====================
+
+.panel {
+  background: #fff;
+  border: 1px solid var(--lealtix-slate-200);
+  border-radius: var(--lealtix-radius-md);
+  padding: 1.1rem 1.25rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.85rem;
+
+    h4 {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--lealtix-slate-800);
+    }
+  }
+
+  &__subtitulo {
+    margin: 0.2rem 0 0;
+    font-size: 0.74rem;
+    color: var(--lealtix-slate-500);
+  }
+
+  &__grafica {
+    position: relative;
+    height: 18rem;
+
+    &--alta {
+      height: 20rem;
+    }
+  }
+
+  &__vacio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 2.5rem 1rem;
+    color: var(--lealtix-slate-500);
+
+    i {
+      font-size: 1.6rem;
+      opacity: 0.6;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.85rem;
+    }
+  }
+
+  &--error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+
+    i {
+      font-size: 2rem;
+      color: #f59e0b;
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+
+    p {
+      margin: 0 0 0.5rem;
+      font-size: 0.85rem;
+      color: var(--lealtix-slate-500);
+    }
+  }
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+  gap: 1rem;
+}
+
+// ==================== TABLAS ====================
+
+.align-right {
+  text-align: right;
+}
+
+.celda-texto {
+  font-weight: 600;
+  color: var(--lealtix-slate-700);
+}
+
+.celda-sub {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--lealtix-slate-500);
+}
+
+.celda-vacia {
+  text-align: center;
+  padding: 1.5rem 0 !important;
+  color: var(--lealtix-slate-500);
+  font-size: 0.85rem;
+}
+
+// ==================== RESPONSIVO ====================
+
+@media (max-width: 640px) {
+  .reporte-subheader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+// ==================== MODO OSCURO ====================
+
+:host-context(.app-dark) {
+  .kpi-card,
+  .panel {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .panel__header h4,
+  .reporte-subheader h3,
+  .celda-texto {
+    color: #e2e8f0;
+  }
+
+  .kpi-card__label,
+  .reporte-subheader__rango,
+  .panel__subtitulo,
+  .panel__vacio,
+  .celda-sub,
+  .celda-vacia {
+    color: #94a3b8;
+  }
+
+  .pilar-nav__item--activo,
+  .pilar-nav__item.is-selected {
+    background: rgba(167, 139, 250, 0.14);
+  }
+}

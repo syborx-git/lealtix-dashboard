@@ -15,9 +15,11 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { MesaService } from '../services/mesa.service';
+import { ReservaService } from '../services/reserva.service';
 import { UserService } from '@/pages/user-management/services/user.service';
 import { AuthService } from '@/auth/auth.service';
 import { MesaDTO, MesaEstado, MesaForma, EstadoTagSeverity, MESA_ESTADO_COLORS, MESA_FORMA_OPTIONS, mesaSize, mesaTamano, rotacionGrados } from '../models/mesa.model';
+import { ReservaDTO, ReservaEstado, RESERVA_ESTADO_COLORS } from '../models/reserva.model';
 
 // Dimensiones lógicas del plano (px). Las coordenadas guardadas en BD usan esta misma escala.
 const WORKSPACE_W = 1200;
@@ -92,6 +94,8 @@ export class MapeoMesasComponent implements OnInit {
 
     mesas = signal<MesaDTO[]>([]);
     meseros = signal<{ id: number; nombre: string; email?: string }[]>([]);
+    reservas = signal<ReservaDTO[]>([]);
+    reservasLoading = signal(false);
     loading = signal(false);
     drag = signal<DragState | null>(null);
 
@@ -169,6 +173,7 @@ export class MapeoMesasComponent implements OnInit {
 
     constructor(
         private mesaService: MesaService,
+        private reservaService: ReservaService,
         private userService: UserService,
         private authService: AuthService,
         private messageService: MessageService,
@@ -181,6 +186,7 @@ export class MapeoMesasComponent implements OnInit {
         if (this.tenantId) {
             this.loadMesas();
             this.loadMeseros();
+            this.loadReservas();
         } else {
             this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo determinar el tenant del usuario' });
         }
@@ -216,6 +222,58 @@ export class MapeoMesasComponent implements OnInit {
             },
             error: () => this.meseros.set([])
         });
+    }
+
+    loadReservas() {
+        this.reservasLoading.set(true);
+        this.reservaService.getReservas(this.tenantId).subscribe({
+            next: (res) => {
+                this.reservas.set(res || []);
+                this.reservasLoading.set(false);
+            },
+            error: () => {
+                this.reservas.set([]);
+                this.reservasLoading.set(false);
+            }
+        });
+    }
+
+    /** Reservaciones vigentes (no canceladas) ordenadas por fecha/hora ascendente */
+    reservasVigentes(): ReservaDTO[] {
+        return this.reservas()
+            .filter(r => r.estado !== 'CANCELADA')
+            .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+    }
+
+    getReservaSeverity(estado: ReservaEstado): EstadoTagSeverity {
+        return RESERVA_ESTADO_COLORS[estado] || 'secondary';
+    }
+
+    /** Hora corta de la reservación, ej. "18:30" */
+    reservaHora(reserva: ReservaDTO): string {
+        const d = new Date(reserva.fecha);
+        if (isNaN(d.getTime())) {
+            return '';
+        }
+        return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    /** Fecha corta de la reservación, ej. "22 sep" */
+    reservaFecha(reserva: ReservaDTO): string {
+        const d = new Date(reserva.fecha);
+        if (isNaN(d.getTime())) {
+            return '';
+        }
+        return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+    }
+
+    esReservaHoy(reserva: ReservaDTO): boolean {
+        const d = new Date(reserva.fecha);
+        if (isNaN(d.getTime())) {
+            return false;
+        }
+        const hoy = new Date();
+        return d.getFullYear() === hoy.getFullYear() && d.getMonth() === hoy.getMonth() && d.getDate() === hoy.getDate();
     }
 
     // ==========================================================================
@@ -460,11 +518,29 @@ export class MapeoMesasComponent implements OnInit {
     changeEstadoFromPopover(mesa: MesaDTO, estado: MesaEstado) {
         this.mesaService.changeEstado(mesa.id as number, this.tenantId, estado).subscribe({
             next: (res) => {
-                this.patchMesaLocal(res.id as number, { estado: res.estado, meseroUserId: res.meseroUserId, meseroNombre: res.meseroNombre });
+                this.applyEstadoLocal(res, estado);
                 this.closePopover();
             },
             error: (err) => this.messageService.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo cambiar el estado' })
         });
+    }
+
+    /** Aplica el estado a la mesa y, si está en un grupo temporal, a todo el grupo. */
+    private applyEstadoLocal(res: MesaDTO, estado: MesaEstado) {
+        const grupoId = res.idGrupoTemporal;
+        this.mesas.set(this.mesas().map(m => {
+            const enGrupo = grupoId != null && m.idGrupoTemporal === grupoId;
+            const mismaMesa = m.id === res.id;
+            if (!enGrupo && !mismaMesa) {
+                return m;
+            }
+            return {
+                ...m,
+                estado,
+                meseroUserId: estado === 'LIBRE' ? null : (mismaMesa ? res.meseroUserId : m.meseroUserId),
+                meseroNombre: estado === 'LIBRE' ? null : (mismaMesa ? res.meseroNombre : m.meseroNombre)
+            };
+        }));
     }
 
     onAssignMesero(mesa: MesaDTO, meseroId: number | null) {

@@ -93,8 +93,9 @@
     <p-button label="Crear Mesa" icon="pi pi-plus" (onClick)="crearNuevaMesa()"></p-button>
 </div>
 
-<!-- ==================== PLANO INTERACTIVO ==================== -->
-<div *ngIf="!loading() && mesas().length > 0" class="plano-wrap">
+<!-- ==================== PLANO INTERACTIVO + RESERVACIONES ==================== -->
+<div *ngIf="!loading() && mesas().length > 0" class="mapeo-layout">
+    <div class="plano-wrap">
     <div
         class="workspace"
         [class.modo-edicion]="modo === 'edicion'"
@@ -156,6 +157,55 @@
             <i class="pi pi-pencil"></i> Modo Edición
         </div>
     </div>
+    </div>
+
+    <!-- Panel lateral de reservaciones -->
+    <aside class="reservas-panel">
+        <div class="reservas-panel-head">
+            <span class="reservas-panel-title">Reservaciones</span>
+            <span class="reservas-panel-count">{{ reservasVigentes().length }}</span>
+        </div>
+
+        <div *ngIf="reservasLoading()" class="reservas-loading">
+            <p-progressSpinner styleClass="w-2rem h-2rem" strokeWidth="4"></p-progressSpinner>
+        </div>
+
+        <div *ngIf="!reservasLoading() && reservasVigentes().length === 0" class="reservas-empty">
+            <i class="pi pi-calendar"></i>
+            <span>No hay reservaciones registradas</span>
+        </div>
+
+        <div *ngIf="!reservasLoading()" class="reservas-list">
+            <div
+                *ngFor="let reserva of reservasVigentes()"
+                class="reserva-card"
+                [class.reserva-hoy]="esReservaHoy(reserva)"
+            >
+                <div class="reserva-card-head">
+                    <span class="reserva-hora">
+                        <i class="pi pi-clock"></i>
+                        {{ reservaHora(reserva) }}
+                    </span>
+                    <p-tag [value]="reserva.estado" [severity]="getReservaSeverity(reserva.estado)" styleClass="reserva-tag"></p-tag>
+                </div>
+                <div class="reserva-nombre">
+                    <i class="pi pi-user"></i>
+                    <span class="reserva-nombre-text">{{ reserva.clienteNombre }}</span>
+                </div>
+                <div class="reserva-meta">
+                    <span *ngIf="reserva.numeroPersonas">
+                        <i class="pi pi-users"></i> {{ reserva.numeroPersonas }} {{ reserva.numeroPersonas === 1 ? 'persona' : 'personas' }}
+                    </span>
+                    <span *ngIf="reserva.fecha">
+                        <i class="pi pi-calendar"></i> {{ reservaFecha(reserva) }}<span *ngIf="esReservaHoy(reserva)" class="reserva-hoy-badge">hoy</span>
+                    </span>
+                </div>
+                <div class="reserva-mesa" *ngIf="reserva.mesaNombre">
+                    <i class="pi pi-table"></i> {{ reserva.mesaNombre }}
+                </div>
+            </div>
+        </div>
+    </aside>
 </div>
 
 <!-- ==================== MENÚ RÁPIDO DE MESA (hostess) ==================== -->

@@ -2683,3 +2683,13 @@
     }
   }
 }
+
+// Ocultar barra de desplazamiento nativa para scroll horizontal fluido
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE y Edge */
+  scrollbar-width: none; /* Firefox */
+  &::-webkit-scrollbar {
+    display: none; /* Chrome, Safari y Opera */
+  }
+}
+
