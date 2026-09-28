@@ -21,6 +21,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
     private tenantId = 0;
     private knownOrderIds = new Set<string>();
     private pollingBusy = false;
+    private lastSignature = '';
 
     readonly orders$ = this.ordersSubject.asObservable();
     readonly loading$ = this.loadingSubject.asObservable();
@@ -120,17 +121,37 @@ export class KitchenOrderFacadeService implements OnDestroy {
             const kitchenOrders = allBackendOrders.map((order) => this.mapBackendOrderToKitchen(order));
 
             this.knownOrderIds = new Set(kitchenOrders.map((order) => order.id));
-            this.ordersSubject.next(kitchenOrders);
+            this.emitOrders(kitchenOrders);
         } catch (error) {
             console.error('Error al cargar órdenes de cocina:', error);
             // No hay fallback a mock, simplemente mostrar error
-            this.ordersSubject.next([]);
+            this.emitOrders([]);
         } finally {
             this.pollingBusy = false;
             if (showLoader) {
                 this.loadingSubject.next(false);
             }
         }
+    }
+
+    /**
+     * Emite la lista solo si realmente cambió (misma firma = no re-render).
+     * Así el refresco de respaldo NO se ve como un parpadeo periódico.
+     */
+    private emitOrders(orders: KitchenOrder[]): void {
+        const sorted = [...orders].sort((a, b) =>
+            a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0
+        );
+        const signature = sorted
+            .map((order) => `${order.id}#${order.status}#${order.items.map((i) => `${i.productId}x${i.quantity}`).join(',')}`)
+            .join('|');
+
+        if (signature === this.lastSignature) {
+            return;
+        }
+
+        this.lastSignature = signature;
+        this.ordersSubject.next(sorted);
     }
 
     private handleIncomingOrderEvent(event: SseNewOrderEvent): void {
@@ -145,7 +166,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
 
         this.knownOrderIds.add(mappedOrder.id);
         // Agregar la nueva orden al final (FIFO) para mantener orden de llegada
-        this.ordersSubject.next([...this.ordersSubject.value, mappedOrder]);
+        this.emitOrders([...this.ordersSubject.value, mappedOrder]);
 
         // El sonido de nuevas órdenes de CHATBOT lo reproduce AppLayout de forma global.
         // No lo duplicamos aquí para no escuchar la campana dos veces.
@@ -178,7 +199,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
 
         if (this.knownOrderIds.has(mappedOrder.id)) {
             // Ya existe: solo actualizar estado/datos
-            this.ordersSubject.next(
+            this.emitOrders(
                 this.ordersSubject.value.map((order) =>
                     order.id === mappedOrder.id ? { ...order, ...mappedOrder, status } : order
                 )
@@ -188,7 +209,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
 
         // Orden confirmada por el mesero: aparece al instante en cocina (FIFO)
         this.knownOrderIds.add(mappedOrder.id);
-        this.ordersSubject.next([...this.ordersSubject.value, mappedOrder]);
+        this.emitOrders([...this.ordersSubject.value, mappedOrder]);
         // Una sola campana por comanda (evita que suene como si llegaran dos)
         this.kitchenNotificationService.playNewOrderSound(1);
     }
@@ -204,13 +225,13 @@ export class KitchenOrderFacadeService implements OnDestroy {
             };
         });
 
-        this.ordersSubject.next(patched);
+        this.emitOrders(patched);
     }
 
     private removeLocalOrder(orderId: string): void {
         this.knownOrderIds.delete(orderId);
         this.cancelReadyCleanup(orderId);
-        this.ordersSubject.next(this.ordersSubject.value.filter((order) => order.id !== orderId));
+        this.emitOrders(this.ordersSubject.value.filter((order) => order.id !== orderId));
     }
 
     private scheduleReadyCleanup(orderId: string): void {
