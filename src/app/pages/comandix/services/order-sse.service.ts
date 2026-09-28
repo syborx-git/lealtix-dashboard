@@ -37,6 +37,23 @@ export interface SseNewOrderEvent {
   };
 }
 
+export interface SseOrderStatusEvent {
+  type: string;
+  tenantId: number;
+  timestamp: string;
+  order: {
+    id: string;
+    tenantId: number;
+    customerId?: number;
+    customerName?: string;
+    estado: string; // ej: "PAID", "CONFIRMED", "READY"
+    total?: number;
+    subtotal?: number;
+    mesaId?: number;
+    items?: any[];
+  };
+}
+
 /**
  * Servicio para manejar las notificaciones SSE (Server-Sent Events) de órdenes
  * del backend CHATBOT. Usa la reconexión automática nativa de EventSource
@@ -48,6 +65,7 @@ export interface SseNewOrderEvent {
 export class OrderSseService implements OnDestroy {
   private eventSource: EventSource | null = null;
   private newOrderSubject = new Subject<SseNewOrderEvent>();
+  private orderStatusChangedSubject = new Subject<SseOrderStatusEvent>();
   private connectionStatusSubject = new Subject<'connected' | 'disconnected' | 'error'>();
   private errorMessageSubject = new Subject<string>();
 
@@ -56,6 +74,7 @@ export class OrderSseService implements OnDestroy {
   private tenantIdForReconnect = 0;
 
   newOrder$ = this.newOrderSubject.asObservable();
+  orderStatusChanged$ = this.orderStatusChangedSubject.asObservable();
   connectionStatus$ = this.connectionStatusSubject.asObservable();
   errorMessage$ = this.errorMessageSubject.asObservable();
 
@@ -118,6 +137,20 @@ export class OrderSseService implements OnDestroy {
           this.newOrderSubject.next(sseEvent);
         } catch (error) {
           console.error('[OrderSSE] Error al parsear evento new-order:', error);
+        }
+      });
+
+      // ==================== Evento: Cambio de estado de orden ====================
+      es.addEventListener('order-status-changed', (event: MessageEvent) => {
+        try {
+          const sseEvent: SseOrderStatusEvent = JSON.parse(event.data);
+          console.log('[OrderSSE] Cambio de estado de orden recibido:', {
+            orderId: sseEvent.order?.id,
+            estado: sseEvent.order?.estado
+          });
+          this.orderStatusChangedSubject.next(sseEvent);
+        } catch (error) {
+          console.error('[OrderSSE] Error al parsear evento order-status-changed:', error);
         }
       });
 

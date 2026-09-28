@@ -101,8 +101,8 @@ export class AppLayout implements OnInit {
     private notifyNewOrder(event: SseNewOrderEvent): void {
         const order = event.order;
 
-        // 1) Sonido dos veces
-        this.playNotificationSound(2, 500);
+        // 1) Sonido (una sola vez para no duplicar la campana)
+        this.playNotificationSound(1, 500);
 
         // 2) Confetti con paleta Lealtix
         confetti({
