@@ -79,9 +79,9 @@ export class KitchenOrderFacadeService implements OnDestroy {
 
 
     private startPolling(): void {
-        // Refresco de respaldo cada 3s para que la comanda aparezca casi al instante
+        // Refresco de respaldo cada 2s para que la comanda aparezca casi al instante
         // aunque el SSE no entregue el evento (evita depender del poll de 30s).
-        this.pollingTimer = setInterval(() => void this.loadOrders(false), 3_000);
+        this.pollingTimer = setInterval(() => void this.loadOrders(false), 2_000);
     }
 
     private startRealtime(): void {
@@ -109,16 +109,12 @@ export class KitchenOrderFacadeService implements OnDestroy {
             this.loadingSubject.next(true);
         }
         try {
-            // Cargar órdenes de cada status independientemente
-            const confirmedOrders = await firstValueFrom(
-                this.kitchenApiService.listOrdersByStatus(this.tenantId, 'CONFIRMADA', 0, 100)
-            );
-            const inProgressOrders = await firstValueFrom(
-                this.kitchenApiService.listOrdersByStatus(this.tenantId, 'EN_PREPARACION', 0, 100)
-            );
-            const readyOrders = await firstValueFrom(
-                this.kitchenApiService.listOrdersByStatus(this.tenantId, 'LISTO', 0, 100)
-            );
+            // Consultar los 3 estados en paralelo para reducir el ciclo del poll
+            const [confirmedOrders, inProgressOrders, readyOrders] = await Promise.all([
+                firstValueFrom(this.kitchenApiService.listOrdersByStatus(this.tenantId, 'CONFIRMADA', 0, 100)),
+                firstValueFrom(this.kitchenApiService.listOrdersByStatus(this.tenantId, 'EN_PREPARACION', 0, 100)),
+                firstValueFrom(this.kitchenApiService.listOrdersByStatus(this.tenantId, 'LISTO', 0, 100))
+            ]);
 
             const allBackendOrders = [...confirmedOrders, ...inProgressOrders, ...readyOrders];
             const kitchenOrders = allBackendOrders.map((order) => this.mapBackendOrderToKitchen(order));
