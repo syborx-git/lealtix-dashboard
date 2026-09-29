@@ -262,7 +262,8 @@ export class CajaComponent implements OnInit, OnDestroy {
 
   // Corte por mesero (cards + modal de detalle)
   meseros = signal<MeseroSimple[]>([]);
-  meseroSeleccionadoId: number | null = null;
+  meseroSeleccionadoId = signal<number | null>(null);
+  meseroSeleccionado = signal<MeseroSimple | null>(null);
   corteMesero = signal<CorteMesero | null>(null);
   loadingCorte = signal<boolean>(false);
   retencionPropinasPorc = 15; // 15% retención por defecto para cocina/barra
@@ -284,7 +285,7 @@ export class CajaComponent implements OnInit, OnDestroy {
   });
 
   /** Fecha de cierre de una orden (prioriza el pago, que es lo que se corta). */
-  private fechaCierreOrden(o: PendingOrder): string {
+  fechaCierreOrden(o: PendingOrder): string {
     return o.horaCierre || o.payment?.paidAt || o.fechaCreacion || o.horaApertura || '';
   }
 
@@ -342,30 +343,44 @@ export class CajaComponent implements OnInit, OnDestroy {
       .sort((a, b) => b.dineroHoy - a.dineroHoy || a.nombre.localeCompare(b.nombre, 'es'))
   );
 
-  meseroSeleccionado = computed(() =>
-    this.meseros().find(m => m.id === this.meseroSeleccionadoId) ?? null
-  );
-
   /** Órdenes pagadas hoy por el mesero abierto en la modal. */
   comandasDelMesero = computed<PendingOrder[]>(() => {
     const mesero = this.meseroSeleccionado();
     if (!mesero) return [];
     const keyName = (mesero.nombre || '').trim().toLowerCase();
     const keyEmail = (mesero.email || '').trim().toLowerCase();
+    const keyId = mesero.id;
+
+    // IDs de comandas registradas en el corte de este mesero en backend
+    const idsPagosCorte = new Set(
+      (this.corteMesero()?.pagosRealizados ?? [])
+        .map(p => (p.idComanda || '').trim().toLowerCase())
+        .filter(id => id.length > 0)
+    );
+
     return this.comandasCerradas().filter(o => {
+      const oId = (o.id || '').trim().toLowerCase();
+      if (oId && idsPagosCorte.has(oId)) {
+        return true;
+      }
+
       if (!this.esMismoDia(this.fechaCierreOrden(o))) return false;
+
+      // Match por ID del mesero
+      if (keyId && (o.meseroId === keyId || String(o.meseroId) === String(keyId))) {
+        return true;
+      }
+
       const oName = (o.meseroNombre || '').trim().toLowerCase();
-      const oEmail = (o.payment?.paidBy ? String(o.payment.paidBy) : '').trim().toLowerCase();
-      return (keyName && (oName === keyName || oEmail === keyName)) ||
+      const oEmail = (o.meseroEmail || (o.payment?.paidBy ? String(o.payment.paidBy) : '')).trim().toLowerCase();
+
+      return (keyName && (oName === keyName || oEmail === keyName || oName.includes(keyName) || keyName.includes(oName))) ||
              (keyEmail && (oName === keyEmail || oEmail === keyEmail));
     });
   });
 
   /**
    * Platillos vendidos por el mesero, agregados por producto.
-   *
-   * El corte del backend no desglosa platillos, así que se arma cruzando los pagos
-   * del corte con el detalle de items de las órdenes pagadas de ese mesero.
    */
   platillosDelMesero = computed<{ nombre: string; unidades: number; total: number }[]>(() => {
     const mapa = new Map<string, { unidades: number; total: number }>();
@@ -389,8 +404,25 @@ export class CajaComponent implements OnInit, OnDestroy {
     this.platillosDelMesero().reduce((s, p) => s + p.unidades, 0)
   );
 
-  /** Dinero del corte del mesero (respuesta del backend, sin propinas). */
-  totalDineroMesero = computed(() => this.corteDelDia()?.totalVentas ?? 0);
+  /** Dinero del corte del mesero (calculado de sus comandas o del corte de backend). */
+  totalDineroMesero = computed(() => {
+    const h = this.comandasDelMesero().reduce((s, o) => s + (o.totalFinal ?? o.subtotal ?? 0), 0);
+    const c = this.corteMesero()?.totalVentas ?? 0;
+    return Math.max(h, c);
+  });
+
+  /** Propinas del mesero en el día. */
+  totalPropinasMesero = computed(() => {
+    const h = this.comandasDelMesero().reduce((s, o) => s + this.propinaOrden(o), 0);
+    const c = this.corteMesero()?.totalPropinas ?? 0;
+    return Math.max(h, c);
+  });
+
+  /** Calcula la cantidad total de piezas de platillo de una orden. */
+  getTotalItemsOrden(o: PendingOrder): number {
+    return (o.items ?? []).reduce((s, it) => s + (it.cantidad || 1), 0);
+  }
+
 
   // ============ CORTE DEL DÍA (resumen general del turno) ============
   resumenDia = signal<ResumenTurnoCorte | null>(null);
@@ -402,7 +434,7 @@ export class CajaComponent implements OnInit, OnDestroy {
   );
 
   /** Propina estimada de la orden: el pago incluye la propina y el total es la cuenta. */
-  private propinaOrden(o: PendingOrder): number {
+  propinaOrden(o: PendingOrder): number {
     const cuenta = o.totalFinal ?? o.subtotal ?? 0;
     return Math.max(0, (o.payment?.amount ?? 0) - cuenta);
   }
@@ -999,6 +1031,8 @@ export class CajaComponent implements OnInit, OnDestroy {
       mesaNombre,
       mesaNumero,
       meseroNombre,
+      meseroId: order.meseroId ?? order.idMesero,
+      meseroEmail: order.meseroEmail,
       horaApertura,
       horaCierre,
       subcomandas: order.subcomandas ?? [],
@@ -1235,8 +1269,18 @@ export class CajaComponent implements OnInit, OnDestroy {
   // ==================== CORTE POR MESERO (cards + modal) ====================
 
   /** Abre la modal con el corte completo del mesero. */
-  async abrirCorteMesero(idMesero: number): Promise<void> {
-    this.meseroSeleccionadoId = idMesero;
+  async abrirCorteMesero(target: MeseroSimple | number): Promise<void> {
+    let id: number;
+    let meseroObj: MeseroSimple | null = null;
+    if (typeof target === 'number') {
+      id = target;
+      meseroObj = this.meseros().find(m => m.id === id) ?? null;
+    } else {
+      id = target.id;
+      meseroObj = target;
+    }
+    this.meseroSeleccionadoId.set(id);
+    this.meseroSeleccionado.set(meseroObj);
     this.modalCorteMeseroVisible.set(true);
     this.fechaCorte.set(new Date());
     await Promise.all([this.cargarCorteMesero(), this.cargarHistorialComandas(false)]);
@@ -1244,12 +1288,14 @@ export class CajaComponent implements OnInit, OnDestroy {
 
   cerrarCorteMesero(): void {
     this.modalCorteMeseroVisible.set(false);
-    this.meseroSeleccionadoId = null;
+    this.meseroSeleccionadoId.set(null);
+    this.meseroSeleccionado.set(null);
     this.corteMesero.set(null);
   }
 
   async cargarCorteMesero(): Promise<void> {
-    if (!this.meseroSeleccionadoId) {
+    const idMesero = this.meseroSeleccionadoId();
+    if (!idMesero) {
       this.corteMesero.set(null);
       return;
     }
@@ -1258,7 +1304,7 @@ export class CajaComponent implements OnInit, OnDestroy {
     try {
       this.fechaCorte.set(new Date());
       const resp = await firstValueFrom(
-        this.cajaService.getCorteMesero(this.meseroSeleccionadoId, this.tenantId, undefined, this.fechaCorteISO())
+        this.cajaService.getCorteMesero(idMesero, this.tenantId, undefined, this.fechaCorteISO())
       );
       this.corteMesero.set(resp.object || resp.data || null);
     } catch (e: any) {
@@ -1320,20 +1366,22 @@ export class CajaComponent implements OnInit, OnDestroy {
 
   async refrescarCorte(): Promise<void> {
     await Promise.all([this.cargarMeseros(), this.cargarHistorialComandas(false)]);
-    if (this.meseroSeleccionadoId) {
+    if (this.meseroSeleccionadoId()) {
       await this.cargarCorteMesero();
     }
   }
 
   get propinaNetaMesero(): number {
-    const bruto = this.corteDelDia()?.propinasPendientesLiquidar || 0;
+    const bruto = this.corteDelDia()?.propinasPendientesLiquidar ?? this.totalPropinasMesero();
     const retencion = (bruto * (this.retencionPropinasPorc / 100));
     return Math.max(0, bruto - retencion);
   }
 
   async liquidarPropinasMesero(): Promise<void> {
-    const mesero = this.corteDelDia();
-    if (!mesero) {
+    const mesero = this.corteDelDia() || this.meseroSeleccionado();
+    const idMesero = (mesero as any)?.idMesero ?? (mesero as any)?.id;
+    const nombre = (mesero as any)?.nombreMesero ?? (mesero as any)?.nombre ?? 'Mesero';
+    if (!idMesero) {
       this.messageService.add({ severity: 'info', summary: 'Sin selección', detail: 'Selecciona un mesero para ver su corte' });
       return;
     }
@@ -1345,7 +1393,8 @@ export class CajaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (mesero.propinasPendientesLiquidar <= 0) {
+    const propinas = this.corteDelDia()?.propinasPendientesLiquidar ?? this.totalPropinasMesero();
+    if (propinas <= 0) {
       this.messageService.add({ severity: 'info', summary: 'Sin saldo', detail: 'No hay propinas pendientes de liquidar' });
       return;
     }
@@ -1355,7 +1404,7 @@ export class CajaComponent implements OnInit, OnDestroy {
       await firstValueFrom(this.cajaService.liquidarPropinas({
         tenantId: this.tenantId,
         idTurno: turno.idTurno,
-        idMesero: mesero.idMesero,
+        idMesero: idMesero,
         idCajero: this.userId,
         porcentajeRetencion: this.retencionPropinasPorc
       }));
@@ -1363,7 +1412,7 @@ export class CajaComponent implements OnInit, OnDestroy {
       this.messageService.add({
         severity: 'success',
         summary: 'Propinas Liquidadas',
-        detail: `Se entregó neto de $${this.propinaNetaMesero.toFixed(2)} a ${mesero.nombreMesero}`
+        detail: `Se entregó neto de $${this.propinaNetaMesero.toFixed(2)} a ${nombre}`
       });
 
       await this.cargarCorteMesero();

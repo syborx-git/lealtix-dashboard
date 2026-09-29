@@ -2685,7 +2685,9 @@
 }
 
 // Ocultar barra de desplazamiento nativa para scroll horizontal fluido
-.no-scrollbar {
+.no-scrollbar,
+.scrollbar-hide,
+.scrollbar-none {
   -ms-overflow-style: none; /* IE y Edge */
   scrollbar-width: none; /* Firefox */
   &::-webkit-scrollbar {

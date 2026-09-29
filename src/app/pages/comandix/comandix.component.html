@@ -330,8 +330,8 @@
 
       <!-- PASO 3: CATÁLOGO DE PRODUCTOS (JUSTO DEBAJO DE LAS PESTAÑAS DE COMENSALES) -->
       <div class="pos-catalog-card bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80">
-        <!-- Toolbar superior: Título y Filtro de categoría a la DERECHA -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+        <!-- Toolbar superior: Título del Menú -->
+        <div class="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center flex-shrink-0">
               <i class="pi pi-th-large text-lg"></i>
@@ -341,31 +341,52 @@
               <span class="text-xs text-slate-400 font-medium">{{ filteredProducts().length }} platillos disponibles</span>
             </div>
           </div>
-
-          <!-- Filtro Categorías alineado a la DERECHA -->
-          <div class="min-w-[220px]">
-            <p-select
-              [ngModel]="selectedCategoryId()"
-              (ngModelChange)="onCategoryFilterChange($event)"
-              [options]="categoryFilterOptions()"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Todas las categorías"
-              appendTo="body"
-              styleClass="catalog-select-dropdown w-full"
-            ></p-select>
-          </div>
         </div>
 
-        <!-- Estado vacío catálogo -->
+        <!-- Barra de Categorías Horizontal en Cápsulas (Pills con scroll horizontal) -->
+        <div class="flex flex-row items-center gap-3 overflow-x-auto px-1 py-1.5 mb-5 scrollbar-hide no-scrollbar select-none">
+          <!-- Cápsula estática: TODO -->
+          <button
+            type="button"
+            class="rounded-full px-5 py-2 font-medium text-xs sm:text-sm transition-colors duration-200 cursor-pointer whitespace-nowrap shrink-0 border"
+            [ngClass]="selectedCategoryId() === 0
+              ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
+              : 'bg-white text-purple-600 border-purple-600 hover:bg-purple-50'"
+            (click)="onCategoryFilterChange(0)"
+          >
+            TODO
+          </button>
+
+          <!-- Cápsulas dinámicas por categoría -->
+          <button
+            *ngFor="let cat of categories()"
+            type="button"
+            class="rounded-full px-5 py-2 font-medium text-xs sm:text-sm transition-colors duration-200 cursor-pointer whitespace-nowrap shrink-0 border uppercase"
+            [ngClass]="selectedCategoryId() === cat.id
+              ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
+              : 'bg-white text-purple-600 border-purple-600 hover:bg-purple-50'"
+            (click)="onCategoryFilterChange(cat.id)"
+          >
+            {{ cat.name }}
+          </button>
+        </div>
+
+        <!-- Estado vacío catálogo general -->
         <div *ngIf="categories().length === 0" class="empty-catalog text-center py-12">
           <i class="pi pi-inbox text-5xl text-slate-300 mb-3 block"></i>
           <p class="text-base font-bold text-slate-600 mb-1">Sin productos en el catálogo</p>
           <p class="text-xs text-slate-400">Agrega categorías y platillos en Gestiona tu Menú</p>
         </div>
 
+        <!-- Estado vacío si una categoría seleccionada no tiene platillos -->
+        <div *ngIf="categories().length > 0 && filteredProducts().length === 0" class="text-center py-12 text-slate-400">
+          <i class="pi pi-inbox text-4xl mb-2 text-slate-300 block"></i>
+          <p class="text-sm font-semibold text-slate-600 mb-1">No hay platillos en esta categoría</p>
+          <p class="text-xs text-slate-400">Selecciona "TODO" u otra categoría para explorar más platillos</p>
+        </div>
+
         <!-- Grid Responsivo de Platillos (3 a 4 columnas) -->
-        <div *ngIf="categories().length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div *ngIf="categories().length > 0 && filteredProducts().length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
           <div
             *ngFor="let product of filteredProducts()"
             class="dish-pos-card group bg-white rounded-2xl border border-slate-200/70 hover:border-purple-300 hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col cursor-pointer"

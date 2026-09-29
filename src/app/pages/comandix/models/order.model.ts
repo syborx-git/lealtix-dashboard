@@ -135,7 +135,9 @@ export interface PendingOrder {
   mesaId?: number;
   mesaNombre?: string;
   mesaNumero?: number;
+  meseroId?: number | null;
   meseroNombre?: string;
+  meseroEmail?: string | null;
   subcomandas?: string[];
   payment?: PaymentInfo;
 }
