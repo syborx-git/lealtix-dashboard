@@ -1,7 +1,7 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Subject, firstValueFrom } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { OrderSseService, SseNewOrderEvent } from '@/pages/comandix/services/order-sse.service';
+import { OrderSseService, SseNewOrderEvent, SseOrderStatusEvent } from '@/pages/comandix/services/order-sse.service';
 import { KitchenOrder, KitchenOrderItem, KitchenOrderStatus } from '../models/kitchen-order.model';
 import { KitchenNotificationService } from './kitchen-notification.service';
 import { KitchenApiService } from './kitchen-api.service';
@@ -20,6 +20,8 @@ export class KitchenOrderFacadeService implements OnDestroy {
     private readonly READY_AUTO_CLEAR_MS = 15000;
     private tenantId = 0;
     private knownOrderIds = new Set<string>();
+    private pollingBusy = false;
+    private lastSignature = '';
 
     readonly orders$ = this.ordersSubject.asObservable();
     readonly loading$ = this.loadingSubject.asObservable();
@@ -78,7 +80,9 @@ export class KitchenOrderFacadeService implements OnDestroy {
 
 
     private startPolling(): void {
-        this.pollingTimer = setInterval(() => this.loadOrders(), 30_000);
+        // Refresco de respaldo cada 2s para que la comanda aparezca casi al instante
+        // aunque el SSE no entregue el evento (evita depender del poll de 30s).
+        this.pollingTimer = setInterval(() => void this.loadOrders(false), 2_000);
     }
 
     private startRealtime(): void {
@@ -91,34 +95,63 @@ export class KitchenOrderFacadeService implements OnDestroy {
         this.orderSseService.newOrder$
             .pipe(takeUntil(this.destroy$))
             .subscribe((event) => this.handleIncomingOrderEvent(event));
+
+        this.orderSseService.orderStatusChanged$
+            .pipe(takeUntil(this.destroy$))
+            .subscribe((event) => this.handleOrderStatusChangedEvent(event));
     }
 
-    private async loadOrders(): Promise<void> {
-        this.loadingSubject.next(true);
+    private async loadOrders(showLoader = true): Promise<void> {
+        if (this.pollingBusy) {
+            return;
+        }
+        this.pollingBusy = true;
+        if (showLoader) {
+            this.loadingSubject.next(true);
+        }
         try {
-            // Cargar órdenes de cada status independientemente
-            const confirmedOrders = await firstValueFrom(
-                this.kitchenApiService.listOrdersByStatus(this.tenantId, 'CONFIRMADA', 0, 100)
-            );
-            const inProgressOrders = await firstValueFrom(
-                this.kitchenApiService.listOrdersByStatus(this.tenantId, 'EN_PREPARACION', 0, 100)
-            );
-            const readyOrders = await firstValueFrom(
-                this.kitchenApiService.listOrdersByStatus(this.tenantId, 'LISTO', 0, 100)
-            );
+            // Consultar los 3 estados en paralelo para reducir el ciclo del poll
+            const [confirmedOrders, inProgressOrders, readyOrders] = await Promise.all([
+                firstValueFrom(this.kitchenApiService.listOrdersByStatus(this.tenantId, 'CONFIRMADA', 0, 100)),
+                firstValueFrom(this.kitchenApiService.listOrdersByStatus(this.tenantId, 'EN_PREPARACION', 0, 100)),
+                firstValueFrom(this.kitchenApiService.listOrdersByStatus(this.tenantId, 'LISTO', 0, 100))
+            ]);
 
             const allBackendOrders = [...confirmedOrders, ...inProgressOrders, ...readyOrders];
             const kitchenOrders = allBackendOrders.map((order) => this.mapBackendOrderToKitchen(order));
 
             this.knownOrderIds = new Set(kitchenOrders.map((order) => order.id));
-            this.ordersSubject.next(kitchenOrders);
+            this.emitOrders(kitchenOrders);
         } catch (error) {
             console.error('Error al cargar órdenes de cocina:', error);
             // No hay fallback a mock, simplemente mostrar error
-            this.ordersSubject.next([]);
+            this.emitOrders([]);
         } finally {
-            this.loadingSubject.next(false);
+            this.pollingBusy = false;
+            if (showLoader) {
+                this.loadingSubject.next(false);
+            }
         }
+    }
+
+    /**
+     * Emite la lista solo si realmente cambió (misma firma = no re-render).
+     * Así el refresco de respaldo NO se ve como un parpadeo periódico.
+     */
+    private emitOrders(orders: KitchenOrder[]): void {
+        const sorted = [...orders].sort((a, b) =>
+            a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0
+        );
+        const signature = sorted
+            .map((order) => `${order.id}#${order.status}#${order.items.map((i) => `${i.productId}x${i.quantity}`).join(',')}`)
+            .join('|');
+
+        if (signature === this.lastSignature) {
+            return;
+        }
+
+        this.lastSignature = signature;
+        this.ordersSubject.next(sorted);
     }
 
     private handleIncomingOrderEvent(event: SseNewOrderEvent): void {
@@ -133,10 +166,52 @@ export class KitchenOrderFacadeService implements OnDestroy {
 
         this.knownOrderIds.add(mappedOrder.id);
         // Agregar la nueva orden al final (FIFO) para mantener orden de llegada
-        this.ordersSubject.next([...this.ordersSubject.value, mappedOrder]);
+        this.emitOrders([...this.ordersSubject.value, mappedOrder]);
 
-        // Reproducir campana para cualquier orden nueva que llega
-        this.kitchenNotificationService.playNewOrderSound(2, 400);
+        // El sonido de nuevas órdenes de CHATBOT lo reproduce AppLayout de forma global.
+        // No lo duplicamos aquí para no escuchar la campana dos veces.
+    }
+
+    /**
+     * Reacciona en tiempo real a los cambios de estado de una orden
+     * (p. ej. cuando el mesero la confirma/enviar a cocina, o cuando caja la paga).
+     */
+    private handleOrderStatusChangedEvent(event: SseOrderStatusEvent): void {
+        if (!event?.order || Number(event.tenantId) !== this.tenantId) {
+            return;
+        }
+
+        const orderId = String(event.order.id);
+        const status = this.normalizeStatus(event.order.estado);
+
+        // Órdenes que ya no deben verse en el tablero de cocina
+        if (status === 'PAGADA' || status === 'CANCELADA') {
+            if (this.knownOrderIds.has(orderId)) {
+                this.removeLocalOrder(orderId);
+            }
+            return;
+        }
+
+        const mappedOrder = this.mapOrderDataToKitchen(event.order);
+        if (!mappedOrder.id) {
+            return;
+        }
+
+        if (this.knownOrderIds.has(mappedOrder.id)) {
+            // Ya existe: solo actualizar estado/datos
+            this.emitOrders(
+                this.ordersSubject.value.map((order) =>
+                    order.id === mappedOrder.id ? { ...order, ...mappedOrder, status } : order
+                )
+            );
+            return;
+        }
+
+        // Orden confirmada por el mesero: aparece al instante en cocina (FIFO)
+        this.knownOrderIds.add(mappedOrder.id);
+        this.emitOrders([...this.ordersSubject.value, mappedOrder]);
+        // Una sola campana por comanda (evita que suene como si llegaran dos)
+        this.kitchenNotificationService.playNewOrderSound(1);
     }
 
     private patchLocalStatus(orderId: string, status: KitchenOrderStatus): void {
@@ -150,13 +225,13 @@ export class KitchenOrderFacadeService implements OnDestroy {
             };
         });
 
-        this.ordersSubject.next(patched);
+        this.emitOrders(patched);
     }
 
     private removeLocalOrder(orderId: string): void {
         this.knownOrderIds.delete(orderId);
         this.cancelReadyCleanup(orderId);
-        this.ordersSubject.next(this.ordersSubject.value.filter((order) => order.id !== orderId));
+        this.emitOrders(this.ordersSubject.value.filter((order) => order.id !== orderId));
     }
 
     private scheduleReadyCleanup(orderId: string): void {
@@ -212,21 +287,24 @@ export class KitchenOrderFacadeService implements OnDestroy {
     }
 
     private mapSseOrderToKitchen(event: SseNewOrderEvent): KitchenOrder {
-        const order = event.order;
-        const items = (order.items ?? []).map((item) => this.mapItem(item));
+        return this.mapOrderDataToKitchen(event.order);
+    }
+
+    private mapOrderDataToKitchen(order: any): KitchenOrder {
+        const items = (order?.items ?? []).map((item: any) => this.mapItem(item));
 
         return {
-            id: String(order.id),
-            tenantId: order.tenantId,
-            status: this.normalizeStatus(order.estado),
-            customerId: order.customerId,
-            customerName: order.customerName ?? `Cliente #${order.customerId}`,
-            source: order.source,
-            createdAt: order.fecha,
+            id: String(order?.id ?? ''),
+            tenantId: Number(order?.tenantId ?? this.tenantId),
+            status: this.normalizeStatus(order?.estado),
+            customerId: order?.customerId ?? null,
+            customerName: order?.customerName ?? (order?.customerId != null ? `Cliente #${order.customerId}` : 'Cliente General'),
+            source: order?.source,
+            createdAt: order?.fecha ?? order?.createdAt ?? new Date().toISOString(),
             items,
-            subtotal: Number(order.subtotal ?? 0),
-            discount: Number(order.descuento ?? 0),
-            total: Number(order.total ?? 0)
+            subtotal: Number(order?.subtotal ?? 0),
+            discount: Number(order?.descuento ?? 0),
+            total: Number(order?.total ?? 0)
         };
     }
 
@@ -259,6 +337,14 @@ export class KitchenOrderFacadeService implements OnDestroy {
 
         if (status === 'LISTO' || status === 'DESPACHADO') {
             return 'LISTO';
+        }
+
+        if (status === 'PAGADA' || status === 'PAID') {
+            return 'PAGADA';
+        }
+
+        if (status === 'CANCELADA' || status === 'CANCELLED') {
+            return 'CANCELADA';
         }
 
         // Default a PENDIENTE para órdenes nuevas del CHATBOT

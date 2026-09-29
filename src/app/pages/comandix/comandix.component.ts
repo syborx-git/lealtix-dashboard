@@ -255,7 +255,8 @@ configEditingItem: CartItem | null = null;
   ticketInvoiceUuid = signal('');
 
   onFacturaGenerated(event: { uuid: string; invoiceId: string } | null): void {
-    this.ticketInvoiceUuid.set(event?.uuid || '');
+    // Si por alguna razón no viene el UUID, usamos el folio para marcar el ticket como facturado.
+    this.ticketInvoiceUuid.set(event?.uuid || event?.invoiceId || '');
   }
 
   canCloseOrders = false;
