@@ -2245,6 +2245,7 @@ trackByProductId = (index: number, item: CartItem): string => {
         return;
       }
 
+      const currentUser = this.authService.getCurrentUser();
       const orderRequest: TenantClientOrderCreateRequest = {
         customerId: this.selectedCliente?.id ?? null,
         tenantId: this.tenantId,
@@ -2255,7 +2256,10 @@ trackByProductId = (index: number, item: CartItem): string => {
         couponCode: this.codigoCupon.trim() || null,
         redeemedBy: this.selectedCliente?.id ?? null,
         redemptionChannel: 'COMANDIX',
-        source: 'POS'
+        source: 'POS',
+        mesaId: this.selectedMesa()?.id,
+        meseroId: currentUser?.id,
+        meseroEmail: currentUser?.email
       };
 
       const response = await firstValueFrom(this.orderService.createOrder(orderRequest));

@@ -1019,35 +1019,6 @@ label.font-semibold .pi.pi-info-circle {
   padding-left: 0.35rem;
 }
 
-.layout-sidebar .logout-button {
-  font-weight: 700 !important;
-  color: #dc2626 !important;
-  opacity: 1 !important;
-  margin-top: 1.25rem !important;
-  background: rgba(220, 38, 38, 0.08) !important;
-  border: 1px solid rgba(220, 38, 38, 0.25) !important;
-  font-size: 0.8125rem !important;
-
-  &:hover {
-    background: rgba(220, 38, 38, 0.15) !important;
-    color: #b91c1c !important;
-    border-color: rgba(220, 38, 38, 0.4) !important;
-  }
-}
-
-:root[class*='app-dark'] .logout-button,
-.app-dark .logout-button {
-  color: #fda4af !important;
-  opacity: 1 !important;
-  background: rgba(248, 113, 113, 0.1) !important;
-  border-color: rgba(248, 113, 113, 0.18) !important;
-
-  &:hover {
-    background: rgba(248, 113, 113, 0.18) !important;
-    color: #fecdd3 !important;
-  }
-}
-
 .sidebar-footer {
   padding: 1rem;
   border-top: 1px solid var(--surface-border);
@@ -2058,6 +2029,13 @@ body.modulo-fullscreen-active .layout-main-container {
 
 body.modulo-fullscreen-active .layout-main {
   padding: 0 !important;
+}
+
+/* El shell nuevo calcula el padding izquierdo del contenido con utilidades
+   Tailwind (lg:pl-64 / lg:pl-20) sobre .app-content. Con el sidebar oculto ese
+   padding sobra y descuadra la página a pantalla completa, así que se anula. */
+body.modulo-fullscreen-active .app-content {
+  padding-left: 0 !important;
 }
 
 /* ===== Ticket de compra (impresión térmica 80 mm) ===== */

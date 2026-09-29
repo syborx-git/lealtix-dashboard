@@ -46,6 +46,7 @@ export interface RecordPaymentRequest {
   method: PaymentMethod;
   reference?: string | null;
   userEmail?: string;  // Email del usuario que aplica el pago
+  propina?: number;
 }
 
 export interface RecordPaymentResponse {
@@ -72,6 +73,9 @@ export interface TenantClientOrderCreateRequest {
   redeemedBy?: number | null;
   redemptionChannel?: string | null;
   source?: string;
+  mesaId?: number;
+  meseroId?: number;
+  meseroEmail?: string;
 }
 
 export interface TenantClientOrderUpdateRequest {

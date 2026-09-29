@@ -1,0 +1,99 @@
+<!--
+  Lista de navegación compartida por Sidebar (desktop) y Drawer (móvil).
+
+  Reglas clave contra el bug de texto cortado:
+  - Todo texto usa `whitespace-nowrap overflow-hidden` y vive dentro de un
+    contenedor flex con `min-w-0`, así nunca empuja ni deforma el ancho del item.
+  - Al colapsar, el texto pasa a `w-0 opacity-0 pointer-events-none`
+    (se retira del flujo) y el item queda `justify-center`, por lo que el icono
+    queda perfectamente centrado en la barra de w-20.
+-->
+<nav class="flex flex-col gap-1" aria-label="Navegación principal">
+
+    <div *ngFor="let section of sections()" class="flex flex-col">
+
+        <!-- ============ Grupo con submenú ============ -->
+        <button
+            type="button"
+            class="group relative flex w-full items-center rounded-xl text-left transition-colors duration-200"
+            [ngClass]="collapsed()
+                ? 'justify-center px-0 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-800'
+                : 'gap-3 px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-800'"
+            [attr.aria-expanded]="isOpen(section)"
+            [attr.aria-label]="section.label"
+            [title]="collapsed() ? section.label : null"
+            (click)="onSectionClick(section)"
+        >
+            <!-- Icono: nunca se colapsa, siempre centrado -->
+            <i
+                class="pi shrink-0 text-base"
+                [ngClass]="[
+                    section.icon,
+                    isOpen(section) && !collapsed() ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'
+                ]"
+            ></i>
+
+            <!-- Etiqueta del grupo -->
+            <span
+                class="min-w-0 flex-1 overflow-hidden whitespace-nowrap text-sm font-semibold transition-all duration-300"
+                [ngClass]="collapsed()
+                    ? 'w-0 opacity-0 pointer-events-none'
+                    : 'w-auto opacity-100 text-slate-700 dark:text-slate-200'"
+            >
+                {{ section.label }}
+            </span>
+
+            <!-- Chevron: solo tiene sentido con la barra expandida -->
+            <i
+                *ngIf="!collapsed()"
+                class="pi pi-fw pi-angle-down shrink-0 text-[0.7rem] text-slate-400 transition-transform duration-300"
+                [class.rotate-180]="isOpen(section)"
+            ></i>
+        </button>
+
+        <!-- ============ Submenú ============ -->
+        <div
+            class="grid transition-all duration-300 ease-in-out"
+            [ngClass]="[
+                isOpen(section) && !collapsed() ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0 pointer-events-none'
+            ]"
+        >
+            <ul class="min-h-0 overflow-hidden">
+                <li *ngFor="let item of itemsOf(section)" class="mt-0.5">
+                    <a
+                        class="flex items-center rounded-lg text-sm transition-colors duration-200"
+                        [ngClass]="[
+                            collapsed()
+                                ? 'justify-center px-0 py-2 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                : 'gap-3 px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-800',
+                            item.disabled ? 'cursor-not-allowed opacity-50 hover:bg-transparent dark:hover:bg-transparent' : ''
+                        ]"
+                        [routerLink]="item.disabled ? null : item.routerLink"
+                        routerLinkActive="bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300 font-semibold"
+                        [routerLinkActiveOptions]="{ paths: 'exact', queryParams: 'ignored', matrixParams: 'ignored', fragment: 'ignored' }"
+                        [attr.title]="collapsed() ? (item.label ?? '') : (item.title || null)"
+                        (click)="onItemClick(item)"
+                    >
+                        <i class="pi shrink-0 text-sm text-slate-400" [ngClass]="item.icon"></i>
+
+                        <span
+                            class="min-w-0 flex-1 overflow-hidden whitespace-nowrap transition-all duration-300"
+                            [ngClass]="collapsed()
+                                ? 'w-0 opacity-0 pointer-events-none'
+                                : 'w-auto opacity-100 text-slate-600 dark:text-slate-300'"
+                        >
+                            {{ item.label }}
+                        </span>
+
+                        <!-- Aviso de item deshabilitado (ej. Productos sin categorías) -->
+                        <i
+                            *ngIf="!collapsed() && item.disabled"
+                            class="pi pi-lock shrink-0 text-[0.65rem] text-amber-500"
+                            [title]="item.title || 'No disponible'"
+                        ></i>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>

@@ -1,12 +1,12 @@
-import { Component, OnInit, Renderer2, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { NavigationEnd, Router, RouterModule } from '@angular/router';
-import { filter, Subscription } from 'rxjs';
+import { Router, RouterModule } from '@angular/router';
+import { Subscription } from 'rxjs';
 import confetti from 'canvas-confetti';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
-import { AppTopbar } from './app.topbar';
-import { AppSidebar } from './app.sidebar';
+import { HeaderComponent } from '../header/header.component';
+import { SidebarComponent } from '../sidebar/sidebar.component';
 import { AppFooter } from './app.footer';
 import { LayoutService } from '../service/layout.service';
 import { OrderSseService, SseNewOrderEvent } from '@/pages/comandix/services/order-sse.service';
@@ -15,59 +15,43 @@ import { AuthService } from '@/auth/auth.service';
 @Component({
     selector: 'app-layout',
     standalone: true,
-    imports: [CommonModule, AppTopbar, AppSidebar, RouterModule, AppFooter, ToastModule],
+    imports: [CommonModule, HeaderComponent, SidebarComponent, RouterModule, AppFooter, ToastModule],
     providers: [MessageService],
-    template: `<div class="layout-wrapper" [ngClass]="containerClass">
+    styles: [`
+        :host {
+            display: block;
+            min-height: 100vh;
+        }
+    `],
+    template: `
+    <div class="min-h-screen bg-slate-50 dark:bg-slate-950">
+        <!-- Sidebar fijo solo en escritorio; en móvil vive en el drawer del header -->
         <app-sidebar></app-sidebar>
-        <div class="layout-main-container">
+
+        <!-- El padding izquierdo sigue al ancho del sidebar (w-64 / w-20) -->
+        <div class="app-content transition-all duration-300 ease-in-out" [ngClass]="layoutService.contentPaddingClass()">
             <app-topbar></app-topbar>
-            <div class="layout-main">
+            <main class="app-main min-h-[calc(100vh-8rem)] p-3 md:p-4 lg:p-6">
                 <router-outlet></router-outlet>
-            </div>
+            </main>
             <app-footer></app-footer>
         </div>
-        <div class="layout-mask animate-fadein"></div>
-        <p-toast position="bottom-right"></p-toast>
-    </div> `
-})
-export class AppLayout implements OnInit {
-    overlayMenuOpenSubscription: Subscription;
 
-    menuOutsideClickListener: any;
+        <p-toast position="bottom-right"></p-toast>
+    </div>`
+})
+export class AppLayout implements OnInit, OnDestroy {
 
     private readonly NOTIFICATION_SOUND = 'assets/sounds/dragon-studio-correct-472358.mp3';
     private sseSub: Subscription | null = null;
 
-    @ViewChild(AppSidebar) appSidebar!: AppSidebar;
-
-    @ViewChild(AppTopbar) appTopBar!: AppTopbar;
-
     constructor(
         public layoutService: LayoutService,
-        public renderer: Renderer2,
         public router: Router,
         private orderSseService: OrderSseService,
         private authService: AuthService,
         private messageService: MessageService
-    ) {
-        this.overlayMenuOpenSubscription = this.layoutService.overlayOpen$.subscribe(() => {
-            if (!this.menuOutsideClickListener) {
-                this.menuOutsideClickListener = this.renderer.listen('document', 'click', (event) => {
-                    if (this.isOutsideClicked(event)) {
-                        this.hideMenu();
-                    }
-                });
-            }
-
-            if (this.layoutService.layoutState().staticMenuMobileActive) {
-                this.blockBodyScroll();
-            }
-        });
-
-        this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {
-            this.hideMenu();
-        });
-    }
+    ) {}
 
     ngOnInit(): void {
         this.startGlobalOrderNotifications();
@@ -137,62 +121,12 @@ export class AppLayout implements OnInit {
         }
     }
 
-    isOutsideClicked(event: MouseEvent) {
-        const sidebarEl = document.querySelector('.layout-sidebar');
-        const topbarEl = document.querySelector('.layout-menu-button');
-        const eventTarget = event.target as Node;
-
-        return !(sidebarEl?.isSameNode(eventTarget) || sidebarEl?.contains(eventTarget) || topbarEl?.isSameNode(eventTarget) || topbarEl?.contains(eventTarget));
-    }
-
-    hideMenu() {
-        this.layoutService.layoutState.update((prev) => ({ ...prev, overlayMenuActive: false, staticMenuMobileActive: false, menuHoverActive: false }));
-        if (this.menuOutsideClickListener) {
-            this.menuOutsideClickListener();
-            this.menuOutsideClickListener = null;
-        }
-        this.unblockBodyScroll();
-    }
-
-    blockBodyScroll(): void {
-        if (document.body.classList) {
-            document.body.classList.add('blocked-scroll');
-        } else {
-            document.body.className += ' blocked-scroll';
-        }
-    }
-
-    unblockBodyScroll(): void {
-        if (document.body.classList) {
-            document.body.classList.remove('blocked-scroll');
-        } else {
-            document.body.className = document.body.className.replace(new RegExp('(^|\\s)' + 'blocked-scroll'.split(' ').join('|') + '(\\s|$)', 'gi'), ' ');
-        }
-    }
-
-    get containerClass() {
-        return {
-            'layout-overlay': this.layoutService.layoutConfig().menuMode === 'overlay',
-            'layout-static': this.layoutService.layoutConfig().menuMode === 'static',
-            'layout-static-inactive': this.layoutService.layoutState().staticMenuDesktopInactive && this.layoutService.layoutConfig().menuMode === 'static',
-            'layout-overlay-active': this.layoutService.layoutState().overlayMenuActive,
-            'layout-mobile-active': this.layoutService.layoutState().staticMenuMobileActive
-        };
-    }
-
     ngOnDestroy() {
-        if (this.overlayMenuOpenSubscription) {
-            this.overlayMenuOpenSubscription.unsubscribe();
-        }
-
         if (this.sseSub) {
             this.sseSub.unsubscribe();
         }
 
         this.orderSseService.disconnect();
-
-        if (this.menuOutsideClickListener) {
-            this.menuOutsideClickListener();
-        }
     }
 }
+

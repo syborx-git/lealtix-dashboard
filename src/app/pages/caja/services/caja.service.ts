@@ -66,10 +66,17 @@ export class CajaService {
     return this.http.get<ApiResponse<ResumenTurnoCorte>>(`${this.baseUrl}/turnos/${idTurno}/resumen`, { params });
   }
 
-  getCorteMesero(idMesero: number, tenantId: number, idTurno?: number): Observable<ApiResponse<CorteMesero>> {
+  /**
+   * Corte / rendimiento de un mesero.
+   * @param fecha cuando se envia, el corte se acota a ese dia (formato yyyy-MM-dd).
+   */
+  getCorteMesero(idMesero: number, tenantId: number, idTurno?: number, fecha?: string): Observable<ApiResponse<CorteMesero>> {
     let params = new HttpParams().set('tenantId', tenantId.toString());
     if (idTurno) {
       params = params.set('idTurno', idTurno.toString());
+    }
+    if (fecha) {
+      params = params.set('fecha', fecha);
     }
     return this.http.get<ApiResponse<CorteMesero>>(`${this.baseUrl}/cortes/mesero/${idMesero}`, { params });
   }

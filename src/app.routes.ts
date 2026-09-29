@@ -47,7 +47,7 @@ export const appRoutes: Routes = [
                     { path: 'bodega', loadComponent: () => import('@/pages/bodega/bodega.component').then(m => m.BodegaComponent), title: 'Bodega', canActivate: [PermissionGuard], data: { permission: 'view_products' } },
                     { path: 'reportes/transferencias', loadComponent: () => import('@/pages/reportes/transferencias-report.component').then(m => m.TransferenciasReportComponent), title: 'Reportes - Transferencias de Bodega', canActivate: [PermissionGuard], data: { permission: 'view_products' } },
                     { path: 'reportes/mermas', loadComponent: () => import('@/pages/reportes/mermas-report.component').then(m => m.MermasReportComponent), title: 'Reportes - Mermas', canActivate: [PermissionGuard], data: { permission: 'manage_mermas' } },
-                    { path: 'reportes/ventas', loadComponent: () => import('@/pages/comandix/comandix.component').then(m => m.ComandixComponent), title: 'Reportes - Ventas y Comandas', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'CAJA', 'MESERO'], permission: 'view_dashboard', initialView: 'report' } },
+                    { path: 'reportes/ventas', loadComponent: () => import('@/pages/caja/caja.component').then(m => m.CajaComponent), title: 'Reportes - Ventas y Comandas', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'CAJA', 'MESERO'], permission: 'view_dashboard', initialView: 'reporte' } },
                     // Modulo maestro de Reportes y Analitica (12 reportes en 4 pilares).
                     // Ruta propia para no chocar con las vistas de reportes del POS.
                     {

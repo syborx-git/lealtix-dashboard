@@ -1,969 +1,711 @@
-<div class="caja-container p-3 md:p-4">
-  <p-toast></p-toast>
+<div class="caja-page">
+  <!-- ==================== ENCABEZADO ==================== -->
+  <div class="caja-header">
+    <div class="caja-header-icon"><i class="pi pi-wallet"></i></div>
+    <div class="caja-header-txt">
+      <h2>Caja y Cortes</h2>
+      <p>Control de tickets, cortes por mesero y corte del día</p>
+    </div>
 
-  <!-- ==================== HEADER CAJA Y TURNOS ==================== -->
-  <div class="caja-header mb-4">
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <div class="caja-icon">
-          <i class="pi pi-wallet text-2xl text-white"></i>
-        </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-2xl md:text-3xl font-bold m-0 text-white">Caja y Cortes</h1>
-            <span *ngIf="turnoActivo()" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-200 border border-emerald-400/40">
-              ● Turno #{{ turnoActivo()!.idTurno }} ABIERTO
-            </span>
-            <span *ngIf="!turnoActivo()" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-200 border border-rose-400/40">
-              ● CAJA CERRADA
-            </span>
-          </div>
-          <p class="text-xs text-purple-200 m-0 mt-0.5">Operador: <strong>{{ userName }}</strong> · Terminal de Cobro Principal</p>
-        </div>
+    <div class="caja-header-turno">
+      <span class="caja-turno-label">Turno</span>
+      <span class="caja-turno-user" *ngIf="turnoActivo() as turno">
+        #{{ turno.idTurno }} · {{ turno.nombreCajero }}
+      </span>
+      <span class="caja-turno-user" *ngIf="!turnoActivo()">Sin turno</span>
+    </div>
+
+    <div class="caja-header-stats">
+      <div class="caja-hstat">
+        <span class="caja-hstat-label">Por cobrar</span>
+        <span class="caja-hstat-value">{{ cuentasPorCobrarCount() }}</span>
       </div>
-
-      <!-- Métricas rápidas y Acciones del Turno -->
-      <div class="flex items-center gap-2.5 flex-wrap">
-        <div *ngIf="turnoActivo()" class="bg-white/10 backdrop-blur-xs rounded-xl px-3 py-1.5 border border-white/20 text-right mr-2 hidden sm:block">
-          <span class="text-[10px] font-bold text-purple-200 uppercase tracking-wider block">Ingresos Turno</span>
-          <span class="text-base font-black text-white">${{ turnoActivo()!.totalIngresos | number:'1.2-2' }}</span>
-        </div>
-
-        <button
-          *ngIf="!turnoActivo()"
-          type="button"
-          (click)="abrirModalApertura()"
-          class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
-        >
-          <i class="pi pi-key"></i>
-          <span>Abrir Turno de Caja</span>
-        </button>
-
-        <button
-          *ngIf="turnoActivo()"
-          type="button"
-          (click)="abrirModalCierre()"
-          class="px-4 py-2.5 rounded-xl bg-rose-500/90 hover:bg-rose-600 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
-        >
-          <i class="pi pi-lock"></i>
-          <span>Cerrar Turno (Corte)</span>
-        </button>
-
-        <button
-          type="button"
-          (click)="cargarTablero()"
-          class="w-10 h-10 rounded-xl bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-all cursor-pointer"
-          title="Actualizar datos"
-        >
-          <i class="pi pi-refresh" [class.pi-spin]="loading()"></i>
-        </button>
+      <div class="caja-hstat">
+        <span class="caja-hstat-label">Cobrado hoy</span>
+        <span class="caja-hstat-value">${{ diaVentas() | number:'1.2-2' }}</span>
       </div>
     </div>
 
-    <!-- Toggle de Pestañas: Tablero, Cerradas, Canceladas, Cortes y Propinas, Reporte de Ventas -->
-    <div class="caja-tabs mt-4">
-      <button
-        type="button"
-        class="caja-tab-btn"
-        [class.active]="vistaActiva() === 'tablero'"
-        (click)="cambiarVista('tablero')"
-      >
-        <i class="pi pi-th-large"></i>
-        <span>Tablero de Comandas</span>
-        <span *ngIf="tablero().cuentasPorCobrar.length > 0" class="tab-badge">
-          {{ tablero().cuentasPorCobrar.length }} por cobrar
-        </span>
-      </button>
-
-      <button
-        type="button"
-        class="caja-tab-btn"
-        [class.active]="vistaActiva() === 'cerradas'"
-        (click)="cambiarVista('cerradas')"
-      >
-        <i class="pi pi-check-circle"></i>
-        <span>Comandas Cerradas</span>
-        <span *ngIf="comandasCerradas().length > 0" class="tab-badge tab-badge-neutral">
-          {{ comandasCerradas().length }}
-        </span>
-      </button>
-
-      <button
-        type="button"
-        class="caja-tab-btn"
-        [class.active]="vistaActiva() === 'canceladas'"
-        (click)="cambiarVista('canceladas')"
-      >
-        <i class="pi pi-times-circle"></i>
-        <span>Canceladas</span>
-        <span *ngIf="comandasCanceladas().length > 0" class="tab-badge tab-badge-danger">
-          {{ comandasCanceladas().length }}
-        </span>
-      </button>
-
-      <button
-        type="button"
-        class="caja-tab-btn"
-        [class.active]="vistaActiva() === 'cortes_propinas'"
-        (click)="cambiarVista('cortes_propinas')"
-      >
-        <i class="pi pi-chart-pie"></i>
-        <span>Cortes y Propinas</span>
-      </button>
-
-      <button
-        type="button"
-        class="caja-tab-btn"
-        [class.active]="vistaActiva() === 'reporte'"
-        (click)="cambiarVista('reporte')"
-      >
-        <i class="pi pi-chart-line"></i>
-        <span>Reporte de Ventas</span>
-      </button>
-    </div>
+    <button
+      type="button"
+      class="btn-refresh"
+      (click)="refrescar()"
+      [disabled]="loading()"
+      title="Actualizar"
+    >
+      <i class="pi" [class.pi-refresh]="!loading()" [class.pi-spin]="loading()" [class.pi-spinner]="loading()"></i>
+    </button>
   </div>
 
-  <!-- ==================== VISTA 1: TABLERO DE COMANDAS ==================== -->
-  <div *ngIf="vistaActiva() === 'tablero'" class="tablero-grid grid grid-cols-1 lg:grid-cols-2 gap-5">
-
-    <!-- COLUMNA 1: CUENTAS ABIERTAS (En consumo en sala) -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 md:p-5 flex flex-col">
-      <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
-        <div class="flex items-center gap-2">
-          <span class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
-          <h2 class="text-sm font-bold uppercase tracking-wider text-slate-800 m-0">
-            Cuentas Abiertas ({{ tablero().cuentasAbiertas.length }})
-          </h2>
-        </div>
-        <span class="text-xs text-slate-400 font-medium">Consumo activo</span>
-      </div>
-
-      <!-- Lista de cuentas abiertas -->
-      <div class="space-y-3 overflow-y-auto max-h-[calc(100vh-320px)] pr-1">
-        <div
-          *ngFor="let comanda of tablero().cuentasAbiertas"
-          class="p-4 rounded-2xl border border-slate-200/90 hover:border-amber-400 bg-white hover:bg-amber-50/20 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs"
-        >
-          <div>
-            <div class="flex items-center gap-2 mb-1">
-              <span class="font-bold text-slate-900 text-base">{{ comanda.mesaNombre }}</span>
-              <span class="text-xs text-slate-400 font-semibold">#{{ comanda.folioComanda }}</span>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 uppercase">
-                {{ comanda.estado }}
-              </span>
-            </div>
-            <p class="text-xs text-slate-500 m-0 flex items-center gap-2">
-              <span><i class="pi pi-user text-slate-400 mr-1"></i>{{ comanda.meseroNombre }}</span>
-              <span>·</span>
-              <span>{{ comanda.totalItems }} platillos</span>
-            </p>
-          </div>
-
-          <div class="flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex-wrap">
-            <span class="text-lg font-black text-slate-800 mr-1">${{ comanda.total | number:'1.2-2' }}</span>
-            <button
-              type="button"
-              (click)="abrirDetalleOrden(comanda)"
-              class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer"
-              title="Ver detalle de comanda"
-            >
-              <i class="pi pi-eye text-xs"></i>
-            </button>
-            <button
-              type="button"
-              (click)="abrirModalSplit(comanda)"
-              class="w-9 h-9 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 flex items-center justify-center transition-all cursor-pointer"
-              title="Dividir cuenta (separar comanda)"
-            >
-              <i class="pi pi-share-alt text-xs"></i>
-            </button>
-            <button
-              type="button"
-              (click)="abrirModalCancelar(comanda)"
-              class="w-9 h-9 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center transition-all cursor-pointer"
-              title="Cancelar comanda"
-            >
-              <i class="pi pi-times text-xs"></i>
-            </button>
-            <button
-              type="button"
-              (click)="imprimirTicket(comanda)"
-              [disabled]="procesando()"
-              class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer whitespace-nowrap"
-              title="Imprimir ticket y entregar a mesa para cobro"
-            >
-              <i class="pi pi-print"></i>
-              <span>Imprimir Ticket</span>
-            </button>
-          </div>
-        </div>
-
-        <div *ngIf="tablero().cuentasAbiertas.length === 0" class="py-16 text-center text-slate-400 text-xs">
-          <i class="pi pi-check-circle text-4xl mb-2 text-slate-300 block"></i>
-          No hay cuentas en consumo en este momento
-        </div>
-      </div>
-    </div>
-
-    <!-- COLUMNA 2: CUENTAS POR COBRAR (Ticket ya en mesa) -->
-    <div class="bg-white rounded-2xl shadow-sm border-2 border-purple-200 p-4 md:p-5 flex flex-col bg-purple-50/15">
-      <div class="flex items-center justify-between mb-4 pb-3 border-b border-purple-100">
-        <div class="flex items-center gap-2">
-          <span class="w-3 h-3 rounded-full bg-purple-600"></span>
-          <h2 class="text-sm font-bold uppercase tracking-wider text-purple-900 m-0">
-            Cuentas por Cobrar ({{ tablero().cuentasPorCobrar.length }})
-          </h2>
-        </div>
-        <span class="text-xs font-bold text-purple-700 bg-purple-100 px-2.5 py-0.5 rounded-full">
-          Ticket impreso en mesa
-        </span>
-      </div>
-
-      <!-- Lista de cuentas por cobrar -->
-      <div class="space-y-3 overflow-y-auto max-h-[calc(100vh-320px)] pr-1">
-        <div
-          *ngFor="let comanda of tablero().cuentasPorCobrar"
-          class="p-4 rounded-2xl border-2 border-purple-300 bg-white shadow-xs hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-        >
-          <div>
-            <div class="flex items-center gap-2 mb-1">
-              <span class="font-extrabold text-purple-950 text-base">{{ comanda.mesaNombre }}</span>
-              <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-600 text-white">
-                Ticket Entregado
-              </span>
-            </div>
-            <p class="text-xs text-slate-500 m-0">
-              Mesero: <strong>{{ comanda.meseroNombre }}</strong> · Impreso hace {{ minutosDesde(comanda.fechaImpresionTicket) }} min
-            </p>
-          </div>
-
-          <div class="flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-purple-100 flex-wrap">
-            <span class="text-xl font-black text-purple-700 mr-1">${{ comanda.total | number:'1.2-2' }}</span>
-            <button
-              type="button"
-              (click)="abrirDetalleOrden(comanda)"
-              class="w-9 h-9 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 flex items-center justify-center transition-all cursor-pointer"
-              title="Ver detalle de comanda"
-            >
-              <i class="pi pi-eye text-xs"></i>
-            </button>
-            <button
-              type="button"
-              (click)="abrirModalSplit(comanda)"
-              class="w-9 h-9 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 flex items-center justify-center transition-all cursor-pointer"
-              title="Dividir cuenta"
-            >
-              <i class="pi pi-share-alt text-xs"></i>
-            </button>
-            <button
-              type="button"
-              (click)="imprimirTicket(comanda)"
-              class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer"
-              title="Reimprimir ticket"
-            >
-              <i class="pi pi-print text-xs"></i>
-            </button>
-            <button
-              type="button"
-              (click)="abrirModalCobro(comanda)"
-              [disabled]="procesando()"
-              class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs flex items-center gap-1.5 shadow-sm hover:shadow transition-all cursor-pointer whitespace-nowrap"
-            >
-              <i class="pi pi-dollar"></i>
-              <span>Cobrar Cuenta</span>
-            </button>
-          </div>
-        </div>
-
-        <div *ngIf="tablero().cuentasPorCobrar.length === 0" class="py-16 text-center text-slate-400 text-xs">
-          <i class="pi pi-inbox text-4xl mb-2 text-slate-300 block"></i>
-          Sin cuentas pendientes de cobro
-        </div>
-      </div>
-    </div>
-
+  <!-- ==================== CATEGORÍAS ==================== -->
+  <div class="caja-ventanas">
+    <button
+      type="button"
+      class="caja-ventana"
+      [class.active]="seccionActiva() === 'tickets'"
+      (click)="cambiarSeccion('tickets')"
+    >
+      <i class="pi pi-ticket"></i>
+      <span>Tickets</span>
+      <span class="caja-ventana-badge" *ngIf="ticketsAbiertas().length">{{ ticketsAbiertas().length }}</span>
+    </button>
+    <button
+      type="button"
+      class="caja-ventana"
+      [class.active]="seccionActiva() === 'meseros'"
+      (click)="cambiarSeccion('meseros')"
+    >
+      <i class="pi pi-users"></i>
+      <span>Corte de Meseros</span>
+    </button>
+    <button
+      type="button"
+      class="caja-ventana"
+      [class.active]="seccionActiva() === 'dia'"
+      (click)="cambiarSeccion('dia')"
+    >
+      <i class="pi pi-chart-pie"></i>
+      <span>Corte del Día</span>
+    </button>
   </div>
 
-  <!-- ==================== VISTA 2: CORTES Y PROPINAS ==================== -->
-  <div *ngIf="vistaActiva() === 'cortes_propinas'" class="space-y-6">
+  <!-- ==================== CARGA INICIAL ==================== -->
+  <div *ngIf="loading()" class="flex flex-col items-center justify-center gap-3 py-20 text-slate-400">
+    <i class="pi pi-spin pi-spinner text-3xl text-purple-500"></i>
+    <span class="text-xs font-semibold uppercase tracking-widest">Cargando caja...</span>
+  </div>
 
-    <!-- SECCIÓN A: AUDITORÍA Y CORTE POR MESERO -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
-        <div>
-          <h2 class="text-base font-bold text-slate-800 m-0">Rendimiento y Propinas por Mesero</h2>
-          <p class="text-xs text-slate-400 m-0 mt-0.5">Auditoría del turno activo y cálculo de liquidación neta</p>
+  <ng-container *ngIf="!loading()">
+
+    <!-- ================================================================ -->
+    <!-- ==================== 1) TICKETS ==================== -->
+    <!-- ================================================================ -->
+    <ng-container *ngIf="seccionActiva() === 'tickets'">
+      <!-- Sub-vista -->
+      <div class="caja-tabs">
+        <button
+          type="button"
+          class="caja-tab"
+          [class.active]="ticketsVista() === 'abiertas'"
+          (click)="cambiarTicketsVista('abiertas')"
+        >
+          Abiertas
+          <span class="caja-tab-badge">{{ ticketsAbiertas().length }}</span>
+        </button>
+        <button
+          type="button"
+          class="caja-tab"
+          [class.active]="ticketsVista() === 'cerradas'"
+          (click)="cambiarTicketsVista('cerradas')"
+        >
+          Cerradas
+          <span class="caja-tab-badge">{{ ticketsCerradas().length }}</span>
+        </button>
+
+        <div class="ml-auto">
+          <input
+            type="text"
+            [ngModel]="ticketsVista() === 'abiertas' ? busquedaActivas() : busquedaCerradas()"
+            (ngModelChange)="ticketsVista() === 'abiertas' ? busquedaActivas.set($event) : busquedaCerradas.set($event)"
+            [placeholder]="ticketsVista() === 'abiertas' ? 'Buscar comanda, mesa o mesero...' : 'Buscar comanda cerrada...'"
+            class="caja-search"
+          />
+        </div>
+      </div>
+
+      <!-- TICKETS · Abiertas -->
+      <ng-container *ngIf="ticketsVista() === 'abiertas'">
+        <div *ngIf="ticketsAbiertas().length === 0" class="caja-empty">
+          <i class="pi pi-inbox"></i>
+          <p>No hay comandas abiertas en este momento</p>
         </div>
 
-        <!-- Selector de Mesero -->
-        <div class="flex items-center gap-2">
-          <label class="text-xs font-bold text-slate-500 uppercase">Mesero:</label>
-          <select
-            [(ngModel)]="meseroSeleccionadoId"
-            (change)="cargarRendimientoMesero()"
-            class="text-xs font-semibold p-2.5 border border-slate-200 rounded-xl bg-slate-50 min-w-[200px]"
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5">
+          <article
+            *ngFor="let o of ticketsAbiertas()"
+            class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-purple-300 transition-all overflow-hidden"
           >
-            <option [ngValue]="null" disabled selected>Selecciona un mesero...</option>
-            <option *ngFor="let m of meseros()" [ngValue]="m.id">{{ m.nombre }}</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Métricas del Mesero -->
-      <div *ngIf="corteMesero() as cm" class="space-y-4">
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Vendido</span>
-            <span class="text-2xl font-black text-slate-800">${{ cm.totalVentas | number:'1.2-2' }}</span>
-            <span class="text-[11px] text-slate-400 block mt-1">{{ cm.totalComandasAtendidas }} comandas cobradas</span>
-          </div>
-
-          <div class="bg-purple-50 border border-purple-200 rounded-xl p-3.5">
-            <span class="text-[10px] font-bold text-purple-700 uppercase tracking-wider block">Propinas Brutas</span>
-            <span class="text-2xl font-black text-purple-900">${{ cm.totalPropinas | number:'1.2-2' }}</span>
-            <span class="text-[11px] text-purple-600 block mt-1">Acumuladas en sus cuentas</span>
-          </div>
-
-          <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5 flex flex-col justify-between">
-            <div class="flex justify-between items-start">
-              <div>
-                <span class="text-[10px] font-bold text-amber-700 uppercase tracking-wider block">Saldo Pendiente</span>
-                <span class="text-2xl font-black text-amber-900">${{ cm.propinasPendientesLiquidar | number:'1.2-2' }}</span>
+            <!-- Cabecera de la card -->
+            <header class="flex items-center justify-between gap-2 px-4 py-3 bg-slate-50 border-b border-slate-100">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="px-2 py-1 rounded-lg bg-purple-100 text-purple-700 text-[10px] font-black tracking-wide shrink-0">
+                  #{{ (o.id && o.id.length > 8) ? o.id.slice(0, 8).toUpperCase() : (o.id || '') }}
+                </span>
+                <span class="text-sm font-black text-slate-800 truncate">{{ o.mesaNombre || 'Mesa General' }}</span>
               </div>
-              <div class="text-right">
-                <span class="text-[10px] font-bold text-slate-500 uppercase block">Retención</span>
-                <input
-                  type="number"
-                  [(ngModel)]="retencionPropinasPorc"
-                  class="w-14 text-center text-xs font-bold p-1 bg-white border border-amber-300 rounded-lg"
-                  title="% de retención para barra/cocina"
-                />%
-              </div>
-            </div>
+              <p-tag [value]="o.estado" [styleClass]="getStatusClass(o.estado)"></p-tag>
+            </header>
 
-            <div class="flex items-center justify-between mt-3 pt-2 border-t border-amber-200">
-              <span class="text-xs font-bold text-amber-900">
-                Neto a Entregar: <strong>${{ propinaNetaMesero | number:'1.2-2' }}</strong>
-              </span>
-              <button
-                type="button"
-                (click)="liquidarPropinasMesero()"
-                [disabled]="procesando() || cm.propinasPendientesLiquidar <= 0"
-                class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-xs disabled:opacity-40 cursor-pointer"
-              >
-                <i class="pi pi-check-circle mr-1"></i>Liquidar Propinas
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tabla de Pagos Registrados del Mesero -->
-        <div class="mt-4">
-          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Comandas Cobradas</h4>
-          <p-table [value]="cm.pagosRealizados" responsiveLayout="scroll" styleClass="p-datatable-sm">
-            <ng-template pTemplate="header">
-              <tr>
-                <th>ID / Folio</th>
-                <th>Método de Pago</th>
-                <th class="text-right">Monto Cuenta</th>
-                <th class="text-right">Propina</th>
-                <th>Referencia</th>
-                <th>Fecha Cobro</th>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="body" let-p>
-              <tr>
-                <td class="font-bold text-slate-800">#{{ p.idComanda.slice(0, 8).toUpperCase() }}</td>
-                <td><span class="px-2 py-0.5 rounded-md bg-slate-100 font-semibold text-xs">{{ p.metodoPago }}</span></td>
-                <td class="text-right font-semibold">${{ p.montoCuenta | number:'1.2-2' }}</td>
-                <td class="text-right font-black text-purple-700">${{ p.montoPropina | number:'1.2-2' }}</td>
-                <td class="text-slate-400 text-xs">{{ p.referencia || '-' }}</td>
-                <td class="text-slate-500 text-xs">{{ p.fecha | date:'HH:mm:ss' }}</td>
-              </tr>
-            </ng-template>
-            <ng-template pTemplate="emptymessage">
-              <tr>
-                <td colspan="6" class="text-center py-4 text-slate-400">Sin comandas cobradas en este turno</td>
-              </tr>
-            </ng-template>
-          </p-table>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ==================== VISTA 3: COMANDAS CERRADAS ==================== -->
-  <div *ngIf="vistaActiva() === 'cerradas'" class="space-y-4">
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 md:p-5">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
-        <div>
-          <h2 class="text-base font-bold text-slate-800 m-0">Historial de Comandas Cerradas</h2>
-          <p class="text-xs text-slate-400 m-0 mt-0.5">Órdenes pagadas y liquidadas en caja</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <div class="relative">
-            <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-            <input
-              type="text"
-              [ngModel]="busquedaCerradas()"
-              (ngModelChange)="busquedaCerradas.set($event)"
-              placeholder="Buscar por mesa, mesero, cliente..."
-              class="text-xs pl-8 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-purple-500 w-64 transition-all"
-            />
-          </div>
-          <button
-            type="button"
-            (click)="cargarHistorialComandas(true)"
-            class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer"
-            title="Actualizar"
-          >
-            <i class="pi pi-refresh" [class.pi-spin]="loadingHistorial()"></i>
-          </button>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" *ngIf="cerradasFiltradas().length > 0">
-        <div
-          *ngFor="let order of cerradasFiltradas()"
-          class="bg-white rounded-2xl border border-slate-200/80 hover:border-emerald-400 p-4 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
-        >
-          <div>
-            <div class="flex items-center justify-between gap-2 mb-2">
-              <div class="flex items-center gap-2">
-                <span class="font-bold text-slate-900 text-base">#{{ order.id.slice(0, 8).toUpperCase() }}</span>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 uppercase">
-                  PAGADA
+            <!-- Datos -->
+            <div class="px-4 py-3 space-y-2.5">
+              <div class="flex items-center justify-between text-[11px] text-slate-500">
+                <span class="flex items-center gap-1 min-w-0 truncate">
+                  <i class="pi pi-user text-slate-400"></i>{{ o.meseroNombre || 'Sin mesero' }}
+                </span>
+                <span class="shrink-0 flex items-center gap-1">
+                  <i class="pi pi-clock text-slate-400"></i>{{ o.horaApertura | date:'HH:mm' }}
                 </span>
               </div>
-              <span class="text-xs text-slate-400">
-                {{ (order.payment?.paidAt || order.fechaCreacion) | date:'dd/MM HH:mm' }}
-              </span>
+
+              <div class="text-[11px] text-slate-500 flex items-center gap-1 truncate">
+                <i class="pi pi-id-card text-slate-400"></i>{{ getClientLabel(o) }}
+              </div>
+
+              <ul class="space-y-1 max-h-24 overflow-y-auto pr-1">
+                <li
+                  *ngFor="let it of (o.items || []).slice(0, 4)"
+                  class="flex justify-between text-[11px] text-slate-600"
+                >
+                  <span class="truncate pr-2">{{ it.cantidad }}x {{ getProductLabel(it) }}</span>
+                  <span class="shrink-0 font-semibold">${{ (getItemPrice(it) * it.cantidad) | number:'1.2-2' }}</span>
+                </li>
+              </ul>
+              <p
+                *ngIf="(o.items || []).length > 4"
+                class="text-[10px] text-purple-600 font-semibold"
+              >
+                + {{ (o.items || []).length - 4 }} platillo(s) más
+              </p>
             </div>
 
-            <div class="space-y-1 text-xs text-slate-600 mb-3">
-              <div class="flex items-center gap-1.5">
-                <i class="pi pi-table text-purple-600"></i>
-                <span class="font-semibold text-slate-800">{{ order.mesaNombre || 'Mesa General' }}</span>
+            <!-- Total y acciones -->
+            <footer class="px-4 pb-4">
+              <div class="flex items-center justify-between border-t border-dashed border-slate-200 pt-2.5 mb-3">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total</span>
+                <span class="text-lg font-black text-purple-900">
+                  ${{ (o.totalFinal ?? o.subtotal ?? 0) | number:'1.2-2' }}
+                </span>
               </div>
+
               <div class="flex items-center gap-1.5">
-                <i class="pi pi-user text-slate-400"></i>
-                <span>Mesero: <strong>{{ order.meseroNombre || 'No asignado' }}</strong></span>
+                <button
+                  type="button"
+                  class="px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
+                  (click)="abrirDetalleOrden(o)"
+                  title="Ver ticket"
+                >
+                  <i class="pi pi-eye"></i>
+                </button>
+                <button
+                  type="button"
+                  class="px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
+                  (click)="imprimirTicket(o)"
+                  [disabled]="procesando()"
+                  title="Imprimir ticket"
+                >
+                  <i class="pi pi-print"></i>
+                </button>
+                <button
+                  type="button"
+                  class="px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
+                  (click)="abrirModalSplit(o)"
+                  title="Dividir comanda"
+                >
+                  <i class="pi pi-clone"></i>
+                </button>
+                <button
+                  type="button"
+                  class="px-2.5 py-1.5 rounded-lg border border-rose-200 text-rose-500 hover:bg-rose-50 cursor-pointer"
+                  (click)="abrirModalCancelar(o)"
+                  title="Cancelar comanda"
+                >
+                  <i class="pi pi-times"></i>
+                </button>
+                <button
+                  type="button"
+                  class="ml-auto px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black shadow-xs cursor-pointer flex items-center gap-1.5"
+                  (click)="abrirModalCobro(o)"
+                >
+                  <i class="pi pi-check-circle"></i>
+                  <span>Marcar pagada</span>
+                </button>
               </div>
-              <div class="flex items-center gap-1.5">
-                <i class="pi pi-id-card text-slate-400"></i>
-                <span>Cliente: {{ getClientLabel(order) }}</span>
+            </footer>
+          </article>
+        </div>
+      </ng-container>
+
+      <!-- TICKETS · Cerradas -->
+      <ng-container *ngIf="ticketsVista() === 'cerradas'">
+        <div *ngIf="ticketsCerradas().length === 0" class="caja-empty">
+          <i class="pi pi-check-circle"></i>
+          <p>Aún no hay comandas cerradas</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5">
+          <article
+            *ngFor="let o of ticketsCerradas()"
+            class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden"
+          >
+            <header class="flex items-center justify-between gap-2 px-4 py-3 bg-emerald-50/60 border-b border-emerald-100">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="px-2 py-1 rounded-lg bg-emerald-100 text-emerald-700 text-[10px] font-black tracking-wide shrink-0">
+                  #{{ (o.id && o.id.length > 8) ? o.id.slice(0, 8).toUpperCase() : (o.id || '') }}
+                </span>
+                <span class="text-sm font-black text-slate-800 truncate">{{ o.mesaNombre || 'Mesa General' }}</span>
               </div>
-              <div *ngIf="order.payment?.method" class="flex items-center gap-1.5 text-slate-500">
-                <i class="pi pi-wallet text-amber-600"></i>
-                <span>Pago: <strong>{{ order.payment?.method }}</strong> <span *ngIf="order.payment?.reference">({{ order.payment?.reference }})</span></span>
+              <p-tag value="Pagada" styleClass="p-tag-success"></p-tag>
+            </header>
+
+            <div class="px-4 py-3 space-y-2.5">
+              <div class="flex items-center justify-between text-[11px] text-slate-500">
+                <span class="flex items-center gap-1 min-w-0 truncate">
+                  <i class="pi pi-user text-slate-400"></i>{{ o.meseroNombre || 'Sin mesero' }}
+                </span>
+                <span class="shrink-0 flex items-center gap-1">
+                  <i class="pi pi-check text-emerald-500"></i>{{ (o.horaCierre || o.fechaCreacion) | date:'HH:mm' }}
+                </span>
+              </div>
+
+              <div class="flex items-center justify-between text-[11px]">
+                <span class="flex items-center gap-1 text-slate-500">
+                  <i class="pi pi-credit-card text-slate-400"></i>
+                  {{ o.payment?.method || 'EFECTIVO' }}
+                </span>
+                <span class="font-semibold text-slate-600">
+                  {{ (o.items || []).length }} platillo(s)
+                </span>
               </div>
             </div>
 
-            <!-- Items preview -->
-            <div *ngIf="order.items && order.items.length > 0" class="bg-slate-50 rounded-xl p-2.5 mb-3 text-xs">
-              <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                {{ order.items.length }} producto{{ order.items.length === 1 ? '' : 's' }}
+            <footer class="px-4 pb-4">
+              <div class="flex items-center justify-between border-t border-dashed border-slate-200 pt-2.5 mb-3">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Cobrado</span>
+                <span class="text-lg font-black text-emerald-700">
+                  ${{ (o.totalFinal ?? o.subtotal ?? 0) | number:'1.2-2' }}
+                </span>
               </div>
-              <div class="space-y-0.5 max-h-24 overflow-y-auto pr-1">
-                <div *ngFor="let it of order.items" class="flex justify-between text-slate-600">
-                  <span class="truncate">{{ it.cantidad }}x {{ getProductLabel(it) }}</span>
-                  <span class="font-medium text-slate-800 ml-2">${{ (getItemPrice(it) * it.cantidad) | number:'1.2-2' }}</span>
+
+              <div class="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  class="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer flex items-center justify-center gap-1.5"
+                  (click)="abrirDetalleOrden(o)"
+                >
+                  <i class="pi pi-eye"></i><span class="text-[11px] font-bold">Ver ticket</span>
+                </button>
+                <button
+                  type="button"
+                  class="flex-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 text-white cursor-pointer flex items-center justify-center gap-1.5"
+                  (click)="reimprimirTicketCerrada(o)"
+                >
+                  <i class="pi pi-print"></i><span class="text-[11px] font-bold">Reimprimir</span>
+                </button>
+              </div>
+            </footer>
+          </article>
+        </div>
+      </ng-container>
+    </ng-container>
+
+    <!-- ================================================================ -->
+    <!-- ==================== 2) CORTE DE MESEROS ==================== -->
+    <!-- ================================================================ -->
+    <ng-container *ngIf="seccionActiva() === 'meseros'">
+      <div class="caja-tabs">
+        <span class="caja-tab-note">
+          <i class="pi pi-calendar text-purple-500"></i>
+          Corte del {{ fechaCorteTexto }}
+        </span>
+        <button type="button" class="btn-refresh ml-auto" (click)="refrescarCorte()" title="Actualizar">
+          <i class="pi pi-refresh"></i>
+        </button>
+      </div>
+
+      <div *ngIf="meserosConActivas().length === 0" class="caja-empty">
+        <i class="pi pi-users"></i>
+        <p>No hay meseros registrados</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5">
+        <button
+          *ngFor="let m of meserosConActivas()"
+          type="button"
+          class="text-left bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-purple-300 hover:-translate-y-0.5 transition-all p-4 cursor-pointer"
+          (click)="abrirCorteMesero(m.id)"
+        >
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-11 h-11 rounded-xl bg-purple-100 text-purple-700 grid place-items-center shrink-0">
+              <i class="pi pi-user text-lg"></i>
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-black text-slate-800 truncate m-0">{{ m.nombre }}</p>
+              <p class="text-[11px] text-slate-400 truncate m-0">{{ m.email }}</p>
+            </div>
+            <i class="pi pi-angle-right text-slate-300 ml-auto"></i>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div class="bg-slate-50 rounded-xl py-2">
+              <p class="text-base font-black text-slate-800 m-0 leading-none">{{ m.comandasActivas }}</p>
+              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Activas</span>
+            </div>
+            <div class="bg-slate-50 rounded-xl py-2">
+              <p class="text-base font-black text-slate-800 m-0 leading-none">{{ m.ticketsHoy }}</p>
+              <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Tickets</span>
+            </div>
+            <div class="bg-emerald-50 rounded-xl py-2">
+              <p class="text-sm font-black text-emerald-700 m-0 leading-none">${{ m.dineroHoy | number:'1.0-0' }}</p>
+              <span class="text-[9px] font-bold text-emerald-600/70 uppercase tracking-wider">Cobrado</span>
+            </div>
+          </div>
+        </button>
+      </div>
+    </ng-container>
+
+    <!-- ================================================================ -->
+    <!-- ==================== 3) CORTE DEL DÍA ==================== -->
+    <!-- ================================================================ -->
+    <ng-container *ngIf="seccionActiva() === 'dia'">
+      <div class="caja-tabs">
+        <span class="caja-tab-note">
+          <i class="pi pi-calendar text-purple-500"></i>
+          {{ fechaCorteTexto }}
+        </span>
+        <button type="button" class="btn-refresh ml-auto" (click)="cargarResumenDia()" title="Actualizar">
+          <i class="pi" [class.pi-refresh]="!loadingResumenDia()" [class.pi-spin]="loadingResumenDia()" [class.pi-spinner]="loadingResumenDia()"></i>
+        </button>
+      </div>
+
+      <!-- KPIs -->
+      <div class="grid grid-cols-2 xl:grid-cols-4 gap-3.5 mb-4">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 grid place-items-center">
+              <i class="pi pi-dollar"></i>
+            </span>
+            <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Ventas del día</span>
+          </div>
+          <p class="text-2xl font-black text-slate-900 m-0">${{ diaVentas() | number:'1.2-2' }}</p>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 grid place-items-center">
+              <i class="pi pi-ticket"></i>
+            </span>
+            <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Comandas cobradas</span>
+          </div>
+          <p class="text-2xl font-black text-slate-900 m-0">{{ diaComandas() }}</p>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 grid place-items-center">
+              <i class="pi pi-gift"></i>
+            </span>
+            <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Propinas</span>
+          </div>
+          <p class="text-2xl font-black text-slate-900 m-0">${{ diaPropinas() | number:'1.2-2' }}</p>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-8 h-8 rounded-lg bg-sky-100 text-sky-600 grid place-items-center">
+              <i class="pi pi-shopping-bag"></i>
+            </span>
+            <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Platillos vendidos</span>
+          </div>
+          <p class="text-2xl font-black text-slate-900 m-0">{{ diaArticulos() }}</p>
+          <p class="text-[10px] text-slate-400 m-0 mt-0.5">
+            Ticket promedio ${{ diaTicketPromedio() | number:'1.2-2' }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Métodos de pago + gráfica -->
+      <div class="grid grid-cols-1 xl:grid-cols-5 gap-3.5 mb-4">
+        <div class="xl:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+          <h4 class="text-xs font-black text-slate-600 uppercase tracking-wider m-0 mb-3">Métodos de pago</h4>
+          <div *ngIf="metodosPagoDia().length === 0" class="caja-empty caja-empty--compact">
+            <i class="pi pi-credit-card"></i>
+            <p>Sin cobros registrados hoy</p>
+          </div>
+          <ul class="space-y-2.5">
+            <li *ngFor="let m of metodosPagoDia()">
+              <div class="flex items-center justify-between text-xs mb-1">
+                <span class="font-bold text-slate-700">{{ m.metodoPago }}</span>
+                <span class="font-black text-slate-900">${{ m.totalRecaudado | number:'1.2-2' }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div class="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                  <div
+                    class="h-full rounded-full bg-purple-500"
+                    [style.width.%]="diaVentas() > 0 ? (m.totalRecaudado / diaVentas()) * 100 : 0"
+                  ></div>
+                </div>
+                <span class="text-[10px] text-slate-400 w-24 text-right">
+                  {{ m.transacciones }} cobro(s)
+                </span>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="xl:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col justify-between overflow-hidden">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-xs font-black text-slate-600 uppercase tracking-wider m-0">
+              Participación por método de pago
+            </h4>
+            <span class="text-[11px] font-semibold text-slate-400" *ngIf="diaVentas() > 0">
+              Total: ${{ diaVentas() | number:'1.2-2' }}
+            </span>
+          </div>
+
+          <div *ngIf="metodosPagoDia().length === 0" class="caja-empty caja-empty--compact my-auto">
+            <i class="pi pi-chart-pie"></i>
+            <p>Sin cobros registrados hoy</p>
+          </div>
+
+          <div *ngIf="metodosPagoDia().length > 0" class="chart-wrapper flex flex-col sm:flex-row items-center justify-around gap-4 py-2">
+            <!-- Canvas Doughnut con tamaño estrictamente controlado -->
+            <div class="chart-canvas-box relative flex items-center justify-center shrink-0">
+              <p-chart
+                type="doughnut"
+                [data]="metodosPagoChartData()"
+                [options]="metodosPagoChartOptions"
+                [style]="{'width': '170px', 'height': '170px'}"
+              ></p-chart>
+              <!-- Centro estético con total de cobros -->
+              <div class="chart-center-badge absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Cobros</span>
+                <span class="text-lg font-black text-slate-800 leading-none mt-0.5">{{ diaComandas() }}</span>
+              </div>
+            </div>
+
+            <!-- Leyenda personalizada y estética a la derecha -->
+            <div class="chart-legend flex flex-col gap-2 w-full sm:w-auto min-w-[170px] pr-2">
+              <div
+                *ngFor="let m of metodosPagoDia(); let i = index"
+                class="flex items-center justify-between gap-3 text-xs p-2 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-slate-100/60 transition-colors"
+              >
+                <div class="flex items-center gap-2 min-w-0">
+                  <span
+                    class="w-3 h-3 rounded-full shrink-0 shadow-xs"
+                    [style.background-color]="getColorMetodo(i)"
+                  ></span>
+                  <span class="font-bold text-slate-700 truncate text-[11px]">{{ m.metodoPago }}</span>
+                </div>
+                <div class="text-right shrink-0">
+                  <span class="font-black text-slate-900 block leading-tight text-[11px]">
+                    ${{ m.totalRecaudado | number:'1.2-2' }}
+                  </span>
+                  <span class="text-[10px] text-purple-600 font-bold block leading-none">
+                    {{ diaVentas() > 0 ? ((m.totalRecaudado / diaVentas()) * 100 | number:'1.0-0') : 0 }}%
+                  </span>
                 </div>
               </div>
             </div>
           </div>
-
-          <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-            <div>
-              <span class="text-[10px] text-slate-400 uppercase font-bold block">Total Pagado</span>
-              <span class="text-xl font-black text-emerald-600">
-                ${{ (order.totalFinal ?? order.subtotal ?? 0) | number:'1.2-2' }}
-              </span>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <button
-                type="button"
-                (click)="reimprimirTicketCerrada(order)"
-                class="px-2.5 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
-                title="Reimprimir ticket"
-              >
-                <i class="pi pi-print"></i>
-                <span class="hidden sm:inline">Ticket</span>
-              </button>
-              <button
-                type="button"
-                (click)="abrirDetalleOrden(order)"
-                class="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
-              >
-                <i class="pi pi-eye"></i>
-                <span>Detalle</span>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 
-      <div *ngIf="cerradasFiltradas().length === 0" class="py-16 text-center text-slate-400 text-xs">
-        <i class="pi pi-inbox text-4xl mb-2 text-slate-300 block"></i>
-        No se encontraron comandas cerradas
-      </div>
-    </div>
-  </div>
+      <!-- Detalle de ventas -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <header class="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-slate-100">
+          <h4 class="text-xs font-black text-slate-600 uppercase tracking-wider m-0">Detalle de ventas</h4>
 
-  <!-- ==================== VISTA 4: COMANDAS CANCELADAS ==================== -->
-  <div *ngIf="vistaActiva() === 'canceladas'" class="space-y-4">
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 md:p-5">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
-        <div>
-          <h2 class="text-base font-bold text-slate-800 m-0">Comandas Canceladas / Rechazadas</h2>
-          <p class="text-xs text-slate-400 m-0 mt-0.5">Historial de órdenes canceladas con motivos registrados</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <div class="relative">
-            <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <div class="ml-auto flex items-center gap-1.5">
+            <select
+              class="caja-search caja-search--auto"
+              [ngModel]="reporteFiltroFecha()"
+              (ngModelChange)="reporteFiltroFecha.set($event)"
+            >
+              <option value="hoy">Hoy</option>
+              <option value="semana">Últimos 7 días</option>
+              <option value="todos">Todos</option>
+            </select>
             <input
               type="text"
-              [ngModel]="busquedaCanceladas()"
-              (ngModelChange)="busquedaCanceladas.set($event)"
-              placeholder="Buscar canceladas..."
-              class="text-xs pl-8 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-rose-500 w-64 transition-all"
+              class="caja-search"
+              [ngModel]="reporteFiltroBusqueda()"
+              (ngModelChange)="reporteFiltroBusqueda.set($event)"
+              placeholder="Buscar folio o comanda..."
             />
           </div>
-          <button
-            type="button"
-            (click)="cargarHistorialComandas(true)"
-            class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer"
-            title="Actualizar"
-          >
-            <i class="pi pi-refresh" [class.pi-spin]="loadingHistorial()"></i>
-          </button>
+        </header>
+
+        <div *ngIf="reporteComandas().length === 0" class="caja-empty caja-empty--tight">
+          <i class="pi pi-file"></i>
+          <p>Sin ventas en el periodo seleccionado</p>
+        </div>
+
+        <div *ngIf="reporteComandas().length > 0" class="overflow-x-auto">
+          <table class="w-full text-[11px]">
+            <thead>
+              <tr class="bg-slate-50 text-slate-500 uppercase tracking-wider text-[10px]">
+                <th class="text-left font-black px-4 py-2.5">Folio</th>
+                <th class="text-left font-black px-4 py-2.5">Mesa</th>
+                <th class="text-left font-black px-4 py-2.5">Mesero</th>
+                <th class="text-left font-black px-4 py-2.5">Cliente</th>
+                <th class="text-right font-black px-4 py-2.5">Total</th>
+                <th class="text-left font-black px-4 py-2.5">Cierre</th>
+                <th class="text-right font-black px-4 py-2.5">Ticket</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                *ngFor="let r of reporteComandas()"
+                class="border-t border-slate-100 hover:bg-slate-50"
+              >
+                <td class="px-4 py-2 font-black text-purple-700">{{ r.folio_comanda }}</td>
+                <td class="px-4 py-2 text-slate-600">{{ r.mesa_nombre || 'Mesa General' }}</td>
+                <td class="px-4 py-2 text-slate-600">{{ r.mesero_nombre || 'Sin mesero' }}</td>
+                <td class="px-4 py-2 text-slate-500">{{ r.cliente_nombre || 'Venta General' }}</td>
+                <td class="px-4 py-2 text-right font-black text-emerald-700">${{ r.total_pagado | number:'1.2-2' }}</td>
+                <td class="px-4 py-2 text-slate-500">{{ (r.hora_cierre || r.hora_apertura) | date:'dd/MM HH:mm' }}</td>
+                <td class="px-4 py-2 text-right">
+                  <button
+                    type="button"
+                    class="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
+                    (click)="verTicketReporte(r.id_comanda)"
+                    title="Ver ticket"
+                  >
+                    <i class="pi pi-eye"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
+    </ng-container>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" *ngIf="canceladasFiltradas().length > 0">
-        <div
-          *ngFor="let order of canceladasFiltradas()"
-          class="bg-white rounded-2xl border border-rose-200 hover:border-rose-400 p-4 shadow-xs transition-all flex flex-col justify-between"
-        >
-          <div>
-            <div class="flex items-center justify-between gap-2 mb-2">
-              <div class="flex items-center gap-2">
-                <span class="font-bold text-slate-900 text-base">#{{ order.id.slice(0, 8).toUpperCase() }}</span>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 uppercase">
-                  {{ order.estado }}
-                </span>
-              </div>
-              <span class="text-xs text-slate-400">
-                {{ order.fechaCreacion | date:'dd/MM HH:mm' }}
-              </span>
-            </div>
+  </ng-container>
 
-            <div class="space-y-1 text-xs text-slate-600 mb-3">
-              <div class="flex items-center gap-1.5">
-                <i class="pi pi-table text-purple-600"></i>
-                <span class="font-semibold text-slate-800">{{ order.mesaNombre || 'Mesa General' }}</span>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <i class="pi pi-user text-slate-400"></i>
-                <span>Mesero: <strong>{{ order.meseroNombre || 'No asignado' }}</strong></span>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <i class="pi pi-id-card text-slate-400"></i>
-                <span>Cliente: {{ getClientLabel(order) }}</span>
-              </div>
-            </div>
-
-            <!-- Items count -->
-            <div *ngIf="order.items && order.items.length > 0" class="text-xs text-slate-500 mb-2">
-              {{ order.items.length }} producto{{ order.items.length === 1 ? '' : 's' }}
-            </div>
-          </div>
-
-          <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-            <div>
-              <span class="text-[10px] text-slate-400 uppercase font-bold block">Monto Anulado</span>
-              <span class="text-xl font-black text-rose-600">
-                ${{ (order.totalFinal ?? order.subtotal ?? 0) | number:'1.2-2' }}
-              </span>
-            </div>
-            <button
-              type="button"
-              (click)="abrirDetalleOrden(order)"
-              class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
-            >
-              <i class="pi pi-eye"></i>
-              <span>Detalle</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div *ngIf="canceladasFiltradas().length === 0" class="py-16 text-center text-slate-400 text-xs">
-        <i class="pi pi-check-circle text-4xl mb-2 text-slate-300 block"></i>
-        No hay comandas canceladas registradas
-      </div>
+  <!-- ==================== MODAL: CORTE DEL MESERO ==================== -->
+  <p-dialog
+    [visible]="modalCorteMeseroVisible()"
+    (visibleChange)="$event ? null : cerrarCorteMesero()"
+    [modal]="true"
+    [style]="{ width: '100%', maxWidth: '860px' }"
+    [header]="meseroSeleccionado() ? 'Corte de ' + meseroSeleccionado()!.nombre : 'Corte de mesero'"
+  >
+    <div *ngIf="loadingCorte()" class="flex items-center justify-center gap-3 py-16 text-slate-400">
+      <i class="pi pi-spin pi-spinner text-2xl text-purple-500"></i>
+      <span class="text-xs font-semibold uppercase tracking-widest">Calculando corte...</span>
     </div>
-  </div>
 
-  <!-- ==================== VISTA 5: REPORTE GENERAL DE VENTAS Y COMANDAS ==================== -->
-  <div *ngIf="vistaActiva() === 'reporte'" class="space-y-4">
-    <!-- Encabezado del reporte -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 md:p-5">
-      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-        <div>
-          <h2 class="text-xl font-bold m-0 text-slate-800 flex items-center gap-2">
-            <i class="pi pi-chart-line text-purple-600"></i>
-            <span>Reporte General de Ventas y Comandas</span>
-          </h2>
-          <p class="text-xs text-slate-400 m-0 mt-1">
-            Consolidado financiero y operativo: trazabilidad por mesa, mesero, cliente y subcomandas
+    <div *ngIf="!loadingCorte() && meseroSeleccionado() as mesero" class="space-y-4">
+      <!-- KPIs del mesero -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5">
+          <span class="text-[10px] font-black text-emerald-600 uppercase tracking-wider">Dinero</span>
+          <p class="text-xl font-black text-emerald-800 m-0">${{ totalDineroMesero() | number:'1.2-2' }}</p>
+        </div>
+        <div class="bg-purple-50 border border-purple-200 rounded-2xl p-3.5">
+          <span class="text-[10px] font-black text-purple-600 uppercase tracking-wider">Tickets cobrados</span>
+          <p class="text-xl font-black text-purple-800 m-0">{{ comandasDelMesero().length }}</p>
+        </div>
+        <div class="bg-sky-50 border border-sky-200 rounded-2xl p-3.5">
+          <span class="text-[10px] font-black text-sky-600 uppercase tracking-wider">Platillos</span>
+          <p class="text-xl font-black text-sky-800 m-0">{{ totalPlatillosMesero() }}</p>
+        </div>
+        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3.5">
+          <span class="text-[10px] font-black text-amber-600 uppercase tracking-wider">Propinas</span>
+          <p class="text-xl font-black text-amber-800 m-0">
+            ${{ (corteDelDia()?.totalPropinas || 0) | number:'1.2-2' }}
           </p>
         </div>
-        <div class="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
-            [ngClass]="reporteFiltroFecha() === 'hoy' ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'"
-            (click)="reporteFiltroFecha.set('hoy')"
+      </div>
+
+      <!-- Tickets del mesero -->
+      <div>
+        <h4 class="text-xs font-bold text-slate-600 uppercase tracking-wider m-0 mb-2">Tickets del día</h4>
+        <div class="border border-slate-200 rounded-2xl divide-y divide-slate-100 max-h-56 overflow-y-auto">
+          <div
+            *ngFor="let o of comandasDelMesero()"
+            class="px-3.5 py-2.5 flex items-center justify-between gap-3 hover:bg-slate-50"
           >
-            Hoy
-          </button>
-          <button
-            type="button"
-            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
-            [ngClass]="reporteFiltroFecha() === 'semana' ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'"
-            (click)="reporteFiltroFecha.set('semana')"
-          >
-            Últimos 7 días
-          </button>
-          <button
-            type="button"
-            class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
-            [ngClass]="reporteFiltroFecha() === 'todos' ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'"
-            (click)="reporteFiltroFecha.set('todos')"
-          >
-            Historial completo
-          </button>
-          <button
-            type="button"
-            (click)="cargarHistorialComandas(true)"
-            class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer"
-            title="Actualizar datos"
-          >
-            <i class="pi pi-refresh" [class.pi-spin]="loadingHistorial()"></i>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- KPI Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex items-center gap-3.5">
-        <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-xl flex-shrink-0">
-          <i class="pi pi-dollar"></i>
-        </div>
-        <div>
-          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Ventas Pagadas</div>
-          <div class="text-2xl font-black text-emerald-600">${{ reporteTotalVendido() | number:'1.2-2' }}</div>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex items-center gap-3.5">
-        <div class="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-600 flex items-center justify-center text-xl flex-shrink-0">
-          <i class="pi pi-receipt"></i>
-        </div>
-        <div>
-          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Comandas Totales</div>
-          <div class="text-2xl font-black text-slate-800">{{ reporteTotalComandas() }}</div>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex items-center gap-3.5">
-        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center text-xl flex-shrink-0">
-          <i class="pi pi-percentage"></i>
-        </div>
-        <div>
-          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Ticket Promedio</div>
-          <div class="text-2xl font-black text-amber-600">${{ reporteTicketPromedio() | number:'1.2-2' }}</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Barra de búsqueda y conteo -->
-    <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
-      <div class="relative w-full md:w-80">
-        <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-        <input
-          type="text"
-          [ngModel]="reporteFiltroBusqueda()"
-          (ngModelChange)="reporteFiltroBusqueda.set($event)"
-          placeholder="Buscar por folio, mesa, mesero, cliente..."
-          class="w-full text-xs pl-8 pr-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-purple-500 transition-all"
-        />
-      </div>
-      <span class="text-xs text-slate-400 font-medium">
-        Mostrando {{ reporteComandas().length }} registros
-      </span>
-    </div>
-
-    <!-- Tabla de Reporte -->
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-      <p-table
-        [value]="reporteComandas()"
-        [paginator]="true"
-        [rows]="10"
-        responsiveLayout="scroll"
-        styleClass="p-datatable-sm"
-      >
-        <ng-template pTemplate="header">
-          <tr class="bg-slate-50 text-slate-600 text-xs uppercase tracking-wider font-bold">
-            <th class="py-3 px-4">Folio / Comanda</th>
-            <th class="py-3 px-4">Horario</th>
-            <th class="py-3 px-4">Mesa</th>
-            <th class="py-3 px-4">Mesero</th>
-            <th class="py-3 px-4 text-right">Total</th>
-            <th class="py-3 px-4">Cliente</th>
-            <th class="py-3 px-4 text-center">Estado</th>
-            <th class="py-3 px-4 text-center">Acciones</th>
-          </tr>
-        </ng-template>
-
-        <ng-template pTemplate="body" let-row>
-          <tr class="border-b border-slate-100 hover:bg-purple-50/20 text-xs">
-            <!-- Folio -->
-            <td class="py-3 px-4 font-bold text-slate-900">
-              <div class="flex items-center gap-2">
-                <span>#{{ row.folio_comanda }}</span>
-                <span *ngIf="row.subcomandas?.length" class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-100 text-purple-700">
-                  {{ row.subcomandas.length }} sub-cuentas
-                </span>
-              </div>
-            </td>
-
-            <!-- Horario -->
-            <td class="py-3 px-4 text-slate-500">
-              <div>
-                <span class="font-semibold text-slate-700">{{ row.hora_apertura | date:'dd/MM HH:mm' }}</span>
-                <span *ngIf="row.hora_cierre" class="block text-[11px] text-slate-400">Cierre: {{ row.hora_cierre | date:'HH:mm' }}</span>
-                <span *ngIf="!row.hora_cierre" class="block text-[11px] text-amber-600 font-bold">En curso</span>
-              </div>
-            </td>
-
-            <!-- Mesa -->
-            <td class="py-3 px-4 font-semibold text-slate-800">
-              <i class="pi pi-table text-purple-600 mr-1"></i>
-              {{ row.mesa_nombre }}
-            </td>
-
-            <!-- Mesero -->
-            <td class="py-3 px-4 text-slate-600">
-              <i class="pi pi-user text-slate-400 mr-1"></i>
-              {{ row.mesero_nombre }}
-            </td>
-
-            <!-- Total -->
-            <td class="py-3 px-4 text-right">
-              <span class="font-black text-sm text-emerald-600">
-                ${{ row.total_pagado | number:'1.2-2' }}
+            <div class="min-w-0">
+              <p class="text-xs font-black text-slate-800 m-0 truncate">
+                #{{ (o.id && o.id.length > 8) ? o.id.slice(0, 8).toUpperCase() : (o.id || '') }} · {{ o.mesaNombre || 'Mesa General' }}
+              </p>
+              <p class="text-[10px] text-slate-400 m-0">
+                {{ (o.items || []).length }} platillo(s) · {{ o.payment?.method || 'EFECTIVO' }}
+              </p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-xs font-black text-emerald-700">
+                ${{ (o.totalFinal ?? o.subtotal ?? 0) | number:'1.2-2' }}
               </span>
-            </td>
-
-            <!-- Cliente -->
-            <td class="py-3 px-4 text-slate-600">
-              <span *ngIf="row.cliente_nombre !== 'Cliente no registrado'" class="font-semibold text-purple-900">
-                <i class="pi pi-star-fill text-amber-500 mr-1 text-xs"></i>
-                {{ row.cliente_nombre }}
-              </span>
-              <span *ngIf="row.cliente_nombre === 'Cliente no registrado'" class="text-slate-400 italic">
-                Cliente no registrado
-              </span>
-            </td>
-
-            <!-- Estado -->
-            <td class="py-3 px-4 text-center">
-              <p-tag [value]="row.estado_comanda" [styleClass]="getStatusClass(row.estado_comanda)"></p-tag>
-            </td>
-
-            <!-- Acciones -->
-            <td class="py-3 px-4 text-center">
               <button
                 type="button"
-                (click)="abrirDetalleReporte(row)"
-                class="px-2.5 py-1 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1"
-                title="Ver detalle de comanda"
+                class="px-2 py-1 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 cursor-pointer"
+                (click)="abrirDetalleOrden(o)"
+                title="Ver ticket"
               >
                 <i class="pi pi-eye"></i>
-                <span>Ver</span>
               </button>
-            </td>
-          </tr>
-        </ng-template>
-
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="8" class="text-center py-12 text-slate-400 text-xs">
-              <i class="pi pi-inbox text-3xl mb-2 text-slate-300 block"></i>
-              No se encontraron registros de comandas para este filtro
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
-    </div>
-  </div>
-
-  <!-- ==================== MODAL: ABRIR TURNO DE CAJA ==================== -->
-  <p-dialog
-    [(visible)]="modalAbrirTurnoVisible"
-    [modal]="true"
-    [header]="'Apertura de Turno de Caja'"
-    [style]="{ width: '100%', maxWidth: '440px' }"
-  >
-    <div class="space-y-4 py-2">
-      <div class="bg-purple-50 p-3.5 rounded-2xl border border-purple-200 text-xs text-purple-900">
-        <i class="pi pi-info-circle mr-1 text-purple-600"></i>
-        Ingresa el <strong>Fondo Inicial (cambio en efectivo)</strong> con el que comienzas tu turno.
+            </div>
+          </div>
+          <p *ngIf="comandasDelMesero().length === 0" class="p-5 text-center text-slate-400 text-xs">
+            Este mesero no tiene tickets cobrados hoy
+          </p>
+        </div>
       </div>
 
+      <!-- Platillos vendidos -->
       <div>
-        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Fondo Inicial ($) *</label>
-        <input
-          type="number"
-          [(ngModel)]="fondoInicialInput"
-          placeholder="0.00"
-          class="w-full text-xl font-black p-3 rounded-xl border border-slate-300 text-slate-900 bg-white"
-        />
-      </div>
-
-      <div>
-        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Observaciones / Notas</label>
-        <textarea
-          [(ngModel)]="observacionesApertura"
-          rows="2"
-          placeholder="Ej: Turno vespertino, cambio en billetes de 50..."
-          class="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white resize-none"
-        ></textarea>
-      </div>
-    </div>
-
-    <ng-template pTemplate="footer">
-      <div class="flex justify-end gap-2">
-        <button
-          type="button"
-          (click)="modalAbrirTurnoVisible.set(false)"
-          class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
-        >
-          Cancelar
-        </button>
-        <button
-          type="button"
-          (click)="confirmarAbrirTurno()"
-          [disabled]="procesando()"
-          class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
-        >
-          <i *ngIf="procesando()" class="pi pi-spin pi-spinner"></i>
-          <span>Abrir Turno</span>
-        </button>
-      </div>
-    </ng-template>
-  </p-dialog>
-
-  <!-- ==================== MODAL: CERRAR TURNO (CORTE Y ARQUEO) ==================== -->
-  <p-dialog
-    [(visible)]="modalCerrarTurnoVisible"
-    [modal]="true"
-    [header]="'Cierre de Turno y Corte de Caja'"
-    [style]="{ width: '100%', maxWidth: '520px' }"
-  >
-    <div *ngIf="resumenCorte() as rc" class="space-y-4 py-2">
-      <!-- Resumen Financiero del Turno -->
-      <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-xs">
-        <div>
-          <span class="text-slate-400 block font-semibold">Fondo Inicial:</span>
-          <strong class="text-slate-800 text-sm">${{ rc.fondoInicial | number:'1.2-2' }}</strong>
-        </div>
-        <div>
-          <span class="text-slate-400 block font-semibold">Total Ventas:</span>
-          <strong class="text-slate-800 text-sm">${{ rc.totalVentas | number:'1.2-2' }}</strong>
-        </div>
-        <div>
-          <span class="text-slate-400 block font-semibold">Total Propinas:</span>
-          <strong class="text-purple-700 text-sm">${{ rc.totalPropinas | number:'1.2-2' }}</strong>
-        </div>
-        <div>
-          <span class="text-slate-400 block font-semibold">Artículos Vendidos:</span>
-          <strong class="text-slate-800 text-sm">{{ rc.totalArticulosVendidos }} piezas</strong>
+        <h4 class="text-xs font-bold text-slate-600 uppercase tracking-wider m-0 mb-2">Platillos vendidos</h4>
+        <div class="border border-slate-200 rounded-2xl divide-y divide-slate-100 max-h-60 overflow-y-auto">
+          <div
+            *ngFor="let p of platillosDelMesero()"
+            class="px-3.5 py-2 flex items-center justify-between text-xs"
+          >
+            <span class="text-slate-700 font-semibold truncate pr-2">{{ p.nombre }}</span>
+            <span class="flex items-center gap-3 shrink-0">
+              <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-black text-[10px]">
+                {{ p.unidades }}
+              </span>
+              <span class="font-black text-slate-800 w-20 text-right">${{ p.total | number:'1.2-2' }}</span>
+            </span>
+          </div>
+          <p *ngIf="platillosDelMesero().length === 0" class="p-5 text-center text-slate-400 text-xs">
+            Sin platillos registrados
+          </p>
         </div>
       </div>
 
-      <!-- Desglose por Método de Pago -->
-      <div>
-        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Desglose de Cobros</h4>
-        <div class="space-y-1.5">
-          <div *ngFor="let dm of rc.desgloseMetodos" class="flex justify-between items-center text-xs bg-white p-2 rounded-lg border border-slate-100">
-            <span class="font-bold text-slate-700">{{ dm.metodoPago }} ({{ dm.transacciones }} pagos)</span>
-            <span class="font-extrabold text-slate-900">${{ dm.totalRecaudado | number:'1.2-2' }}</span>
+      <!-- Métodos de pago del mesero -->
+      <div *ngIf="(corteDelDia()?.desgloseMetodos || []).length > 0">
+        <h4 class="text-xs font-bold text-slate-600 uppercase tracking-wider m-0 mb-2">Métodos de pago</h4>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div
+            *ngFor="let m of corteDelDia()?.desgloseMetodos"
+            class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"
+          >
+            <span class="text-[10px] font-black text-slate-500 uppercase">{{ m.metodoPago }}</span>
+            <p class="text-sm font-black text-slate-800 m-0">${{ m.totalRecaudado | number:'1.2-2' }}</p>
+            <span class="text-[10px] text-slate-400">{{ m.transacciones }} cobro(s)</span>
           </div>
         </div>
       </div>
-
-      <!-- Arqueo de Efectivo Físico -->
-      <div class="bg-amber-50/80 p-4 rounded-2xl border border-amber-200 space-y-3">
-        <div class="flex justify-between items-center text-xs">
-          <span class="font-bold text-amber-900">Efectivo Esperado en Cajón:</span>
-          <span class="text-base font-black text-amber-950">${{ rc.efectivoEsperadoEnCaja | number:'1.2-2' }}</span>
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Efectivo Contado en Físico ($) *</label>
-          <input
-            type="number"
-            [(ngModel)]="efectivoDeclaradoInput"
-            class="w-full text-lg font-black p-2.5 rounded-xl border border-amber-300 bg-white"
-          />
-        </div>
-
-        <div class="flex justify-between items-center text-xs pt-2 border-t border-amber-200">
-          <span class="font-bold text-slate-700">Diferencia de Caja:</span>
-          <span class="text-sm font-black" [class.text-emerald-600]="diferenciaCorte >= 0" [class.text-rose-600]="diferenciaCorte < 0">
-            {{ diferenciaCorte >= 0 ? '+$' : '-$' }}{{ (diferenciaCorte >= 0 ? diferenciaCorte : -diferenciaCorte) | number:'1.2-2' }}
-            ({{ diferenciaCorte >= 0 ? 'Sobrante/Cuadrado' : 'Faltante' }})
-          </span>
-        </div>
-      </div>
-
-      <div>
-        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Notas de Cierre</label>
-        <textarea
-          [(ngModel)]="observacionesCierre"
-          rows="2"
-          placeholder="Observaciones finales del corte..."
-          class="w-full text-xs p-2 rounded-xl border border-slate-300 bg-white resize-none"
-        ></textarea>
-      </div>
     </div>
 
     <ng-template pTemplate="footer">
       <div class="flex justify-end gap-2">
         <button
           type="button"
-          (click)="modalCerrarTurnoVisible.set(false)"
           class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+          (click)="cerrarCorteMesero()"
         >
-          Cancelar
+          Cerrar
         </button>
         <button
           type="button"
-          (click)="confirmarCerrarTurno()"
+          *ngIf="meseroSeleccionadoId"
+          class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
+          (click)="liquidarPropinasMesero()"
           [disabled]="procesando()"
-          class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
         >
-          <i *ngIf="procesando()" class="pi pi-spin pi-spinner"></i>
-          <span>Confirmar y Cerrar Caja</span>
+          <i class="pi pi-gift"></i>
+          <span>Liquidar propinas (${{ propinaNetaMesero | number:'1.2-2' }})</span>
         </button>
       </div>
     </ng-template>
   </p-dialog>
+
 
   <!-- ==================== MODAL: TICKET PRE-CUENTA (IMPRIMIBLE) ==================== -->
   <p-dialog

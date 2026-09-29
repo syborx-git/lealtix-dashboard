@@ -1,0 +1,40 @@
+/* ==========================================================================
+   HEADER
+   Utilidades para lo que Tailwind no resuelve de forma cómoda:
+   scroll del drawer y animación del off-canvas.
+   ========================================================================== */
+
+:host {
+    display: block;
+}
+
+.drawer-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(203 213 225) transparent;
+    overscroll-behavior: contain;
+    /* Evita el rebote de scroll del body mientras el panel está abierto */
+    -webkit-overflow-scrolling: touch;
+}
+
+.drawer-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.drawer-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.drawer-scroll::-webkit-scrollbar-thumb {
+    background-color: rgb(203 213 225);
+    border-radius: 999px;
+}
+
+:host-context(.app-dark) .drawer-scroll::-webkit-scrollbar-thumb {
+    background-color: rgb(51 65 85);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    aside {
+        transition: none;
+    }
+}

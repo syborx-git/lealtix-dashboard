@@ -1,77 +1,104 @@
-import { Component, OnInit } from '@angular/core';
-import { NgFor, NgIf } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Injectable, signal } from '@angular/core';
 import { MenuItem } from 'primeng/api';
-import { AppMenuitem } from './app.menuitem';
-import { CategoryService } from '../../pages/categories-menu/service/category.service';
-import { ProductService } from '../../pages/products-menu/service/product.service';
-import { AuthService } from '../../auth/auth.service';
-import { KitchenFeatureService } from '@/pages/kitchen/services/kitchen-feature.service';
+import { Subscription } from 'rxjs';
+import { CategoryService } from '@/pages/categories-menu/service/category.service';
+import { ProductService } from '@/pages/products-menu/service/product.service';
+import { AuthService } from '@/auth/auth.service';
 
-@Component({
-    selector: 'app-menu',
-    standalone: true,
-    imports: [NgFor, NgIf, AppMenuitem, RouterModule],
-    template: `<ul class="layout-menu">
-        <ng-container *ngFor="let item of model; let i = index">
-            <li app-menuitem *ngIf="!item.separator" [item]="item" [index]="i" [root]="true"></li>
-            <li *ngIf="item.separator" class="menu-separator"></li>
-        </ng-container>
-    </ul> `
-})
-export class AppMenu implements OnInit {
-    model: MenuItem[] = [];
+export interface MenuSection {
+    /** Id estable: se usa como clave del estado independiente del submenú. */
+    id: string;
+    label: string;
+    icon: string;
+    items: MenuItem[];
+}
+
+/**
+ * Fuente única del modelo de navegación.
+ *
+ * Antes vivía dentro de AppMenu (que solo lo usaba el sidebar). Al extraerlo a un
+ * servicio, el sidebar de escritorio y el drawer móvil renderizan exactamente el
+ * mismo menú, sin duplicar reglas de permisos ni listas que se desincronicen.
+ */
+@Injectable({ providedIn: 'root' })
+export class MenuService {
+    private readonly sections = signal<MenuSection[]>([]);
+
     private userPermissions: string[] = [];
+
+    private readonly subscriptions = new Subscription();
+
+    /** Sidebar y Drawer llaman a `init()`: solo la primera llamada tiene efecto. */
+    private initialized = false;
 
     constructor(
         private categoryService: CategoryService,
         private productService: ProductService,
-        private authService: AuthService,
-        private kitchenFeatureService: KitchenFeatureService
-    ) {
-        // Listen for category updates
-        window.addEventListener('categoriesUpdated', () => {
-            this.checkAndUpdateProductsMenu();
-        });
+        private authService: AuthService
+    ) {}
 
-        // Listen for product updates to show/hide Mi Página
-        window.addEventListener('productsUpdated', () => {
-            this.checkAndUpdateMiPaginaMenu();
-        });
-    }
+    /** Signal con las secciones visibles para el usuario actual. */
+    readonly visibleSections = this.sections.asReadonly();
 
-    ngOnInit() {
-        // Obtener permisos del usuario
-        this.authService.getPermissions$().subscribe(permissions => {
+    init(): void {
+        if (this.initialized) {
+            return;
+        }
+        this.initialized = true;
+
+        this.subscriptions.add(this.authService.getPermissions$().subscribe(permissions => {
             this.userPermissions = permissions || [];
-            this.buildMenu();
+            this.build();
+        }));
+
+        // Mismos eventos globales que ya emitía el menú original: se reevalúan
+        // los ítems que dependen de datos vivos sin recargar la aplicación.
+        const onCategoriesUpdated = () => this.refreshDynamicItems();
+        const onProductsUpdated = () => this.refreshDynamicItems();
+
+        if (typeof window !== 'undefined') {
+            window.addEventListener('categoriesUpdated', onCategoriesUpdated);
+            window.addEventListener('productsUpdated', onProductsUpdated);
+        }
+
+        this.subscriptions.add(() => {
+            if (typeof window !== 'undefined') {
+                window.removeEventListener('categoriesUpdated', onCategoriesUpdated);
+                window.removeEventListener('productsUpdated', onProductsUpdated);
+            }
         });
     }
 
-    private buildMenu() {
+    dispose(): void {
+        this.subscriptions.unsubscribe();
+    }
+
+    private build(): void {
         const categoriesItem: MenuItem = { label: 'Categorías', icon: 'pi pi-fw pi-tags', routerLink: ['/dashboard/categoriesMenu'], roles: ['ADMIN'], requiredPermissions: ['manage_categories'] };
         const productsItem: MenuItem = { label: 'Productos', icon: 'pi pi-fw pi-bars', routerLink: ['/dashboard/adminMenu'], disabled: true, title: 'Primero crea al menos una categoría', roles: ['ADMIN'], requiredPermissions: ['create_product', 'edit_product'] };
         const recetasItem: MenuItem = { label: 'Recetas', icon: 'pi pi-fw pi-book', routerLink: ['/dashboard/recetas'], roles: ['ADMIN'], requiredPermissions: ['manage_recetas'] };
 
-        const allMenuGroups: any[] = [
+        const allSections: MenuSection[] = [
             {
+                id: 'servicio',
                 label: 'Servicio',
                 icon: 'pi pi-fw pi-wallet',
                 items: [
                     { label: 'Mesas', icon: 'pi pi-fw pi-table', routerLink: ['/dashboard/mesas'], roles: ['HOSTESS', 'ADMIN'], requiredPermissions: ['view_mesas'] },
-                    { label: 'Reservaciones', icon: 'pi pi-fw pi-calendar', routerLink: ['/dashboard/reservaciones'], roles: ['HOSTESS', 'ADMIN'], requiredPermissions: ['view_reservaciones'] },
+                    { label: 'Reservaciones', icon: 'pi pi-fw pi-calendar', routerLink: ['/dashboard/reservaciones'], roles: ['HOSTESS', 'ADMIN'], requiredPermissions: ['view_reservations'] },
                     { label: 'Comanda', icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/dashboard/comandix'], roles: ['ADMIN', 'MESERO'], requiredPermissions: ['create_order'] },
-                    { label: 'Caja y Cortes', icon: 'pi pi-fw pi-wallet', routerLink: ['/dashboard/caja'], roles: ['ADMIN', 'CAJA'], requiredPermissions: ['process_payment'] },
                     { label: 'Cocina', icon: 'pi pi-fw pi-box', routerLink: ['/dashboard/cocina'], roles: ['ADMIN', 'COCINA'], requiredPermissions: ['view_kitchen_orders', 'update_order_status'] },
                     { label: 'Barra', icon: 'pi pi-fw pi-th-large', routerLink: ['/dashboard/barra'], roles: ['ADMIN', 'COCINA'], requiredPermissions: ['view_kitchen_orders', 'update_order_status'] }
                 ]
             },
             {
+                id: 'menu',
                 label: 'Gestiona tu Menú',
                 icon: 'pi pi-fw pi-shop',
                 items: [categoriesItem, productsItem, recetasItem]
             },
             {
+                id: 'equipo',
                 label: 'Gestión de Equipo',
                 icon: 'pi pi-fw pi-users',
                 items: [
@@ -80,6 +107,7 @@ export class AppMenu implements OnInit {
                 ]
             },
             {
+                id: 'administrativa',
                 label: 'Gestión Administrativa',
                 icon: 'pi pi-fw pi-cog',
                 items: [
@@ -92,6 +120,7 @@ export class AppMenu implements OnInit {
                 ]
             },
             {
+                id: 'almacen',
                 label: 'Almacén',
                 icon: 'pi pi-fw pi-box',
                 items: [
@@ -102,17 +131,18 @@ export class AppMenu implements OnInit {
                 ]
             },
             {
+                id: 'reportes',
                 label: 'Reportes',
                 icon: 'pi pi-fw pi-chart-bar',
                 items: [
                     { label: 'Analitica de Ventas', icon: 'pi pi-fw pi-chart-line', routerLink: ['/dashboard/reportes/analitica/ventas'], roles: ['ADMIN', 'CAJA'], requiredPermissions: ['view_dashboard'] },
-                    { label: 'Corte de Caja', icon: 'pi pi-fw pi-wallet', routerLink: ['/dashboard/reportes/analitica/corte-caja'], roles: ['ADMIN', 'CAJA'], requiredPermissions: ['view_dashboard'] },
                     { label: 'Ventas y Comandas', icon: 'pi pi-fw pi-receipt', routerLink: ['/dashboard/reportes/ventas'], roles: ['ADMIN', 'CAJA'], requiredPermissions: ['view_dashboard'] },
                     { label: 'Transferencias de Bodega', icon: 'pi pi-fw pi-arrows-alt', routerLink: ['/dashboard/reportes/transferencias'], roles: ['ADMIN'], requiredPermissions: ['view_products'] },
                     { label: 'Reportes de Mermas', icon: 'pi pi-fw pi-database', routerLink: ['/dashboard/reportes/mermas'], roles: ['ADMIN'], requiredPermissions: ['manage_mermas'] }
                 ]
             },
             {
+                id: 'promociones',
                 label: 'Promociones',
                 icon: 'pi pi-fw pi-percentage',
                 items: [
@@ -123,30 +153,23 @@ export class AppMenu implements OnInit {
             }
         ];
 
-        // Filtrar items según permisos y descartar grupos vacíos
-        const filteredGroups = allMenuGroups
-            .map(group => ({ ...group, items: group.items.filter((item: any) => this.hasRequiredPermissions(item)) }))
-            .filter(group => group.items.length > 0);
+        this.sections.set(
+            allSections
+                .map(section => ({ ...section, items: section.items.filter(item => this.hasRequiredPermissions(item)) }))
+                .filter(section => section.items.length > 0)
+        );
 
-        this.model = [
-            {
-                label: 'Home',
-                items: filteredGroups
-            }
-        ];
+        this.refreshDynamicItems();
+    }
 
-        // Check if categories exist and enable/disable Products menu item
+    /** Re-evalúa los ítems que dependen de datos vivos (categorías, productos, cocina). */
+    refreshDynamicItems(): void {
         this.checkAndUpdateProductsMenu();
-
-        // Check if products exist and show/hide Mi Página menu item
         this.checkAndUpdateMiPaginaMenu();
-
-        // Check kitchen module feature toggle before showing Cocina
         this.checkAndUpdateKitchenMenu();
     }
 
-    /** Busca un item de menú por su primera ruta del routerLink, en cualquier nivel del modelo */
-    private findMenuItem(routerLink: string): MenuItem | undefined {
+    private findItem(routerLink: string): MenuItem | undefined {
         const search = (items: MenuItem[] | undefined): MenuItem | undefined => {
             if (!items) return undefined;
             for (const item of items) {
@@ -158,109 +181,85 @@ export class AppMenu implements OnInit {
             }
             return undefined;
         };
-        return search(this.model[0]?.items);
+        return search(this.sections().flatMap(section => section.items));
     }
 
     private hasRequiredPermissions(item: any): boolean {
         const user = this.authService.getCurrentUser();
         const userRole = user?.role || user?.rol;
 
-        // Validar restricción de rol por lista de roles permitidos
         if (item.roles && item.roles.length > 0 && !item.roles.includes(userRole)) {
             return false;
         }
 
-        // Validar restricción de rol (ej: requiredRole: 'MESERO')
         if (item.requiredRole && item.requiredRole !== userRole) {
             return false;
         }
 
-        // Si el item NO tiene requiredPermissions, mostrar a todos (excepto restricción de rol)
         if (!item.requiredPermissions || item.requiredPermissions.length === 0) {
             return true;
         }
 
-        // El item TIENE requiredPermissions - verificar si usuario tiene AL MENOS UNO
-        const hasAtLeastOnePermission = item.requiredPermissions.some((permission: string) =>
-            this.authService.hasPermission(permission)
-        );
-
-        if (hasAtLeastOnePermission) {
-            return true;  // ✅ Usuario tiene el/los permisos requeridos
-        }
-
-        return false;  // ❌ No tiene permisos requeridos
+        return item.requiredPermissions.some((permission: string) => this.authService.hasPermission(permission));
     }
 
-    private checkAndUpdateProductsMenu() {
-        const currentUser = this.authService.getCurrentUser();
-        const tenantId = currentUser?.tenantId;
+    private checkAndUpdateProductsMenu(): void {
+        const tenantId = this.authService.getCurrentUser()?.tenantId;
+        if (!tenantId) return;
 
-        if (tenantId) {
-            this.categoryService.checkCategoriesExist(tenantId).subscribe({
-                next: (hasCategories) => {
-                    const productsItem = this.findMenuItem('/dashboard/adminMenu');
-                    if (productsItem) {
-                        productsItem.disabled = !hasCategories;
-                        productsItem.title = hasCategories ? undefined : 'Primero crea al menos una categoría';
-                    }
-                },
-                error: (err) => {
-                    console.error('Error checking categories:', err);
+        this.categoryService.checkCategoriesExist(tenantId).subscribe({
+            next: hasCategories => {
+                const productsItem = this.findItem('/dashboard/adminMenu');
+                if (productsItem) {
+                    productsItem.disabled = !hasCategories;
+                    productsItem.title = hasCategories ? undefined : 'Primero crea al menos una categoría';
                 }
-            });
-        }
+                this.touch();
+            },
+            error: err => console.error('Error checking categories:', err)
+        });
     }
 
-    private checkAndUpdateMiPaginaMenu() {
-        const currentUser = this.authService.getCurrentUser();
-        const userRole = currentUser?.role || currentUser?.rol;
-        const tenantId = currentUser?.tenantId;
+    private checkAndUpdateMiPaginaMenu(): void {
+        const user = this.authService.getCurrentUser();
+        const userRole = user?.role || user?.rol;
+        const tenantId = user?.tenantId;
 
-        // "Mi Página" y "Mi Comanda" no son para COCINA
         if (userRole === 'COCINA') {
-            const miPaginaItem = this.findMenuItem('/dashboard/mi-pagina');
-            if (miPaginaItem) {
-                miPaginaItem.visible = false;
-            }
-            const comandixItem = this.findMenuItem('/dashboard/comandix');
-            if (comandixItem) {
-                comandixItem.visible = false;
-            }
+            const miPaginaItem = this.findItem('/dashboard/mi-pagina');
+            if (miPaginaItem) miPaginaItem.visible = false;
+            const comandixItem = this.findItem('/dashboard/comandix');
+            if (comandixItem) comandixItem.visible = false;
+            this.touch();
             return;
         }
 
-        if (tenantId) {
-            this.productService.getProductsByTenantId(tenantId).subscribe({
-                next: (productResp) => {
-                    const products = productResp?.object || [];
-                    const hasProducts = products.length > 0;
-                    const miPaginaItem = this.findMenuItem('/dashboard/mi-pagina');
-                    if (miPaginaItem) {
-                        miPaginaItem.visible = hasProducts;
-                    }
-                    const comandixItem = this.findMenuItem('/dashboard/comandix');
-                    if (comandixItem) {
-                        comandixItem.visible = true;
-                    }
-                },
-                error: (err) => {
-                    console.error('Error checking products:', err);
-                }
-            });
-        }
+        if (!tenantId) return;
+
+        this.productService.getProductsByTenantId(tenantId).subscribe({
+            next: productResp => {
+                const hasProducts = (productResp?.object || []).length > 0;
+                const miPaginaItem = this.findItem('/dashboard/mi-pagina');
+                if (miPaginaItem) miPaginaItem.visible = hasProducts;
+                const comandixItem = this.findItem('/dashboard/comandix');
+                if (comandixItem) comandixItem.visible = true;
+                this.touch();
+            },
+            error: err => console.error('Error checking products:', err)
+        });
     }
 
-    private checkAndUpdateKitchenMenu() {
-        // Si el usuario tiene los permisos de cocina, mostrar la opción
-        // Los permisos ya se validaron en buildMenu(), así que solo necesitamos
-        // verificar que existe el item
-        const kitchenItem = this.findMenuItem('/dashboard/cocina');
-
+    private checkAndUpdateKitchenMenu(): void {
+        const kitchenItem = this.findItem('/dashboard/cocina');
         if (kitchenItem) {
-            // Asegurar que esté visible si el usuario logró pasar el filtro de permisos
             kitchenItem.visible = true;
             kitchenItem.disabled = false;
         }
+        this.touch();
+    }
+
+    /** Fuerza la re-emisión del signal cuando se mutan ítems en sitio. */
+    private touch(): void {
+        this.sections.update(current => current.map(section => ({ ...section, items: [...section.items] })));
     }
 }

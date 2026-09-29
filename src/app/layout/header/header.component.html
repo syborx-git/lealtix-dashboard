@@ -1,0 +1,136 @@
+<!--
+  HEADER + DRAWER MÓVIL
+
+  - Izquierda: botón hamburguesa (solo < lg) y buscador.
+    El buscador es `flex-1` con `max-w` crecientes: en pantallas pequeñas cede
+    espacio en lugar de empujar el grupo de iconos fuera de la barra.
+  - Derecha: modo oscuro, notificaciones y perfil con `gap-3` y `shrink-0`,
+    de modo que el bloque nunca se desborda ni se comprime.
+  - Debajo, el off-canvas móvil: capa `bg-black/50 fixed inset-0 z-40` que
+    cierra el panel al pulsar fuera, y el panel `z-50` que entra desde la
+    izquierda replicando las opciones del sidebar.
+-->
+<div class="sticky top-0 z-20">
+
+    <header class="border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95">
+        <div class="flex items-center gap-3 px-3 py-2.5 md:px-4">
+
+            <!-- ============ Hamburguesa: solo móvil / tableta ============ -->
+            <button
+                type="button"
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100 hover:text-indigo-600 lg:hidden dark:text-slate-300 dark:hover:bg-slate-800"
+                (click)="onToggleMobileMenu()"
+                [attr.aria-expanded]="isMobileMenuOpen()"
+                aria-controls="lealtix-mobile-drawer"
+                aria-label="Abrir menú de navegación"
+            >
+                <i class="pi pi-bars text-lg"></i>
+            </button>
+
+            <!-- ============ Colapsar / expandir sidebar (escritorio) ============ -->
+            <button
+                type="button"
+                class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100 hover:text-indigo-600 lg:flex dark:text-slate-300 dark:hover:bg-slate-800"
+                (click)="onToggleSidebar()"
+                [attr.aria-pressed]="collapsed()"
+                [attr.aria-label]="collapsed() ? 'Expandir barra lateral' : 'Colapsar barra lateral'"
+                [title]="collapsed() ? 'Expandir barra lateral' : 'Colapsar barra lateral'"
+            >
+                <i class="pi text-base" [ngClass]="collapsed() ? 'pi-angle-double-right' : 'pi-angle-double-left'"></i>
+            </button>
+
+            <!-- ============ Buscador ============ -->
+            <div class="flex min-w-0 flex-1 items-center">
+                <div class="search-wrapper flex w-full max-w-xs items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 transition-colors focus-within:border-indigo-400 focus-within:bg-white sm:max-w-sm lg:max-w-md dark:border-slate-700 dark:bg-slate-800 dark:focus-within:border-indigo-500">
+                    <i class="pi pi-search shrink-0 text-sm text-slate-400"></i>
+                    <input
+                        type="text"
+                        placeholder="Search [CTRL + K]"
+                        aria-label="Buscar"
+                        class="w-full min-w-0 flex-1 overflow-hidden whitespace-nowrap bg-transparent py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 dark:text-slate-100"
+                    />
+                </div>
+            </div>
+
+            <!-- ============ Acciones: gap-3 y shrink-0 para no desbordar ============ -->
+            <div class="flex shrink-0 items-center gap-3">
+                <button
+                    type="button"
+                    class="hidden h-10 w-10 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100 hover:text-indigo-600 sm:flex dark:text-slate-300 dark:hover:bg-slate-800"
+                    (click)="toggleDarkMode()"
+                    [attr.aria-label]="isDarkTheme() ? 'Activar modo claro' : 'Activar modo oscuro'"
+                    [title]="isDarkTheme() ? 'Modo claro' : 'Modo oscuro'"
+                >
+                    <i class="pi text-base" [ngClass]="isDarkTheme() ? 'pi-sun' : 'pi-moon'"></i>
+                </button>
+
+                <button
+                    type="button"
+                    class="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100 hover:text-indigo-600 dark:text-slate-300 dark:hover:bg-slate-800"
+                    aria-label="Notificaciones"
+                    title="Notificaciones"
+                >
+                    <i class="pi pi-bell text-base"></i>
+                    <span class="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900"></span>
+                </button>
+
+                <app-user-profile [simple]="true"></app-user-profile>
+            </div>
+        </div>
+    </header>
+
+    <!-- ======================================================================
+         DRAWER MÓVIL (off-canvas)
+         ====================================================================== -->
+
+    <!-- Capa oscura: cierra el menú al hacer clic fuera del panel -->
+    <div
+        *ngIf="isMobileMenuOpen()"
+        class="fixed inset-0 z-40 bg-black/50 animate-fadein lg:hidden"
+        (click)="onBackdropClick()"
+        aria-hidden="true"
+    ></div>
+
+    <!-- Panel: entra desde la izquierda. Se mantiene en el DOM para poder animar
+         la salida; `inert` + `aria-hidden` lo sacan del árbol de accesibilidad
+         mientras está cerrado (en escritorio nunca se abre con lg:hidden). -->
+    <aside
+        id="lealtix-mobile-drawer"
+        class="fixed inset-y-0 left-0 z-50 flex w-[17rem] max-w-[85vw] flex-col overflow-hidden border-r border-slate-200 bg-white shadow-2xl transition-transform duration-300 ease-out lg:hidden dark:border-slate-700 dark:bg-slate-900"
+        [ngClass]="isMobileMenuOpen() ? 'translate-x-0 pointer-events-auto visible' : '-translate-x-full pointer-events-none invisible'"
+        [attr.role]="isMobileMenuOpen() ? 'dialog' : null"
+        [attr.aria-modal]="isMobileMenuOpen() ? 'true' : null"
+        [attr.aria-hidden]="isMobileMenuOpen() ? null : 'true'"
+        [attr.inert]="isMobileMenuOpen() ? null : ''"
+        aria-label="Menú de navegación"
+    >
+        <!-- Cabecera del panel + botón de cierre (X) -->
+        <div class="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 px-3 py-3 dark:border-slate-800">
+            <a routerLink="/dashboard" class="flex min-w-0 items-center gap-2.5 overflow-hidden" (click)="onBackdropClick()">
+                <img
+                    src="https://res.cloudinary.com/lealtix-media/image/upload/q_auto/f_auto/v1759897289/lealtix_logo_transp_qcp5h9.png"
+                    alt="Lealtix"
+                    class="h-9 w-9 shrink-0 object-contain"
+                />
+                <span class="min-w-0 overflow-hidden whitespace-nowrap text-base font-extrabold tracking-wide text-slate-700 dark:text-slate-100">
+                    LEALTIX
+                </span>
+            </a>
+
+            <button
+                type="button"
+                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-rose-600 dark:text-slate-300 dark:hover:bg-slate-800"
+                (click)="onBackdropClick()"
+                aria-label="Cerrar menú"
+                title="Cerrar"
+            >
+                <i class="pi pi-times text-base"></i>
+            </button>
+        </div>
+
+        <!-- Mismas secciones que el sidebar, adaptedas a móvil (sin colapso) -->
+        <div class="drawer-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-3">
+            <app-menu-list [mobile]="true"></app-menu-list>
+        </div>
+    </aside>
+</div>

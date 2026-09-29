@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { Subject, firstValueFrom } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -15,6 +16,7 @@ import { TableModule } from 'primeng/table';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { InputTextModule } from 'primeng/inputtext';
 import { DividerModule } from 'primeng/divider';
+import { ChartModule } from 'primeng/chart';
 
 // Componentes
 import { SplitOrderModalComponent } from '@/pages/comandix/components/split-order-modal/split-order-modal.component';
@@ -28,11 +30,18 @@ import {
   ComandaCajaRow,
   TableroCaja,
   TicketPrecuenta,
-  ResumenTurnoCorte,
   CorteMesero,
+  DesgloseMetodoPago,
+  ResumenTurnoCorte,
   MeseroSimple
 } from './models/caja.model';
 import { PendingOrder, PendingOrderItem, OrderStatus, ReporteVentaRow, TipInfo } from '@/pages/comandix/models/order.model';
+
+/** Las tres categorías del slider principal de "Caja y Cortes". */
+export type SeccionCaja = 'tickets' | 'meseros' | 'dia';
+
+/** Sub-vista de la categoría TICKETS: comandas abiertas o ya cerradas (pagadas). */
+export type VistaTickets = 'abiertas' | 'cerradas';
 
 @Component({
   selector: 'app-caja',
@@ -49,6 +58,7 @@ import { PendingOrder, PendingOrderItem, OrderStatus, ReporteVentaRow, TipInfo }
     ProgressSpinnerModule,
     InputTextModule,
     DividerModule,
+    ChartModule,
     SplitOrderModalComponent
   ],
   providers: [MessageService],
@@ -60,6 +70,7 @@ export class CajaComponent implements OnInit, OnDestroy {
   private orderService = inject(OrderService);
   private authService = inject(AuthService);
   private messageService = inject(MessageService);
+  private route = inject(ActivatedRoute);
 
   private destroy$ = new Subject<void>();
   private pollingTimer: any = null;
@@ -70,50 +81,72 @@ export class CajaComponent implements OnInit, OnDestroy {
   userRole = '';
 
   // Estados principales
-  vistaActiva = signal<'tablero' | 'cerradas' | 'canceladas' | 'cortes_propinas' | 'reporte'>('tablero');
+  /** Categoría seleccionada en el slider superior: TICKETS, CORTE DE MESEROS o CORTE DEL DÍA */
+  seccionActiva = signal<SeccionCaja>('tickets');
+  /** Sub-pestaña de TICKETS: cuentas abiertas o ya cerradas */
+  ticketsVista = signal<VistaTickets>('abiertas');
   loading = signal<boolean>(false);
   procesando = signal<boolean>(false);
 
   turnoActivo = signal<TurnoDTO | null>(null);
   tablero = signal<TableroCaja>({ cuentasAbiertas: [], cuentasPorCobrar: [] });
 
-  // Historial de Comandas (Cerradas / Canceladas)
+  // Historial de Comandas (TICKETS abiertas / cerradas)
   todasComandas = signal<PendingOrder[]>([]);
   loadingHistorial = signal<boolean>(false);
+  busquedaActivas = signal<string>('');
   busquedaCerradas = signal<string>('');
-  busquedaCanceladas = signal<string>('');
+
+  private static readonly ESTADOS_FINALIZADOS = ['PAGADA', 'CANCELADA', 'RECHAZADO'];
 
   comandasCerradas = computed(() =>
     this.todasComandas().filter(o => (o.estado || '').toUpperCase() === 'PAGADA')
   );
 
-  comandasCanceladas = computed(() =>
-    this.todasComandas().filter(o => {
-      const st = (o.estado || '').toUpperCase();
-      return st === 'CANCELADA' || st === 'RECHAZADO';
-    })
+  /** Comandas que siguen vivas: PENDIENTE, CONFIRMADA, EN_PREPARACION o LISTO */
+  comandasActivas = computed(() =>
+    this.todasComandas().filter(o => !CajaComponent.ESTADOS_FINALIZADOS.includes((o.estado || '').toUpperCase()))
   );
 
-  cerradasFiltradas = computed(() => {
-    const q = this.busquedaCerradas().toLowerCase().trim();
-    if (!q) return this.comandasCerradas();
-    return this.comandasCerradas().filter(o =>
-      (o.id || '').toLowerCase().includes(q) ||
-      (o.mesaNombre || '').toLowerCase().includes(q) ||
-      (o.meseroNombre || '').toLowerCase().includes(q) ||
-      (o.customerName || o.nombre || '').toLowerCase().includes(q)
-    );
+  /** Conteo seguro de comandas pendientes por cobrar para el indicador del header */
+  cuentasPorCobrarCount = computed(() => {
+    const t = this.tablero();
+    if (t?.cuentasPorCobrar && Array.isArray(t.cuentasPorCobrar) && t.cuentasPorCobrar.length > 0) {
+      return t.cuentasPorCobrar.length;
+    }
+    return this.todasComandas().filter(o => (o.estado || '').toUpperCase() === 'POR_COBRAR').length;
   });
 
-  canceladasFiltradas = computed(() => {
-    const q = this.busquedaCanceladas().toLowerCase().trim();
-    if (!q) return this.comandasCanceladas();
-    return this.comandasCanceladas().filter(o =>
+  /** Fecha de los cortes en español (el app no define LOCALE_ID, el pipe date daría inglés). */
+  get fechaCorteTexto(): string {
+    const d = this.fechaCorte();
+    const dia = d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+    return dia.charAt(0).toUpperCase() + dia.slice(1);
+  }
+
+  private coincideBusqueda(o: PendingOrder, q: string): boolean {
+    if (!q) return true;
+    return (
       (o.id || '').toLowerCase().includes(q) ||
       (o.mesaNombre || '').toLowerCase().includes(q) ||
       (o.meseroNombre || '').toLowerCase().includes(q) ||
       (o.customerName || o.nombre || '').toLowerCase().includes(q)
     );
+  }
+
+  /**
+   * TICKETS → sub-vista "Abiertas": calca de las órdenes vivas de Comandix
+   * (pendientes, confirmadas, en preparación, listas y las ya entregadas por cobrar).
+   */
+  ticketsAbiertas = computed(() => {
+    const q = (this.busquedaActivas() || '').toLowerCase().trim();
+    return this.comandasActivas().filter(o => this.coincideBusqueda(o, q));
+  });
+
+  /** TICKETS → sub-vista "Cerradas": comandas ya pagadas. */
+  ticketsCerradas = computed(() => {
+    const q = (this.busquedaCerradas() || '').toLowerCase().trim();
+    return this.comandasCerradas().filter(o => this.coincideBusqueda(o, q));
   });
 
   // Reporte General de Ventas y Comandas
@@ -195,16 +228,10 @@ export class CajaComponent implements OnInit, OnDestroy {
     return pagadas.length > 0 ? this.reporteTotalVendido() / pagadas.length : 0;
   });
 
-  // Modal Abrir Turno
-  modalAbrirTurnoVisible = signal<boolean>(false);
-  fondoInicialInput = 0;
-  observacionesApertura = '';
-
-  // Modal Cerrar Turno (Corte de Turno)
-  modalCerrarTurnoVisible = signal<boolean>(false);
-  resumenCorte = signal<ResumenTurnoCorte | null>(null);
-  efectivoDeclaradoInput = 0;
-  observacionesCierre = '';
+  // El módulo NO gestiona turnos (no hay apertura ni clausura desde aquí).
+  // El turno se consulta en solo lectura porque el backend exige un turno ABIERTO
+  // para registrar cobros y para liquidar propinas.
+  ensuringTurno = signal<boolean>(false);
 
   // Modal Ticket Pre-cuenta
   modalTicketVisible = signal<boolean>(false);
@@ -233,11 +260,326 @@ export class CajaComponent implements OnInit, OnDestroy {
   orderParaSplit = signal<PendingOrder | null>(null);
   splitOrderTip = signal<TipInfo | null>(null);
 
-  // Vista Corte Meseros & Propinas
+  // Corte por mesero (cards + modal de detalle)
   meseros = signal<MeseroSimple[]>([]);
   meseroSeleccionadoId: number | null = null;
   corteMesero = signal<CorteMesero | null>(null);
+  loadingCorte = signal<boolean>(false);
   retencionPropinasPorc = 15; // 15% retención por defecto para cocina/barra
+  /** Modal con el corteamplio del mesero: tickets, dinero y platillos vendidos. */
+  modalCorteMeseroVisible = signal<boolean>(false);
+
+  /** Día que se muestran los cortes. Se refresca al cambiar de categoría. */
+  readonly fechaCorte = signal<Date>(new Date());
+
+  /** Comandas vivas agrupadas por mesero, para=listar los cortes con contexto. */
+  private comandasActivasPorMesero = computed(() => {
+    const mapa = new Map<string, number>();
+    for (const o of this.comandasActivas()) {
+      const key = (o.meseroNombre || '').trim();
+      if (!key) continue;
+      mapa.set(key, (mapa.get(key) ?? 0) + 1);
+    }
+    return mapa;
+  });
+
+  /** Fecha de cierre de una orden (prioriza el pago, que es lo que se corta). */
+  private fechaCierreOrden(o: PendingOrder): string {
+    return o.horaCierre || o.payment?.paidAt || o.fechaCreacion || o.horaApertura || '';
+  }
+
+  /** Dinero y platillos cobrados hoy por cada mesero, según el historial de órdenes. */
+  private cobrosHoyPorMesero = computed(() => {
+    const mapa = new Map<string, { tickets: number; dinero: number; platillos: number }>();
+    for (const o of this.comandasCerradas()) {
+      if (!this.esMismoDia(this.fechaCierreOrden(o))) continue;
+      const keyName = (o.meseroNombre || '').trim().toLowerCase();
+      const keyEmail = (o.payment?.paidBy ? String(o.payment.paidBy) : '').trim().toLowerCase();
+
+      const dinero = o.totalFinal ?? o.subtotal ?? 0;
+      const platillos = (o.items ?? []).reduce((s, it) => s + (it.cantidad || 0), 0);
+
+      const updateKey = (k: string) => {
+        if (!k) return;
+        const prev = mapa.get(k) ?? { tickets: 0, dinero: 0, platillos: 0 };
+        prev.tickets += 1;
+        prev.dinero += dinero;
+        prev.platillos += platillos;
+        mapa.set(k, prev);
+      };
+
+      if (keyName) updateKey(keyName);
+      if (keyEmail && keyEmail !== keyName) updateKey(keyEmail);
+    }
+    return mapa;
+  });
+
+  /**
+   * Cards de CORTE DE MESEROS: cada mesero con sus comandas vivas y lo que
+   * lleva cobrado hoy (tickets, dinero y platillos).
+   */
+  meserosConActivas = computed(() =>
+    this.meseros()
+      .map(m => {
+        const keyName = (m.nombre || '').trim().toLowerCase();
+        const keyEmail = (m.email || '').trim().toLowerCase();
+        const hoy = this.cobrosHoyPorMesero().get(keyName)
+                 ?? (keyEmail ? this.cobrosHoyPorMesero().get(keyEmail) : undefined)
+                 ?? { tickets: 0, dinero: 0, platillos: 0 };
+
+        const activasPorNombre = keyName ? (this.comandasActivasPorMesero().get(m.nombre.trim()) ?? 0) : 0;
+
+        return {
+          id: m.id,
+          nombre: m.nombre,
+          email: m.email,
+          comandasActivas: activasPorNombre,
+          ticketsHoy: hoy.tickets,
+          dineroHoy: hoy.dinero,
+          platillosHoy: hoy.platillos
+        };
+      })
+      .sort((a, b) => b.dineroHoy - a.dineroHoy || a.nombre.localeCompare(b.nombre, 'es'))
+  );
+
+  meseroSeleccionado = computed(() =>
+    this.meseros().find(m => m.id === this.meseroSeleccionadoId) ?? null
+  );
+
+  /** Órdenes pagadas hoy por el mesero abierto en la modal. */
+  comandasDelMesero = computed<PendingOrder[]>(() => {
+    const mesero = this.meseroSeleccionado();
+    if (!mesero) return [];
+    const keyName = (mesero.nombre || '').trim().toLowerCase();
+    const keyEmail = (mesero.email || '').trim().toLowerCase();
+    return this.comandasCerradas().filter(o => {
+      if (!this.esMismoDia(this.fechaCierreOrden(o))) return false;
+      const oName = (o.meseroNombre || '').trim().toLowerCase();
+      const oEmail = (o.payment?.paidBy ? String(o.payment.paidBy) : '').trim().toLowerCase();
+      return (keyName && (oName === keyName || oEmail === keyName)) ||
+             (keyEmail && (oName === keyEmail || oEmail === keyEmail));
+    });
+  });
+
+  /**
+   * Platillos vendidos por el mesero, agregados por producto.
+   *
+   * El corte del backend no desglosa platillos, así que se arma cruzando los pagos
+   * del corte con el detalle de items de las órdenes pagadas de ese mesero.
+   */
+  platillosDelMesero = computed<{ nombre: string; unidades: number; total: number }[]>(() => {
+    const mapa = new Map<string, { unidades: number; total: number }>();
+    for (const o of this.comandasDelMesero()) {
+      for (const it of o.items ?? []) {
+        const nombre = this.getProductLabel(it);
+        const unidades = it.cantidad || 0;
+        const prev = mapa.get(nombre) ?? { unidades: 0, total: 0 };
+        prev.unidades += unidades;
+        prev.total += this.getItemPrice(it) * unidades;
+        mapa.set(nombre, prev);
+      }
+    }
+    return Array.from(mapa.entries())
+      .map(([nombre, v]) => ({ nombre, unidades: v.unidades, total: v.total }))
+      .sort((a, b) => b.unidades - a.unidades || b.total - a.total);
+  });
+
+  /** Total de platillos vendidos por el mesero en el día. */
+  totalPlatillosMesero = computed(() =>
+    this.platillosDelMesero().reduce((s, p) => s + p.unidades, 0)
+  );
+
+  /** Dinero del corte del mesero (respuesta del backend, sin propinas). */
+  totalDineroMesero = computed(() => this.corteDelDia()?.totalVentas ?? 0);
+
+  // ============ CORTE DEL DÍA (resumen general del turno) ============
+  resumenDia = signal<ResumenTurnoCorte | null>(null);
+  loadingResumenDia = signal<boolean>(false);
+
+  /** Órdenes pagadas hoy, usada como respaldo cuando el turno aún no está abierto. */
+  ordenesPagadasHoy = computed<PendingOrder[]>(() =>
+    this.comandasCerradas().filter(o => this.esMismoDia(this.fechaCierreOrden(o)))
+  );
+
+  /** Propina estimada de la orden: el pago incluye la propina y el total es la cuenta. */
+  private propinaOrden(o: PendingOrder): number {
+    const cuenta = o.totalFinal ?? o.subtotal ?? 0;
+    return Math.max(0, (o.payment?.amount ?? 0) - cuenta);
+  }
+
+  diaComandas = computed(() => {
+    const r = this.resumenDia()?.totalComandasCobradas ?? 0;
+    const h = this.ordenesPagadasHoy().length;
+    return Math.max(r, h);
+  });
+
+  diaVentas = computed(() => {
+    const r = this.resumenDia()?.totalVentas ?? 0;
+    const h = this.ordenesPagadasHoy().reduce((s, o) => s + (o.totalFinal ?? o.subtotal ?? 0), 0);
+    return Math.max(r, h);
+  });
+
+  diaPropinas = computed(() => {
+    const r = this.resumenDia()?.totalPropinas ?? 0;
+    const h = this.ordenesPagadasHoy().reduce((s, o) => s + this.propinaOrden(o), 0);
+    return Math.max(r, h);
+  });
+
+  diaArticulos = computed(() => {
+    const r = this.resumenDia()?.totalArticulosVendidos ?? 0;
+    const h = this.ordenesPagadasHoy().reduce(
+      (s, o) => s + (o.items ?? []).reduce((x, it) => x + (it.cantidad || 0), 0),
+      0
+    );
+    return Math.max(r, h);
+  });
+
+  diaTicketPromedio = computed(() => (this.diaComandas() > 0 ? this.diaVentas() / this.diaComandas() : 0));
+
+  /** Métodos de pago del día. Usa el corte del backend y si no, lo arma del historial. */
+  metodosPagoDia = computed<DesgloseMetodoPago[]>(() => {
+    const delTurno = this.resumenDia()?.desgloseMetodos ?? [];
+    const ventasTurno = this.resumenDia()?.totalVentas ?? 0;
+    const ventasHistorial = this.ordenesPagadasHoy().reduce((s, o) => s + (o.totalFinal ?? o.subtotal ?? 0), 0);
+
+    if (delTurno.length > 0 && ventasTurno >= ventasHistorial) {
+      return delTurno;
+    }
+
+    const mapa = new Map<string, DesgloseMetodoPago>();
+    for (const o of this.ordenesPagadasHoy()) {
+      const rawMetodo = o.payment?.method || 'EFECTIVO';
+      const clave = CajaComponent.NOMBRE_METODO[rawMetodo.toUpperCase()] ?? rawMetodo.toUpperCase();
+      const cuenta = o.totalFinal ?? o.subtotal ?? 0;
+      const propina = this.propinaOrden(o);
+      const prev = mapa.get(clave) ?? { metodoPago: clave, transacciones: 0, totalCuenta: 0, totalPropina: 0, totalRecaudado: 0 };
+      prev.transacciones += 1;
+      prev.totalCuenta += cuenta;
+      prev.totalPropina += propina;
+      prev.totalRecaudado += cuenta + propina;
+      mapa.set(clave, prev);
+    }
+
+    for (const dt of delTurno) {
+      if (!mapa.has(dt.metodoPago)) {
+        mapa.set(dt.metodoPago, dt);
+      }
+    }
+
+    return Array.from(mapa.values()).sort((a, b) => b.totalRecaudado - a.totalRecaudado);
+  });
+
+  /** Datos de la gráfica: participación de cada método de pago en lo recaudado. */
+  metodosPagoChartData = computed(() => {
+    const metodos = this.metodosPagoDia();
+    return {
+      labels: metodos.map(m => m.metodoPago),
+      datasets: [
+        {
+          data: metodos.map(m => m.totalRecaudado),
+          backgroundColor: metodos.map((_, i) => CajaComponent.COLORES_METODO[i % CajaComponent.COLORES_METODO.length]),
+          borderWidth: 0,
+          hoverOffset: 6
+        }
+      ]
+    };
+  });
+
+  metodosPagoChartOptions = {
+    responsive: true,
+    maintainAspectRatio: true,
+    aspectRatio: 1,
+    cutout: '72%',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#0f172a',
+        titleFont: { size: 12, weight: 'bold' },
+        bodyFont: { size: 12 },
+        padding: 10,
+        cornerRadius: 8,
+        displayColors: true,
+        callbacks: {
+          label: (ctx: any) => {
+            const total = (ctx.dataset.data as number[]).reduce((s, v) => s + (v || 0), 0);
+            const val = ctx.parsed || 0;
+            const pct = total > 0 ? Math.round((val / total) * 100) : 0;
+            return ` ${ctx.label || ''}: $${val.toFixed(2)} (${pct}%)`;
+          }
+        }
+      }
+    }
+  };
+
+  getColorMetodo(index: number): string {
+    return CajaComponent.COLORES_METODO[index % CajaComponent.COLORES_METODO.length];
+  }
+
+  private static readonly COLORES_METODO = ['#7c3aed', '#10b981', '#f59e0b', '#0ea5e9', '#ef4444', '#64748b'];
+
+  private static readonly NOMBRE_METODO: Record<string, string> = {
+    CASH: 'EFECTIVO',
+    CARD: 'TARJETA',
+    TRANSFER: 'TRANSFERENCIA',
+    MIXED: 'MIXTO'
+  };
+
+  /**
+   * Corte del día del mesero seleccionado.
+   *
+   * El backend ya recibe `fecha` y devuelve únicamente los cobros de hoy, así que
+   * normalmente devuelve la respuesta tal cual. Si por lo que sea la respuesta
+   * viniera con cobros de otros días (backend antiguo sin el parámetro), se
+   * recalcula aquí para que el corte sea siempre del día.
+   */
+  corteDelDia = computed<CorteMesero | null>(() => {
+    const corte = this.corteMesero();
+    if (!corte) return null;
+
+    const pagos = corte.pagosRealizados ?? [];
+    const pagosDelDia = pagos.filter(p => this.esMismoDia(p.fecha));
+    if (pagosDelDia.length === pagos.length) {
+      return corte;
+    }
+
+    let totalVentas = 0;
+    let totalPropinas = 0;
+    const desglose = new Map<string, DesgloseMetodoPago>();
+
+    for (const p of pagosDelDia) {
+      const cuenta = Number(p.montoCuenta ?? 0);
+      const propina = Number(p.montoPropina ?? 0);
+      totalVentas += cuenta;
+      totalPropinas += propina;
+
+      const metodo = p.metodoPago || 'SIN METODO';
+      const actual = desglose.get(metodo);
+      if (actual) {
+        actual.transacciones += 1;
+        actual.totalCuenta += cuenta;
+        actual.totalPropina += propina;
+        actual.totalRecaudado += cuenta + propina;
+      } else {
+        desglose.set(metodo, {
+          metodoPago: metodo,
+          transacciones: 1,
+          totalCuenta: cuenta,
+          totalPropina: propina,
+          totalRecaudado: cuenta + propina
+        });
+      }
+    }
+
+    return {
+      ...corte,
+      totalComandasAtendidas: pagosDelDia.length,
+      totalVentas,
+      totalPropinas,
+      propinasPendientesLiquidar: totalPropinas,
+      pagosRealizados: pagosDelDia,
+      desgloseMetodos: Array.from(desglose.values())
+    };
+  });
 
   ngOnInit(): void {
     const user = this.authService.getCurrentUser();
@@ -245,6 +587,10 @@ export class CajaComponent implements OnInit, OnDestroy {
     this.userId = user?.id || 0;
     this.userName = user?.nombre || user?.userName || user?.email || 'Cajero';
     this.userRole = (user?.rol || user?.role || '').toUpperCase();
+
+    this.aplicarVistaInicial(
+      this.route.snapshot.data['initialView'] || this.route.snapshot.queryParams['view']
+    );
 
     if (this.tenantId > 0) {
       this.cargarDatosIniciales();
@@ -260,8 +606,18 @@ export class CajaComponent implements OnInit, OnDestroy {
 
   private iniciarPolling(): void {
     this.pollingTimer = setInterval(() => {
-      if (this.vistaActiva() === 'tablero') {
-        this.cargarTablero(false);
+      switch (this.seccionActiva()) {
+        case 'tickets':
+          this.cargarHistorialComandas(false);
+          this.cargarTablero(false);
+          break;
+        case 'meseros':
+          this.refrescarCorte();
+          break;
+        case 'dia':
+          this.cargarResumenDia(false);
+          this.cargarHistorialComandas(false);
+          break;
       }
     }, 20000);
   }
@@ -276,12 +632,23 @@ export class CajaComponent implements OnInit, OnDestroy {
   async cargarDatosIniciales(): Promise<void> {
     this.loading.set(true);
     try {
+      await this.cargarTurnoActivo();
+      // El backend exige un turno ABIERTO para poder cobrar: si no hay ninguno,
+      // se abre automáticamente con fondo 0 (Caja no expone apertura de turno).
+      if (!this.turnoActivo()) {
+        await this.asegurarTurnoActivo();
+      }
       await Promise.all([
-        this.cargarTurnoActivo(),
         this.cargarTablero(false),
         this.cargarMeseros(),
         this.cargarHistorialComandas(false)
       ]);
+      if (this.seccionActiva() === 'dia') {
+        await this.cargarResumenDia(false);
+      }
+      if (this.seccionActiva() === 'dia') {
+        await this.cargarResumenDia(false);
+      }
     } catch (error) {
       console.error('Error cargando datos de caja:', error);
     } finally {
@@ -299,13 +666,49 @@ export class CajaComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Abre un turno de caja con fondo 0 cuando no hay ninguno abierto.
+   * Necesario porque `POST /caja/comandas/{id}/pagar` exige un turno ABIERTO.
+   * No expone ninguna UI: es una garantía interna para que el cobro no se bloquee.
+   */
+  async asegurarTurnoActivo(): Promise<void> {
+    if (this.turnoActivo() || this.ensuringTurno()) return;
+
+    this.ensuringTurno.set(true);
+    try {
+      const resp = await firstValueFrom(this.cajaService.abrirTurno({
+        tenantId: this.tenantId,
+        cajeroId: this.userId,
+        fondoInicial: 0,
+        observaciones: 'Turno abierto automáticamente por el módulo de Caja y Cortes'
+      }));
+      this.turnoActivo.set(resp.object || resp.data || null);
+    } catch (e: any) {
+      const msg = e?.error?.message || e?.message || 'No fue posible abrir el turno de caja';
+      console.warn('[Caja] Apertura automática de turno fallida:', msg);
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Turno de caja',
+        detail: msg,
+        life: 6000
+      });
+    } finally {
+      this.ensuringTurno.set(false);
+    }
+  }
+
   async cargarTablero(showLoading = true): Promise<void> {
     if (showLoading) this.loading.set(true);
     try {
       const resp = await firstValueFrom(this.cajaService.getTablero(this.tenantId));
-      this.tablero.set(resp.object || resp.data || { cuentasAbiertas: [], cuentasPorCobrar: [] });
+      const raw = (resp as any)?.object ?? (resp as any)?.data ?? resp;
+      this.tablero.set({
+        cuentasAbiertas: Array.isArray(raw?.cuentasAbiertas) ? raw.cuentasAbiertas : [],
+        cuentasPorCobrar: Array.isArray(raw?.cuentasPorCobrar) ? raw.cuentasPorCobrar : []
+      });
     } catch (e) {
       console.error('Error cargando tablero de caja:', e);
+      this.tablero.set({ cuentasAbiertas: [], cuentasPorCobrar: [] });
     } finally {
       if (showLoading) this.loading.set(false);
     }
@@ -320,107 +723,32 @@ export class CajaComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ==================== APERTURA DE TURNO ====================
+  // ==================== UTILIDADES DE FECHA PARA CORTES ====================
 
-  abrirModalApertura(): void {
-    this.fondoInicialInput = 0;
-    this.observacionesApertura = '';
-    this.modalAbrirTurnoVisible.set(true);
+  /** yyyy-MM-dd del día en curso (formato esperado por el backend). */
+  private fechaCorteISO(): string {
+    const d = this.fechaCorte();
+    const mes = `${d.getMonth() + 1}`.padStart(2, '0');
+    const dia = `${d.getDate()}`.padStart(2, '0');
+    return `${d.getFullYear()}-${mes}-${dia}`;
   }
 
-  async confirmarAbrirTurno(): Promise<void> {
-    if (this.fondoInicialInput < 0) {
-      this.messageService.add({ severity: 'warn', summary: 'Fondo Inválido', detail: 'El fondo inicial no puede ser negativo' });
-      return;
-    }
-
-    this.procesando.set(true);
-    try {
-      const resp = await firstValueFrom(this.cajaService.abrirTurno({
-        tenantId: this.tenantId,
-        cajeroId: this.userId,
-        fondoInicial: this.fondoInicialInput,
-        observaciones: this.observacionesApertura
-      }));
-
-      const nuevoTurno = resp.object || resp.data;
-      this.turnoActivo.set(nuevoTurno || null);
-      this.modalAbrirTurnoVisible.set(false);
-
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Turno Abierto',
-        detail: `Turno de caja iniciado con fondo de $${this.fondoInicialInput.toFixed(2)}`
-      });
-      await this.cargarTablero();
-    } catch (err: any) {
-      const msg = err?.error?.message || err?.message || 'Error al abrir turno';
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
-    } finally {
-      this.procesando.set(false);
-    }
-  }
-
-  // ==================== CIERRE DE TURNO (CORTE) ====================
-
-  async abrirModalCierre(): Promise<void> {
-    const turno = this.turnoActivo();
-    if (!turno) return;
-
-    this.procesando.set(true);
-    try {
-      const resp = await firstValueFrom(this.cajaService.getResumenTurno(turno.idTurno, this.tenantId));
-      const resumen = resp.object || resp.data || null;
-      this.resumenCorte.set(resumen);
-      this.efectivoDeclaradoInput = resumen?.efectivoEsperadoEnCaja || 0;
-      this.observacionesCierre = '';
-      this.modalCerrarTurnoVisible.set(true);
-    } catch (e: any) {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar el arqueo del turno' });
-    } finally {
-      this.procesando.set(false);
-    }
-  }
-
-  get diferenciaCorte(): number {
-    const esperado = this.resumenCorte()?.efectivoEsperadoEnCaja || 0;
-    return (this.efectivoDeclaradoInput || 0) - esperado;
-  }
-
-  async confirmarCerrarTurno(): Promise<void> {
-    const turno = this.turnoActivo();
-    if (!turno) return;
-
-    this.procesando.set(true);
-    try {
-      await firstValueFrom(this.cajaService.cerrarTurno({
-        tenantId: this.tenantId,
-        idTurno: turno.idTurno,
-        totalEfectivoDeclarado: this.efectivoDeclaradoInput,
-        observaciones: this.observacionesCierre
-      }));
-
-      this.modalCerrarTurnoVisible.set(false);
-      this.turnoActivo.set(null);
-      this.resumenCorte.set(null);
-
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Caja Cerrada',
-        detail: 'Turno cerrado y corte registrado exitosamente'
-      });
-      await this.cargarTablero();
-    } catch (err: any) {
-      const msg = err?.error?.message || err?.message || 'Error al cerrar turno';
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
-    } finally {
-      this.procesando.set(false);
-    }
+  /** True si la fecha/hora dada cae en el día en curso (hora local). */
+  esMismoDia(fecha?: string | null): boolean {
+    if (!fecha) return false;
+    const d = new Date(fecha);
+    if (Number.isNaN(d.getTime())) return false;
+    const ref = this.fechaCorte();
+    return (
+      d.getFullYear() === ref.getFullYear() &&
+      d.getMonth() === ref.getMonth() &&
+      d.getDate() === ref.getDate()
+    );
   }
 
   // ==================== PRE-CUENTA (IMPRIMIR TICKET) ====================
 
-  async imprimirTicket(comanda: ComandaCajaRow): Promise<void> {
+  async imprimirTicket(comanda: PendingOrder | ComandaCajaRow): Promise<void> {
     this.procesando.set(true);
     try {
       const resp = await firstValueFrom(this.cajaService.imprimirTicket(comanda.id, this.tenantId));
@@ -430,6 +758,7 @@ export class CajaComponent implements OnInit, OnDestroy {
 
       // Actualizar tablero local
       await this.cargarTablero(false);
+      await this.cargarHistorialComandas(false);
 
       this.messageService.add({
         severity: 'info',
@@ -449,22 +778,51 @@ export class CajaComponent implements OnInit, OnDestroy {
 
   // ==================== COBRO DE COMANDA ====================
 
-  abrirModalCobro(comanda: ComandaCajaRow): void {
+  /** Total de la cuenta, sin importar si viene del tablero o del historial. */
+  private totalCuenta(comanda: PendingOrder | ComandaCajaRow): number {
+    return (comanda as ComandaCajaRow).total ?? (comanda as PendingOrder).totalFinal ?? (comanda as PendingOrder).subtotal ?? 0;
+  }
+
+  /** Adapta una orden del historial al formato de fila que usa la modal de cobro. */
+  private aFilaCaja(comanda: PendingOrder | ComandaCajaRow): ComandaCajaRow {
+    if ((comanda as ComandaCajaRow).folioComanda !== undefined) return comanda as ComandaCajaRow;
+    const o = comanda as PendingOrder;
+    return {
+      id: o.id,
+      folioComanda: o.id.length > 8 ? o.id.slice(0, 8).toUpperCase() : o.id,
+      estado: o.estado || '',
+      mesaNombre: o.mesaNombre || 'Mesa General',
+      meseroNombre: o.meseroNombre || 'Sin asignar',
+      clienteNombre: o.customerName || o.nombre || 'Venta General',
+      subtotal: o.subtotal ?? 0,
+      descuento: o.descuento ?? 0,
+      total: o.totalFinal ?? o.subtotal ?? 0,
+      totalItems: (o.items ?? []).reduce((s, it) => s + (it.cantidad || 0), 0),
+      horaApertura: o.horaApertura || o.fechaCreacion || '',
+      fechaImpresionTicket: o.horaCierre || o.payment?.paidAt || undefined
+    };
+  }
+
+  async abrirModalCobro(comanda: PendingOrder | ComandaCajaRow): Promise<void> {
     if (!this.turnoActivo()) {
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Caja Cerrada',
-        detail: 'Debes abrir un turno de caja antes de recibir pagos.'
-      });
-      return;
+      await this.asegurarTurnoActivo();
+      if (!this.turnoActivo()) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Caja no disponible',
+          detail: 'No hay un turno de caja abierto para registrar el cobro. Intenta de nuevo en unos segundos.'
+        });
+        return;
+      }
     }
 
-    this.comandaSeleccionada.set(comanda);
+    const fila = this.aFilaCaja(comanda);
+    this.comandaSeleccionada.set(fila);
     this.metodoPagoSeleccionado = 'EFECTIVO';
-    this.montoCuentaInput = comanda.total;
+    this.montoCuentaInput = this.totalCuenta(fila);
     this.montoPropinaInput = 0;
     this.referenciaPagoInput = '';
-    this.efectivoRecibidoInput = comanda.total;
+    this.efectivoRecibidoInput = this.totalCuenta(fila);
     this.modalPagoVisible.set(true);
   }
 
@@ -513,6 +871,9 @@ export class CajaComponent implements OnInit, OnDestroy {
         this.cargarTablero(false),
         this.cargarHistorialComandas(false)
       ]);
+      if (this.seccionActiva() === 'dia') {
+        await this.cargarResumenDia(false);
+      }
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Error procesando el pago';
       this.messageService.add({ severity: 'error', summary: 'Error de Cobro', detail: msg });
@@ -540,14 +901,57 @@ export class CajaComponent implements OnInit, OnDestroy {
     }
   }
 
-  cambiarVista(nuevaVista: 'tablero' | 'cerradas' | 'canceladas' | 'cortes_propinas' | 'reporte'): void {
-    this.vistaActiva.set(nuevaVista);
-    if (nuevaVista === 'tablero') {
-      this.cargarTablero();
-    } else if (nuevaVista === 'cerradas' || nuevaVista === 'canceladas' || nuevaVista === 'reporte') {
-      this.cargarHistorialComandas(true);
-    } else if (nuevaVista === 'cortes_propinas') {
-      this.cargarMeseros();
+  // ==================== NAVEGACIÓN (3 categorías + sub-vista de TICKETS) ====================
+
+  /**
+   * Aplica la categoría pedida por la ruta (data.initialView o ?view=).
+   * Se mantiene la compatibilidad con las vistas anteriores: `cortes`, `reporte`,
+   * `activas`, `cerradas`, `canceladas` y `tablero`.
+   */
+  private aplicarVistaInicial(valor: string | undefined): void {
+    const clave = (valor || '').toLowerCase();
+    if (clave === 'cortes') {
+      this.seccionActiva.set('meseros');
+      return;
+    }
+    if (clave === 'reporte' || clave === 'dia') {
+      this.seccionActiva.set('dia');
+      return;
+    }
+    this.seccionActiva.set('tickets');
+    this.ticketsVista.set(clave === 'cerradas' ? 'cerradas' : 'abiertas');
+  }
+
+  /** Cambia entre las tres categorías del slider superior. */
+  cambiarSeccion(seccion: SeccionCaja): void {
+    if (this.seccionActiva() === seccion) return;
+    this.seccionActiva.set(seccion);
+    // El corte siempre es del día en curso: se recalcula por si la app quedó abierta.
+    if (seccion !== 'tickets') this.fechaCorte.set(new Date());
+    this.cargarSeccionActual();
+  }
+
+  /** Cambia la sub-vista de TICKETS: "Abiertas" o "Cerradas". */
+  cambiarTicketsVista(vista: VistaTickets): void {
+    this.ticketsVista.set(vista);
+    this.cargarHistorialComandas(true);
+  }
+
+  /** Carga únicamente los datos que necesita la categoría visible. */
+  private cargarSeccionActual(): void {
+    switch (this.seccionActiva()) {
+      case 'tickets':
+        this.cargarHistorialComandas(true);
+        this.cargarTablero(false);
+        break;
+      case 'meseros':
+        this.cargarMeseros();
+        this.cargarHistorialComandas(false);
+        break;
+      case 'dia':
+        this.cargarResumenDia();
+        this.cargarHistorialComandas(false);
+        break;
     }
   }
 
@@ -555,7 +959,7 @@ export class CajaComponent implements OnInit, OnDestroy {
     const mesaId = order.idMesa ?? order.mesaId;
     const mesaNombre = order.mesaNombre ?? (mesaId ? `Mesa #${mesaId}` : undefined);
     const mesaNumero = order.mesaNumero;
-    const meseroNombre = order.meseroNombre ?? (order.idMesero ? `Mesero #${order.idMesero}` : undefined);
+    const meseroNombre = order.meseroNombre ?? order.paidByName ?? (order.idMesero ? `Mesero #${order.idMesero}` : undefined);
     const horaApertura = order.horaApertura ?? order.fecha ?? order.createdAt;
     const horaCierre = order.horaCierre ?? order.paidAt;
 
@@ -599,10 +1003,10 @@ export class CajaComponent implements OnInit, OnDestroy {
       horaCierre,
       subcomandas: order.subcomandas ?? [],
       payment: {
-        method: order.paymentMethod,
+        method: order.paidMethod ?? order.paymentMethod,
         reference: order.paymentReference ?? null,
         paidAt: order.paidAt,
-        paidBy: order.paidBy
+        paidBy: order.paidByName ?? order.paidBy
       }
     };
   }
@@ -802,6 +1206,16 @@ export class CajaComponent implements OnInit, OnDestroy {
     return order.customerName || order.nombre || (order.customerId ? `Cliente #${order.customerId}` : 'Venta General');
   }
 
+  /** Abre el detalle de la orden indicada desde la tabla del corte del día. */
+  verTicketReporte(idComanda: string): void {
+    const orden = this.todasComandas().find(o => o.id === idComanda);
+    if (!orden) {
+      this.messageService.add({ severity: 'info', summary: 'Ticket no disponible', detail: 'La comanda ya no está en el historial local' });
+      return;
+    }
+    void this.abrirDetalleOrden(orden);
+  }
+
   getItemPrice(item: any): number {
     return item?.precioUnitario ?? item?.precio ?? 0;
   }
@@ -818,38 +1232,115 @@ export class CajaComponent implements OnInit, OnDestroy {
     return 'p-tag-info';
   }
 
-  // ==================== CORTE POR MESERO & PROPINAS ====================
+  // ==================== CORTE POR MESERO (cards + modal) ====================
 
-  async cargarRendimientoMesero(): Promise<void> {
+  /** Abre la modal con el corte completo del mesero. */
+  async abrirCorteMesero(idMesero: number): Promise<void> {
+    this.meseroSeleccionadoId = idMesero;
+    this.modalCorteMeseroVisible.set(true);
+    this.fechaCorte.set(new Date());
+    await Promise.all([this.cargarCorteMesero(), this.cargarHistorialComandas(false)]);
+  }
+
+  cerrarCorteMesero(): void {
+    this.modalCorteMeseroVisible.set(false);
+    this.meseroSeleccionadoId = null;
+    this.corteMesero.set(null);
+  }
+
+  async cargarCorteMesero(): Promise<void> {
     if (!this.meseroSeleccionadoId) {
       this.corteMesero.set(null);
       return;
     }
 
-    const turnoId = this.turnoActivo()?.idTurno;
-    this.loading.set(true);
+    this.loadingCorte.set(true);
     try {
+      this.fechaCorte.set(new Date());
       const resp = await firstValueFrom(
-        this.cajaService.getCorteMesero(this.meseroSeleccionadoId, this.tenantId, turnoId)
+        this.cajaService.getCorteMesero(this.meseroSeleccionadoId, this.tenantId, undefined, this.fechaCorteISO())
       );
       this.corteMesero.set(resp.object || resp.data || null);
-    } catch (e) {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo obtener el corte del mesero' });
+    } catch (e: any) {
+      this.corteMesero.set(null);
+      const msg = e?.error?.message || e?.message || 'No se pudo obtener el corte del mesero';
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+    } finally {
+      this.loadingCorte.set(false);
+    }
+  }
+
+  // ==================== CORTE DEL DÍA ====================
+
+  /**
+   * Resumen del turno abierto (ventas, propinas y métodos de pago).
+   * Si no hay turno, se intenta abrir uno con fondo 0 porque el backend lo exige.
+   */
+  async cargarResumenDia(showLoading = true): Promise<void> {
+    if (this.tenantId <= 0) return;
+    if (showLoading) this.loadingResumenDia.set(true);
+    try {
+      if (!this.turnoActivo()) await this.asegurarTurnoActivo();
+      const turno = this.turnoActivo();
+      if (!turno) {
+        this.resumenDia.set(null);
+        return;
+      }
+      const resp = await firstValueFrom(this.cajaService.getResumenTurno(turno.idTurno, this.tenantId));
+      this.resumenDia.set(resp.object || resp.data || null);
+    } catch (e: any) {
+      this.resumenDia.set(null);
+      if (showLoading) {
+        const msg = e?.error?.message || e?.message || 'No se pudo obtener el corte del día';
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+      }
+    } finally {
+      if (showLoading) this.loadingResumenDia.set(false);
+    }
+  }
+
+  /** Recarga los datos de la categoría que el usuario está viendo. */
+  async refrescar(): Promise<void> {
+    if (this.seccionActiva() === 'meseros') {
+      await this.refrescarCorte();
+      return;
+    }
+    this.loading.set(true);
+    try {
+      await this.cargarTurnoActivo();
+      if (this.seccionActiva() === 'dia') {
+        await Promise.all([this.cargarResumenDia(false), this.cargarHistorialComandas(false)]);
+        return;
+      }
+      await Promise.all([this.cargarTablero(false), this.cargarHistorialComandas(false)]);
     } finally {
       this.loading.set(false);
     }
   }
 
+  async refrescarCorte(): Promise<void> {
+    await Promise.all([this.cargarMeseros(), this.cargarHistorialComandas(false)]);
+    if (this.meseroSeleccionadoId) {
+      await this.cargarCorteMesero();
+    }
+  }
+
   get propinaNetaMesero(): number {
-    const bruto = this.corteMesero()?.propinasPendientesLiquidar || 0;
+    const bruto = this.corteDelDia()?.propinasPendientesLiquidar || 0;
     const retencion = (bruto * (this.retencionPropinasPorc / 100));
     return Math.max(0, bruto - retencion);
   }
 
   async liquidarPropinasMesero(): Promise<void> {
-    const mesero = this.corteMesero();
+    const mesero = this.corteDelDia();
+    if (!mesero) {
+      this.messageService.add({ severity: 'info', summary: 'Sin selección', detail: 'Selecciona un mesero para ver su corte' });
+      return;
+    }
+
+    await this.asegurarTurnoActivo();
     const turno = this.turnoActivo();
-    if (!mesero || !turno) {
+    if (!turno) {
       this.messageService.add({ severity: 'warn', summary: 'Atención', detail: 'Se requiere un turno de caja activo para liquidar' });
       return;
     }
@@ -875,7 +1366,7 @@ export class CajaComponent implements OnInit, OnDestroy {
         detail: `Se entregó neto de $${this.propinaNetaMesero.toFixed(2)} a ${mesero.nombreMesero}`
       });
 
-      await this.cargarRendimientoMesero();
+      await this.cargarCorteMesero();
     } catch (err: any) {
       const msg = err?.error?.message || err?.message || 'Error liquidando propinas';
       this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
