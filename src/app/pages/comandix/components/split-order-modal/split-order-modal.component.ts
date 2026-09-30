@@ -136,6 +136,26 @@ export class SplitOrderModalComponent implements OnChanges, OnDestroy {
     return this.items.reduce((sum, item) => sum + item.precioUnitario * item.cantidad, 0);
   }
 
+  /** Miniatura del platillo para las líneas del ticket: usa la del producto, si no una referente de internet por nombre. */
+  platilloImagen(item: SplitItem): string {
+    const raw = (item as any)?.producto?.imageUrl?.trim() || '';
+    if (raw) return raw;
+    const slug = (item.productName || 'platillo').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, ',').toLowerCase();
+    return `https://loremflickr.com/320/240/food,?lock=${Math.abs(this.hCode(String(item.productId ?? item.productName ?? 'x')))}${slug ? ',' + slug : ''}`;
+  }
+
+  onImagenError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (!img) return;
+    img.style.display = 'none';
+  }
+
+  private hCode(s: string): number {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+    return h;
+  }
+
   get maxPersonas(): number {
     return this.totalUnidades;
   }

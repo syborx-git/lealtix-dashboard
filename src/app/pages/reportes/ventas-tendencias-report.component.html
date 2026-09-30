@@ -1,0 +1,140 @@
+<!-- ============ REPORTE 1.1: DASHBOARD DE VENTAS Y TENDENCIAS ============ -->
+
+@if (loading() && !reporte()) {
+  <div class="reporte-panel">
+    <div class="kpi-grid">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="kpi-card">
+          <p-skeleton width="55%" height="0.8rem" />
+          <p-skeleton width="70%" height="1.6rem" styleClass="mt-3" />
+          <p-skeleton width="45%" height="0.75rem" styleClass="mt-2" />
+        </div>
+      }
+    </div>
+    <div class="panel">
+      <p-skeleton width="30%" height="1.1rem" />
+      <p-skeleton height="16rem" styleClass="mt-3" />
+    </div>
+  </div>
+} @else if (error() && !reporte()) {
+  <div class="panel panel--error">
+    <i class="pi pi-exclamation-triangle"></i>
+    <h3>No se pudo cargar el reporte</h3>
+    <p>{{ error() }}</p>
+    <button pButton type="button" label="Reintentar" icon="pi pi-refresh" (click)="recargar()"></button>
+  </div>
+} @else if (reporte(); as datos) {
+  <div class="reporte-panel">
+    <!-- ============ SUBENCABEZADO CON RANGO Y COMPARATIVA ============ -->
+    <div class="reporte-subheader">
+      <div>
+        <h3>{{ datos.meta.nombre }}</h3>
+        <p class="reporte-subheader__rango">
+          {{ datos.meta.rangoActual.etiqueta }}
+          <i class="pi pi-arrow-right"></i>
+          comparado con {{ datos.meta.rangoAnterior.etiqueta }}
+        </p>
+      </div>
+      <div class="reporte-subheader__acciones">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          severity="secondary"
+          [outlined]="true"
+          size="small"
+          [loading]="loading()"
+          (click)="recargar()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-file-excel"
+          label="Exportar"
+          size="small"
+          [loading]="exportando()"
+          (click)="exportar()"
+        ></button>
+      </div>
+    </div>
+
+    <!-- ============ KPIs COMPARATIVOS ============ -->
+    <app-kpi-grid [kpis]="datos.kpis" />
+
+    <!-- ============ SERIE TEMPORAL ============ -->
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <h4>Ingreso neto por {{ granularidadEtiqueta() }}</h4>
+          <p class="panel__subtitulo">
+            La linea punteada es el periodo anterior equivalente, alineado punto por punto.
+          </p>
+        </div>
+      </div>
+      @if (datos.serie.length) {
+        <div class="panel__grafica">
+          <p-chart type="line" [data]="serieChartData()" [options]="serieChartOptions" />
+        </div>
+      } @else {
+        <div class="panel__vacio">
+          <i class="pi pi-chart-line"></i>
+          <p>Sin ventas en el periodo seleccionado</p>
+        </div>
+      }
+    </div>
+
+    <!-- ============ CATEGORIAS + TOP PRODUCTOS ============ -->
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel__header">
+          <h4>Ingreso por categoria</h4>
+        </div>
+        @if (datos.porCategoria.filas.length) {
+          <div class="panel__grafica panel__grafica--alta">
+            <p-chart type="doughnut" [data]="categoriaChartData()" [options]="categoriaChartOptions" />
+          </div>
+        } @else {
+          <div class="panel__vacio">
+            <i class="pi pi-tags"></i>
+            <p>Sin productos vendidos en el periodo</p>
+          </div>
+        }
+      </div>
+
+      <div class="panel">
+        <div class="panel__header">
+          <h4>Top productos por ingreso</h4>
+        </div>
+        <p-table [value]="datos.topProductos.filas" [rows]="5" [paginator]="datos.topProductos.filas.length > 5" styleClass="tabla-reporte">
+          <ng-template pTemplate="header">
+            <tr>
+              @for (columna of datos.topProductos.columnas; track columna.key) {
+                <th [class.align-right]="alineacion(columna) === 'right'">{{ columna.label }}</th>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-fila>
+            <tr>
+              @for (columna of datos.topProductos.columnas; track columna.key) {
+                <td [class.align-right]="alineacion(columna) === 'right'">
+                  @if (columna.tipo === 'TEXTO') {
+                    <span class="celda-texto">{{ fila[columna.key] ?? '-' }}</span>
+                  } @else {
+                    {{ valorCelda(fila, columna) }}
+                  }
+                </td>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td [attr.colspan]="datos.topProductos.columnas.length" class="celda-vacia">
+                Sin ventas en el periodo
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+  </div>
+}

@@ -112,6 +112,18 @@ export class OrderService {
     );
   }
 
+  /**
+   * Obtiene el detalle completo de una orden por ID
+   * GET /api/tenant-client-orders/{orderId}
+   */
+  getOrderById(orderId: string): Observable<GenericResponse<any>> {
+    return this.http.get<GenericResponse<any>>(`${this.baseUrl}/${orderId}`).pipe(
+      catchError((error) => {
+        console.error('Error al obtener orden por ID:', error);
+        return throwError(() => error);
+      })
+    );
+  }
 
   /**
    * Actualiza el estado de una orden

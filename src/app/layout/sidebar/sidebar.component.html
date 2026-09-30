@@ -1,0 +1,83 @@
+<!--
+  SIDEBAR DE ESCRITORIO (lg y superior)
+
+  - Ancho fluido entre w-64 (completo) y w-20 (solo iconos) con
+    transition-all duration-300, gobernado por layoutService.isSidebarCollapsed().
+  - El texto usa siempre `whitespace-nowrap overflow-hidden` dentro de un
+    contenedor flex `min-w-0`: así no se parte ni desborda al estrechar la barra.
+  - Cuando está colapsado, el texto pasa a `w-0 opacity-0` (sale del flujo) y
+    los items quedan en `justify-center`, dejando el icono perfectamente centrado.
+  - El menú (con sus submenús independientes) se delega a <app-menu-list>.
+-->
+<aside
+    class="flex h-full flex-col overflow-hidden border-r border-slate-200 bg-white transition-all duration-300 ease-in-out dark:border-slate-700 dark:bg-slate-900"
+    [ngClass]="[layoutService.sidebarWidthClass(), collapsed() ? 'px-2' : 'px-3']"
+    aria-label="Barra lateral"
+>
+    <!-- ============ Marca + botón de colapso ============ -->
+    <div class="flex shrink-0 items-center border-b border-slate-100 py-3 dark:border-slate-800" [ngClass]="collapsed() ? 'justify-center px-0' : 'gap-2 px-1'">
+
+        <a
+            routerLink="/dashboard"
+            class="flex min-w-0 items-center overflow-hidden transition-all duration-300"
+            [ngClass]="collapsed() ? 'justify-center' : 'gap-2.5'"
+            title="Lealtix"
+        >
+            <img
+                src="https://res.cloudinary.com/lealtix-media/image/upload/q_auto/f_auto/v1759897289/lealtix_logo_transp_qcp5h9.png"
+                alt="Lealtix"
+                class="h-9 w-9 shrink-0 object-contain"
+            />
+
+            <!-- Texto del logo: mismo tratamiento antidesbordamiento que los items -->
+            <span
+                class="min-w-0 overflow-hidden whitespace-nowrap text-base font-extrabold tracking-wide text-slate-700 transition-all duration-300 dark:text-slate-100"
+                [ngClass]="collapsed() ? 'w-0 opacity-0' : 'w-auto opacity-100'"
+            >
+                LEALTIX
+            </span>
+        </a>
+
+        <!-- El botón de colapso solo existe con la barra completa: colapsado, el
+             header queda en w-20 y solo cabe el logo (el control pasa al pie). -->
+        <button
+            *ngIf="!collapsed()"
+            type="button"
+            class="ml-auto hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-indigo-600 lg:flex dark:hover:bg-slate-800"
+            (click)="onToggle()"
+            aria-label="Colapsar barra lateral"
+            title="Colapsar barra lateral"
+        >
+            <i class="pi pi-angle-double-left text-sm"></i>
+        </button>
+    </div>
+
+    <!-- ============ Navegación ============ -->
+    <div class="sidebar-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-3">
+        <app-menu-list></app-menu-list>
+    </div>
+
+    <!-- ============ Pie ============ -->
+    <div class="shrink-0 border-t border-slate-100 px-1 py-2.5 dark:border-slate-800">
+        <!-- Colapsado: el control para volver a expandir (el header no tiene espacio) -->
+        <button
+            *ngIf="collapsed()"
+            type="button"
+            class="flex w-full items-center justify-center gap-2 rounded-xl py-2 text-xs font-semibold text-slate-500 transition-colors hover:bg-slate-100 hover:text-indigo-600 dark:hover:bg-slate-800 dark:hover:text-indigo-400"
+            (click)="onToggle()"
+            title="Expandir barra lateral"
+            aria-label="Expandir barra lateral"
+        >
+            <i class="pi pi-angle-double-right shrink-0 text-xs"></i>
+            <span class="w-0 overflow-hidden whitespace-nowrap opacity-0">Expandir</span>
+        </button>
+
+        <p
+            *ngIf="!collapsed()"
+            class="m-0 truncate overflow-hidden whitespace-nowrap px-2 text-[0.7rem] text-slate-400"
+            title="Lealtix · Sistema POS"
+        >
+            Lealtix · Sistema POS
+        </p>
+    </div>
+</aside>

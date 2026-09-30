@@ -1,0 +1,390 @@
+.caja-page {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  padding: 1rem 1.25rem 2rem;
+  background: #f1f5f9;
+}
+
+/* ============ ENCABEZADO ============ */
+.caja-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  border-radius: 16px;
+  padding: 1.1rem 1.4rem;
+  color: white;
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.15);
+}
+
+.caja-header-icon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.caja-header-txt {
+  min-width: 0;
+
+  h2 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  p {
+    margin: 0.15rem 0 0;
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.75);
+  }
+}
+
+.caja-header-turno {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-left: auto;
+  padding: 0.4rem 0.85rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.caja-turno-label {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.caja-turno-user {
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.caja-header-stats {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.caja-hstat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.caja-hstat-label {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.caja-hstat-value {
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+/* ============ CATEGORÍAS (NIVEL 1) ============ */
+.caja-ventanas {
+  display: inline-flex;
+  gap: 0.3rem;
+  padding: 0.3rem;
+  margin: 0.9rem 0 0.75rem;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  .caja-ventana {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.15rem;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: #4f46e5;
+      background: #f5f3ff;
+    }
+
+    &.active {
+      color: #ffffff;
+      background: #7c3aed;
+      box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+    }
+
+    .caja-ventana-badge {
+      background: #ede9fe;
+      color: #6d28d9;
+      font-size: 0.7rem;
+      min-width: 1.25rem;
+      text-align: center;
+      padding: 1px 6px;
+      border-radius: 999px;
+      font-weight: 800;
+    }
+
+    &.active .caja-ventana-badge {
+      background: rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+    }
+  }
+}
+
+/* ============ SUB-VISTA / FILTROS (NIVEL 2) ============ */
+.caja-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  .caja-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.9rem;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #64748b;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: #4f46e5;
+      background: #f5f3ff;
+    }
+
+    &.active {
+      color: #6d28d9;
+      background: #f5f3ff;
+      border-color: #ddd6fe;
+    }
+
+    .caja-tab-badge {
+      background: #e2e8f0;
+      color: #475569;
+      font-size: 0.7rem;
+      padding: 1px 7px;
+      border-radius: 999px;
+      font-weight: 800;
+    }
+
+    &.active .caja-tab-badge {
+      background: #7c3aed;
+      color: #ffffff;
+    }
+  }
+
+  .caja-tab-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #64748b;
+  }
+}
+
+/* ============ UTILIDADES ============ */
+.caja-search {
+  width: 100%;
+  max-width: 18rem;
+  font-size: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &:focus {
+    border-color: #a78bfa;
+    box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.2);
+  }
+
+  &::placeholder {
+    color: #94a3b8;
+  }
+}
+
+.btn-refresh {
+  width: 2.1rem;
+  height: 2.1rem;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover:not(:disabled) {
+    color: #7c3aed;
+    border-color: #ddd6fe;
+    background: #faf5ff;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.caja-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 3rem 1rem;
+  text-align: center;
+  color: #94a3b8;
+
+  i {
+    font-size: 2rem;
+    opacity: 0.6;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+}
+
+.caja-empty--compact {
+  padding: 1.5rem 1rem;
+}
+
+.caja-empty--tight {
+  padding: 2rem 1rem;
+}
+
+.caja-search--auto {
+  width: auto;
+  max-width: none;
+}
+
+.ticket-thermal-preview {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .ticket-thermal-preview, .ticket-thermal-preview * {
+    visibility: visible;
+  }
+  .ticket-thermal-preview {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    margin: 0;
+    padding: 10px;
+    border: none !important;
+  }
+}
+
+/* ============ GRÁFICA MÉTODOS DE PAGO ============ */
+.chart-wrapper {
+  min-height: 180px;
+}
+
+.chart-canvas-box {
+  width: 170px;
+  height: 170px;
+  min-width: 170px;
+  min-height: 170px;
+  max-width: 170px;
+  max-height: 170px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+
+  p-chart,
+  ::ng-deep .p-chart {
+    width: 170px !important;
+    height: 170px !important;
+    max-width: 170px !important;
+    max-height: 170px !important;
+    display: block;
+    position: relative;
+  }
+
+  ::ng-deep canvas {
+    max-width: 170px !important;
+    max-height: 170px !important;
+    width: 170px !important;
+    height: 170px !important;
+    display: block;
+  }
+}
+
+.chart-center-badge {
+  pointer-events: none;
+  z-index: 2;
+}
+
+.chart-legend {
+  max-height: 180px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+

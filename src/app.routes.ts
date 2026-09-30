@@ -47,7 +47,21 @@ export const appRoutes: Routes = [
                     { path: 'bodega', loadComponent: () => import('@/pages/bodega/bodega.component').then(m => m.BodegaComponent), title: 'Bodega', canActivate: [PermissionGuard], data: { permission: 'view_products' } },
                     { path: 'reportes/transferencias', loadComponent: () => import('@/pages/reportes/transferencias-report.component').then(m => m.TransferenciasReportComponent), title: 'Reportes - Transferencias de Bodega', canActivate: [PermissionGuard], data: { permission: 'view_products' } },
                     { path: 'reportes/mermas', loadComponent: () => import('@/pages/reportes/mermas-report.component').then(m => m.MermasReportComponent), title: 'Reportes - Mermas', canActivate: [PermissionGuard], data: { permission: 'manage_mermas' } },
-                    { path: 'reportes/ventas', loadComponent: () => import('@/pages/comandix/comandix.component').then(m => m.ComandixComponent), title: 'Reportes - Ventas y Comandas', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'CAJA', 'MESERO'], permission: 'view_dashboard', initialView: 'report' } },
+                    { path: 'reportes/ventas', loadComponent: () => import('@/pages/caja/caja.component').then(m => m.CajaComponent), title: 'Reportes - Ventas y Comandas', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'CAJA', 'MESERO'], permission: 'view_dashboard', initialView: 'reporte' } },
+                    // Modulo maestro de Reportes y Analitica (12 reportes en 4 pilares).
+                    // Ruta propia para no chocar con las vistas de reportes del POS.
+                    {
+                        path: 'reportes/analitica',
+                        loadComponent: () => import('@/pages/reportes/reportes-shell.component').then(m => m.ReportesShellComponent),
+                        title: 'Reportes y Analitica',
+                        canActivate: [RoleGuard, PermissionGuard],
+                        data: { roles: ['ADMIN', 'CAJA'], permission: 'view_dashboard' },
+                        children: [
+                            { path: '', pathMatch: 'full', redirectTo: 'ventas' },
+                            { path: 'ventas', loadComponent: () => import('@/pages/reportes/ventas-tendencias-report.component').then(m => m.VentasTendenciasReportComponent), title: '1.1 Dashboard de Ventas y Tendencias' },
+                            { path: 'corte-caja', loadComponent: () => import('@/pages/reportes/corte-caja-report.component').then(m => m.CorteCajaReportComponent), title: '1.2 Corte de Caja y Conciliacion' },
+                        ]
+                    },
                     { path: 'recetas', loadComponent: () => import('@/pages/recetas/recetas.component').then(m => m.RecetasComponent), title: 'Recetas', canActivate: [PermissionGuard], data: { permission: 'manage_recetas' } },
                     { path: 'mermas', loadComponent: () => import('@/pages/mermas/mermas.component').then(m => m.MermasComponent), title: 'Mermas', canActivate: [PermissionGuard], data: { permission: 'manage_mermas' } },
                     { path: 'horarios', loadComponent: () => import('@/pages/horarios/horarios.component').then(m => m.HorariosComponent), title: 'Horarios', canActivate: [PermissionGuard], data: { permission: 'manage_horarios' } },
@@ -57,6 +71,7 @@ export const appRoutes: Routes = [
                     // Admin Roles & Permissions
                     { path: 'admin/roles-permissions', loadComponent: () => import('@/pages/admin-roles-permissions/admin-roles-permissions.component').then(m => m.AdminRolesPermissionsComponent), title: 'Administración de Roles y Permisos', canActivate: [PermissionGuard], data: { permission: 'manage_roles' } },
                     { path: 'comandix', loadComponent: () => import('@/pages/comandix/comandix.component').then(m => m.ComandixComponent), title: 'Comandix - Comanda Inteligente', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'MESERO'], permission: 'create_order' } },
+                    { path: 'caja', loadComponent: () => import('@/pages/caja/caja.component').then(m => m.CajaComponent), title: 'Caja y Cortes', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'CAJA'], permission: 'process_payment' } },
                     { path: 'facturacion', loadComponent: () => import('@/pages/facturacion/facturacion.component').then(m => m.FacturacionComponent), title: 'Facturación' },
                     { path: 'cocina-dashboard', loadComponent: () => import('@/pages/kitchen/kitchen-dashboard.component').then(m => m.KitchenDashboardComponent), title: 'Kitchndix - Dashboard Cocina', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'COCINA'], permission: 'dashboard_kitchen' } },
                     { path: 'cocina', loadComponent: () => import('@/pages/kitchen/kitchen.component').then(m => m.KitchenComponent), title: 'Kitchndix - Cocina', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'COCINA'], permission: 'view_kitchen_orders' } },

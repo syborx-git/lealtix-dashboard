@@ -38,6 +38,12 @@
                 { "type": "initial", "maximumWarning": "2mb", "maximumError": "5mb" },
                 { "type": "anyComponentStyle", "maximumWarning": "40kb", "maximumError": "65kb" }
               ],
+              "fileReplacements": [
+                {
+                  "replace": "src/app/pages/commons/environment.ts",
+                  "with": "src/app/pages/commons/environment.prod.ts"
+                }
+              ],
               "optimization": true,
               "outputHashing": "all",
               "extractLicenses": true,

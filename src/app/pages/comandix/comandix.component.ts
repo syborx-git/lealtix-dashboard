@@ -848,6 +848,46 @@ configEditingItem: CartItem | null = null;
         }
       });
 
+    // Escuchar cambios de estado de órdenes en tiempo real (Caja / Cocina)
+    this.orderSseService.orderStatusChanged$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (sseEvent) => {
+          if (!sseEvent.order || sseEvent.tenantId !== this.tenantId) {
+            return;
+          }
+
+          const orderId = sseEvent.order.id;
+          const normalizedState = this.normalizeOrderStatus(sseEvent.order.estado);
+          console.log('[Comandix] Actualización en tiempo real recibida para comanda:', orderId, normalizedState);
+
+          // 1. Actualizar el estado en pendingOrders
+          this.pendingOrders.update(orders =>
+            orders.map(o => o.id === orderId ? { ...o, estado: normalizedState } : o)
+          );
+
+          // 2. Si la orden fue PAGADA
+          if (normalizedState === 'PAGADA') {
+            const isEditingThis = this.editingPendingOrder()?.id === orderId;
+
+            if (isEditingThis) {
+              this.editingPendingOrder.set(null);
+              this.cart.set([]); // Bloquea y limpia el carrito inmediatamente
+
+              this.messageService.add({
+                severity: 'warn',
+                summary: 'Cuenta Pagada en Caja',
+                detail: 'La comanda de esta mesa fue liquidada por el cajero. Se ha bloqueado la adición de nuevos platillos.',
+                life: 6000
+              });
+            }
+          }
+        },
+        error: (error) => {
+          console.error('[Comandix] Error en SSE orderStatusChanged$:', error);
+        }
+      });
+
     // Escuchar cambios en el estado de la conexión SSE
     this.orderSseService.connectionStatus$
       .pipe(takeUntil(this.destroy$))
@@ -2005,6 +2045,22 @@ trackByProductId = (index: number, item: CartItem): string => {
     if (placeholder) placeholder.style.display = 'flex';
   }
 
+  /** URL de imagen de platillo: usa la del producto; si falta, ubica una referente en internet. */
+  platilloImage(item: CartItem): string | null {
+    const url = item.product?.imageUrl?.trim();
+    if (url) return url;
+    const seed = (item.product?.name || 'platillo').replace(/[\s']/g, '').toLowerCase();
+    return `https://loremflickr.com/320/240/food,dish?lock=${Math.abs(this.hashCode(seed))}`;
+  }
+
+  private hashCode(s: string): number {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) {
+      h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+    }
+    return h;
+  }
+
   // ==================== STOCK DEL CATÁLOGO (badge en tarjeta) ====================
   getProductStockInfo(product: Product): StockInfo | null {
     if (!product) return null;
@@ -2190,6 +2246,7 @@ trackByProductId = (index: number, item: CartItem): string => {
         return;
       }
 
+      const currentUser = this.authService.getCurrentUser();
       const orderRequest: TenantClientOrderCreateRequest = {
         customerId: this.selectedCliente?.id ?? null,
         tenantId: this.tenantId,
@@ -2200,7 +2257,10 @@ trackByProductId = (index: number, item: CartItem): string => {
         couponCode: this.codigoCupon.trim() || null,
         redeemedBy: this.selectedCliente?.id ?? null,
         redemptionChannel: 'COMANDIX',
-        source: 'POS'
+        source: 'POS',
+        mesaId: this.selectedMesa()?.id,
+        meseroId: currentUser?.id,
+        meseroEmail: currentUser?.email
       };
 
       const response = await firstValueFrom(this.orderService.createOrder(orderRequest));

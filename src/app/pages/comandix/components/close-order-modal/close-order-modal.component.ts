@@ -222,7 +222,8 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
     const payload: RecordPaymentRequest = {
       method,
       reference: method === 'CASH' ? null : referenceControlValue,
-      userEmail
+      userEmail,
+      propina: this.tipAmount > 0 ? this.tipAmount : undefined
     };
 
     try {

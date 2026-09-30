@@ -1,0 +1,314 @@
+// =============================================================================
+// CONTENEDOR MAESTRO DE REPORTES Y ANALITICA
+// Barra superior de filtros globales + navegacion de pilares + area de contenido
+// =============================================================================
+
+:host {
+  display: block;
+}
+
+.reportes-shell {
+  padding: 0.5rem;
+  min-height: 100%;
+}
+
+// ==================== ENCABEZADO ====================
+
+.shell-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.5rem 1.75rem;
+  border-radius: var(--lealtix-radius-lg) var(--lealtix-radius-lg) 0 0;
+  background: linear-gradient(135deg, var(--lealtix-primary-500) 0%, var(--lealtix-primary-600) 100%);
+  color: #fff;
+
+  &__titulo {
+    h2 {
+      margin: 0 0 0.35rem;
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.85rem;
+      opacity: 0.9;
+      max-width: 60ch;
+    }
+  }
+
+  &__estado {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+.periodo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+// ==================== BARRA SUPERIOR DE FILTROS ====================
+
+.barra-filtros {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.25rem;
+  background: #fff;
+  border: 1px solid var(--lealtix-slate-200);
+  border-top: none;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+
+  &__grupo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+
+    &--rango {
+      min-width: 20rem;
+      flex: 1 1 20rem;
+      max-width: 26rem;
+    }
+  }
+
+  &__label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--lealtix-slate-500);
+  }
+
+  &__separador {
+    align-self: stretch;
+    width: 1px;
+    background: var(--lealtix-slate-200);
+    margin: 0.25rem 0;
+  }
+
+  &__acciones {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+  }
+}
+
+.preset-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.preset-btn {
+  white-space: nowrap;
+
+  &--activo {
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35);
+  }
+}
+
+.btn-exportar {
+  white-space: nowrap;
+}
+
+.granularidad-select {
+  min-width: 11rem;
+}
+
+// ==================== AVISO DE COMPARATIVA ====================
+
+.comparativa-aviso {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1.25rem;
+  font-size: 0.8rem;
+  color: var(--lealtix-slate-600);
+  background: #f8fafc;
+  border: 1px solid var(--lealtix-slate-200);
+  border-top: none;
+
+  i {
+    color: var(--lealtix-primary-500);
+  }
+}
+
+// ==================== CUERPO ====================
+
+.shell-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 0.25rem 2rem;
+}
+
+.pilar-nav {
+  flex: 0 0 17.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  &__grupo {
+    background: #fff;
+    border: 1px solid var(--lealtix-slate-200);
+    border-radius: var(--lealtix-radius-md);
+    padding: 0.75rem;
+  }
+
+  &__titulo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--lealtix-slate-500);
+    padding: 0 0.25rem 0.5rem;
+    border-bottom: 1px dashed var(--lealtix-slate-200);
+    margin-bottom: 0.5rem;
+  }
+
+  &__item {
+    display: block;
+    padding: 0.55rem 0.6rem;
+    border-radius: var(--lealtix-radius-sm, 0.5rem);
+    text-decoration: none;
+    color: inherit;
+    margin-bottom: 0.25rem;
+    border-left: 3px solid transparent;
+    transition: background 0.15s ease, border-color 0.15s ease;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    &--activo,
+    &.is-selected {
+      background: rgba(124, 58, 237, 0.08);
+      border-left-color: var(--lealtix-primary-500);
+    }
+
+    &--bloqueado {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+  }
+
+  &__nombre {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  &__desc {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--lealtix-slate-500);
+    line-height: 1.3;
+    margin-top: 0.15rem;
+  }
+
+  &__badge {
+    display: inline-block;
+    margin-left: 0.35rem;
+    padding: 0.05rem 0.4rem;
+    border-radius: 9999px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background: var(--lealtix-slate-200);
+    color: var(--lealtix-slate-600);
+  }
+}
+
+.shell-contenido {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+// ==================== RESPONSIVO ====================
+
+@media (max-width: 1024px) {
+  .shell-body {
+    flex-direction: column;
+  }
+
+  .pilar-nav {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+}
+
+@media (max-width: 720px) {
+  .barra-filtros {
+    align-items: stretch;
+    flex-direction: column;
+
+    &__acciones {
+      margin-left: 0;
+    }
+
+    &__separador {
+      display: none;
+    }
+
+    &__grupo--rango {
+      max-width: none;
+    }
+  }
+}
+
+// ==================== MODO OSCURO ====================
+
+:host-context(.app-dark) {
+  .shell-header {
+    color: #fff;
+  }
+
+  .barra-filtros,
+  .comparativa-aviso,
+  .pilar-nav__grupo {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .comparativa-aviso,
+  .barra-filtros__label,
+  .pilar-nav__titulo,
+  .pilar-nav__desc {
+    color: #94a3b8;
+  }
+
+  .pilar-nav__item--activo,
+  .pilar-nav__item.is-selected {
+    background: rgba(167, 139, 250, 0.14);
+  }
+
+  .pilar-nav__badge {
+    background: #334155;
+    color: #cbd5e1;
+  }
+}

@@ -7,9 +7,9 @@
 // ==============================================================================
 
 export const environment = {
-  production: true,
-  /** URL Base del Backend en Producción (HTTPS) */
-  apiUrl: 'https://api.lealtix.com.mx/api',
-  landingPageBaseUrl: 'https://lealtix.com.mx/landing-page',
+  production: false,
+  /** URL Base del Backend local (Spring Boot / API Service) */
+  apiUrl: 'http://localhost:8080/api',
+  landingPageBaseUrl: 'http://localhost:4200/landing-page',
   kitchenMockEnabled: false
 };

@@ -1,0 +1,146 @@
+<p-toast position="bottom-right" />
+
+<div class="reportes-shell">
+  <!-- ============ ENCABEZADO ============ -->
+  <header class="shell-header">
+    <div class="shell-header__titulo">
+      <h2>Reportes y Analitica</h2>
+      <p>
+        {{ totalReportes }} reportes en 4 pilares, todos con comparativa automatica contra el periodo
+        anterior equivalente y exportacion a Excel.
+      </p>
+    </div>
+    <div class="shell-header__estado">
+      <span class="periodo-chip">
+        <i class="pi pi-calendar"></i>
+        {{ filtros.etiquetaPeriodo() }}
+      </span>
+    </div>
+  </header>
+
+  <!-- ============ BARRA SUPERIOR DE FILTROS GLOBALES ============ -->
+  <section class="barra-filtros" aria-label="Filtros globales del reporte">
+    <!-- Filtros rapidos -->
+    <div class="barra-filtros__grupo">
+      <span class="barra-filtros__label">Filtros rapidos</span>
+      <div class="preset-group" role="group" aria-label="Periodos predefinidos">
+        @for (opcion of filtros.presets; track opcion.valor) {
+          <button
+            pButton
+            type="button"
+            class="preset-btn"
+            [label]="opcion.etiqueta"
+            [outlined]="presetActual !== opcion.valor"
+            [severity]="presetActual === opcion.valor ? undefined : 'secondary'"
+            [class.preset-btn--activo]="presetActual === opcion.valor"
+            (click)="aplicarPreset(opcion.valor)"
+          ></button>
+        }
+      </div>
+    </div>
+
+    <div class="barra-filtros__separador" aria-hidden="true"></div>
+
+    <!-- Rango personalizado -->
+    <div class="barra-filtros__grupo barra-filtros__grupo--rango">
+      <span class="barra-filtros__label">Rango personalizado</span>
+      <p-datepicker
+        selectionMode="range"
+        [ngModel]="rangoSeleccionado"
+        (ngModelChange)="aplicarRango($event)"
+        [readonlyInput]="true"
+        [showIcon]="true"
+        [showButtonBar]="true"
+        dateFormat="dd/mm/yy"
+        [placeholder]="'Selecciona inicio y fin'"
+        [appendTo]="'body'"
+        styleClass="w-full"
+        inputStyleClass="w-full"
+      />
+      @if (filtros.esPersonalizado() && rangoSeleccionado?.length === 2) {
+        <button
+          pButton
+          type="button"
+          icon="pi pi-times"
+          severity="secondary"
+          [text]="true"
+          size="small"
+          pTooltip="Quitar el rango personalizado"
+          (click)="limpiarRango()"
+        ></button>
+      }
+    </div>
+
+    <div class="barra-filtros__separador" aria-hidden="true"></div>
+
+    <!-- Granularidad de la serie -->
+    <div class="barra-filtros__grupo">
+      <span class="barra-filtros__label">Agrupar serie por</span>
+      <p-select
+        [options]="granularidades"
+        optionLabel="etiqueta"
+        optionValue="valor"
+        [ngModel]="granularidadActual"
+        (ngModelChange)="cambiarGranularidad($event)"
+        styleClass="granularidad-select"
+        appendTo="body"
+      />
+    </div>
+
+    <div class="barra-filtros__acciones">
+      <button
+        pButton
+        type="button"
+        icon="pi pi-file-excel"
+        label="Exportar a Excel"
+        class="btn-exportar"
+        pTooltip="Genera el .xlsx con el mismo rango y comparativa que ves en pantalla"
+        (click)="exportar()"
+      ></button>
+    </div>
+  </section>
+
+  <!-- Aviso del periodo comparado -->
+  <div class="comparativa-aviso">
+    <i class="pi pi-info-circle"></i>
+    <span>
+      Los porcentajes se calculan en el servidor contra
+      <strong>{{ filtros.preset() === 'PERSONALIZADO' ? 'el periodo anterior de igual longitud' : 'el periodo anterior equivalente' }}</strong>.
+      Ajusta el rango y todos los KPIs y graficas se recalculan.
+    </span>
+  </div>
+
+  <!-- ============ CUERPO: NAV DE PILARES + CONTENIDO ============ -->
+  <div class="shell-body">
+    <nav class="pilar-nav" aria-label="Pilares de reportes">
+      @for (pilar of pilares; track pilar.key) {
+        <div class="pilar-nav__grupo">
+          <div class="pilar-nav__titulo">
+            <i class="pi" [ngClass]="pilar.icono" [style.color]="pilar.color"></i>
+            <span>{{ pilar.nombre }}</span>
+          </div>
+          @for (reporte of pilar.reportes; track reporte.key) {
+            @if (reporte.disponible && reporte.ruta) {
+              <a class="pilar-nav__item" [routerLink]="reporte.ruta" routerLinkActive="is-selected" [routerLinkActiveOptions]="{ exact: true }">
+                <span class="pilar-nav__nombre">{{ reporte.nombre }}</span>
+                <span class="pilar-nav__desc">{{ reporte.descripcion }}</span>
+              </a>
+            } @else {
+              <div class="pilar-nav__item pilar-nav__item--bloqueado" [pTooltip]="reporte.descripcion">
+                <span class="pilar-nav__nombre">
+                  {{ reporte.nombre }}
+                  <span class="pilar-nav__badge">Proximamente</span>
+                </span>
+                <span class="pilar-nav__desc">{{ reporte.descripcion }}</span>
+              </div>
+            }
+          }
+        </div>
+      }
+    </nav>
+
+    <main class="shell-contenido">
+      <router-outlet />
+    </main>
+  </div>
+</div>
