@@ -59,6 +59,12 @@
                         <div class="item-header">
                             <span class="item-quantity">{{ item.quantity }}x</span>
                             <span class="item-name">{{ item.productName }}</span>
+                            <span *ngIf="item.comments?.includes('EN ESPERA')" class="kitchen-tiempo-badge-espera">
+                                ⏱️ 2DO TIEMPO (EN ESPERA - NO PREPARAR)
+                            </span>
+                            <span *ngIf="item.comments?.includes('MARCHADO')" class="kitchen-tiempo-badge-marchado">
+                                🔥 2DO TIEMPO (¡MARCHANDO AHORA!)
+                            </span>
                             <label *ngIf="order.status === 'EN_PREPARACION'" class="item-check-control" (click)="$event.stopPropagation()">
                                 <input
                                     type="checkbox"
@@ -215,8 +221,16 @@
                     <div class="order-customer">{{ order.customerName || 'Cliente General' }}</div>
 
                     <ul class="order-items">
-                        <li *ngFor="let item of order.items">
-                            <span class="item-main">{{ item.quantity }}x {{ item.productName }}</span>
+                        <li *ngFor="let item of order.items" [class.item-tiempo-espera]="item.comments?.includes('EN ESPERA')">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="item-main">{{ item.quantity }}x {{ item.productName }}</span>
+                                <span *ngIf="item.comments?.includes('EN ESPERA')" class="kitchen-card-badge-espera">
+                                    ⏱️ 2do T. En Espera
+                                </span>
+                                <span *ngIf="item.comments?.includes('MARCHADO')" class="kitchen-card-badge-marchado">
+                                    🔥 2do T. Marchado
+                                </span>
+                            </div>
                             <span *ngIf="item.comments" class="item-comments">{{ item.comments }}</span>
                         </li>
                     </ul>
@@ -257,8 +271,16 @@
                     <div class="order-customer">{{ order.customerName || 'Cliente General' }}</div>
 
                     <ul class="order-items">
-                        <li *ngFor="let item of order.items">
-                            <span class="item-main">{{ item.quantity }}x {{ item.productName }}</span>
+                        <li *ngFor="let item of order.items" [class.item-tiempo-espera]="item.comments?.includes('EN ESPERA')">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="item-main">{{ item.quantity }}x {{ item.productName }}</span>
+                                <span *ngIf="item.comments?.includes('EN ESPERA')" class="kitchen-card-badge-espera">
+                                    ⏱️ 2do T. En Espera
+                                </span>
+                                <span *ngIf="item.comments?.includes('MARCHADO')" class="kitchen-card-badge-marchado">
+                                    🔥 2do T. Marchado
+                                </span>
+                            </div>
                             <span *ngIf="item.comments" class="item-comments">{{ item.comments }}</span>
                         </li>
                     </ul>

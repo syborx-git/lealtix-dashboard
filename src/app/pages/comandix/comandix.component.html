@@ -318,6 +318,35 @@
               <strong class="text-purple-700 font-bold">{{ asientoActivo().alias }}</strong>
               <span class="text-slate-400">(Asiento #{{ asientoActivo().numero }})</span>
             </div>
+
+            <!-- Selector de Tiempo (1er Tiempo vs 2do Tiempo) -->
+            <div class="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200">
+              <button
+                type="button"
+                (click)="setTiempoActivo(1)"
+                [ngClass]="tiempoActivo() === 1
+                  ? 'bg-emerald-600 text-white font-bold shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 font-medium'"
+                class="px-2.5 py-1 text-xs rounded-lg transition-all flex items-center gap-1.5 cursor-pointer border-0"
+                title="Los platillos seleccionados saldrán a preparación inmediata"
+              >
+                <i class="pi pi-bolt text-[11px]"></i>
+                <span>1er Tiempo</span>
+              </button>
+              <button
+                type="button"
+                (click)="setTiempoActivo(2)"
+                [ngClass]="tiempoActivo() === 2
+                  ? 'bg-amber-500 text-white font-bold shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 font-medium'"
+                class="px-2.5 py-1 text-xs rounded-lg transition-all flex items-center gap-1.5 cursor-pointer border-0"
+                title="Los platillos seleccionados esperarán a que el mesero dé la orden de marchar"
+              >
+                <i class="pi pi-clock text-[11px]"></i>
+                <span>2do Tiempo ⏱️</span>
+              </button>
+            </div>
+
             <div class="font-semibold text-slate-500">
               <span *ngIf="countItemsPorAsiento(asientoActivoId()) === 0">Sin platillos todavía</span>
               <span *ngIf="countItemsPorAsiento(asientoActivoId()) > 0" class="text-purple-700 font-bold">
@@ -426,14 +455,25 @@
               </h4>
               <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-50">
                 <span class="text-base font-extrabold text-slate-900">${{ product.price | number:'1.2-2' }}</span>
-                <button
-                  type="button"
-                  class="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 group-hover:bg-purple-600 group-hover:text-white flex items-center justify-center transition-colors shadow-xs cursor-pointer"
-                  [attr.aria-label]="'Agregar ' + product.name"
-                  (click)="$event.stopPropagation(); addToCart(product)"
-                >
-                  <i class="pi pi-plus text-xs"></i>
-                </button>
+                <div class="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    class="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 hover:bg-purple-100 hover:text-purple-700 flex items-center justify-center transition-colors shadow-xs cursor-pointer"
+                    title="Ver detalles del platillo"
+                    [attr.aria-label]="'Ver detalles de ' + product.name"
+                    (click)="$event.stopPropagation(); openProductDetail(product)"
+                  >
+                    <i class="pi pi-eye text-xs"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white flex items-center justify-center transition-colors shadow-xs cursor-pointer"
+                    [attr.aria-label]="'Agregar ' + product.name"
+                    (click)="$event.stopPropagation(); addToCart(product)"
+                  >
+                    <i class="pi pi-plus text-xs"></i>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -531,6 +571,26 @@
           <span class="text-sm" style="color: #7a5c51;">
             {{ order.items.length }} producto{{ order.items.length === 1 ? '' : 's' }}
           </span>
+        </div>
+
+        <!-- Indicador de 2do Tiempo en la card -->
+        <div *ngIf="hasSegundoTiempo(order)" class="my-1.5 flex items-center justify-between flex-wrap gap-1">
+          <span *ngIf="hasSegundoTiempoPendiente(order)" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1">
+            <i class="pi pi-clock text-[10px]"></i> 2do Tiempo en espera
+          </span>
+          <span *ngIf="hasSegundoTiempoMarchado(order)" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+            <i class="pi pi-check-circle text-[10px]"></i> 2do Tiempo Marchado 🔥
+          </span>
+          <button
+            *ngIf="hasSegundoTiempoPendiente(order)"
+            type="button"
+            (click)="$event.stopPropagation(); marcharSegundoTiempo(order)"
+            [disabled]="processingOrderAction()"
+            class="cursor-pointer text-[11px] font-bold px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white shadow-xs flex items-center gap-1 transition-all border-0"
+            title="Avisar a cocina que comience a preparar el segundo tiempo"
+          >
+            <i class="pi pi-play text-[10px]"></i> Marchar 2do T.
+          </button>
         </div>
 
         <!-- Avisos de stock: últimas piezas / agotados -->
@@ -968,13 +1028,28 @@
         <!-- Lista de productos con scroll independiente -->
         <div class="flex-1 overflow-y-auto p-3.5 space-y-2.5 max-h-[calc(100vh-390px)]">
           <div *ngFor="let item of cart(); let i = index; trackBy: trackByProductId"
-               class="bg-slate-50/70 hover:bg-purple-50/30 p-3 rounded-xl border border-slate-100 transition-colors">
+               class="p-3 rounded-xl border transition-colors"
+               [ngClass]="item.tiempo === 2 ? 'bg-amber-50/60 hover:bg-amber-100/40 border-amber-200/90 shadow-2xs' : 'bg-slate-50/70 hover:bg-purple-50/30 border-slate-100'">
             
-            <!-- Fila superior: Tag Comensal + Botones acción -->
+            <!-- Fila superior: Tag Comensal + Tag Tiempo + Botones acción -->
             <div class="flex items-center justify-between gap-2 mb-1.5">
-              <span class="bg-purple-100/80 text-purple-800 text-[11px] font-bold px-2 py-0.5 rounded-md inline-flex items-center gap-1">
-                <i class="pi pi-user text-[10px]"></i>{{ item.asientoAlias || 'Persona 1' }}
-              </span>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="bg-purple-100/80 text-purple-800 text-[11px] font-bold px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                  <i class="pi pi-user text-[10px]"></i>{{ item.asientoAlias || 'Persona 1' }}
+                </span>
+                <button
+                  type="button"
+                  (click)="toggleItemTiempo(item)"
+                  [title]="item.tiempo === 2 ? 'Cambiar a 1er Tiempo (preparación inmediata)' : 'Cambiar a 2do Tiempo (en espera de marchar)'"
+                  class="cursor-pointer text-[10px] font-bold px-2 py-0.5 rounded-md inline-flex items-center gap-1 transition-all border"
+                  [ngClass]="item.tiempo === 2
+                    ? 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200'
+                    : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'"
+                >
+                  <i class="pi" [ngClass]="item.tiempo === 2 ? 'pi-clock' : 'pi-bolt'"></i>
+                  <span>{{ item.tiempo === 2 ? '2do Tiempo ⏱️' : '1er Tiempo' }}</span>
+                </button>
+              </div>
               <div class="flex items-center gap-1">
                 <p-button
                   *ngIf="(item.product.recipes?.length || 0) + (item.product.additionals?.length || 0) > 0"
@@ -996,6 +1071,12 @@
                   (onClick)="removeFromCart(item)"
                 ></p-button>
               </div>
+            </div>
+
+            <!-- Aviso explicativo para el mesero si es 2do tiempo -->
+            <div *ngIf="item.tiempo === 2" class="mb-1.5 px-2 py-1 bg-amber-100/70 border border-amber-200 rounded-lg text-[10px] text-amber-900 flex items-center gap-1.5 font-medium">
+              <i class="pi pi-clock text-amber-600 text-[10px]"></i>
+              <span>En espera · Marcharás este platillo cuando los comensales terminen el 1er tiempo.</span>
             </div>
 
             <!-- Nombre de platillo y precio unitario -->
@@ -1135,7 +1216,7 @@
     [header]="'Detalle de Orden'"
     [modal]="true"
     [closable]="!processingOrderAction()"
-    [style]="{ width: '100%', 'max-width': '560px' }"
+    [style]="{ width: '100%', 'max-width': '640px' }"
     styleClass="order-detail-dialog"
     (onHide)="closeOrderDetail()"
   >
@@ -1195,6 +1276,11 @@
                   <span class="order-detail-item-name">{{ getProductLabel(item) }}</span>
                   <span *ngIf="item.asientoAlias" class="text-xs px-2 py-0 border-round bg-orange-100 text-orange-800 font-semibold">
                     👤 {{ item.asientoAlias }}
+                  </span>
+                  <span *ngIf="item.tiempo === 2"
+                        class="text-xs px-2 py-0.5 border-round font-semibold"
+                        [ngClass]="item.tiempoMarchado ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900 border border-amber-300'">
+                    {{ item.tiempoMarchado ? '🔥 2do Tiempo Marchado' : '⏱️ 2do Tiempo (En espera)' }}
                   </span>
                 </div>
                 <span class="order-detail-item-qty">x{{ item.cantidad }}</span>
@@ -1283,61 +1369,108 @@
     </ng-container>
 
       <!-- Footer con botones de acción -->
-    <ng-template #footer>
+    <ng-template pTemplate="footer">
       <ng-container *ngIf="selectedOrder() as order">
-        <div class="order-detail-actions">
-          <p-button
-            *ngIf="canEditOrder(order)"
-            icon="pi pi-pencil"
-            label="Editar en Comanda"
-            severity="secondary"
-            [outlined]="true"
-            [disabled]="processingOrderAction()"
-            styleClass="order-action-btn"
-            (onClick)="editPendingOrderInPos(order)"
-          ></p-button>
+        <div class="order-detail-footer-box w-full p-4 md:p-5 border-t border-slate-100 bg-slate-50/60 rounded-b-2xl">
+          
+          <!-- Banner informativo cuando el segundo tiempo ya fue marchado -->
+          <div *ngIf="hasSegundoTiempoMarchado(order)" class="mb-3 flex items-center justify-center">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+              <i class="pi pi-check-circle text-xs"></i> 2do Tiempo Marchado a Cocina 🔥
+            </span>
+          </div>
 
-          <p-button
-            *ngIf="canCloseOrder(order)"
-            icon="pi pi-wallet"
-            label="Cerrar Comanda"
-            severity="help"
-            [disabled]="processingOrderAction()"
-            styleClass="order-action-btn order-purple-btn"
-            (onClick)="openCloseOrderModal(order)"
-          ></p-button>
+          <!-- Contenedor con distribución inteligente y wrap para evitar desbordes -->
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 flex-wrap">
+            
+            <!-- GRUPO 1: ACCIONES SECUNDARIAS / DESTRUCTIVAS (IZQUIERDA) -->
+            <div class="flex items-center gap-2 flex-wrap">
+              <!-- Rechazar (Rojo contorno - solo si PENDIENTE) -->
+              <button
+                *ngIf="order.estado === 'PENDIENTE'"
+                type="button"
+                (click)="rechazarOrden(order)"
+                [disabled]="processingOrderAction()"
+                class="min-h-[44px] px-3.5 py-2.5 rounded-xl border border-rose-300 text-rose-600 bg-transparent hover:bg-rose-50 hover:border-rose-400 font-bold text-xs inline-flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                title="Rechazar esta comanda"
+              >
+                <i *ngIf="processingOrderAction()" class="pi pi-spin pi-spinner text-xs"></i>
+                <i *ngIf="!processingOrderAction()" class="pi pi-times-circle text-xs"></i>
+                <span>Rechazar</span>
+              </button>
 
-          <p-button
-            *ngIf="canRegistrarMerma"
-            icon="pi pi-box"
-            label="Registrar Merma"
-            severity="warn"
-            [outlined]="true"
-            [disabled]="processingOrderAction() || order.estado === 'PENDIENTE'"
-            styleClass="order-action-btn order-purple-btn"
-            (onClick)="openMermaModal(order)"
-          ></p-button>
+              <!-- Editar en Comanda (Ghost / Contorno Púrpura) -->
+              <button
+                *ngIf="canEditOrder(order)"
+                type="button"
+                (click)="editPendingOrderInPos(order)"
+                [disabled]="processingOrderAction()"
+                class="min-h-[44px] px-3.5 py-2.5 rounded-xl border border-purple-300 text-purple-700 bg-transparent hover:bg-purple-50 hover:border-purple-400 font-bold text-xs inline-flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                title="Editar platillos en comanda"
+              >
+                <i class="pi pi-pencil text-xs"></i>
+                <span>Editar en Comanda</span>
+              </button>
 
-          <p-button
-            icon="pi pi-times-circle"
-            label="Rechazar"
-            severity="danger"
-            [loading]="processingOrderAction()"
-            [disabled]="processingOrderAction()"
-            styleClass="order-action-btn order-reject-btn"
-            (onClick)="rechazarOrden(order)"
-            *ngIf="order.estado === 'PENDIENTE'"
-          ></p-button>
-          <p-button
-            icon="pi pi-check-circle"
-            label="Confirmar Pedido"
-            severity="success"
-            [loading]="processingOrderAction()"
-            [disabled]="processingOrderAction()"
-            styleClass="order-action-btn order-confirm-btn"
-            (onClick)="confirmarOrden(order)"
-            *ngIf="order.estado === 'PENDIENTE'"
-          ></p-button>
+              <!-- Registrar Merma (Ghost / Contorno Púrpura) -->
+              <button
+                *ngIf="canRegistrarMerma && order.estado !== 'PENDIENTE'"
+                type="button"
+                (click)="openMermaModal(order)"
+                [disabled]="processingOrderAction()"
+                class="min-h-[44px] px-3.5 py-2.5 rounded-xl border border-purple-300 text-purple-700 bg-transparent hover:bg-purple-50 hover:border-purple-400 font-bold text-xs inline-flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                title="Registrar merma o desperdicio"
+              >
+                <i class="pi pi-box text-xs"></i>
+                <span>Registrar Merma</span>
+              </button>
+            </div>
+
+            <!-- GRUPO 2: ACCIONES PRINCIPALES (DERECHA / DESTACADAS) -->
+            <div class="flex items-center justify-end gap-2 flex-wrap">
+              <!-- Marchar 2do Tiempo (Morado Sólido según especificación) -->
+              <button
+                *ngIf="hasSegundoTiempoPendiente(order)"
+                type="button"
+                (click)="marcharSegundoTiempo(order)"
+                [disabled]="processingOrderAction()"
+                class="min-h-[44px] px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold text-xs inline-flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap border-0"
+                title="Avisar a cocina que inicie la preparación del 2do tiempo"
+              >
+                <i *ngIf="processingOrderAction()" class="pi pi-spin pi-spinner text-xs"></i>
+                <i *ngIf="!processingOrderAction()" class="pi pi-play text-xs"></i>
+                <span>Marchar 2do T. 🔥</span>
+              </button>
+
+              <!-- Cerrar Comanda (Morado Sólido) -->
+              <button
+                *ngIf="canCloseOrder(order)"
+                type="button"
+                (click)="openCloseOrderModal(order)"
+                [disabled]="processingOrderAction()"
+                class="min-h-[44px] px-4 py-2.5 rounded-xl bg-purple-700 hover:bg-purple-800 active:bg-purple-900 text-white font-bold text-xs inline-flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap border-0"
+                title="Cerrar y cobrar comanda"
+              >
+                <i class="pi pi-wallet text-xs"></i>
+                <span>Cerrar Comanda</span>
+              </button>
+
+              <!-- Confirmar Pedido (Verde Sólido) -->
+              <button
+                *ngIf="order.estado === 'PENDIENTE'"
+                type="button"
+                (click)="confirmarOrden(order)"
+                [disabled]="processingOrderAction()"
+                class="min-h-[44px] px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs inline-flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap border-0"
+                title="Confirmar pedido"
+              >
+                <i *ngIf="processingOrderAction()" class="pi pi-spin pi-spinner text-xs"></i>
+                <i *ngIf="!processingOrderAction()" class="pi pi-check-circle text-xs"></i>
+                <span>Confirmar Pedido</span>
+              </button>
+            </div>
+
+          </div>
         </div>
       </ng-container>
     </ng-template>
@@ -1631,4 +1764,106 @@
       </div>
     </ng-template>
   </p-dialog>
+
+  <!-- Modal de Detalle del Platillo (Inspirado en Card View moderna) -->
+  <div
+    *ngIf="showProductDetailModal() && selectedProductDetail()"
+    class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300"
+    (click)="closeProductDetail()"
+  >
+    <div
+      class="relative w-full max-w-[380px] bg-white rounded-[32px] p-4 shadow-2xl border border-slate-100 dish-detail-card"
+      (click)="$event.stopPropagation()"
+    >
+      <!-- Imagen con badges y botón de cierre -->
+      <div class="relative aspect-[4/3] w-full rounded-[24px] overflow-hidden bg-slate-100 shadow-inner">
+        <img
+          *ngIf="selectedProductDetail()?.imageUrl && selectedProductDetail()!.imageUrl!.trim()"
+          [src]="selectedProductDetail()!.imageUrl"
+          [alt]="selectedProductDetail()!.name"
+          class="w-full h-full object-cover"
+          (error)="onImageError($event)"
+        />
+        <div
+          *ngIf="!selectedProductDetail()?.imageUrl || !selectedProductDetail()!.imageUrl!.trim()"
+          class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400 gap-2"
+        >
+          <i class="pi pi-image text-5xl text-slate-300"></i>
+          <span class="text-xs font-semibold text-slate-400">Sin imagen registrada</span>
+        </div>
+
+        <!-- Botón Cerrar flotante con blur -->
+        <button
+          type="button"
+          (click)="closeProductDetail()"
+          class="absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-md transition-all cursor-pointer shadow-md z-10"
+          aria-label="Cerrar modal"
+        >
+          <i class="pi pi-times text-xs"></i>
+        </button>
+
+        <!-- Badge de stock flotante superior izquierda -->
+        <span
+          *ngIf="getProductStockInfo(selectedProductDetail()!)"
+          class="absolute top-3.5 left-3.5 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-md shadow-xs"
+          [class.bg-emerald-500/90]="!isProductLowStock(selectedProductDetail()!) && !isProductCriticalStock(selectedProductDetail()!)"
+          [class.text-white]="true"
+          [class.bg-amber-500/90]="isProductLowStock(selectedProductDetail()!) && !isProductCriticalStock(selectedProductDetail()!)"
+          [class.bg-rose-500/90]="isProductCriticalStock(selectedProductDetail()!)"
+        >
+          {{ getProductStockText(selectedProductDetail()!) }}
+        </span>
+      </div>
+
+      <!-- Contenido / Información del platillo -->
+      <div class="px-2 pt-4 pb-2">
+        <!-- Fila de Título y Precio -->
+        <div class="flex items-start justify-between gap-3">
+          <h3 class="text-xl font-bold text-slate-900 leading-snug tracking-tight">
+            {{ selectedProductDetail()?.name }}
+          </h3>
+          <div class="shrink-0 bg-[#2b211e] text-white px-3.5 py-1.5 rounded-full text-base font-black tracking-wide shadow-xs">
+            ${{ selectedProductDetail()?.price | number:'1.2-2' }}
+          </div>
+        </div>
+
+        <!-- Descripción del platillo -->
+        <p class="text-slate-500 text-xs sm:text-sm leading-relaxed mt-2.5 min-h-[2.5rem]">
+          {{ selectedProductDetail()?.description || 'Platillo preparado con ingredientes frescos y recetas tradicionales de la más alta calidad.' }}
+        </p>
+
+        <!-- Badges / Etiquetas de información -->
+        <div class="flex flex-wrap items-center gap-2 mt-4 pt-1">
+          <span *ngIf="getProductCategoryName(selectedProductDetail())" class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-1.5">
+            <i class="pi pi-tag text-[10px] text-purple-600"></i>
+            {{ getProductCategoryName(selectedProductDetail()) }}
+          </span>
+          <span *ngIf="getProductStockInfo(selectedProductDetail()!)" class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-1.5">
+            <i class="pi pi-box text-[10px] text-slate-500"></i>
+            {{ getProductStockText(selectedProductDetail()!) }}
+          </span>
+          <span *ngIf="selectedProductDetail()?.recipes && selectedProductDetail()!.recipes!.length > 0" class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-1.5">
+            <i class="pi pi-sliders-h text-[10px] text-slate-500"></i>
+            {{ selectedProductDetail()!.recipes!.length }} ingredientes
+          </span>
+          <span *ngIf="selectedProductDetail()?.additionals && selectedProductDetail()!.additionals!.length > 0" class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-1.5">
+            <i class="pi pi-plus-circle text-[10px] text-purple-600"></i>
+            {{ selectedProductDetail()!.additionals!.length }} adicionales
+          </span>
+        </div>
+
+        <!-- Botón de acción Agregar a la comanda -->
+        <div class="mt-6 pt-1">
+          <button
+            type="button"
+            (click)="addProductFromDetail(selectedProductDetail()!)"
+            class="w-full bg-[#2b211e] hover:bg-[#1a1412] active:scale-[0.98] text-white font-bold py-3.5 px-6 rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-md hover:shadow-lg cursor-pointer text-sm sm:text-base"
+          >
+            <i class="pi pi-shopping-cart text-sm"></i>
+            <span>Agregar a la comanda</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

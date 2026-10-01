@@ -8,6 +8,7 @@ export interface Product {
   price: number;
   imageUrl: string | null;
   description: string;
+  categoryName?: string;
   /** Ingredientes de la receta (base / modificables) para mostrar opciones */
   recipes?: IngredientOption[];
   /** Adicionales disponibles (insumo + cantidad + precio extra) */

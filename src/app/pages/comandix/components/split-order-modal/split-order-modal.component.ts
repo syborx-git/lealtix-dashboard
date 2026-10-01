@@ -26,6 +26,8 @@ export interface SplitItem {
   asientoAlias?: string;
   excludedIngredientIds?: number[];
   additionalIngredientIds?: number[];
+  tiempo?: 1 | 2;
+  tiempoMarchado?: boolean;
   seleccionado: boolean;
 }
 
@@ -285,7 +287,9 @@ export class SplitOrderModalComponent implements OnChanges, OnDestroy {
         excludedIngredientIds: item.excludedIngredientIds,
         additionalIngredientIds: item.additionalIngredientIds,
         asientoId: item.asientoId,
-        asientoAlias: item.asientoAlias
+        asientoAlias: item.asientoAlias,
+        tiempo: item.tiempo,
+        tiempoMarchado: item.tiempoMarchado
       })));
 
     if (items.length === 0) {
@@ -460,9 +464,20 @@ export class SplitOrderModalComponent implements OnChanges, OnDestroy {
     this.items = this.order.items.map((item, idx) => {
       let alias = item.asientoAlias;
       let cleanComent = item.comentarios;
+      let isSegundoTiempo = item.tiempo === 2;
+      let isMarchado = item.tiempoMarchado ?? false;
+
+      if (cleanComent && cleanComent.includes('2DO TIEMPO')) {
+        isSegundoTiempo = true;
+        if (cleanComent.includes('MARCHADO')) {
+          isMarchado = true;
+        }
+        cleanComent = cleanComent.replace(/\[2DO TIEMPO[^\]]*\]\s*/g, '').trim();
+      }
+
       if (!alias && cleanComent && cleanComent.startsWith('[')) {
         const match = cleanComent.match(/^\[(.*?)\]\s*(.*)$/);
-        if (match) {
+        if (match && !match[1].includes('2DO TIEMPO')) {
           alias = match[1];
           cleanComent = match[2];
         }
@@ -475,6 +490,8 @@ export class SplitOrderModalComponent implements OnChanges, OnDestroy {
         comentarios: cleanComent,
         asientoId: item.asientoId ? String(item.asientoId) : `seat-${(idx % 2) + 1}`,
         asientoAlias: alias || `Persona ${(idx % 2) + 1}`,
+        tiempo: isSegundoTiempo ? 2 : 1,
+        tiempoMarchado: isMarchado,
         excludedIngredientIds: item.excludedIngredientIds,
         additionalIngredientIds: item.additionalIngredientIds,
         seleccionado: false

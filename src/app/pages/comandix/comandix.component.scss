@@ -1883,6 +1883,17 @@
 }
 
 // Botones de acción del dialog
+::ng-deep .order-detail-dialog {
+  .p-dialog-footer {
+    padding: 0 !important;
+    border-top: none !important;
+    background: transparent !important;
+    border-bottom-left-radius: 1rem;
+    border-bottom-right-radius: 1rem;
+    overflow: hidden;
+  }
+}
+
 .order-detail-actions {
   display: flex;
   gap: 0.75rem;
@@ -2692,6 +2703,23 @@
   scrollbar-width: none; /* Firefox */
   &::-webkit-scrollbar {
     display: none; /* Chrome, Safari y Opera */
+  }
+}
+
+// ==================== MODAL DETALLE DE PLATILLO ====================
+.dish-detail-card {
+  animation: dishDetailModalEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center center;
+}
+
+@keyframes dishDetailModalEnter {
+  0% {
+    opacity: 0;
+    transform: scale(0.93) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }
 

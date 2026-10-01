@@ -19,7 +19,10 @@
 
       <div class="ticket-items">
         <div class="ticket-item" *ngFor="let item of currentOrder.items">
-          <div class="ticket-item-name">{{ item.cantidad }}x {{ item.productName ?? item.prod }}</div>
+          <div class="ticket-item-name">
+            {{ item.cantidad }}x {{ item.productName ?? item.prod }}
+            <span *ngIf="item.tiempo === 2" style="font-size: 0.8em; font-weight: bold; color: #b45309;">(2do Tiempo)</span>
+          </div>
           <div class="ticket-item-price">{{ fmt(itemPrice(item)) }}</div>
         </div>
       </div>

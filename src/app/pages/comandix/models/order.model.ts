@@ -9,6 +9,8 @@ export interface OrderItem {
   comentarios?: string;
   asientoId?: string | number;
   asientoAlias?: string;
+  tiempo?: 1 | 2;
+  tiempoMarchado?: boolean;
   /** Ingredientes modificables que el cliente pidió quitar (no se descuentan) */
   excludedIngredientIds?: number[];
   /** Insumos adicionales seleccionados por el cliente (se descuentan) */
@@ -112,6 +114,8 @@ export interface PendingOrderItem {
   comentarios?: string;
   asientoId?: string | number;
   asientoAlias?: string;
+  tiempo?: 1 | 2;
+  tiempoMarchado?: boolean;
   excludedIngredientIds?: number[];
   additionalIngredientIds?: number[];
 }
@@ -138,6 +142,7 @@ export interface PendingOrder {
   meseroId?: number | null;
   meseroNombre?: string;
   meseroEmail?: string | null;
+  segundoTiempoMarchado?: boolean;
   subcomandas?: string[];
   payment?: PaymentInfo;
 }

@@ -149,12 +149,30 @@ export class VentasTendenciasReportComponent extends ReporteBaseComponent {
       .obtenerVentasTendencias(this.tenantId(), this.params())
       .subscribe({
         next: (respuesta) => {
-          this.reporte.set(respuesta?.object ?? null);
+          if (respuesta?.code && respuesta.code >= 400) {
+            this.loading.set(false);
+            this.reporte.set(null);
+            this.error.set(respuesta.message || 'No se pudo cargar el reporte de ventas');
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Error al cargar el reporte',
+              detail: this.error() ?? 'Ocurrió un error inesperado al cargar el reporte',
+              life: 4000,
+            });
+            return;
+          }
+          const obj = respuesta?.object;
+          if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+            this.reporte.set(obj);
+          } else {
+            this.reporte.set(null);
+          }
           this.loading.set(false);
         },
         error: (error) => {
           this.loading.set(false);
-          this.error.set(error?.error?.message ?? 'No se pudo cargar el reporte de ventas');
+          this.reporte.set(null);
+          this.error.set(error?.error?.message ?? error?.message ?? 'No se pudo cargar el reporte de ventas');
           this.messageService.add({
             severity: 'error',
             summary: 'Error al cargar el reporte',
