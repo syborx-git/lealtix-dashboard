@@ -170,15 +170,19 @@
               >
                 <ng-template let-mesa #selectedItem>
                   <div class="flex items-center gap-2" *ngIf="mesa">
+                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-extrabold bg-purple-100 text-purple-700">#{{ mesa.id }}</span>
                     <span class="font-bold text-slate-800 text-sm">{{ mesa.nombre }}</span>
                     <span *ngIf="mesa.numero" class="text-xs text-slate-400 font-normal">(M-{{ mesa.numero }})</span>
                   </div>
                 </ng-template>
                 <ng-template let-mesa #item>
-                  <div class="flex items-center gap-2 py-1">
-                    <i class="pi pi-table text-purple-600"></i>
-                    <span class="font-semibold text-slate-700">{{ mesa.nombre }}</span>
-                    <span *ngIf="mesa.numero" class="text-xs text-slate-400">· Cap: {{ mesa.capacidad }} personas</span>
+                  <div class="flex items-center justify-between py-1 w-full">
+                    <div class="flex items-center gap-2">
+                      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-extrabold bg-purple-100 text-purple-700">#{{ mesa.id }}</span>
+                      <span class="font-semibold text-slate-700">{{ mesa.nombre }}</span>
+                      <span *ngIf="mesa.numero" class="text-xs text-slate-400 font-normal">(M-{{ mesa.numero }})</span>
+                    </div>
+                    <span class="text-xs text-slate-400">Cap: {{ mesa.capacidad }}p</span>
                   </div>
                 </ng-template>
               </p-select>
@@ -587,9 +591,9 @@
             (click)="$event.stopPropagation(); marcharSegundoTiempo(order)"
             [disabled]="processingOrderAction()"
             class="cursor-pointer text-[11px] font-bold px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white shadow-xs flex items-center gap-1 transition-all border-0"
-            title="Avisar a cocina que comience a preparar el segundo tiempo"
+            title="Mandar a cocina para que aparezca en Confirmada e inicie la preparación"
           >
-            <i class="pi pi-play text-[10px]"></i> Marchar 2do T.
+            <i class="pi pi-send text-[10px]"></i> Mandar 2do T.
           </button>
         </div>
 
@@ -993,7 +997,7 @@
           <div class="flex items-center justify-between text-slate-700 font-semibold mb-1">
             <span class="flex items-center gap-1.5">
               <i class="pi pi-table text-purple-600"></i>
-              <strong *ngIf="selectedMesa()">{{ selectedMesa()!.nombre }}</strong>
+              <strong *ngIf="selectedMesa()">#{{ selectedMesa()!.id }} · {{ selectedMesa()!.nombre }} <span *ngIf="selectedMesa()!.numero" class="text-slate-400 font-normal">(M-{{ selectedMesa()!.numero }})</span></strong>
               <span *ngIf="!selectedMesa()" class="text-amber-600 italic">Sin mesa asignada</span>
             </span>
             <span class="text-slate-400 font-normal">
@@ -1428,18 +1432,18 @@
 
             <!-- GRUPO 2: ACCIONES PRINCIPALES (DERECHA / DESTACADAS) -->
             <div class="flex items-center justify-end gap-2 flex-wrap">
-              <!-- Marchar 2do Tiempo (Morado Sólido según especificación) -->
+              <!-- Mandar 2do Tiempo (Morado Sólido según especificación) -->
               <button
                 *ngIf="hasSegundoTiempoPendiente(order)"
                 type="button"
                 (click)="marcharSegundoTiempo(order)"
                 [disabled]="processingOrderAction()"
                 class="min-h-[44px] px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold text-xs inline-flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap border-0"
-                title="Avisar a cocina que inicie la preparación del 2do tiempo"
+                title="Mandar a cocina para que aparezca en el riel de Confirmada e inicie la preparación"
               >
                 <i *ngIf="processingOrderAction()" class="pi pi-spin pi-spinner text-xs"></i>
-                <i *ngIf="!processingOrderAction()" class="pi pi-play text-xs"></i>
-                <span>Marchar 2do T. 🔥</span>
+                <i *ngIf="!processingOrderAction()" class="pi pi-send text-xs"></i>
+                <span>Mandar 2do Tiempo a Cocina 🔥</span>
               </button>
 
               <!-- Cerrar Comanda (Morado Sólido) -->

@@ -31,6 +31,7 @@ import { AuthService } from '@/auth/auth.service';
 
 // Components
 import { ClienteDialogComponent } from '../cliente-dialog/cliente-dialog.component';
+import { ClienteCuponesDialogComponent } from '../cliente-cupones-dialog/cliente-cupones-dialog.component';
 
 // Models
 import {
@@ -66,7 +67,8 @@ import {
     IconFieldModule,
     InputIconModule,
     ProgressSpinnerModule,
-    ClienteDialogComponent
+    ClienteDialogComponent,
+    ClienteCuponesDialogComponent
   ],
   providers: [MessageService, ConfirmationService],
   templateUrl: './cliente-list.component.html',
@@ -81,6 +83,8 @@ export class ClienteListComponent implements OnInit {
 
   // Variables de Control
   mostrarDialogoNuevo = false;
+  mostrarDialogoCupones = false;
+  clienteSeleccionadoCupones: Cliente | null = null;
   submitted = false;
   emailFilter = '';
   pageSize = 10;
@@ -232,8 +236,17 @@ export class ClienteListComponent implements OnInit {
     this.cargarClientes();
   }
 
-  // ================== Diálogo - Nuevo Cliente ==================
+  // ================== Diálogo - Cupones ==================
+  openDialogCupones(cliente: Cliente): void {
+    this.clienteSeleccionadoCupones = cliente;
+    this.mostrarDialogoCupones = true;
+  }
 
+  onCuponAsignado(cupon: any): void {
+    console.log('Cupón asignado:', cupon);
+  }
+
+  // ================== Diálogo - Nuevo Cliente ==================
   openDialogNuevoCliente(): void {
     this.clienteEnEdicion = null;
     this.formNuevoCliente = this.initializeForm();

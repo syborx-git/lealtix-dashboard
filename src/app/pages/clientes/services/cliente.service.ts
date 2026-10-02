@@ -1,9 +1,40 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, throwError, of } from 'rxjs';
 import { map, tap, catchError } from 'rxjs/operators';
-import { throwError } from 'rxjs';
 import * as XLSX from 'xlsx';
+
+export interface ClienteCouponDTO {
+  id: number;
+  code: string;
+  status: 'ACTIVE' | 'REDEEMED' | 'EXPIRED' | 'CANCELLED';
+  expiresAt?: string;
+  createdAt?: string;
+  redeemedAt?: string;
+  qrToken?: string;
+  qrUrl?: string;
+  campaignId?: number;
+  campaignTitle?: string;
+  customerId?: number;
+  customerName?: string;
+  rewardDescription?: string;
+  minPurchaseAmount?: number;
+  usageLimit?: number;
+  usageCount?: number;
+  rewardType?: string;
+  numericValue?: number;
+  expired?: boolean;
+}
+
+export interface AssignCouponPayload {
+  customerId: number;
+  campaignId?: number;
+  title?: string;
+  rewardType?: string;
+  discountValue?: number;
+  description?: string;
+  daysValid?: number;
+}
 import {
   Cliente,
   CreateClienteRequest,
@@ -619,6 +650,56 @@ export class ClienteService {
 
     // Descargar archivo
     XLSX.writeFile(workbook, `clientes-plantilla-${new Date().getTime()}.xlsx`);
+  }
+
+  /**
+   * Obtiene todos los cupones asignados a un cliente
+   */
+  getCuponesByCliente(customerId: number): Observable<ClienteCouponDTO[]> {
+    return this.http.get<GenericResponse<ClienteCouponDTO[]>>(`${environment.apiUrl}/coupons/customer/${customerId}`)
+      .pipe(
+        map(response => {
+          if (response && response.object && Array.isArray(response.object)) {
+            return response.object;
+          }
+          return [];
+        }),
+        catchError(error => {
+          console.error('Error al obtener cupones del cliente:', error);
+          return of([]);
+        })
+      );
+  }
+
+  /**
+   * Asigna un cupón a un cliente usando la misma lógica del mesero virtual
+   */
+  asignarCupon(payload: AssignCouponPayload): Observable<ClienteCouponDTO> {
+    return this.http.post<GenericResponse<ClienteCouponDTO>>(`${environment.apiUrl}/coupons/assign`, payload)
+      .pipe(
+        map(response => this.mapGenericResponse<ClienteCouponDTO>(response)),
+        catchError(error => {
+          console.error('Error al asignar cupón al cliente:', error);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  /**
+   * Obtiene las campañas disponibles del negocio para asignar
+   */
+  getCampaniasDisponibles(businessId: number): Observable<any[]> {
+    return this.http.get<any>(`${environment.apiUrl}/campaigns/business/${businessId}`)
+      .pipe(
+        map(response => {
+          const list = response?.object || response?.data || response || [];
+          return Array.isArray(list) ? list.filter((c: any) => c.status === 'ACTIVE' || !c.isDraft) : [];
+        }),
+        catchError(error => {
+          console.error('Error al obtener campañas disponibles:', error);
+          return of([]);
+        })
+      );
   }
 
   /**

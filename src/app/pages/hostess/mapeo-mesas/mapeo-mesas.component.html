@@ -211,7 +211,7 @@
 <!-- ==================== MENÚ RÁPIDO DE MESA (hostess) ==================== -->
 <div *ngIf="popoverMesa() as mesaPop" class="mesa-popover" [ngStyle]="popoverStyle()" (click)="$event.stopPropagation()">
     <div class="popover-head">
-        <span class="popover-title">{{ labelMesa(mesaPop) }} · {{ mesaPop.nombre }}</span>
+        <span class="popover-title">#{{ mesaPop.id }} · {{ mesaPop.nombre }} <span *ngIf="mesaPop.numero" class="text-xs opacity-75">(M-{{ mesaPop.numero }})</span></span>
         <p-tag [value]="mesaPop.estado" [severity]="getEstadoSeverity(mesaPop.estado)"></p-tag>
     </div>
     <p-tag *ngIf="mesaPop.idGrupoTemporal" value="En grupo" severity="info" styleClass="popover-grupo-tag"></p-tag>

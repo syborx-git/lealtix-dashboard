@@ -49,6 +49,7 @@ export interface RecordPaymentRequest {
   reference?: string | null;
   userEmail?: string;  // Email del usuario que aplica el pago
   propina?: number;
+  couponCode?: string | null;
 }
 
 export interface RecordPaymentResponse {

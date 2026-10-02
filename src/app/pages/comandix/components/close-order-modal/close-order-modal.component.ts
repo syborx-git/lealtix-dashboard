@@ -20,6 +20,23 @@ import {
 import { OrderService } from '../../services/order.service';
 import { AuthService } from '@/auth/auth.service';
 
+import { HttpClient } from '@angular/common/http';
+import { RedemptionService } from '@/pages/redeem/services/redemption.service';
+import { environment } from '@/pages/commons/environment';
+
+export interface CustomerCoupon {
+  id: number;
+  code: string;
+  status: string;
+  rewardDescription?: string | null;
+  rewardType?: string | null;
+  numericValue?: number | null;
+  minPurchaseAmount?: number | null;
+  expired?: boolean;
+  expiresAt?: string | null;
+  campaignTitle?: string | null;
+}
+
 interface PaymentMethodOption {
   value: PaymentMethod;
   label: string;
@@ -72,6 +89,15 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
   errorMessage = '';
   successMessage = '';
 
+  // ==================== CUPONES Y DESCUENTOS ====================
+  customerCoupons: CustomerCoupon[] = [];
+  loadingCoupons = false;
+  appliedCoupon: CustomerCoupon | null = null;
+  manualCouponCode = '';
+  validatingCoupon = false;
+  couponMessage = '';
+  couponError = '';
+
   // ==================== PROPINA (capa visual) ====================
   readonly tipOptions = [10, 15, 20];
   selectedTipPercent = 0;
@@ -90,7 +116,9 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
   constructor(
     private fb: FormBuilder,
     private orderService: OrderService,
-    private authService: AuthService
+    private authService: AuthService,
+    private http: HttpClient,
+    private redemptionService: RedemptionService
   ) {
     this.form = this.fb.group({
       method: ['CASH', Validators.required],
@@ -114,6 +142,18 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['visible'] && this.visible) {
       this.resetState();
+      if (this.order?.customerId) {
+        this.loadCustomerCoupons(this.order.customerId);
+      }
+      if (this.order?.couponCode) {
+        this.appliedCoupon = {
+          id: 0,
+          code: this.order.couponCode,
+          status: 'ACTIVE',
+          rewardDescription: 'Cupón precargado en comanda',
+          numericValue: this.order.descuento || 0
+        };
+      }
     }
   }
 
@@ -121,6 +161,70 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
     if (this.closeTimer) {
       clearTimeout(this.closeTimer);
       this.closeTimer = null;
+    }
+  }
+
+  loadCustomerCoupons(customerId: number): void {
+    this.loadingCoupons = true;
+    this.customerCoupons = [];
+    this.http.get<any>(`${environment.apiUrl}/coupons/customer/${customerId}`).subscribe({
+      next: (res) => {
+        const list = Array.isArray(res?.object) ? res.object : (Array.isArray(res) ? res : []);
+        this.customerCoupons = list.filter((c: any) => c.status === 'ACTIVE' && !c.expired);
+        this.loadingCoupons = false;
+      },
+      error: (err) => {
+        console.warn('[CloseOrderModal] Error al cargar cupones del cliente:', err);
+        this.loadingCoupons = false;
+      }
+    });
+  }
+
+  applyCoupon(coupon: CustomerCoupon): void {
+    this.appliedCoupon = coupon;
+    this.couponError = '';
+    this.couponMessage = `Cupón "${coupon.code}" aplicado`;
+  }
+
+  removeAppliedCoupon(): void {
+    this.appliedCoupon = null;
+    this.couponMessage = '';
+    this.couponError = '';
+  }
+
+  async validateAndApplyManualCode(): Promise<void> {
+    const code = this.manualCouponCode.trim();
+    if (!code) {
+      this.couponError = 'Por favor ingresa un código de cupón';
+      return;
+    }
+
+    this.validatingCoupon = true;
+    this.couponError = '';
+    this.couponMessage = '';
+
+    const tenantId = this.authService.getCurrentUser()?.tenantId || this.order?.tenantId || 0;
+
+    try {
+      const res = await firstValueFrom(this.redemptionService.validateCouponByCode(code, tenantId));
+      if (res && res.valid) {
+        const newCoupon: CustomerCoupon = {
+          id: 0,
+          code,
+          status: 'ACTIVE',
+          rewardDescription: res.rewardDescription || 'Descuento aplicado',
+          rewardType: res.rewardType,
+          numericValue: res.numericValue
+        };
+        this.applyCoupon(newCoupon);
+        this.manualCouponCode = '';
+      } else {
+        this.couponError = res?.message || 'El cupón ingresado no es válido o ya fue utilizado';
+      }
+    } catch (e: any) {
+      this.couponError = e?.error?.message || e?.message || 'Error al validar el cupón';
+    } finally {
+      this.validatingCoupon = false;
     }
   }
 
@@ -136,11 +240,28 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
     return !!this.form.get('facturaRequired')?.value;
   }
 
-  get totalToPay(): number {
+  get subtotal(): number {
     if (!this.order) {
       return 0;
     }
-    return Number(this.order.totalFinal ?? this.order.subtotal ?? 0);
+    return Number(this.order.subtotal ?? this.order.totalFinal ?? 0);
+  }
+
+  get calculatedDiscount(): number {
+    if (this.appliedCoupon) {
+      if (this.appliedCoupon.rewardType === 'PERCENT_DISCOUNT') {
+        return (this.subtotal * (this.appliedCoupon.numericValue || 0)) / 100;
+      }
+      if (this.appliedCoupon.rewardType === 'FIXED_AMOUNT') {
+        return Math.min(this.appliedCoupon.numericValue || 0, this.subtotal);
+      }
+      return Number(this.appliedCoupon.numericValue || this.order?.descuento || 0);
+    }
+    return Number(this.order?.descuento ?? 0);
+  }
+
+  get totalToPay(): number {
+    return Math.max(0, this.subtotal - this.calculatedDiscount);
   }
 
   get tipAmount(): number {
@@ -219,11 +340,13 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
     const currentUser = currentUserJson ? JSON.parse(currentUserJson) : null;
     const userEmail = currentUser?.email ?? 'usuario-desconocido';
 
+    const couponCode = this.appliedCoupon?.code ?? (this.order?.couponCode || null);
     const payload: RecordPaymentRequest = {
       method,
       reference: method === 'CASH' ? null : referenceControlValue,
       userEmail,
-      propina: this.tipAmount > 0 ? this.tipAmount : undefined
+      propina: this.tipAmount > 0 ? this.tipAmount : undefined,
+      couponCode: couponCode || undefined
     };
 
     try {
@@ -346,6 +469,11 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
     this.selectedTipPercent = 0;
     this.customTipMode = 'percent';
     this.customTipValue = null;
+    this.appliedCoupon = null;
+    this.customerCoupons = [];
+    this.manualCouponCode = '';
+    this.couponMessage = '';
+    this.couponError = '';
   }
 
   private applyReferenceValidators(method: PaymentMethod): void {

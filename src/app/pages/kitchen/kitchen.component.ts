@@ -32,9 +32,7 @@ export class KitchenComponent implements OnInit, OnDestroy {
     connectionStatus: 'connected' | 'disconnected' | 'error' = 'disconnected';
     currentTime = Date.now();
 
-    // Control de paginación para órdenes listas
-    showAllReadyOrders = false;
-    readonly READY_ORDERS_LIMIT = 10;
+
 
     // Signals para modal de detalle
     selectedOrderForDetail = signal<KitchenOrder | null>(null);
@@ -125,29 +123,49 @@ export class KitchenComponent implements OnInit, OnDestroy {
     }
 
     getPendingOrders(): KitchenOrder[] {
-        return this.orders.filter((order) => order.status === 'CONFIRMADA');
+        return this.orders
+            .filter((order) => order.status === 'CONFIRMADA' || order.status === 'PENDIENTE')
+            .sort((a, b) => this.kitchenOrderFacadeService.parseOrderTime(a.createdAt) - this.kitchenOrderFacadeService.parseOrderTime(b.createdAt));
     }
 
     getInProgressOrders(): KitchenOrder[] {
-        return this.orders.filter((order) => order.status === 'EN_PREPARACION');
+        return this.orders
+            .filter((order) => order.status === 'EN_PREPARACION')
+            .sort((a, b) => this.kitchenOrderFacadeService.parseOrderTime(a.createdAt) - this.kitchenOrderFacadeService.parseOrderTime(b.createdAt));
     }
 
     getReadyOrders(): KitchenOrder[] {
-        const readyOrders = this.orders
-            .filter((order) => order.status === 'LISTO')
-            .reverse();  // Invertir para que las más nuevas estén arriba
-
-        return this.showAllReadyOrders
-            ? readyOrders
-            : readyOrders.slice(0, this.READY_ORDERS_LIMIT);
+        return this.orders
+            .filter((order) => {
+                if (order.status === 'LISTO') {
+                    return true;
+                }
+                if (order.status === 'PAGADA') {
+                    return this.kitchenOrderFacadeService.isToday(order.createdAt);
+                }
+                return false;
+            })
+            .sort((a, b) => this.kitchenOrderFacadeService.parseOrderTime(b.createdAt) - this.kitchenOrderFacadeService.parseOrderTime(a.createdAt));
     }
 
     getReadyOrdersCount(): { total: number; shown: number } {
-        const total = this.orders.filter((o) => o.status === 'LISTO').length;
+        const count = this.getReadyOrders().length;
         return {
-            total,
-            shown: this.showAllReadyOrders ? total : Math.min(total, this.READY_ORDERS_LIMIT)
+            total: count,
+            shown: count
         };
+    }
+
+    hasSegundoTiempo(order: KitchenOrder): boolean {
+        return (order?.items || []).some((item) => item.tiempo === 2);
+    }
+
+    hasPendingSegundoTiempo(order: KitchenOrder): boolean {
+        return (order?.recorrido !== 2) && this.hasSegundoTiempo(order);
+    }
+
+    isItemYaSalio(order: KitchenOrder, item: KitchenOrderItem): boolean {
+        return item.yaSalio === true || (order?.recorrido === 2 && item.tiempo === 1);
     }
 
     async startOrder(order: KitchenOrder): Promise<void> {
@@ -178,6 +196,23 @@ export class KitchenComponent implements OnInit, OnDestroy {
         this.processingOrderIds.add(order.id);
         try {
             await this.kitchenOrderFacadeService.finishOrder(order.id);
+            this.deliveredItemsByOrder.delete(order.id);
+
+            if (this.hasPendingSegundoTiempo(order)) {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: '1er Tiempo Listo',
+                    detail: `La orden #${this.shortId(order.id)} quedó lista. El 2do tiempo aparecerá en Confirmada cuando el mesero lo mande.`,
+                    life: 4500
+                });
+            } else {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Comanda Lista',
+                    detail: `La orden #${this.shortId(order.id)} se marcó como lista para despacho.`,
+                    life: 3000
+                });
+            }
         } catch {
             this.messageService.add({
                 severity: 'error',
@@ -292,7 +327,10 @@ export class KitchenComponent implements OnInit, OnDestroy {
     }
 
     getPendingItemsCount(order: KitchenOrder): number {
-        return Math.max(0, order.items.length - this.getDeliveredItemsCount(order));
+        const currentRoundItems = (order.items || []).filter(
+            (item) => !this.isItemYaSalio(order, item) && !(item.tiempo === 2 && !item.tiempoMarchado)
+        );
+        return Math.max(0, currentRoundItems.length - this.getDeliveredItemsCount(order));
     }
 
     areAllItemsDelivered(order: KitchenOrder): boolean {
