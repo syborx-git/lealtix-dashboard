@@ -74,6 +74,8 @@ interface CartItem {
   configKey?: string;
   asientoId?: string;
   asientoAlias?: string;
+  tiempo?: 1 | 2; // 1 = 1er Tiempo (Inmediato), 2 = 2do Tiempo (Por marchar)
+  tiempoMarchado?: boolean;
 }
 
 interface StockInfo {
@@ -244,6 +246,10 @@ configEditingItem: CartItem | null = null;
   selectedOrderForCancellation = signal<PendingOrder | null>(null);
   cancellingOrder = signal<boolean>(false);
   cancellationReason: string = '';
+
+  // ==================== DETALLE DE PLATILLO (MODAL) ====================
+  selectedProductDetail = signal<Product | null>(null);
+  showProductDetailModal = signal<boolean>(false);
 
   // ==================== TICKET ====================
   showTicketModal = signal(false);
@@ -575,6 +581,110 @@ configEditingItem: CartItem | null = null;
       .reduce((sum, i) => sum + (this.getCartItemUnitPrice(i) * i.cantidad), 0);
   }
 
+  // ==================== TIEMPOS DE SERVICIO (1er Tiempo vs 2do Tiempo) ====================
+  tiempoActivo = signal<1 | 2>(1);
+
+  setTiempoActivo(tiempo: 1 | 2): void {
+    this.tiempoActivo.set(tiempo);
+  }
+
+  toggleItemTiempo(item: CartItem): void {
+    const nuevoTiempo: 1 | 2 = item.tiempo === 2 ? 1 : 2;
+    this.cart.update((items) =>
+      items.map((i) => (this.cartItemKey(i) === this.cartItemKey(item) ? { ...i, tiempo: nuevoTiempo } : i))
+    );
+    this.persistCartDraft();
+    this.cdr.detectChanges();
+  }
+
+  hasSegundoTiempo(order: PendingOrder | null | undefined): boolean {
+    if (!order?.items) return false;
+    return order.items.some((it) => it.tiempo === 2);
+  }
+
+  hasSegundoTiempoPendiente(order: PendingOrder | null | undefined): boolean {
+    if (!order?.items) return false;
+    return order.items.some((it) => it.tiempo === 2 && !it.tiempoMarchado);
+  }
+
+  hasSegundoTiempoMarchado(order: PendingOrder | null | undefined): boolean {
+    if (!order?.items) return false;
+    return order.items.some((it) => it.tiempo === 2 && it.tiempoMarchado);
+  }
+
+  async marcharSegundoTiempo(order: PendingOrder): Promise<void> {
+    if (!order || this.processingOrderAction()) return;
+    this.processingOrderAction.set(true);
+
+    try {
+      const updatedItems: OrderItem[] = (order.items || []).map((it) => {
+        const is2do = it.tiempo === 2;
+        const asientoTag = it.asientoAlias ? `[${it.asientoAlias}]` : '';
+        const tiempoTag = is2do ? '[2DO TIEMPO - MARCHADO]' : '';
+        const userNotes = (it.comentarios || '').trim();
+        const fullComment = [asientoTag, tiempoTag, userNotes].filter(Boolean).join(' ').trim();
+
+        return {
+          productId: it.productId ?? 0,
+          cantidad: it.cantidad,
+          precioUnitario: it.precioUnitario ?? it.precio ?? 0,
+          comentarios: fullComment || undefined,
+          asientoId: it.asientoId,
+          asientoAlias: it.asientoAlias,
+          tiempo: it.tiempo || 1,
+          tiempoMarchado: is2do ? true : it.tiempoMarchado,
+          excludedIngredientIds: it.excludedIngredientIds,
+          additionalIngredientIds: it.additionalIngredientIds
+        };
+      });
+
+      const updateReq: TenantClientOrderUpdateRequest = {
+        customerId: order.customerId ?? null,
+        tenantId: order.tenantId,
+        items: updatedItems,
+        subtotal: order.subtotal ?? 0,
+        descuento: order.descuento ?? 0,
+        totalFinal: order.totalFinal ?? 0,
+        couponCode: order.couponCode ?? null
+      };
+
+      await firstValueFrom(this.orderService.updateOrder(order.id, updateReq));
+
+      const updatedOrder: PendingOrder = {
+        ...order,
+        segundoTiempoMarchado: true,
+        items: (order.items || []).map((it) => (it.tiempo === 2 ? { ...it, tiempoMarchado: true } : it))
+      };
+
+      this.pendingOrders.update((orders) =>
+        orders.map((o) => (o.id === order.id ? updatedOrder : o))
+      );
+
+      if (this.selectedOrder()?.id === order.id) {
+        this.selectedOrder.set(updatedOrder);
+      }
+
+      this.playNotificationSound(1);
+
+      this.messageService.add({
+        severity: 'success',
+        summary: '¡2do Tiempo Marchado!',
+        detail: `Se notificó a cocina para comenzar la preparación de los platillos de ${order.mesaNombre || 'la mesa'}`,
+        life: 4000
+      });
+    } catch (e: any) {
+      const msg = e?.error?.message || e?.message || 'No se pudo marchar el segundo tiempo';
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error al marchar',
+        detail: msg,
+        life: 3000
+      });
+    } finally {
+      this.processingOrderAction.set(false);
+    }
+  }
+
   // ==================== CARGA DE MESAS ====================
 
   private loadMesas(): void {
@@ -714,21 +824,46 @@ configEditingItem: CartItem | null = null;
 
     const items = (order.items ?? []).map((it: any) => {
       let alias = it.asientoAlias;
-      let comentarios = it.comentarios;
-      if (!alias && comentarios && comentarios.startsWith('[')) {
-        const m = comentarios.match(/^\[(.*?)\]\s*(.*)$/);
-        if (m) {
-          alias = m[1];
-          comentarios = m[2];
+      let comentarios = String(it.comentarios || '');
+      let tiempo: 1 | 2 = it.tiempo === 2 ? 2 : 1;
+      let tiempoMarchado: boolean = !!it.tiempoMarchado;
+
+      if (comentarios.includes('2DO TIEMPO') || comentarios.includes('SEGUNDO TIEMPO')) {
+        tiempo = 2;
+        if (comentarios.includes('MARCHADO')) {
+          tiempoMarchado = true;
         }
       }
+
+      if (!alias && comentarios.startsWith('[')) {
+        const m = comentarios.match(/^\[(.*?)\]\s*(.*)$/);
+        if (m) {
+          if (!m[1].includes('2DO TIEMPO') && !m[1].includes('SEGUNDO TIEMPO')) {
+            alias = m[1];
+            comentarios = m[2];
+          }
+        }
+      }
+
+      const cleanComentarios = comentarios
+        .replace(/\[2DO TIEMPO\s*[-–]?\s*MARCHADO\]/gi, '')
+        .replace(/\[2DO TIEMPO\s*⏱️?\s*[-–]?\s*EN ESPERA\]/gi, '')
+        .replace(/\[2DO TIEMPO\]/gi, '')
+        .replace(/\[SEGUNDO TIEMPO\]/gi, '')
+        .trim();
+
       return {
         ...it,
-        comentarios,
+        comentarios: cleanComentarios || undefined,
         asientoId: it.idAsiento ?? it.asientoId,
-        asientoAlias: alias
+        asientoAlias: alias,
+        tiempo,
+        tiempoMarchado
       };
     });
+
+    const has2doPendiente = items.some((it: any) => it.tiempo === 2 && !it.tiempoMarchado);
+    const has2doMarchado = items.some((it: any) => it.tiempo === 2 && it.tiempoMarchado);
 
     return {
       id: order.id,
@@ -748,6 +883,7 @@ configEditingItem: CartItem | null = null;
       mesaNombre,
       mesaNumero,
       meseroNombre,
+      segundoTiempoMarchado: has2doMarchado && !has2doPendiente,
       horaApertura,
       horaCierre,
       subcomandas: order.subcomandas ?? [],
@@ -1580,7 +1716,9 @@ configEditingItem: CartItem | null = null;
 
       const description: string = (product.description && typeof product.description === 'string'
         ? product.description.trim()
-        : '') || '';
+        : '') || (product.descripcion && typeof product.descripcion === 'string' ? product.descripcion.trim() : '') || '';
+
+      const categoryName: string = product.categoryName || (Array.isArray(product.categories) && product.categories[0]?.name) || '';
 
       const mappedProduct: Product = {
         id: Number(product.id ?? 0),
@@ -1588,6 +1726,7 @@ configEditingItem: CartItem | null = null;
         price: Number(product.price ?? 0),
         imageUrl: imageUrl,
         description: description,
+        categoryName: categoryName,
         recipes: Array.isArray(product.recipes) ? product.recipes as IngredientOption[] : [],
         additionals: Array.isArray(product.additionals) ? product.additionals as IngredientOption[] : []
       };
@@ -1948,15 +2087,16 @@ const editingItem = this.configEditingItem;
     const currentSeat = this.asientoActivo();
     const seatId = currentSeat.id;
     const seatAlias = currentSeat.alias;
+    const tiempo = this.tiempoActivo();
 
     const existingItem = this.cart().find(
-      (item) => item.product.id === product.id && item.configKey === configKey && item.asientoId === seatId
+      (item) => item.product.id === product.id && item.configKey === configKey && item.asientoId === seatId && (item.tiempo || 1) === tiempo
     );
 
     if (existingItem) {
       this.cart.update((items) =>
         items.map((item) =>
-          item.product.id === product.id && item.configKey === configKey && item.asientoId === seatId
+          item === existingItem
             ? { ...item, cantidad: item.cantidad + 1, precioUnitario: unitPrice }
             : item
         )
@@ -1973,23 +2113,26 @@ const editingItem = this.configEditingItem;
           additionalIngredientIds: additionalIds,
           configKey,
           asientoId: seatId,
-          asientoAlias: seatAlias
+          asientoAlias: seatAlias,
+          tiempo,
+          tiempoMarchado: false
         }
       ]);
     }
 
     this.persistCartDraft();
 
+    const tiempoTag = tiempo === 2 ? ' (⏱️ 2do Tiempo)' : '';
     this.messageService.add({
       severity: 'success',
       summary: 'Producto añadido',
       detail: additionalIds.length > 0
-        ? `${product.name} añadido a ${seatAlias} ($${unitPrice.toFixed(2)}, incluye adicionales)`
-        : `${product.name} añadido a ${seatAlias} ($${unitPrice.toFixed(2)})`,
+        ? `${product.name} añadido a ${seatAlias}${tiempoTag} ($${unitPrice.toFixed(2)}, incluye adicionales)`
+        : `${product.name} añadido a ${seatAlias}${tiempoTag} ($${unitPrice.toFixed(2)})`,
       life: 2500
     });
 
-    console.log('[Comandix] Producto agregado, items en carrito:', this.cart().length, { product: product.name, asiento: seatAlias });
+    console.log('[Comandix] Producto agregado, items en carrito:', this.cart().length, { product: product.name, asiento: seatAlias, tiempo });
     this.cdr.detectChanges();
   }
 
@@ -2022,7 +2165,7 @@ const editingItem = this.configEditingItem;
   }
 
   private cartItemKey(item: CartItem): string {
-    return `${item.product.id}::${item.configKey || ''}::${item.asientoId || 'seat-1'}`;
+    return `${item.product.id}::${item.configKey || ''}::${item.asientoId || 'seat-1'}::${item.tiempo || 1}`;
   }
 
   getCartItemUnitPrice(item: CartItem): number {
@@ -2085,6 +2228,35 @@ trackByProductId = (index: number, item: CartItem): string => {
   /** True si el stock del producto del catálogo es crítico (quedan 3 o menos piezas). */
   isProductCriticalStock(product: Product): boolean {
     return this.isCriticalStock({ productId: product?.id } as any);
+  }
+
+  // ==================== DETALLE DE PLATILLO (MODAL) ====================
+  openProductDetail(product: Product): void {
+    if (!product) return;
+    this.selectedProductDetail.set(product);
+    this.showProductDetailModal.set(true);
+  }
+
+  closeProductDetail(): void {
+    this.showProductDetailModal.set(false);
+    this.selectedProductDetail.set(null);
+  }
+
+  addProductFromDetail(product: Product): void {
+    if (!product) return;
+    this.closeProductDetail();
+    this.addToCart(product);
+  }
+
+  getProductCategoryName(product: Product | null): string {
+    if (!product) return '';
+    if (product.categoryName) return product.categoryName;
+    for (const cat of this.categories()) {
+      if (cat.products?.some(p => p.id === product.id)) {
+        return cat.name;
+      }
+    }
+    return '';
   }
 
   onCategoryFilterChange(categoryId: number | null | undefined): void {
@@ -2173,16 +2345,26 @@ trackByProductId = (index: number, item: CartItem): string => {
 
     this.processingOrder.set(true);
     try {
-      const orderItems: OrderItem[] = this.cart().map((item) => ({
-        productId: item.product.id,
-        cantidad: item.cantidad,
-        precioUnitario: this.getCartItemUnitPrice(item),
-        comentarios: item.asientoAlias ? `[${item.asientoAlias}] ${item.comentarios || ''}`.trim() : (item.comentarios || undefined),
-        asientoId: item.asientoId,
-        asientoAlias: item.asientoAlias,
-        excludedIngredientIds: item.excludedIngredientIds?.length ? item.excludedIngredientIds : undefined,
-        additionalIngredientIds: item.additionalIngredientIds?.length ? item.additionalIngredientIds : undefined
-      }));
+      const orderItems: OrderItem[] = this.cart().map((item) => {
+        const is2do = item.tiempo === 2;
+        const tiempoTag = is2do ? (item.tiempoMarchado ? '[2DO TIEMPO - MARCHADO]' : '[2DO TIEMPO ⏱️ - EN ESPERA]') : '';
+        const asientoTag = item.asientoAlias ? `[${item.asientoAlias}]` : '';
+        const rawNotes = (item.comentarios || '').trim();
+        const fullComment = [asientoTag, tiempoTag, rawNotes].filter(Boolean).join(' ').trim();
+
+        return {
+          productId: item.product.id,
+          cantidad: item.cantidad,
+          precioUnitario: this.getCartItemUnitPrice(item),
+          comentarios: fullComment || undefined,
+          asientoId: item.asientoId,
+          asientoAlias: item.asientoAlias,
+          tiempo: item.tiempo || 1,
+          tiempoMarchado: item.tiempoMarchado || false,
+          excludedIngredientIds: item.excludedIngredientIds?.length ? item.excludedIngredientIds : undefined,
+          additionalIngredientIds: item.additionalIngredientIds?.length ? item.additionalIngredientIds : undefined
+        };
+      });
 
       const editingOrder = this.editingPendingOrder();
       if (editingOrder) {
@@ -2224,6 +2406,8 @@ trackByProductId = (index: number, item: CartItem): string => {
             comentarios: item.comentarios || undefined,
             asientoId: item.asientoId,
             asientoAlias: item.asientoAlias,
+            tiempo: item.tiempo || 1,
+            tiempoMarchado: item.tiempoMarchado || false,
             excludedIngredientIds: item.excludedIngredientIds?.length ? item.excludedIngredientIds : undefined,
             additionalIngredientIds: item.additionalIngredientIds?.length ? item.additionalIngredientIds : undefined
           })),
@@ -2285,6 +2469,8 @@ trackByProductId = (index: number, item: CartItem): string => {
           comentarios: item.comentarios || undefined,
           asientoId: item.asientoId,
           asientoAlias: item.asientoAlias,
+          tiempo: item.tiempo || 1,
+          tiempoMarchado: item.tiempoMarchado || false,
           excludedIngredientIds: item.excludedIngredientIds?.length ? item.excludedIngredientIds : undefined,
           additionalIngredientIds: item.additionalIngredientIds?.length ? item.additionalIngredientIds : undefined
         })),
@@ -2418,7 +2604,11 @@ trackByProductId = (index: number, item: CartItem): string => {
       precioUnitario,
       excludedIngredientIds,
       additionalIngredientIds,
-      configKey
+      configKey,
+      asientoId: item.asientoId != null ? String(item.asientoId) : undefined,
+      asientoAlias: item.asientoAlias,
+      tiempo: item.tiempo || 1,
+      tiempoMarchado: item.tiempoMarchado ?? false
     };
   }
 

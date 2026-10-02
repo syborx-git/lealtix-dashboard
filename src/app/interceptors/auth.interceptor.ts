@@ -4,10 +4,11 @@ import {
 	HttpRequest,
 	HttpHandler,
 	HttpEvent,
-	HttpErrorResponse
+	HttpErrorResponse,
+	HttpResponse
 } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, tap } from 'rxjs/operators';
 import { AuthService } from '../auth/auth.service';
 import { Router } from '@angular/router';
 
@@ -59,6 +60,16 @@ export class AuthInterceptor implements HttpInterceptor {
 		}
 
 		return next.handle(authReq).pipe(
+			tap((event: HttpEvent<any>) => {
+				if (event instanceof HttpResponse) {
+					const body = event.body;
+					if (body && typeof body === 'object' && body.code === 401) {
+						console.warn('[AuthInterceptor] Respuesta con código 401, redirigiendo a login');
+						this.getAuthService().logout();
+						this.router.navigate(['/dashboard/auth/login']);
+					}
+				}
+			}),
 			catchError((error: HttpErrorResponse) => {
 				// Manejar 401 Unauthorized - Token expirado o inválido
 				if (error.status === 401) {

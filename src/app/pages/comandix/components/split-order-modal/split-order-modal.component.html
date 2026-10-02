@@ -196,6 +196,9 @@
                 <span *ngIf="item.asientoAlias" class="text-xs px-2 py-0 border-round bg-orange-100 text-orange-800 font-semibold">
                   👤 {{ item.asientoAlias }}
                 </span>
+                <span *ngIf="item.tiempo === 2" class="text-xs px-2 py-0 border-round bg-amber-100 text-amber-800 font-semibold">
+                  ⏱️ 2do Tiempo
+                </span>
               </div>
               <span *ngIf="getComentarios(item)" class="split-item-coment">
                 📝 {{ getComentarios(item) }}
