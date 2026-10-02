@@ -387,7 +387,9 @@ configEditingItem: CartItem | null = null;
       })
       .map((o) => {
         const clienteNombre = o.customerName || o.nombre || (o.customerId ? `Cliente #${o.customerId}` : 'Cliente no registrado');
-        const mesaLabel = o.mesaNombre ? `${o.mesaNombre}${o.mesaNumero ? ' (M-' + o.mesaNumero + ')' : ''}` : 'Mesa General';
+        const mesaLabel = o.mesaNombre
+          ? `${o.mesaId ? '#' + o.mesaId + ' · ' : ''}${o.mesaNombre}${o.mesaNumero ? ' (M-' + o.mesaNumero + ')' : ''}`
+          : (o.mesaId ? `Mesa #${o.mesaId}` : 'Mesa General');
         const meseroLabel = o.meseroNombre || (o.payment?.paidBy ? String(o.payment.paidBy) : 'Mesero General');
         const horaApertura = o.horaApertura || o.fechaCreacion || new Date().toISOString();
         const horaCierre = o.horaCierre || (o.payment?.paidAt ? o.payment.paidAt : null);
@@ -617,41 +619,16 @@ configEditingItem: CartItem | null = null;
     this.processingOrderAction.set(true);
 
     try {
-      const updatedItems: OrderItem[] = (order.items || []).map((it) => {
-        const is2do = it.tiempo === 2;
-        const asientoTag = it.asientoAlias ? `[${it.asientoAlias}]` : '';
-        const tiempoTag = is2do ? '[2DO TIEMPO - MARCHADO]' : '';
-        const userNotes = (it.comentarios || '').trim();
-        const fullComment = [asientoTag, tiempoTag, userNotes].filter(Boolean).join(' ').trim();
-
-        return {
-          productId: it.productId ?? 0,
-          cantidad: it.cantidad,
-          precioUnitario: it.precioUnitario ?? it.precio ?? 0,
-          comentarios: fullComment || undefined,
-          asientoId: it.asientoId,
-          asientoAlias: it.asientoAlias,
-          tiempo: it.tiempo || 1,
-          tiempoMarchado: is2do ? true : it.tiempoMarchado,
-          excludedIngredientIds: it.excludedIngredientIds,
-          additionalIngredientIds: it.additionalIngredientIds
-        };
-      });
-
-      const updateReq: TenantClientOrderUpdateRequest = {
-        customerId: order.customerId ?? null,
-        tenantId: order.tenantId,
-        items: updatedItems,
-        subtotal: order.subtotal ?? 0,
-        descuento: order.descuento ?? 0,
-        totalFinal: order.totalFinal ?? 0,
-        couponCode: order.couponCode ?? null
-      };
-
-      await firstValueFrom(this.orderService.updateOrder(order.id, updateReq));
+      try {
+        await firstValueFrom(this.orderService.marcharSegundoTiempo(order.id));
+      } catch (errEndpoint) {
+        console.warn('[Comandix] Fallback a updateOrderStatus tras error en marcharSegundoTiempo:', errEndpoint);
+        await firstValueFrom(this.orderService.updateOrderStatus(order.id, 'CONFIRMADA'));
+      }
 
       const updatedOrder: PendingOrder = {
         ...order,
+        estado: 'CONFIRMADA',
         segundoTiempoMarchado: true,
         items: (order.items || []).map((it) => (it.tiempo === 2 ? { ...it, tiempoMarchado: true } : it))
       };
@@ -668,12 +645,12 @@ configEditingItem: CartItem | null = null;
 
       this.messageService.add({
         severity: 'success',
-        summary: '¡2do Tiempo Marchado!',
-        detail: `Se notificó a cocina para comenzar la preparación de los platillos de ${order.mesaNombre || 'la mesa'}`,
+        summary: '¡2do Tiempo Enviado a Cocina!',
+        detail: `Se notificó a cocina para comenzar la preparación de los segundos tiempos de ${order.mesaNombre || 'la mesa'}`,
         life: 4000
       });
     } catch (e: any) {
-      const msg = e?.error?.message || e?.message || 'No se pudo marchar el segundo tiempo';
+      const msg = e?.error?.message || e?.message || 'No se pudo mandar el segundo tiempo a cocina';
       this.messageService.add({
         severity: 'error',
         summary: 'Error al marchar',

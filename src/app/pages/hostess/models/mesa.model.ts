@@ -19,8 +19,17 @@ export interface MesaDTO {
     /** Orientación en grados (0/90/180/270) sobre el plano */
     rotacion?: number;
     idGrupoTemporal?: string | null;
+    identificadorUnico?: string;
     createdAt?: string;
     updatedAt?: string;
+}
+
+export function mesaIdentificador(mesa: MesaDTO | null | undefined): string {
+    if (!mesa) return '';
+    if (mesa.identificadorUnico) return mesa.identificadorUnico;
+    const numPart = mesa.numero != null ? ` (M-${mesa.numero})` : '';
+    const idPart = mesa.id != null ? `#${mesa.id} · ` : '';
+    return `${idPart}${mesa.nombre}${numPart}`;
 }
 
 export interface MesaRequest {

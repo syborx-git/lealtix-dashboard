@@ -640,11 +640,45 @@
     white-space: nowrap;
 }
 
+.kitchen-card-badge-salio {
+    background: #e2e8f0;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.kitchen-card-badge-primer-tiempo {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
 .item-tiempo-espera {
     background-color: #fffbeb;
     border-left: 3px solid #f59e0b;
     padding-left: 0.35rem;
     border-radius: 0 4px 4px 0;
+}
+
+.item-ya-salio {
+    background-color: #f1f5f9;
+    border-left: 3px solid #94a3b8;
+    padding-left: 0.35rem;
+    border-radius: 0 4px 4px 0;
+    opacity: 0.65;
 }
 
 @media (max-width: 1200px) {

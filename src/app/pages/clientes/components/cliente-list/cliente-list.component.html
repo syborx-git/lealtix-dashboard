@@ -126,7 +126,7 @@
         Teléfono
         <p-sortIcon field="telefono" />
       </th>
-      <th style="min-width: 10rem"></th>
+      <th style="min-width: 13rem"></th>
     </tr>
   </ng-template>
   <ng-template #body let-cliente>
@@ -141,6 +141,16 @@
       </td>
       <td style="min-width: 12rem">{{ cliente.telefono || '-' }}</td>
       <td>
+        <p-button
+          icon="pi pi-ticket"
+          class="mr-2"
+          severity="success"
+          [rounded]="true"
+          [outlined]="true"
+          pTooltip="Gestionar / Asignar Cupones"
+          tooltipPosition="top"
+          (click)="openDialogCupones(cliente)"
+        />
         <p-button
           icon="pi pi-pencil"
           class="mr-2"
@@ -181,6 +191,14 @@
   (save)="guardarNuevoCliente()"
   (hide)="hideDialogoNuevo()"
 ></app-cliente-dialog>
+
+<!-- Cliente Cupones Dialog Component -->
+<app-cliente-cupones-dialog
+  [(visible)]="mostrarDialogoCupones"
+  [cliente]="clienteSeleccionadoCupones"
+  [tenantId]="tenantId"
+  (cuponAsignado)="onCuponAsignado($event)"
+></app-cliente-cupones-dialog>
 
 <!-- Toast para mensajes -->
 <p-toast position="top-right"></p-toast>

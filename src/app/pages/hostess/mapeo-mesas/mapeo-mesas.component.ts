@@ -664,13 +664,17 @@ export class MapeoMesasComponent implements OnInit {
     }
 
     tooltipMesa(mesa: MesaDTO): string {
+        const idPart = mesa.id != null ? `#${mesa.id} · ` : '';
         const numero = mesa.numero != null ? `Mesa ${mesa.numero} · ` : '';
         const mesero = mesa.meseroNombre ? ` · Mesero: ${mesa.meseroNombre}` : ' · Sin mesero';
-        return `${numero}${mesa.nombre} (${mesa.capacidad} pax)${mesero}`;
+        return `${idPart}${numero}${mesa.nombre} (${mesa.capacidad} pax)${mesero}`;
     }
 
     labelMesa(mesa: MesaDTO): string {
-        return mesa.numero != null ? `M${mesa.numero}` : mesa.nombre;
+        if (mesa.numero != null) {
+            return `M${mesa.numero}`;
+        }
+        return mesa.id != null ? `#${mesa.id}` : mesa.nombre;
     }
 
     mesaLeft(mesa: MesaDTO): number {

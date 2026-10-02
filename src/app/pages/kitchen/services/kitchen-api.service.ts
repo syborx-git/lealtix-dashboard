@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, catchError, map, of, throwError } from 'rxjs';
 import { environment } from '@/pages/commons/environment';
 
-export type KitchenTransitionAction = 'start' | 'finish';
+export type KitchenTransitionAction = 'start' | 'finish' | 'return-confirmed';
 
 export interface KitchenListResponse {
     code?: number;
@@ -54,7 +54,8 @@ export class KitchenApiService {
     updateStatus(orderId: string, action: KitchenTransitionAction): Observable<any> {
         const estadoMap: { [key in KitchenTransitionAction]: string } = {
             'start': 'EN_PREPARACION',
-            'finish': 'LISTO'
+            'finish': 'LISTO',
+            'return-confirmed': 'CONFIRMADA'
         };
 
         const estado = estadoMap[action];
