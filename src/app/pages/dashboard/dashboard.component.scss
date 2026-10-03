@@ -3000,3 +3000,50 @@
 .dashboard-content-wrapper {
   background-color: #ffffff !important;
 }
+
+/* ============================================================================
+   RESPONSIVE MÓVIL/TABLET (override final: gana por orden de aparición)
+   Corrige el apretado del dashboard en teléfono: el KPI row tenía una columna
+   fija de 180px y el grid principal quedaba 1.5fr/1fr sin apilar.
+   ============================================================================ */
+@media (max-width: 1200px) {
+  .dashboard-grid-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .kpi-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .kpi-row .btn-primary-action {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .dashboard-container {
+    padding: 16px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .kpi-row {
+    grid-template-columns: 1fr !important;
+  }
+  .kpi-card {
+    padding: 14px 16px !important;
+  }
+  .kpis-quad-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .dashboard-container {
+    padding: 12px !important;
+  }
+  .chart-wrapper {
+    height: 220px !important;
+  }
+  .promo-banner-card {
+    padding: 20px !important;
+    min-height: auto !important;
+  }
+}

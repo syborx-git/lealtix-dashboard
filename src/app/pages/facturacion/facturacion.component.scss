@@ -171,3 +171,18 @@
   background: #eff6ff;
   color: #2563eb;
 }
+
+/* ============================================================================
+   RESPONSIVE: tabla de facturas con scroll horizontal en móvil/tablet
+   ============================================================================ */
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 900px) {
+  .invoices-table {
+    min-width: 640px;
+  }
+}
