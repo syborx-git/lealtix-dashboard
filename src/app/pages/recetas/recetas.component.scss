@@ -682,3 +682,26 @@
     box-shadow: none;
   }
 }
+/* ============================================================================
+   RESPONSIVE recetas (móvil/tablet)
+   - Las tablas usaban table-layout: fixed + width 100%, apretando el texto.
+     En móvil pasan a auto-layout con scroll horizontal.
+   - El encabezado envuelve para que el título no se aplaste con el botón.
+   ============================================================================ */
+@media (max-width: 900px) {
+  .recetas-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  .recetas-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 767px) {
+  :host ::ng-deep .catalog-table table {
+    table-layout: auto !important;
+    min-width: 720px;
+  }
+}

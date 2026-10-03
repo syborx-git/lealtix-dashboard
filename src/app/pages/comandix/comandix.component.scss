@@ -2723,3 +2723,24 @@
   }
 }
 
+
+/* ============================================================================
+   RESPONSIVE: tabs de vista en móvil/tablet
+   Antes: flex:1 1 0 + nowrap aplastaba los 5 botones y el texto se encimaba
+   ("Canceladas", "Reporte Ventas"). Ahora hacen scroll horizontal sin apretarse.
+   ============================================================================ */
+@media (max-width: 900px) {
+  .view-toggle {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .view-toggle::-webkit-scrollbar { display: none; }
+
+  .view-toggle-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}

@@ -2122,3 +2122,23 @@ body.modulo-fullscreen-active .app-content {
   .p-dialog .p-dialog-footer { flex-wrap: wrap; gap: 0.5rem; }
   .p-dialog .p-dialog-footer .p-button { flex: 1 1 100%; }
 }
+
+/* ============================================================================
+   RESPONSIVE GLOBAL: pestañas de catálogo (.catalog-tabs) en móvil/tablet
+   Antes se aplastaban y el texto se encimaba. Ahora hacen scroll horizontal.
+   ============================================================================ */
+@media (max-width: 900px) {
+  .catalog-tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .catalog-tabs::-webkit-scrollbar { display: none; }
+  .catalog-tabs .catalog-tab {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
