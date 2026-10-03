@@ -2087,3 +2087,38 @@ body.modulo-fullscreen-active .app-content {
 
   body.ticket-print-mode .ticket-actions { display: none !important; }
 }
+
+/* ============================================================================
+   RESPONSIVE GLOBAL — Lealtix (móvil y tablet)
+   Homogeneiza toda la app: tablas con scroll horizontal, diálogos dentro de la
+   pantalla, sin scroll horizontal de página y objetivos táctiles cómodos.
+   ============================================================================ */
+@media (max-width: 991px) {
+  /* 1) Tablas: scroll horizontal en vez de desbordar la página */
+  .p-datatable .p-datatable-table-container,
+  .p-datatable .p-datatable-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .p-datatable table { min-width: 100%; }
+
+  /* 2) Diálogos: siempre dentro de la pantalla y con contenido desplazable */
+  .p-dialog { max-height: 95dvh; }
+  .p-dialog .p-dialog-content { max-height: 70vh; overflow-y: auto; }
+
+  /* 3) Prevenir scroll horizontal accidental */
+  .app-main { overflow-x: hidden; }
+  .app-main img, .app-main video, .app-main canvas { max-width: 100%; height: auto; }
+
+  /* 4) Barras de herramientas con muchos botones: permitir wrap */
+  .p-toolbar { flex-wrap: wrap; gap: 0.5rem; }
+}
+
+@media (max-width: 640px) {
+  /* Diálogos y pies de acción a ancho completo (patrón móvil) */
+  .p-dialog .p-dialog-content { max-height: 74vh; padding: 1rem; }
+  .p-dialog .p-dialog-header,
+  .p-dialog .p-dialog-footer { padding: 0.75rem 1rem; }
+  .p-dialog .p-dialog-footer { flex-wrap: wrap; gap: 0.5rem; }
+  .p-dialog .p-dialog-footer .p-button { flex: 1 1 100%; }
+}
