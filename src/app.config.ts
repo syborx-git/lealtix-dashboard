@@ -34,7 +34,7 @@ export const appConfig: ApplicationConfig = {
         // PWA: service worker (solo en producción)
         provideServiceWorker('ngsw-worker.js', {
             enabled: environment.production,
-            registrationStrategy: 'registerWhenStable:30000'
+            registrationStrategy: 'registerImmediately'
         })
     ]
 };
