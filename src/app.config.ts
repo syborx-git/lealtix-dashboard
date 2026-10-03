@@ -2,6 +2,7 @@ import { provideHttpClient, withFetch, withInterceptorsFromDi, HTTP_INTERCEPTORS
 import { ApplicationConfig } from '@angular/core';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideRouter, withEnabledBlockingInitialNavigation, withInMemoryScrolling } from '@angular/router';
+import { provideServiceWorker } from '@angular/service-worker';
 import Aura from '@primeuix/themes/aura';
 import { providePrimeNG } from 'primeng/config';
 import { MessageService, ConfirmationService } from 'primeng/api';
@@ -9,6 +10,7 @@ import { appRoutes } from './app.routes';
 import { AuthInterceptor } from './app/interceptors/auth.interceptor';
 import { ErrorInterceptor } from './app/interceptors/error.interceptor';
 import { LoadingInterceptor } from './app/interceptors/loading.interceptor';
+import { environment } from './app/pages/commons/environment';
 
 export const appConfig: ApplicationConfig = {
     providers: [
@@ -27,6 +29,12 @@ export const appConfig: ApplicationConfig = {
         // Registrar interceptores
         { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
         { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true },
-        { provide: HTTP_INTERCEPTORS, useClass: LoadingInterceptor, multi: true }
+        { provide: HTTP_INTERCEPTORS, useClass: LoadingInterceptor, multi: true },
+
+        // PWA: service worker (solo en producción)
+        provideServiceWorker('ngsw-worker.js', {
+            enabled: environment.production,
+            registrationStrategy: 'registerWhenStable:30000'
+        })
     ]
 };
