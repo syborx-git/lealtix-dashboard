@@ -1,0 +1,50 @@
+{
+  "name": "Comandix POS",
+  "short_name": "Comandix",
+  "description": "Lealtix / Comandix POS - Punto de venta, comandas y operación del restaurante",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#33211D",
+  "background_color": "#ffffff",
+  "lang": "es-MX",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Comandix",
+      "short_name": "Comandix",
+      "url": "/dashboard/comandix"
+    },
+    {
+      "name": "Cocina",
+      "short_name": "Cocina",
+      "url": "/dashboard/cocina"
+    },
+    {
+      "name": "Caja",
+      "short_name": "Caja",
+      "url": "/dashboard/caja"
+    }
+  ]
+}
