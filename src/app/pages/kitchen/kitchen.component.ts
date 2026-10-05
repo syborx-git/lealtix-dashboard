@@ -165,7 +165,7 @@ export class KitchenComponent implements OnInit, OnDestroy {
     }
 
     isItemYaSalio(order: KitchenOrder, item: KitchenOrderItem): boolean {
-        return item.yaSalio === true || (order?.recorrido === 2 && item.tiempo === 1);
+        return item.yaSalio === true;
     }
 
     async startOrder(order: KitchenOrder): Promise<void> {
@@ -180,7 +180,7 @@ export class KitchenComponent implements OnInit, OnDestroy {
             this.messageService.add({
                 severity: 'error',
                 summary: 'No se pudo iniciar',
-                detail: `La orden ${this.shortId(order.id)} no pudo pasar a preparación.`,
+                detail: `El ticket ${this.shortId(order.id)} no pudo pasar a preparación.`,
                 life: 3000
             });
         } finally {
@@ -198,26 +198,18 @@ export class KitchenComponent implements OnInit, OnDestroy {
             await this.kitchenOrderFacadeService.finishOrder(order.id);
             this.deliveredItemsByOrder.delete(order.id);
 
-            if (this.hasPendingSegundoTiempo(order)) {
-                this.messageService.add({
-                    severity: 'success',
-                    summary: '1er Tiempo Listo',
-                    detail: `La orden #${this.shortId(order.id)} quedó lista. El 2do tiempo aparecerá en Confirmada cuando el mesero lo mande.`,
-                    life: 4500
-                });
-            } else {
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Comanda Lista',
-                    detail: `La orden #${this.shortId(order.id)} se marcó como lista para despacho.`,
-                    life: 3000
-                });
-            }
+            const label = order.tiempoLabel || 'Ticket';
+            this.messageService.add({
+                severity: 'success',
+                summary: `${label} Listo`,
+                detail: `${label} de #${this.shortId(order.id)} marcado como listo para despacho.`,
+                life: 3000
+            });
         } catch {
             this.messageService.add({
                 severity: 'error',
                 summary: 'No se pudo terminar',
-                detail: `La orden ${this.shortId(order.id)} no pudo marcarse como lista.`,
+                detail: `El ticket ${this.shortId(order.id)} no pudo marcarse como listo.`,
                 life: 3000
             });
         } finally {
@@ -246,11 +238,20 @@ export class KitchenComponent implements OnInit, OnDestroy {
     }
 
     shortId(orderId: string): string {
-        return orderId.slice(0, 8).toUpperCase();
+        if (!orderId) return '';
+        const parts = orderId.split('__');
+        const base = parts[0].slice(0, 8).toUpperCase();
+        if (parts.length > 1) {
+            const tag = parts[1];
+            const tiempoText = tag === 'T3' ? '3er T.' : (tag === 'T2' ? '2do T.' : '1er T.');
+            return `${base} (${tiempoText})`;
+        }
+        return base;
     }
 
     elapsedMinutes(order: KitchenOrder): number {
-        const createdAt = new Date(order.createdAt).getTime();
+        const timeRef = order.marchedAt || order.createdAt;
+        const createdAt = new Date(timeRef).getTime();
         if (Number.isNaN(createdAt)) {
             return 0;
         }
@@ -328,7 +329,7 @@ export class KitchenComponent implements OnInit, OnDestroy {
 
     getPendingItemsCount(order: KitchenOrder): number {
         const currentRoundItems = (order.items || []).filter(
-            (item) => !this.isItemYaSalio(order, item) && !(item.tiempo === 2 && !item.tiempoMarchado)
+            (item) => !this.isItemYaSalio(order, item)
         );
         return Math.max(0, currentRoundItems.length - this.getDeliveredItemsCount(order));
     }

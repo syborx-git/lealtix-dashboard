@@ -1502,8 +1502,12 @@ export class CajaComponent implements OnInit, OnDestroy {
           comentarios = m[2];
         }
       }
+      const prodName = it.productName || it.prod || it.name || it.nombreProducto || it.productoNombre || it.product?.nombre || it.nombre;
+      const prodId = it.productId ?? it.productoId;
       return {
         ...it,
+        productName: prodName,
+        productId: prodId,
         comentarios,
         asientoId: it.idAsiento ?? it.asientoId,
         asientoAlias: alias
@@ -1760,7 +1764,16 @@ export class CajaComponent implements OnInit, OnDestroy {
   }
 
   getProductLabel(item: any): string {
-    return item?.productoNombre || item?.nombreProducto || item?.product?.nombre || item?.nombre || `Producto #${item?.productoId || ''}`;
+    return (
+      item?.productName ||
+      item?.prod ||
+      item?.name ||
+      item?.nombreProducto ||
+      item?.productoNombre ||
+      item?.product?.nombre ||
+      item?.nombre ||
+      (item?.productId ? `Producto #${item.productId}` : (item?.productoId ? `Producto #${item.productoId}` : 'Producto'))
+    );
   }
 
   getStatusClass(estado?: string): string {

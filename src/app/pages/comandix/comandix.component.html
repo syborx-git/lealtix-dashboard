@@ -629,6 +629,19 @@
           </button>
         </div>
 
+        <!-- Botón para mandar TODOS los tiempos juntos si ambos están pendientes -->
+        <div *ngIf="hasMultiplesTiemposPendientes(order)" class="my-1.5">
+          <button
+            type="button"
+            (click)="$event.stopPropagation(); marcharTodosLosTiempos(order)"
+            [disabled]="processingOrderAction()"
+            class="w-full cursor-pointer text-[11px] font-bold px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs flex items-center justify-center gap-1.5 transition-all border-0"
+            title="Mandar segundo y tercer tiempo a cocina al mismo tiempo"
+          >
+            <i class="pi pi-bolt text-[11px]"></i> Mandar Todos los Tiempos Juntos 🔥
+          </button>
+        </div>
+
         <!-- Avisos de stock: últimas piezas / agotados -->
         <div *ngIf="getLowStockItems(order) as lowStockItems" class="order-card-stock-warning">
           <ng-container *ngIf="lowStockItems.length > 0">
@@ -1498,6 +1511,20 @@
 
             <!-- GRUPO 2: ACCIONES PRINCIPALES (DERECHA / DESTACADAS) -->
             <div class="flex items-center justify-end gap-2 flex-wrap">
+              <!-- Mandar Todos los Tiempos si hay múltiples pendientes -->
+              <button
+                *ngIf="hasMultiplesTiemposPendientes(order)"
+                type="button"
+                (click)="marcharTodosLosTiempos(order)"
+                [disabled]="processingOrderAction()"
+                class="min-h-[44px] px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs inline-flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap border-0"
+                title="Mandar segundo y tercer tiempo a cocina a la vez"
+              >
+                <i *ngIf="processingOrderAction()" class="pi pi-spin pi-spinner text-xs"></i>
+                <i *ngIf="!processingOrderAction()" class="pi pi-bolt text-xs"></i>
+                <span>Mandar Todos los Tiempos a Cocina 🔥</span>
+              </button>
+
               <!-- Mandar 2do Tiempo (Morado Sólido según especificación) -->
               <button
                 *ngIf="hasSegundoTiempoPendiente(order)"

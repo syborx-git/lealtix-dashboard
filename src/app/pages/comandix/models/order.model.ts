@@ -204,6 +204,9 @@ export interface UpdateOrderStatusRequest {
 export interface SplitOrderRequest {
   tenantId: number;
   customerId?: number | null;
+  mesaId?: number | null;
+  meseroId?: number | null;
+  horaApertura?: string | null;
   items: OrderItem[];
   source?: string;
 }

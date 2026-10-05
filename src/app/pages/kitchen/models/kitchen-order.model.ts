@@ -14,10 +14,14 @@ export interface KitchenOrderItem {
     excludedIngredientIds?: number[];
     /** IDs de adicionales que el cliente pidió */
     additionalIngredientIds?: number[];
+    updatedAt?: string;
 }
 
 export interface KitchenOrder {
     id: string;
+    parentOrderId?: string;
+    tiempo?: 1 | 2 | 3;
+    tiempoLabel?: string;
     tenantId: number;
     status: KitchenOrderStatus;
     customerId?: number | null;
@@ -27,6 +31,7 @@ export interface KitchenOrder {
     mesaNumero?: number;
     source?: string;
     createdAt: string;
+    marchedAt?: string;
     items: KitchenOrderItem[];
     subtotal: number;
     discount: number;
@@ -34,4 +39,5 @@ export interface KitchenOrder {
     recorrido?: number;
     segundoTiempoMarchado?: boolean;
     tercerTiempoMarchado?: boolean;
+    waitingTiemposLabels?: string[];
 }

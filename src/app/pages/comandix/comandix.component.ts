@@ -736,6 +736,62 @@ configEditingItem: CartItem | null = null;
     }
   }
 
+  hasMultiplesTiemposPendientes(order: PendingOrder | null | undefined): boolean {
+    return this.hasSegundoTiempoPendiente(order) && this.hasTercerTiempoPendiente(order);
+  }
+
+  async marcharTodosLosTiempos(order: PendingOrder): Promise<void> {
+    if (!order || this.processingOrderAction()) return;
+    this.processingOrderAction.set(true);
+
+    try {
+      try {
+        await firstValueFrom(this.orderService.marcharTodosLosTiempos(order.id));
+      } catch (errEndpoint) {
+        console.warn('[Comandix] Fallback al marchar todos los tiempos:', errEndpoint);
+        await Promise.allSettled([
+          firstValueFrom(this.orderService.marcharSegundoTiempo(order.id)),
+          firstValueFrom(this.orderService.marcharTercerTiempo(order.id))
+        ]);
+      }
+
+      const updatedOrder: PendingOrder = {
+        ...order,
+        estado: 'CONFIRMADA',
+        segundoTiempoMarchado: true,
+        tercerTiempoMarchado: true,
+        items: (order.items || []).map((it) => (it.tiempo === 2 || it.tiempo === 3 ? { ...it, tiempoMarchado: true } : it))
+      };
+
+      this.pendingOrders.update((orders) =>
+        orders.map((o) => (o.id === order.id ? updatedOrder : o))
+      );
+
+      if (this.selectedOrder()?.id === order.id) {
+        this.selectedOrder.set(updatedOrder);
+      }
+
+      this.playNotificationSound(1);
+
+      this.messageService.add({
+        severity: 'success',
+        summary: '¡Todos los Tiempos Enviados a Cocina!',
+        detail: `Se notificó a cocina para comenzar la preparación de todos los tiempos de ${order.mesaNombre || 'la mesa'}`,
+        life: 4000
+      });
+    } catch (e: any) {
+      const msg = e?.error?.message || e?.message || 'No se pudieron mandar todos los tiempos a cocina';
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error al marchar tiempos',
+        detail: msg,
+        life: 3000
+      });
+    } finally {
+      this.processingOrderAction.set(false);
+    }
+  }
+
   // ==================== CARGA DE MESAS ====================
 
   private loadMesas(): void {
