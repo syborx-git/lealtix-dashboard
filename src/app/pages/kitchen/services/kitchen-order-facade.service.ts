@@ -336,11 +336,15 @@ export class KitchenOrderFacadeService implements OnDestroy {
         const rawItems = order?.items ?? [];
         const items: KitchenOrderItem[] = rawItems.map((item: any) => this.mapItem(item));
 
+        const has3erMarchado = items.some((it: KitchenOrderItem) => it.tiempo === 3 && it.tiempoMarchado);
         const has2doMarchado = items.some((it: KitchenOrderItem) => it.tiempo === 2 && it.tiempoMarchado);
-        const recorrido = order?.recorrido ?? (has2doMarchado ? 2 : 1);
+        const recorrido = order?.recorrido ?? (has3erMarchado ? 3 : (has2doMarchado ? 2 : 1));
 
-        // Si ya está en segundo recorrido o 2do tiempo marchado, los de 1er tiempo ya salieron
+        // Si ya está en 3er o 2do tiempo marchado, los tiempos anteriores ya salieron
         const refinedItems = items.map((it: KitchenOrderItem) => {
+            if (recorrido === 3 && (it.tiempo === 1 || it.tiempo === 2)) {
+                return { ...it, yaSalio: true };
+            }
             if (recorrido === 2 && it.tiempo === 1) {
                 return { ...it, yaSalio: true };
             }
@@ -363,7 +367,8 @@ export class KitchenOrderFacadeService implements OnDestroy {
             discount: Number(order?.descuento ?? 0),
             total: Number(order?.total ?? order?.totalFinal ?? 0),
             recorrido,
-            segundoTiempoMarchado: has2doMarchado
+            segundoTiempoMarchado: has2doMarchado,
+            tercerTiempoMarchado: has3erMarchado
         };
     }
 
@@ -378,10 +383,14 @@ export class KitchenOrderFacadeService implements OnDestroy {
         const mesaNombre = order?.mesaNombre;
         const mesaNumero = order?.mesaNumero;
 
+        const has3erMarchado = items.some((it: KitchenOrderItem) => it.tiempo === 3 && it.tiempoMarchado);
         const has2doMarchado = items.some((it: KitchenOrderItem) => it.tiempo === 2 && it.tiempoMarchado);
-        const recorrido = order?.recorrido ?? (has2doMarchado ? 2 : 1);
+        const recorrido = order?.recorrido ?? (has3erMarchado ? 3 : (has2doMarchado ? 2 : 1));
 
         const refinedItems = items.map((it: KitchenOrderItem) => {
+            if (recorrido === 3 && (it.tiempo === 1 || it.tiempo === 2)) {
+                return { ...it, yaSalio: true };
+            }
             if (recorrido === 2 && it.tiempo === 1) {
                 return { ...it, yaSalio: true };
             }
@@ -404,16 +413,23 @@ export class KitchenOrderFacadeService implements OnDestroy {
             discount: Number(order?.descuento ?? 0),
             total: Number(order?.total ?? 0),
             recorrido,
-            segundoTiempoMarchado: has2doMarchado
+            segundoTiempoMarchado: has2doMarchado,
+            tercerTiempoMarchado: has3erMarchado
         };
     }
 
     private mapItem(item: any): KitchenOrderItem {
         const rawComments = String(item?.comentarios ?? '');
-        let tiempo: 1 | 2 = item?.tiempo === 2 ? 2 : 1;
+        let tiempo: 1 | 2 | 3 = item?.tiempo === 3 ? 3 : (item?.tiempo === 2 ? 2 : 1);
         let tiempoMarchado = !!item?.tiempoMarchado;
+        const paraLlevar = item?.paraLlevar || rawComments.includes('PARA LLEVAR');
 
-        if (rawComments.includes('2DO TIEMPO') || rawComments.includes('SEGUNDO TIEMPO')) {
+        if (rawComments.includes('3ER TIEMPO') || rawComments.includes('TERCER TIEMPO')) {
+            tiempo = 3;
+            if (rawComments.includes('MARCHADO')) {
+                tiempoMarchado = true;
+            }
+        } else if (rawComments.includes('2DO TIEMPO') || rawComments.includes('SEGUNDO TIEMPO')) {
             tiempo = 2;
             if (rawComments.includes('MARCHADO')) {
                 tiempoMarchado = true;
@@ -428,6 +444,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
             comments: rawComments,
             tiempo,
             tiempoMarchado,
+            paraLlevar,
             yaSalio: !!item?.yaSalio,
             excludedIngredientIds: Array.isArray(item?.excludedIngredientIds) ? item.excludedIngredientIds.map(Number) : [],
             additionalIngredientIds: Array.isArray(item?.additionalIngredientIds) ? item.additionalIngredientIds.map(Number) : []

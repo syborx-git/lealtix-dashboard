@@ -6,8 +6,9 @@ export interface KitchenOrderItem {
     quantity: number;
     unitPrice: number;
     comments?: string;
-    tiempo?: 1 | 2;
+    tiempo?: 1 | 2 | 3;
     tiempoMarchado?: boolean;
+    paraLlevar?: boolean;
     yaSalio?: boolean;
     /** IDs de ingredientes modificables que el cliente NO quiere */
     excludedIngredientIds?: number[];
@@ -32,4 +33,5 @@ export interface KitchenOrder {
     total: number;
     recorrido?: number;
     segundoTiempoMarchado?: boolean;
+    tercerTiempoMarchado?: boolean;
 }

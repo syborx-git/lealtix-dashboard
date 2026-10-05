@@ -85,6 +85,23 @@ export interface CorteCajaDTO {
   anulaciones: TablaReporteDTO;
 }
 
+export interface AuditoriaMermasDTO {
+  meta: ReporteMetaDTO;
+  kpis: KpiDTO[];
+  porMotivo: TablaReporteDTO;
+  porResponsable: TablaReporteDTO;
+  porInsumo: TablaReporteDTO;
+  detalle: TablaReporteDTO;
+}
+
+export interface StockMinimoReporteDTO {
+  meta: ReporteMetaDTO;
+  kpis: KpiDTO[];
+  alertas: TablaReporteDTO;
+  listaCompras: TablaReporteDTO;
+  inventarioGeneral: TablaReporteDTO;
+}
+
 export interface GenericResponse<T> {
   code: number;
   message: string;
@@ -133,6 +150,36 @@ export class ReportesService {
   exportarCorteCaja(tenantId: number, params: ReportesParams): Observable<Blob> {
     return this.http.get(`${this.baseUrl}/corte-caja/export`, {
       params: this.construirParams(tenantId, params),
+      responseType: 'blob',
+    });
+  }
+
+  /** Reporte 2.3: Auditoria de mermas por motivo, responsable e insumos mermados. */
+  obtenerMermas(tenantId: number, params: ReportesParams): Observable<GenericResponse<AuditoriaMermasDTO>> {
+    return this.http.get<GenericResponse<AuditoriaMermasDTO>>(`${this.baseUrl}/mermas`, {
+      params: this.construirParams(tenantId, params),
+    });
+  }
+
+  /** Reporte 2.3 en .xlsx real con desglose por motivo, responsable y detalle cronologico. */
+  exportarMermas(tenantId: number, params: ReportesParams): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/mermas/export`, {
+      params: this.construirParams(tenantId, params),
+      responseType: 'blob',
+    });
+  }
+
+  /** Reporte 2.4: Alertas de stock minimo, critico y sugerencia de compra. */
+  obtenerStockMinimo(tenantId: number): Observable<GenericResponse<StockMinimoReporteDTO>> {
+    const params = new HttpParams().set('tenantId', String(tenantId));
+    return this.http.get<GenericResponse<StockMinimoReporteDTO>>(`${this.baseUrl}/stock-minimo`, { params });
+  }
+
+  /** Reporte 2.4 en .xlsx real con lista de compras y auditoria de inventario. */
+  exportarStockMinimo(tenantId: number): Observable<Blob> {
+    const params = new HttpParams().set('tenantId', String(tenantId));
+    return this.http.get(`${this.baseUrl}/stock-minimo/export`, {
+      params,
       responseType: 'blob',
     });
   }

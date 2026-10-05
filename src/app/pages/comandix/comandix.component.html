@@ -349,6 +349,18 @@
                 <i class="pi pi-clock text-[11px]"></i>
                 <span>2do Tiempo ⏱️</span>
               </button>
+              <button
+                type="button"
+                (click)="setTiempoActivo(3)"
+                [ngClass]="tiempoActivo() === 3
+                  ? 'bg-purple-600 text-white font-bold shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 font-medium'"
+                class="px-2.5 py-1 text-xs rounded-lg transition-all flex items-center gap-1.5 cursor-pointer border-0"
+                title="Los platillos seleccionados serán para el 3er tiempo (postres, digestivos) y esperarán a marchar"
+              >
+                <i class="pi pi-sparkles text-[11px]"></i>
+                <span>3er Tiempo 🍰</span>
+              </button>
             </div>
 
             <div class="font-semibold text-slate-500">
@@ -594,6 +606,26 @@
             title="Mandar a cocina para que aparezca en Confirmada e inicie la preparación"
           >
             <i class="pi pi-send text-[10px]"></i> Mandar 2do T.
+          </button>
+        </div>
+
+        <!-- Indicador de 3er Tiempo en la card -->
+        <div *ngIf="hasTercerTiempo(order)" class="my-1.5 flex items-center justify-between flex-wrap gap-1">
+          <span *ngIf="hasTercerTiempoPendiente(order)" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-900 border border-purple-300 flex items-center gap-1">
+            <i class="pi pi-sparkles text-[10px]"></i> 3er Tiempo en espera
+          </span>
+          <span *ngIf="hasTercerTiempoMarchado(order)" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+            <i class="pi pi-check-circle text-[10px]"></i> 3er Tiempo Marchado 🔥
+          </span>
+          <button
+            *ngIf="hasTercerTiempoPendiente(order)"
+            type="button"
+            (click)="$event.stopPropagation(); marcharTercerTiempo(order)"
+            [disabled]="processingOrderAction()"
+            class="cursor-pointer text-[11px] font-bold px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-700 text-white shadow-xs flex items-center gap-1 transition-all border-0"
+            title="Mandar 3er tiempo a cocina para que inicie la preparación"
+          >
+            <i class="pi pi-send text-[10px]"></i> Mandar 3er T.
           </button>
         </div>
 
@@ -1033,25 +1065,42 @@
         <div class="flex-1 overflow-y-auto p-3.5 space-y-2.5 max-h-[calc(100vh-390px)]">
           <div *ngFor="let item of cart(); let i = index; trackBy: trackByProductId"
                class="p-3 rounded-xl border transition-colors"
-               [ngClass]="item.tiempo === 2 ? 'bg-amber-50/60 hover:bg-amber-100/40 border-amber-200/90 shadow-2xs' : 'bg-slate-50/70 hover:bg-purple-50/30 border-slate-100'">
+               [ngClass]="item.tiempo === 3 ? 'bg-purple-50/70 hover:bg-purple-100/50 border-purple-200/90 shadow-2xs' : (item.tiempo === 2 ? 'bg-amber-50/60 hover:bg-amber-100/40 border-amber-200/90 shadow-2xs' : 'bg-slate-50/70 hover:bg-purple-50/30 border-slate-100')">
             
-            <!-- Fila superior: Tag Comensal + Tag Tiempo + Botones acción -->
+            <!-- Fila superior: Tag Comensal + Tag Tiempo + Botón Llevar + Botones acción -->
             <div class="flex items-center justify-between gap-2 mb-1.5">
               <div class="flex items-center gap-1.5 flex-wrap">
                 <span class="bg-purple-100/80 text-purple-800 text-[11px] font-bold px-2 py-0.5 rounded-md inline-flex items-center gap-1">
                   <i class="pi pi-user text-[10px]"></i>{{ item.asientoAlias || 'Persona 1' }}
                 </span>
+
+                <!-- Botón de Tiempo: 1er, 2do o 3er Tiempo -->
                 <button
                   type="button"
                   (click)="toggleItemTiempo(item)"
-                  [title]="item.tiempo === 2 ? 'Cambiar a 1er Tiempo (preparación inmediata)' : 'Cambiar a 2do Tiempo (en espera de marchar)'"
+                  [title]="'Tiempo actual: ' + (item.tiempo === 3 ? '3er Tiempo' : (item.tiempo === 2 ? '2do Tiempo' : '1er Tiempo')) + '. Clic para alternar.'"
                   class="cursor-pointer text-[10px] font-bold px-2 py-0.5 rounded-md inline-flex items-center gap-1 transition-all border"
-                  [ngClass]="item.tiempo === 2
-                    ? 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200'
-                    : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'"
+                  [ngClass]="item.tiempo === 3
+                    ? 'bg-purple-100 text-purple-900 border-purple-300 hover:bg-purple-200'
+                    : (item.tiempo === 2
+                      ? 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200'
+                      : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100')"
                 >
-                  <i class="pi" [ngClass]="item.tiempo === 2 ? 'pi-clock' : 'pi-bolt'"></i>
-                  <span>{{ item.tiempo === 2 ? '2do Tiempo ⏱️' : '1er Tiempo' }}</span>
+                  <i class="pi" [ngClass]="item.tiempo === 3 ? 'pi-sparkles' : (item.tiempo === 2 ? 'pi-clock' : 'pi-bolt')"></i>
+                  <span>{{ item.tiempo === 3 ? '3er Tiempo 🍰' : (item.tiempo === 2 ? '2do Tiempo ⏱️' : '1er Tiempo') }}</span>
+                </button>
+
+                <!-- Botón de Entrega: Para Llevar vs En Restaurante -->
+                <button
+                  type="button"
+                  (click)="toggleItemParaLlevar(item)"
+                  [title]="item.paraLlevar ? 'Platillo marcado para llevar. Clic para cambiar a comer en restaurante.' : 'Platillo para comer en restaurante. Clic para cambiar a para llevar.'"
+                  class="cursor-pointer text-[10px] font-bold px-2 py-0.5 rounded-md inline-flex items-center gap-1 transition-all border"
+                  [ngClass]="item.paraLlevar
+                    ? 'bg-orange-100 text-orange-950 border-orange-300 hover:bg-orange-200 shadow-2xs'
+                    : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'"
+                >
+                  <span>{{ item.paraLlevar ? '🥡 Para llevar' : '🍽️ En restaurante' }}</span>
                 </button>
               </div>
               <div class="flex items-center gap-1">
@@ -1077,10 +1126,18 @@
               </div>
             </div>
 
-            <!-- Aviso explicativo para el mesero si es 2do tiempo -->
+            <!-- Aviso explicativo para el mesero si es 2do o 3er tiempo o para llevar -->
             <div *ngIf="item.tiempo === 2" class="mb-1.5 px-2 py-1 bg-amber-100/70 border border-amber-200 rounded-lg text-[10px] text-amber-900 flex items-center gap-1.5 font-medium">
               <i class="pi pi-clock text-amber-600 text-[10px]"></i>
               <span>En espera · Marcharás este platillo cuando los comensales terminen el 1er tiempo.</span>
+            </div>
+            <div *ngIf="item.tiempo === 3" class="mb-1.5 px-2 py-1 bg-purple-100/70 border border-purple-200 rounded-lg text-[10px] text-purple-900 flex items-center gap-1.5 font-medium">
+              <i class="pi pi-sparkles text-purple-600 text-[10px]"></i>
+              <span>3er Tiempo · En espera de marchar a cocina (postres / digestivos).</span>
+            </div>
+            <div *ngIf="item.paraLlevar" class="mb-1.5 px-2 py-1 bg-orange-50 border border-orange-200 rounded-lg text-[10px] text-orange-900 flex items-center gap-1.5 font-medium">
+              <i class="pi pi-shopping-bag text-orange-600 text-[10px]"></i>
+              <span>Cocina lo empacará para llevar.</span>
             </div>
 
             <!-- Nombre de platillo y precio unitario -->
@@ -1286,6 +1343,15 @@
                         [ngClass]="item.tiempoMarchado ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900 border border-amber-300'">
                     {{ item.tiempoMarchado ? '🔥 2do Tiempo Marchado' : '⏱️ 2do Tiempo (En espera)' }}
                   </span>
+                  <span *ngIf="item.tiempo === 3"
+                        class="text-xs px-2 py-0.5 border-round font-semibold"
+                        [ngClass]="item.tiempoMarchado ? 'bg-purple-100 text-purple-800' : 'bg-fuchsia-100 text-fuchsia-900 border border-fuchsia-300'">
+                    {{ item.tiempoMarchado ? '🔥 3er Tiempo Marchado' : '🍰 3er Tiempo (En espera)' }}
+                  </span>
+                  <span *ngIf="item.paraLlevar || (item.comentarios && item.comentarios.includes('PARA LLEVAR'))"
+                        class="text-xs px-2 py-0.5 rounded-md font-semibold bg-orange-100 text-orange-950 border border-orange-300">
+                    🥡 Para llevar
+                  </span>
                 </div>
                 <span class="order-detail-item-qty">x{{ item.cantidad }}</span>
                 <!-- Ícono con cuántas piezas salen aún (stock disponible) -->
@@ -1444,6 +1510,20 @@
                 <i *ngIf="processingOrderAction()" class="pi pi-spin pi-spinner text-xs"></i>
                 <i *ngIf="!processingOrderAction()" class="pi pi-send text-xs"></i>
                 <span>Mandar 2do Tiempo a Cocina 🔥</span>
+              </button>
+
+              <!-- Mandar 3er Tiempo -->
+              <button
+                *ngIf="hasTercerTiempoPendiente(order)"
+                type="button"
+                (click)="marcharTercerTiempo(order)"
+                [disabled]="processingOrderAction()"
+                class="min-h-[44px] px-4 py-2.5 rounded-xl bg-purple-700 hover:bg-purple-800 active:bg-purple-900 text-white font-bold text-xs inline-flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap border-0"
+                title="Mandar a cocina el 3er tiempo para inicio de preparación"
+              >
+                <i *ngIf="processingOrderAction()" class="pi pi-spin pi-spinner text-xs"></i>
+                <i *ngIf="!processingOrderAction()" class="pi pi-sparkles text-xs"></i>
+                <span>Mandar 3er Tiempo a Cocina 🍰</span>
               </button>
 
               <!-- Cerrar Comanda (Morado Sólido) -->

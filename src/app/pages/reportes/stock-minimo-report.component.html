@@ -1,0 +1,342 @@
+<!-- ============ REPORTE 2.4: ALERTAS DE STOCK MINIMO ============ -->
+
+@if (loading() && !reporte()) {
+  <div class="reporte-panel">
+    <div class="kpi-grid">
+      @for (i of [1, 2, 3, 4, 5]; track i) {
+        <div class="kpi-card">
+          <p-skeleton width="55%" height="0.8rem" />
+          <p-skeleton width="70%" height="1.6rem" styleClass="mt-3" />
+          <p-skeleton width="45%" height="0.75rem" styleClass="mt-2" />
+        </div>
+      }
+    </div>
+    <div class="panel">
+      <p-skeleton width="30%" height="1.1rem" />
+      <p-skeleton height="16rem" styleClass="mt-3" />
+    </div>
+  </div>
+} @else if (error() && !reporte()) {
+  <div class="panel panel--error">
+    <i class="pi pi-exclamation-triangle"></i>
+    <h3>No se pudo cargar el reporte de alertas de stock</h3>
+    <p>{{ error() }}</p>
+    <button pButton type="button" label="Reintentar" icon="pi pi-refresh" (click)="recargar()"></button>
+  </div>
+} @else if (reporte(); as datos) {
+  <div class="reporte-panel">
+    <!-- ============ SUBENCABEZADO ============ -->
+    <div class="reporte-subheader">
+      <div>
+        <h3>{{ datos.meta.nombre }}</h3>
+        <p class="reporte-subheader__rango">
+          Auditoría en tiempo real de insumos, bebidas y platillos monitoreados
+        </p>
+      </div>
+      <div class="reporte-subheader__acciones">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          severity="secondary"
+          [outlined]="true"
+          size="small"
+          [loading]="loading()"
+          (click)="recargar()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-file-excel"
+          label="Exportar a Excel"
+          size="small"
+          [loading]="exportando()"
+          (click)="exportar()"
+        ></button>
+      </div>
+    </div>
+
+    <!-- ============ AVISO METODOLOGICO ============ -->
+    <div class="reporte-nota">
+      <i class="pi pi-info-circle"></i>
+      <div>
+        <strong>Control de Compras y Abastecimiento:</strong> El cálculo de compras sugiere reponer hasta un 150% del stock mínimo (colchón de seguridad) para evitar roturas de stock durante el servicio. Los costos se basan en el histórico de compras de cada insumo.
+      </div>
+    </div>
+
+    <!-- ============ KPIs ============ -->
+    <app-kpi-grid [kpis]="datos.kpis" />
+
+    <!-- ============ GRAFICA DE SALUD DE STOCK ============ -->
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Salud del inventario</h4>
+            <p class="panel__subtitulo">Proporción de artículos agotados, en alerta y saludables</p>
+          </div>
+        </div>
+        <div class="panel__grafica panel__grafica--alta">
+          <p-chart type="doughnut" [data]="stockChartData()" [options]="stockChartOptions" />
+        </div>
+      </div>
+
+      <div class="panel flex-column-between">
+        <div class="panel__header">
+          <div>
+            <h4>Resumen de acción inmediata</h4>
+            <p class="panel__subtitulo">Artículos que requieren reposición urgente para el servicio</p>
+          </div>
+        </div>
+        <div class="alertas-summary-box">
+          <div class="summary-item summary-item--danger">
+            <span class="summary-num">{{ datos.alertas.filas.length }}</span>
+            <span class="summary-lbl">Artículos en riesgo operativo</span>
+          </div>
+          <div class="summary-item summary-item--warn">
+            <span class="summary-num">{{ moneda(datos.kpis[3]?.actual) }}</span>
+            <span class="summary-lbl">Presupuesto estimado de reposición</span>
+          </div>
+        </div>
+        <div class="p-3 bg-slate-50 border-round text-sm text-slate-600 mt-3">
+          <i class="pi pi-lightbulb mr-1 text-amber-500"></i>
+          Puedes cambiar de pestaña abajo para ver la <strong>Lista de compras</strong> lista para ordenar con proveedores, o el <strong>Inventario general</strong> completo.
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ SELECTOR DE VISTA ============ -->
+    <div class="vista-selector-bar">
+      <p-selectbutton
+        [options]="opcionesVista"
+        [(ngModel)]="vistaActual"
+        optionLabel="label"
+        optionValue="value"
+      >
+        <ng-template pTemplate="item" let-item>
+          <i [class]="item.icon + ' mr-2'"></i>
+          <span>{{ item.label }}</span>
+        </ng-template>
+      </p-selectbutton>
+    </div>
+
+    <!-- ============ TABLA 1: ALERTAS ACTIVAS ============ -->
+    @if (vistaActual === 'alertas') {
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Artículos bajo stock mínimo o agotados ({{ datos.alertas.filas.length }})</h4>
+            <p class="panel__subtitulo">Prioridad alta de reabastecimiento</p>
+          </div>
+        </div>
+        <p-table
+          #dtAlertas
+          [value]="datos.alertas.filas"
+          [paginator]="true"
+          [rows]="10"
+          [rowsPerPageOptions]="[5, 10, 25, 50]"
+          styleClass="p-datatable-sm"
+          [globalFilterFields]="['item', 'tipo', 'ubicacion', 'estado']"
+          [showCurrentPageReport]="true"
+          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} artículos"
+          [tableStyle]="{ 'min-width': '65rem' }"
+        >
+          <ng-template pTemplate="caption">
+            <div class="flex justify-content-end">
+              <p-iconfield iconPosition="left">
+                <p-inputicon styleClass="pi pi-search" />
+                <input
+                  pInputText
+                  type="text"
+                  placeholder="Buscar en alertas..."
+                  (input)="dtAlertas.filterGlobal($any($event.target).value, 'contains')"
+                />
+              </p-iconfield>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="header">
+            <tr>
+              @for (col of datos.alertas.columnas; track col.key) {
+                <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-fila>
+            <tr>
+              @for (col of datos.alertas.columnas; track col.key) {
+                <td [style.text-align]="alineacion(col)">
+                  @if (col.key === 'estado') {
+                    <p-tag
+                      [value]="fila['estado']"
+                      [severity]="badgeSeverity(fila['estado'])"
+                    />
+                  } @else if (col.key === 'stockActual') {
+                    <span [class.text-red-600]="fila['stockActual'] <= 0" class="font-bold">
+                      {{ valorCelda(fila, col) }}
+                    </span>
+                  } @else if (col.key === 'inversionEstimada') {
+                    <span class="font-semibold text-slate-800">{{ valorCelda(fila, col) }}</span>
+                  } @else if (col.key === 'item') {
+                    <span class="font-bold text-slate-800">{{ valorCelda(fila, col) }}</span>
+                  } @else {
+                    {{ valorCelda(fila, col) }}
+                  }
+                </td>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td [attr.colspan]="datos.alertas.columnas.length" class="empty-cell">
+                ¡Excelente! No hay insumos ni productos en nivel crítico ni agotados.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    }
+
+    <!-- ============ TABLA 2: LISTA DE COMPRAS ============ -->
+    @if (vistaActual === 'compras') {
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Lista de compras y reposición recomendada</h4>
+            <p class="panel__subtitulo">Cantidades sugeridas e inversión total estimada para abastecimiento</p>
+          </div>
+        </div>
+        <p-table
+          #dtCompras
+          [value]="datos.listaCompras.filas"
+          [paginator]="true"
+          [rows]="10"
+          [rowsPerPageOptions]="[5, 10, 25, 50]"
+          styleClass="p-datatable-sm"
+          [globalFilterFields]="['item', 'tipo']"
+          [showCurrentPageReport]="true"
+          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} artículos sugeridos"
+          [tableStyle]="{ 'min-width': '60rem' }"
+        >
+          <ng-template pTemplate="caption">
+            <div class="flex justify-content-end">
+              <p-iconfield iconPosition="left">
+                <p-inputicon styleClass="pi pi-search" />
+                <input
+                  pInputText
+                  type="text"
+                  placeholder="Buscar en lista de compras..."
+                  (input)="dtCompras.filterGlobal($any($event.target).value, 'contains')"
+                />
+              </p-iconfield>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="header">
+            <tr>
+              @for (col of datos.listaCompras.columnas; track col.key) {
+                <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-fila>
+            <tr>
+              @for (col of datos.listaCompras.columnas; track col.key) {
+                <td [style.text-align]="alineacion(col)">
+                  @if (col.key === 'cantidadComprar') {
+                    <span class="font-bold text-indigo-600 bg-indigo-50 px-2 py-1 border-round">
+                      +{{ valorCelda(fila, col) }} {{ fila['unidad'] }}
+                    </span>
+                  } @else if (col.key === 'inversionEstimada') {
+                    <span class="font-bold text-slate-800">{{ valorCelda(fila, col) }}</span>
+                  } @else if (col.key === 'item') {
+                    <span class="font-semibold text-slate-800">{{ valorCelda(fila, col) }}</span>
+                  } @else {
+                    {{ valorCelda(fila, col) }}
+                  }
+                </td>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td [attr.colspan]="datos.listaCompras.columnas.length" class="empty-cell">
+                No se requieren compras de insumos en este momento.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    }
+
+    <!-- ============ TABLA 3: INVENTARIO GENERAL ============ -->
+    @if (vistaActual === 'general') {
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Auditoría de inventario general</h4>
+            <p class="panel__subtitulo">Desglose de existencias en bodega, cocina/barra y mínimos configurados</p>
+          </div>
+        </div>
+        <p-table
+          #dtGen
+          [value]="datos.inventarioGeneral.filas"
+          [paginator]="true"
+          [rows]="15"
+          [rowsPerPageOptions]="[10, 15, 30, 50]"
+          styleClass="p-datatable-sm"
+          [globalFilterFields]="['item', 'tipo', 'estado']"
+          [showCurrentPageReport]="true"
+          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} artículos monitoreados"
+          [tableStyle]="{ 'min-width': '65rem' }"
+        >
+          <ng-template pTemplate="caption">
+            <div class="flex justify-content-end">
+              <p-iconfield iconPosition="left">
+                <p-inputicon styleClass="pi pi-search" />
+                <input
+                  pInputText
+                  type="text"
+                  placeholder="Buscar insumo o producto..."
+                  (input)="dtGen.filterGlobal($any($event.target).value, 'contains')"
+                />
+              </p-iconfield>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="header">
+            <tr>
+              @for (col of datos.inventarioGeneral.columnas; track col.key) {
+                <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-fila>
+            <tr>
+              @for (col of datos.inventarioGeneral.columnas; track col.key) {
+                <td [style.text-align]="alineacion(col)">
+                  @if (col.key === 'estado') {
+                    <p-tag
+                      [value]="fila['estado']"
+                      [severity]="badgeSeverity(fila['estado'])"
+                    />
+                  } @else if (col.key === 'item') {
+                    <span class="font-medium text-slate-800">{{ valorCelda(fila, col) }}</span>
+                  } @else if (col.key === 'stockTotal') {
+                    <span class="font-bold text-slate-800">{{ valorCelda(fila, col) }}</span>
+                  } @else {
+                    {{ valorCelda(fila, col) }}
+                  }
+                </td>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td [attr.colspan]="datos.inventarioGeneral.columnas.length" class="empty-cell">
+                No hay artículos registrados en el inventario.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    }
+  </div>
+}

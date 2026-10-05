@@ -60,13 +60,22 @@
                             <span class="item-quantity">{{ item.quantity }}x</span>
                             <span class="item-name" [class.line-through]="isItemYaSalio(order, item)">{{ item.productName }}</span>
                             <span *ngIf="isItemYaSalio(order, item)" class="kitchen-card-badge-salio font-bold text-slate-700 bg-slate-200 border border-slate-300 px-2 py-1 rounded">
-                                ✅ 1er Tiempo - Ya salió (NO volver a preparar)
+                                ✅ Ya salió (NO volver a preparar)
                             </span>
-                            <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('EN ESPERA') || (item.tiempo === 2 && !item.tiempoMarchado))" class="kitchen-tiempo-badge-espera">
-                                ⏱️ 2DO TIEMPO (EN ESPERA - NO PREPARAR)
+                            <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('2DO TIEMPO') && item.comments?.includes('EN ESPERA') || (item.tiempo === 2 && !item.tiempoMarchado))" class="kitchen-tiempo-badge-espera">
+                                ⏱️ 2DO TIEMPO (EN ESPERA)
                             </span>
-                            <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('MARCHADO') || (item.tiempo === 2 && item.tiempoMarchado))" class="kitchen-tiempo-badge-marchado">
+                            <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('2DO TIEMPO') && item.comments?.includes('MARCHADO') || (item.tiempo === 2 && item.tiempoMarchado))" class="kitchen-tiempo-badge-marchado">
                                 🔥 2DO TIEMPO (¡MARCHANDO AHORA!)
+                            </span>
+                            <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('3ER TIEMPO') && item.comments?.includes('EN ESPERA') || (item.tiempo === 3 && !item.tiempoMarchado))" class="kitchen-tiempo-badge-espera" style="background: #fdf4ff; color: #86198f; border-color: #f0abfc;">
+                                🍰 3ER TIEMPO (EN ESPERA)
+                            </span>
+                            <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('3ER TIEMPO') && item.comments?.includes('MARCHADO') || (item.tiempo === 3 && item.tiempoMarchado))" class="kitchen-tiempo-badge-marchado" style="background: #f3e8ff; color: #6b21a8; border-color: #d8b4fe;">
+                                🔥 3ER TIEMPO (¡MARCHANDO AHORA!)
+                            </span>
+                            <span *ngIf="item.paraLlevar || item.comments?.includes('PARA LLEVAR')" class="px-2 py-0.5 rounded-md text-[11px] font-black bg-orange-100 text-orange-950 border border-orange-300 inline-flex items-center gap-1">
+                                🥡 PARA LLEVAR
                             </span>
                             <label *ngIf="order.status === 'EN_PREPARACION' && !isItemYaSalio(order, item)" class="item-check-control" (click)="$event.stopPropagation()">
                                 <input
@@ -231,13 +240,22 @@
                             <div class="flex items-center gap-1.5 flex-wrap">
                                 <span class="item-main" [class.line-through]="isItemYaSalio(order, item)">{{ item.quantity }}x {{ item.productName }}</span>
                                 <span *ngIf="isItemYaSalio(order, item)" class="kitchen-card-badge-salio">
-                                    ✅ Ya salió (1er T.)
+                                    ✅ Ya salió
                                 </span>
-                                <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('EN ESPERA') || (item.tiempo === 2 && !item.tiempoMarchado))" class="kitchen-card-badge-espera">
+                                <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('2DO TIEMPO') && item.comments?.includes('EN ESPERA') || (item.tiempo === 2 && !item.tiempoMarchado))" class="kitchen-card-badge-espera">
                                     ⏱️ 2do T. En Espera
                                 </span>
-                                <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('MARCHADO') || (item.tiempo === 2 && item.tiempoMarchado))" class="kitchen-card-badge-marchado">
+                                <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('2DO TIEMPO') && item.comments?.includes('MARCHADO') || (item.tiempo === 2 && item.tiempoMarchado))" class="kitchen-card-badge-marchado">
                                     🔥 2do T. Marchado
+                                </span>
+                                <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('3ER TIEMPO') && item.comments?.includes('EN ESPERA') || (item.tiempo === 3 && !item.tiempoMarchado))" class="kitchen-card-badge-espera" style="background: #fdf4ff; color: #86198f; border-color: #f0abfc;">
+                                    🍰 3er T. En Espera
+                                </span>
+                                <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('3ER TIEMPO') && item.comments?.includes('MARCHADO') || (item.tiempo === 3 && item.tiempoMarchado))" class="kitchen-card-badge-marchado" style="background: #f3e8ff; color: #6b21a8; border-color: #d8b4fe;">
+                                    🔥 3er T. Marchado
+                                </span>
+                                <span *ngIf="item.paraLlevar || item.comments?.includes('PARA LLEVAR')" class="px-1.5 py-0.5 rounded text-[10px] font-black bg-orange-100 text-orange-950 border border-orange-300">
+                                    🥡 Llevar
                                 </span>
                             </div>
                             <span *ngIf="item.comments" class="item-comments">{{ item.comments }}</span>
@@ -287,13 +305,22 @@
                             <div class="flex items-center gap-1.5 flex-wrap">
                                 <span class="item-main" [class.line-through]="isItemYaSalio(order, item)">{{ item.quantity }}x {{ item.productName }}</span>
                                 <span *ngIf="isItemYaSalio(order, item)" class="kitchen-card-badge-salio">
-                                    ✅ Ya salió (1er T.)
+                                    ✅ Ya salió
                                 </span>
-                                <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('EN ESPERA') || (item.tiempo === 2 && !item.tiempoMarchado))" class="kitchen-card-badge-espera">
+                                <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('2DO TIEMPO') && item.comments?.includes('EN ESPERA') || (item.tiempo === 2 && !item.tiempoMarchado))" class="kitchen-card-badge-espera">
                                     ⏱️ 2do T. En Espera
                                 </span>
-                                <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('MARCHADO') || (item.tiempo === 2 && item.tiempoMarchado))" class="kitchen-card-badge-marchado">
+                                <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('2DO TIEMPO') && item.comments?.includes('MARCHADO') || (item.tiempo === 2 && item.tiempoMarchado))" class="kitchen-card-badge-marchado">
                                     🔥 2do T. Marchado
+                                </span>
+                                <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('3ER TIEMPO') && item.comments?.includes('EN ESPERA') || (item.tiempo === 3 && !item.tiempoMarchado))" class="kitchen-card-badge-espera" style="background: #fdf4ff; color: #86198f; border-color: #f0abfc;">
+                                    🍰 3er T. En Espera
+                                </span>
+                                <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('3ER TIEMPO') && item.comments?.includes('MARCHADO') || (item.tiempo === 3 && item.tiempoMarchado))" class="kitchen-card-badge-marchado" style="background: #f3e8ff; color: #6b21a8; border-color: #d8b4fe;">
+                                    🔥 3er T. Marchado
+                                </span>
+                                <span *ngIf="item.paraLlevar || item.comments?.includes('PARA LLEVAR')" class="px-1.5 py-0.5 rounded text-[10px] font-black bg-orange-100 text-orange-950 border border-orange-300">
+                                    🥡 Llevar
                                 </span>
                             </div>
                             <span *ngIf="item.comments" class="item-comments">{{ item.comments }}</span>

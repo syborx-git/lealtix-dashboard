@@ -60,6 +60,8 @@ export const appRoutes: Routes = [
                             { path: '', pathMatch: 'full', redirectTo: 'ventas' },
                             { path: 'ventas', loadComponent: () => import('@/pages/reportes/ventas-tendencias-report.component').then(m => m.VentasTendenciasReportComponent), title: '1.1 Dashboard de Ventas y Tendencias' },
                             { path: 'corte-caja', loadComponent: () => import('@/pages/reportes/corte-caja-report.component').then(m => m.CorteCajaReportComponent), title: '1.2 Corte de Caja y Conciliacion' },
+                            { path: 'mermas', loadComponent: () => import('@/pages/reportes/mermas-auditoria-report.component').then(m => m.MermasAuditoriaReportComponent), title: '2.3 Auditoria de Mermas' },
+                            { path: 'stock-minimo', loadComponent: () => import('@/pages/reportes/stock-minimo-report.component').then(m => m.StockMinimoReportComponent), title: '2.4 Alertas de Stock Mínimo' },
                         ]
                     },
                     { path: 'recetas', loadComponent: () => import('@/pages/recetas/recetas.component').then(m => m.RecetasComponent), title: 'Recetas', canActivate: [PermissionGuard], data: { permission: 'manage_recetas' } },
