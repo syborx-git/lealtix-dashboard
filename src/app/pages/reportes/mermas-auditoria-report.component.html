@@ -1,0 +1,308 @@
+<!-- ============ REPORTE 2.3: AUDITORIA DE MERMAS ============ -->
+
+@if (loading() && !reporte()) {
+  <div class="reporte-panel">
+    <div class="kpi-grid">
+      @for (i of [1, 2, 3, 4, 5]; track i) {
+        <div class="kpi-card">
+          <p-skeleton width="55%" height="0.8rem" />
+          <p-skeleton width="70%" height="1.6rem" styleClass="mt-3" />
+          <p-skeleton width="45%" height="0.75rem" styleClass="mt-2" />
+        </div>
+      }
+    </div>
+    <div class="panel">
+      <p-skeleton width="30%" height="1.1rem" />
+      <p-skeleton height="16rem" styleClass="mt-3" />
+    </div>
+  </div>
+} @else if (error() && !reporte()) {
+  <div class="panel panel--error">
+    <i class="pi pi-exclamation-triangle"></i>
+    <h3>No se pudo cargar la auditoría de mermas</h3>
+    <p>{{ error() }}</p>
+    <button pButton type="button" label="Reintentar" icon="pi pi-refresh" (click)="recargar()"></button>
+  </div>
+} @else if (reporte(); as datos) {
+  <div class="reporte-panel">
+    <!-- ============ SUBENCABEZADO ============ -->
+    <div class="reporte-subheader">
+      <div>
+        <h3>{{ datos.meta.nombre }}</h3>
+        <p class="reporte-subheader__rango">
+          {{ datos.meta.rangoActual.etiqueta }}
+          <i class="pi pi-arrow-right"></i>
+          comparado con {{ datos.meta.rangoAnterior.etiqueta }}
+        </p>
+      </div>
+      <div class="reporte-subheader__acciones">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          severity="secondary"
+          [outlined]="true"
+          size="small"
+          [loading]="loading()"
+          (click)="recargar()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-file-excel"
+          label="Exportar a Excel"
+          size="small"
+          [loading]="exportando()"
+          (click)="exportar()"
+        ></button>
+      </div>
+    </div>
+
+    <!-- ============ AVISO METODOLOGICO ============ -->
+    <div class="reporte-nota">
+      <i class="pi pi-info-circle"></i>
+      <div>
+        <strong>Trazabilidad y Costeo:</strong> La pérdida económica refleja el valor de reposición de los insumos.
+        Las salidas operativas proceden de comandas anuladas/canceladas y las administrativas corresponden a ajustes directos de bodega, cocina o barra.
+      </div>
+    </div>
+
+    <!-- ============ KPIs COMPARATIVOS ============ -->
+    <app-kpi-grid [kpis]="datos.kpis" />
+
+    <!-- ============ MOTIVOS Y GRAFICA ============ -->
+    <div class="grid-2">
+      <!-- Gráfica de distribución por motivo -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Distribución de pérdidas por motivo</h4>
+            <p class="panel__subtitulo">Costo económico acumulado según la causa registrada</p>
+          </div>
+        </div>
+        @if (datos.porMotivo.filas.length) {
+          <div class="panel__grafica panel__grafica--alta">
+            <p-chart type="doughnut" [data]="motivoChartData()" [options]="motivoChartOptions" />
+          </div>
+        } @else {
+          <div class="panel__vacio">
+            <i class="pi pi-check-circle"></i>
+            <p>No se registraron mermas en este periodo</p>
+          </div>
+        }
+      </div>
+
+      <!-- Tabla por motivo -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Pérdidas por motivo</h4>
+            <p class="panel__subtitulo">Participación económica sobre el total de mermas</p>
+          </div>
+        </div>
+        <p-table
+          [value]="datos.porMotivo.filas"
+          styleClass="p-datatable-sm"
+          [tableStyle]="{ 'min-width': '100%' }"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              @for (col of datos.porMotivo.columnas; track col.key) {
+                <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-fila>
+            <tr>
+              @for (col of datos.porMotivo.columnas; track col.key) {
+                <td [style.text-align]="alineacion(col)">
+                  @if (col.key === 'motivo') {
+                    <span class="font-bold text-slate-800">{{ valorCelda(fila, col) }}</span>
+                  } @else if (col.key === 'costoTotal') {
+                    <span class="font-bold text-red-600">{{ valorCelda(fila, col) }}</span>
+                  } @else {
+                    {{ valorCelda(fila, col) }}
+                  }
+                </td>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td [attr.colspan]="datos.porMotivo.columnas.length" class="empty-cell">
+                Sin datos de mermas en el periodo seleccionado.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+
+    <!-- ============ RESPONSABLES Y TOP INSUMOS ============ -->
+    <div class="grid-2">
+      <!-- Por Responsable -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Mermas por responsable</h4>
+            <p class="panel__subtitulo">Trazabilidad por colaborador y origen</p>
+          </div>
+        </div>
+        <p-table
+          [value]="datos.porResponsable.filas"
+          styleClass="p-datatable-sm"
+          [tableStyle]="{ 'min-width': '100%' }"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              @for (col of datos.porResponsable.columnas; track col.key) {
+                <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-fila>
+            <tr>
+              @for (col of datos.porResponsable.columnas; track col.key) {
+                <td [style.text-align]="alineacion(col)">
+                  @if (col.key === 'usuario') {
+                    <span class="font-medium text-slate-800">
+                      <i class="pi pi-user mr-1 text-slate-400"></i>{{ valorCelda(fila, col) }}
+                    </span>
+                  } @else if (col.key === 'costoTotal') {
+                    <span class="font-bold text-slate-800">{{ valorCelda(fila, col) }}</span>
+                  } @else {
+                    {{ valorCelda(fila, col) }}
+                  }
+                </td>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td [attr.colspan]="datos.porResponsable.columnas.length" class="empty-cell">
+                Sin registros en el periodo.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <!-- Top Insumos Mermados -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Top insumos mermados</h4>
+            <p class="panel__subtitulo">Artículos con mayor pérdida económica acumulada</p>
+          </div>
+        </div>
+        <p-table
+          [value]="datos.porInsumo.filas"
+          styleClass="p-datatable-sm"
+          [tableStyle]="{ 'min-width': '100%' }"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              @for (col of datos.porInsumo.columnas; track col.key) {
+                <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-fila>
+            <tr>
+              @for (col of datos.porInsumo.columnas; track col.key) {
+                <td [style.text-align]="alineacion(col)">
+                  @if (col.key === 'item') {
+                    <span class="font-semibold text-slate-800">{{ valorCelda(fila, col) }}</span>
+                  } @else if (col.key === 'costoTotal') {
+                    <span class="font-bold text-red-600">{{ valorCelda(fila, col) }}</span>
+                  } @else {
+                    {{ valorCelda(fila, col) }}
+                  }
+                </td>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td [attr.colspan]="datos.porInsumo.columnas.length" class="empty-cell">
+                Sin insumos mermados en este periodo.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+
+    <!-- ============ DETALLE CRONOLOGICO DE MERMAS ============ -->
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <h4>Detalle cronológico de mermas</h4>
+          <p class="panel__subtitulo">Historial completo de salidas con motivo y responsable</p>
+        </div>
+      </div>
+      <p-table
+        #dtDetalle
+        [value]="datos.detalle.filas"
+        [paginator]="true"
+        [rows]="10"
+        [rowsPerPageOptions]="[5, 10, 20, 50]"
+        styleClass="p-datatable-sm"
+        [globalFilterFields]="['ticket', 'usuario', 'item', 'motivo', 'origen']"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
+        [tableStyle]="{ 'min-width': '65rem' }"
+      >
+        <ng-template pTemplate="caption">
+          <div class="flex justify-content-end">
+            <p-iconfield iconPosition="left">
+              <p-inputicon styleClass="pi pi-search" />
+              <input
+                pInputText
+                type="text"
+                placeholder="Buscar por ticket, usuario, insumo..."
+                (input)="dtDetalle.filterGlobal($any($event.target).value, 'contains')"
+              />
+            </p-iconfield>
+          </div>
+        </ng-template>
+        <ng-template pTemplate="header">
+          <tr>
+            @for (col of datos.detalle.columnas; track col.key) {
+              <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-fila>
+          <tr>
+            @for (col of datos.detalle.columnas; track col.key) {
+              <td [style.text-align]="alineacion(col)">
+                @if (col.key === 'categoria') {
+                  <p-tag
+                    [value]="fila['categoria']"
+                    [severity]="fila['categoria'] === 'Comanda' ? 'warn' : 'info'"
+                  />
+                } @else if (col.key === 'costoTotal') {
+                  <span class="font-bold text-red-600">{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'ticket') {
+                  <span class="font-mono text-xs text-slate-500">{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'item') {
+                  <span class="font-semibold text-slate-800">{{ valorCelda(fila, col) }}</span>
+                } @else {
+                  {{ valorCelda(fila, col) }}
+                }
+              </td>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td [attr.colspan]="datos.detalle.columnas.length" class="empty-cell">
+              No hay mermas registradas en el periodo seleccionado.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+}

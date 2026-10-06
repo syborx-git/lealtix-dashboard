@@ -9,8 +9,9 @@ export interface OrderItem {
   comentarios?: string;
   asientoId?: string | number;
   asientoAlias?: string;
-  tiempo?: 1 | 2;
+  tiempo?: 1 | 2 | 3;
   tiempoMarchado?: boolean;
+  paraLlevar?: boolean;
   /** Ingredientes modificables que el cliente pidió quitar (no se descuentan) */
   excludedIngredientIds?: number[];
   /** Insumos adicionales seleccionados por el cliente (se descuentan) */
@@ -41,6 +42,7 @@ export interface PaymentInfo {
   paidAt?: string;
   paidBy?: string | number;
   amount?: number;
+  tip?: number;
 }
 
 export interface RecordPaymentRequest {
@@ -49,6 +51,7 @@ export interface RecordPaymentRequest {
   reference?: string | null;
   userEmail?: string;  // Email del usuario que aplica el pago
   propina?: number;
+  monto?: number;
   couponCode?: string | null;
 }
 
@@ -115,8 +118,9 @@ export interface PendingOrderItem {
   comentarios?: string;
   asientoId?: string | number;
   asientoAlias?: string;
-  tiempo?: 1 | 2;
+  tiempo?: 1 | 2 | 3;
   tiempoMarchado?: boolean;
+  paraLlevar?: boolean;
   excludedIngredientIds?: number[];
   additionalIngredientIds?: number[];
 }
@@ -144,7 +148,10 @@ export interface PendingOrder {
   meseroNombre?: string;
   meseroEmail?: string | null;
   segundoTiempoMarchado?: boolean;
+  tercerTiempoMarchado?: boolean;
   subcomandas?: string[];
+  propina?: number;
+  propinasLiquidadas?: boolean;
   payment?: PaymentInfo;
 }
 
@@ -197,6 +204,9 @@ export interface UpdateOrderStatusRequest {
 export interface SplitOrderRequest {
   tenantId: number;
   customerId?: number | null;
+  mesaId?: number | null;
+  meseroId?: number | null;
+  horaApertura?: string | null;
   items: OrderItem[];
   source?: string;
 }

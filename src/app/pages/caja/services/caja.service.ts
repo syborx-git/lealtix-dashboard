@@ -61,8 +61,11 @@ export class CajaService {
     return this.http.post<ApiResponse<PagoDTO>>(`${this.baseUrl}/comandas/${orderId}/pagar`, req);
   }
 
-  getResumenTurno(idTurno: number, tenantId: number): Observable<ApiResponse<ResumenTurnoCorte>> {
-    const params = new HttpParams().set('tenantId', tenantId.toString());
+  getResumenTurno(idTurno: number, tenantId: number, fecha?: string): Observable<ApiResponse<ResumenTurnoCorte>> {
+    let params = new HttpParams().set('tenantId', tenantId.toString());
+    if (fecha) {
+      params = params.set('fecha', fecha);
+    }
     return this.http.get<ApiResponse<ResumenTurnoCorte>>(`${this.baseUrl}/turnos/${idTurno}/resumen`, { params });
   }
 

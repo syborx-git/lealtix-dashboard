@@ -168,6 +168,32 @@ export class OrderService {
   }
 
   /**
+   * Marcha los terceros tiempos de la orden a cocina (POST /api/tenant-client-orders/{orderId}/marchar-tercer-tiempo)
+   */
+  marcharTercerTiempo(orderId: string): Observable<any> {
+    const url = `${this.baseUrl}/${orderId}/marchar-tercer-tiempo`;
+    return this.http.post<any>(url, {}).pipe(
+      catchError((error) => {
+        console.error('Error al marchar tercer tiempo:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Marcha todos los tiempos pendientes de la orden a cocina (POST /api/tenant-client-orders/{orderId}/marchar-todos-tiempos)
+   */
+  marcharTodosLosTiempos(orderId: string): Observable<any> {
+    const url = `${this.baseUrl}/${orderId}/marchar-todos-tiempos`;
+    return this.http.post<any>(url, {}).pipe(
+      catchError((error) => {
+        console.error('Error al marchar todos los tiempos:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
    * Registra pago/cierre de cuenta para una orden.
    * Intenta endpoint con orderId en path y si no existe hace fallback a endpoint genérico.
    */

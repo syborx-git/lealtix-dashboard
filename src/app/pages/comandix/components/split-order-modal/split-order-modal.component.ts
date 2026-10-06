@@ -312,6 +312,9 @@ export class SplitOrderModalComponent implements OnChanges, OnDestroy {
         this.orderService.splitOrder(this.order.id, {
           tenantId: this.authService.getTenantId() || this.order.tenantId || 1,
           customerId: this.order.customerId ?? null,
+          mesaId: this.order.mesaId ?? null,
+          meseroId: this.order.meseroId ?? null,
+          horaApertura: this.order.horaApertura || this.order.fechaCreacion || null,
           items,
           source: 'POS'
         })
@@ -389,6 +392,9 @@ export class SplitOrderModalComponent implements OnChanges, OnDestroy {
           this.orderService.splitOrder(this.order.id, {
             tenantId: this.authService.getTenantId() || this.order.tenantId || 1,
             customerId: this.order.customerId ?? null,
+            mesaId: this.order.mesaId ?? null,
+            meseroId: this.order.meseroId ?? null,
+            horaApertura: this.order.horaApertura || this.order.fechaCreacion || null,
             items,
             source: 'POS'
           })

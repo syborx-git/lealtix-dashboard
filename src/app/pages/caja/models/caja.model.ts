@@ -106,10 +106,13 @@ export interface ResumenTurnoCorte {
   totalArticulosVendidos: number;
   totalComandasCobradas: number;
   totalVentas: number;
+  totalCuenta?: number;
   totalPropinas: number;
+  totalRecaudado?: number;
   fondoInicial: number;
   efectivoEsperadoEnCaja: number;
   desgloseMetodos: DesgloseMetodoPago[];
+  fechaCorte?: string;
 }
 
 export interface PagoDTO {

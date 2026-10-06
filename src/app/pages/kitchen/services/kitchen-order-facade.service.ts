@@ -21,6 +21,9 @@ export class KitchenOrderFacadeService implements OnDestroy {
     private pollingBusy = false;
     private lastSignature = '';
 
+    private ticketStatuses = new Map<string, KitchenOrderStatus>();
+    private readonly STORAGE_KEY_PREFIX = 'lealtix_kitchen_ticket_status_';
+
     readonly orders$ = this.ordersSubject.asObservable();
     readonly loading$ = this.loadingSubject.asObservable();
     readonly connectionStatus$ = this.connectionSubject.asObservable();
@@ -38,6 +41,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
 
         this.teardown();
         this.tenantId = tenantId;
+        this.loadTicketStatuses();
 
         this.loadOrders();
         this.startPolling();
@@ -53,60 +57,77 @@ export class KitchenOrderFacadeService implements OnDestroy {
             clearInterval(this.pollingTimer);
             this.pollingTimer = null;
         }
-        // NO desconectar el SSE aquí: la conexión es global (AppLayout la mantiene
-        // viva en todos los módulos). Desconectarla cortaría las notificaciones.
         this.destroy$.next();
     }
 
-    async startOrder(orderId: string): Promise<void> {
-        await firstValueFrom(this.kitchenApiService.updateStatus(orderId, 'start'));
-        this.patchLocalStatus(orderId, 'EN_PREPARACION');
+    extractParentOrderId(ticketId: string): string {
+        if (!ticketId) return '';
+        const idx = ticketId.indexOf('__');
+        return idx !== -1 ? ticketId.substring(0, idx) : ticketId;
     }
 
-    async startOrderFromConfirmed(orderId: string): Promise<void> {
-        await firstValueFrom(this.kitchenApiService.updateStatus(orderId, 'start'));
-        this.patchLocalStatus(orderId, 'EN_PREPARACION');
+    async startOrder(ticketId: string): Promise<void> {
+        const parentId = this.extractParentOrderId(ticketId);
+        try {
+            await firstValueFrom(this.kitchenApiService.updateStatus(parentId, 'start'));
+        } catch (e) {
+            console.warn('[KitchenFacade] Error actualizando backend a start:', e);
+        }
+        this.ticketStatuses.set(ticketId, 'EN_PREPARACION');
+        this.saveTicketStatuses();
+        this.patchLocalStatus(ticketId, 'EN_PREPARACION');
     }
 
-    async finishOrder(orderId: string): Promise<void> {
-        await firstValueFrom(this.kitchenApiService.updateStatus(orderId, 'finish'));
+    async startOrderFromConfirmed(ticketId: string): Promise<void> {
+        await this.startOrder(ticketId);
+    }
+
+    async finishOrder(ticketId: string): Promise<void> {
+        this.ticketStatuses.set(ticketId, 'LISTO');
+        this.saveTicketStatuses();
+
+        const parentId = this.extractParentOrderId(ticketId);
+
+        // Actualizar el estado local inmediatamente
         const patched = this.ordersSubject.value.map((order) => {
-            if (order.id !== orderId) {
+            if (order.id !== ticketId) {
                 return order;
             }
             return {
                 ...order,
                 status: 'LISTO' as KitchenOrderStatus,
-                items: order.items.map((it) => {
-                    if (it.tiempo === 1) {
-                        return { ...it, yaSalio: true };
-                    }
-                    return it;
-                })
+                items: order.items.map((it) => ({ ...it, yaSalio: true }))
             };
         });
         this.emitOrders(patched);
+
+        // Solo marcar la orden completa como LISTO en el backend si TODOS los tickets activos terminaron
+        const siblingTickets = this.ordersSubject.value.filter(
+            (o) => (o.parentOrderId || this.extractParentOrderId(o.id)) === parentId
+        );
+        const allSiblingsReady = siblingTickets.every(
+            (o) => o.id === ticketId || o.status === 'LISTO' || o.status === 'PAGADA'
+        );
+
+        if (allSiblingsReady) {
+            try {
+                await firstValueFrom(this.kitchenApiService.updateStatus(parentId, 'finish'));
+            } catch (e) {
+                console.warn('[KitchenFacade] Error actualizando backend a finish:', e);
+            }
+        }
     }
 
-    async returnToConfirmedForSegundoTiempo(orderId: string): Promise<void> {
-        await firstValueFrom(this.kitchenApiService.updateStatus(orderId, 'return-confirmed'));
-        const patched = this.ordersSubject.value.map((order) => {
-            if (order.id !== orderId) {
-                return order;
-            }
-            return {
-                ...order,
-                status: 'CONFIRMADA' as KitchenOrderStatus,
-                recorrido: 2,
-                items: order.items.map((it) => {
-                    if (it.tiempo === 1) {
-                        return { ...it, yaSalio: true };
-                    }
-                    return it;
-                })
-            };
-        });
-        this.emitOrders(patched);
+    async returnToConfirmedForSegundoTiempo(ticketId: string): Promise<void> {
+        const parentId = this.extractParentOrderId(ticketId);
+        try {
+            await firstValueFrom(this.kitchenApiService.updateStatus(parentId, 'return-confirmed'));
+        } catch (e) {
+            console.warn('[KitchenFacade] Error actualizando backend a return-confirmed:', e);
+        }
+        this.ticketStatuses.set(ticketId, 'CONFIRMADA');
+        this.saveTicketStatuses();
+        this.patchLocalStatus(ticketId, 'CONFIRMADA');
     }
 
     parseOrderTime(createdAt: any): number {
@@ -128,14 +149,12 @@ export class KitchenOrderFacadeService implements OnDestroy {
         const sameDay = d.getFullYear() === now.getFullYear() &&
                         d.getMonth() === now.getMonth() &&
                         d.getDate() === now.getDate();
-        // Turno operativo de restaurante: cubre el día calendario o las órdenes de las últimas 24 horas
         const diffMs = Math.abs(now.getTime() - time);
         const withinShift = diffMs <= 24 * 60 * 60 * 1000;
         return sameDay || withinShift;
     }
 
     private startPolling(): void {
-        // Refresco de respaldo cada 2s para que la comanda aparezca casi al instante
         this.pollingTimer = setInterval(() => void this.loadOrders(false), 2_000);
     }
 
@@ -164,7 +183,6 @@ export class KitchenOrderFacadeService implements OnDestroy {
             this.loadingSubject.next(true);
         }
         try {
-            // Consultar órdenes activas e historial del día (PENDIENTE, CONFIRMADA, EN_PREPARACION, LISTO y PAGADA de hoy)
             const [confirmedOrders, pendingOrders, inProgressOrders, readyOrders, paidOrders] = await Promise.all([
                 firstValueFrom(this.kitchenApiService.listOrdersByStatus(this.tenantId, 'CONFIRMADA', 0, 100)),
                 firstValueFrom(this.kitchenApiService.listOrdersByStatus(this.tenantId, 'PENDIENTE', 0, 100)),
@@ -173,9 +191,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
                 firstValueFrom(this.kitchenApiService.listOrdersByStatus(this.tenantId, 'PAGADA', 0, 100))
             ]);
 
-            // Todas las órdenes LISTO se conservan en cocina (en pase / historial de entrega)
             const todayReady = readyOrders || [];
-            // Las órdenes PAGADAS se conservan en el historial si corresponden al turno operativo de hoy
             const todayPaid = (paidOrders || []).filter((o) =>
                 this.isToday(o?.paidAt ?? o?.readyAt ?? o?.fecha ?? o?.createdAt)
             );
@@ -191,10 +207,13 @@ export class KitchenOrderFacadeService implements OnDestroy {
                 }
             }
 
-            const kitchenOrders = allBackendOrders.map((order) => this.mapBackendOrderToKitchen(order));
+            const kitchenTickets: KitchenOrder[] = [];
+            for (const order of allBackendOrders) {
+                kitchenTickets.push(...this.mapBackendOrderToTickets(order));
+            }
 
-            this.knownOrderIds = new Set(kitchenOrders.map((order) => order.id));
-            this.emitOrders(kitchenOrders);
+            this.knownOrderIds = new Set(kitchenTickets.map((t) => t.id));
+            this.emitOrders(kitchenTickets);
         } catch (error) {
             console.error('Error al cargar órdenes de cocina:', error);
             this.emitOrders([]);
@@ -206,17 +225,12 @@ export class KitchenOrderFacadeService implements OnDestroy {
         }
     }
 
-    /**
-     * Emite la lista ordenada cronológicamente de forma ascendente (FIFO):
-     * La comanda más antigua arriba y las más nuevas debajo.
-     * Mantiene la firma para evitar parpadeos en pantalla.
-     */
     private emitOrders(orders: KitchenOrder[]): void {
         const sorted = [...orders].sort((a, b) =>
             this.parseOrderTime(a.createdAt) - this.parseOrderTime(b.createdAt)
         );
         const signature = sorted
-            .map((order) => `${order.id}#${order.status}#${order.recorrido ?? 1}#${order.items.map((i) => `${i.productId}x${i.quantity}t${i.tiempo ?? 1}m${i.tiempoMarchado ? 1 : 0}s${i.yaSalio ? 1 : 0}`).join(',')}`)
+            .map((order) => `${order.id}#${order.status}#${order.tiempo ?? 1}#${order.items.map((i) => `${i.productId}x${i.quantity}t${i.tiempo ?? 1}m${i.tiempoMarchado ? 1 : 0}s${i.yaSalio ? 1 : 0}`).join(',')}`)
             .join('|');
 
         if (signature === this.lastSignature) {
@@ -232,85 +246,73 @@ export class KitchenOrderFacadeService implements OnDestroy {
             return;
         }
 
-        const mappedOrder = this.mapSseOrderToKitchen(event);
-        if (this.knownOrderIds.has(mappedOrder.id)) {
-            return;
+        const incomingTickets = this.mapBackendOrderToTickets(event.order);
+        let added = false;
+        const currentOrders = [...this.ordersSubject.value];
+
+        for (const ticket of incomingTickets) {
+            if (!this.knownOrderIds.has(ticket.id)) {
+                this.knownOrderIds.add(ticket.id);
+                currentOrders.push(ticket);
+                added = true;
+            }
         }
 
-        this.knownOrderIds.add(mappedOrder.id);
-        // Agregar la nueva orden: emitOrders la posicionará en orden FIFO debajo de las anteriores
-        this.emitOrders([...this.ordersSubject.value, mappedOrder]);
+        if (added) {
+            this.emitOrders(currentOrders);
+            this.kitchenNotificationService.playNewOrderSound(1);
+        }
     }
 
-    /**
-     * Reacciona en tiempo real a los cambios de estado de una orden.
-     * Si la orden se paga hoy, se mantiene en el historial del día de cocina.
-     */
     private handleOrderStatusChangedEvent(event: SseOrderStatusEvent): void {
         if (!event?.order || Number(event.tenantId) !== this.tenantId) {
             return;
         }
 
-        const orderId = String(event.order.id);
+        const backendOrderId = String(event.order.id);
         const status = this.normalizeStatus(event.order.estado);
 
         // Órdenes canceladas se retiran
         if (status === 'CANCELADA') {
-            if (this.knownOrderIds.has(orderId)) {
-                this.removeLocalOrder(orderId);
-            }
+            this.removeLocalOrderByParent(backendOrderId);
             return;
         }
 
-        const mappedOrder = this.mapOrderDataToKitchen(event.order);
-        if (!mappedOrder.id) {
+        const incomingTickets = this.mapBackendOrderToTickets(event.order);
+        if (incomingTickets.length === 0) {
             return;
         }
 
-        // Si fue pagada hoy, conservarla en el historial diario visible de cocina
-        if (status === 'PAGADA') {
-            if (this.isToday(mappedOrder.createdAt)) {
-                this.knownOrderIds.add(mappedOrder.id);
-                const exists = this.ordersSubject.value.some((o) => o.id === mappedOrder.id);
-                if (exists) {
-                    this.emitOrders(
-                        this.ordersSubject.value.map((order) =>
-                            order.id === mappedOrder.id ? { ...order, ...mappedOrder, status: 'PAGADA' } : order
-                        )
-                    );
-                } else {
-                    this.emitOrders([...this.ordersSubject.value, { ...mappedOrder, status: 'PAGADA' }]);
-                }
+        let currentOrders = [...this.ordersSubject.value];
+        let hasNewTicket = false;
+
+        for (const ticket of incomingTickets) {
+            const existingIdx = currentOrders.findIndex((o) => o.id === ticket.id);
+            if (existingIdx !== -1) {
+                const prev = currentOrders[existingIdx];
+                // Mantener estado si ya fue progresado localmente (ej: EN_PREPARACION o LISTO)
+                const preservedStatus = (prev.status === 'EN_PREPARACION' || prev.status === 'LISTO') && status === 'CONFIRMADA'
+                    ? prev.status
+                    : ticket.status;
+                currentOrders[existingIdx] = { ...ticket, status: preservedStatus };
             } else {
-                this.removeLocalOrder(orderId);
+                // Nuevo ticket generado (ej. 2do o 3er tiempo recién marchado)
+                currentOrders.push(ticket);
+                this.knownOrderIds.add(ticket.id);
+                hasNewTicket = true;
             }
-            return;
         }
 
-        if (this.knownOrderIds.has(mappedOrder.id)) {
-            // Ya existe: actualizar estado/datos
-            const previousOrder = this.ordersSubject.value.find((o) => o.id === mappedOrder.id);
-            this.emitOrders(
-                this.ordersSubject.value.map((order) =>
-                    order.id === mappedOrder.id ? { ...order, ...mappedOrder, status } : order
-                )
-            );
-            // Si regresa a CONFIRMADA (ej. el mesero marchó el segundo tiempo), sonar la campana
-            if (status === 'CONFIRMADA' && previousOrder?.status !== 'CONFIRMADA') {
-                this.kitchenNotificationService.playNewOrderSound(1);
-            }
-            return;
-        }
+        this.emitOrders(currentOrders);
 
-        // Orden confirmada por el mesero: aparece en cocina respetando FIFO
-        this.knownOrderIds.add(mappedOrder.id);
-        this.emitOrders([...this.ordersSubject.value, mappedOrder]);
-        this.kitchenNotificationService.playNewOrderSound(1);
+        if (hasNewTicket || status === 'CONFIRMADA') {
+            this.kitchenNotificationService.playNewOrderSound(1);
+        }
     }
 
-    private patchLocalStatus(orderId: string, status: KitchenOrderStatus): void {
+    private patchLocalStatus(ticketId: string, status: KitchenOrderStatus): void {
         const patched = this.ordersSubject.value.map((order) => {
-            if (order.id !== orderId) {
+            if (order.id !== ticketId) {
                 return order;
             }
             return {
@@ -322,98 +324,227 @@ export class KitchenOrderFacadeService implements OnDestroy {
         this.emitOrders(patched);
     }
 
-    private removeLocalOrder(orderId: string): void {
-        this.knownOrderIds.delete(orderId);
-        this.emitOrders(this.ordersSubject.value.filter((order) => order.id !== orderId));
+    private removeLocalOrderByParent(parentOrderId: string): void {
+        const remaining = this.ordersSubject.value.filter((order) => {
+            const parent = order.parentOrderId || this.extractParentOrderId(order.id);
+            return parent !== parentOrderId && order.id !== parentOrderId;
+        });
+        for (const order of this.ordersSubject.value) {
+            const parent = order.parentOrderId || this.extractParentOrderId(order.id);
+            if (parent === parentOrderId || order.id === parentOrderId) {
+                this.knownOrderIds.delete(order.id);
+                this.ticketStatuses.delete(order.id);
+            }
+        }
+        this.saveTicketStatuses();
+        this.emitOrders(remaining);
     }
 
-    private mapBackendOrderToKitchen(order: any): KitchenOrder {
-        const status = this.normalizeStatus(order?.estado);
+    private mapBackendOrderToTickets(order: any): KitchenOrder[] {
+        const parentOrderId = String(order?.id ?? '');
+        const tenantId = Number(order?.tenantId ?? this.tenantId);
+        const backendStatus = this.normalizeStatus(order?.estado);
+
         const mesaId = order?.idMesa ?? order?.mesaId ?? (typeof order?.mesa === 'object' ? order?.mesa?.id : (typeof order?.mesa === 'number' ? order.mesa : undefined));
         const mesaNombre = order?.mesaNombre ?? order?.mesa?.nombre ?? (order?.mesaNumero ? `Mesa ${order.mesaNumero}` : undefined);
         const mesaNumero = order?.mesaNumero ?? order?.mesa?.numero;
+        const customerId = order?.customerId ?? null;
+        const customerName = order?.customerName ?? order?.nombre ?? (customerId != null ? `Cliente #${customerId}` : 'Cliente General');
+        const source = order?.source;
+        const createdAt = String(order?.fecha ?? order?.createdAt ?? order?.fechaCreacion ?? new Date().toISOString());
+        const subtotal = Number(order?.subtotal ?? 0);
+        const discount = Number(order?.descuento ?? 0);
+        const total = Number(order?.total ?? order?.totalFinal ?? 0);
 
         const rawItems = order?.items ?? [];
-        const items: KitchenOrderItem[] = rawItems.map((item: any) => this.mapItem(item));
+        const allItems: KitchenOrderItem[] = rawItems.map((item: any) => this.mapItem(item));
 
-        const has2doMarchado = items.some((it: KitchenOrderItem) => it.tiempo === 2 && it.tiempoMarchado);
-        const recorrido = order?.recorrido ?? (has2doMarchado ? 2 : 1);
+        // Separar por tiempos
+        const t1Items = allItems.filter((it) => !it.tiempo || it.tiempo === 1);
+        const t2Items = allItems.filter((it) => it.tiempo === 2);
+        const t3Items = allItems.filter((it) => it.tiempo === 3);
 
-        // Si ya está en segundo recorrido o 2do tiempo marchado, los de 1er tiempo ya salieron
-        const refinedItems = items.map((it: KitchenOrderItem) => {
-            if (recorrido === 2 && it.tiempo === 1) {
-                return { ...it, yaSalio: true };
+        const hasT2 = t2Items.length > 0;
+        const hasT3 = t3Items.length > 0;
+        const t2Marchado = t2Items.some((it) => it.tiempoMarchado);
+        const t3Marchado = t3Items.some((it) => it.tiempoMarchado);
+
+        // Tiempos futuros en espera (para avisos informativos en tickets activos)
+        const waitingLabels: string[] = [];
+        if (hasT2 && !t2Marchado) {
+            waitingLabels.push('2do Tiempo en espera');
+        }
+        if (hasT3 && !t3Marchado) {
+            waitingLabels.push('3er Tiempo en espera');
+        }
+
+        const tickets: KitchenOrder[] = [];
+
+        // Si NO hay tiempos 2 ni 3, es una comanda sencilla
+        if (!hasT2 && !hasT3) {
+            const ticketId = parentOrderId;
+            const status = this.resolveTicketStatus(ticketId, backendStatus);
+            tickets.push({
+                id: ticketId,
+                parentOrderId,
+                tiempo: 1,
+                tiempoLabel: '1er Tiempo',
+                tenantId,
+                status,
+                customerId,
+                customerName,
+                mesaId,
+                mesaNombre,
+                mesaNumero,
+                source,
+                createdAt,
+                marchedAt: createdAt,
+                items: allItems,
+                subtotal,
+                discount,
+                total,
+                recorrido: 1,
+                segundoTiempoMarchado: false,
+                tercerTiempoMarchado: false,
+                waitingTiemposLabels: []
+            });
+            return tickets;
+        }
+
+        // COMANDA CON MÚLTIPLES TIEMPOS: GENERAR UN TICKET INDEPENDIENTE POR TIEMPO
+
+        // 1ER TIEMPO TICKET (si tiene items de 1er tiempo)
+        if (t1Items.length > 0) {
+            const ticketId = `${parentOrderId}__T1`;
+            const status = this.resolveTicketStatus(ticketId, backendStatus);
+            tickets.push({
+                id: ticketId,
+                parentOrderId,
+                tiempo: 1,
+                tiempoLabel: '1er Tiempo',
+                tenantId,
+                status,
+                customerId,
+                customerName,
+                mesaId,
+                mesaNombre,
+                mesaNumero,
+                source,
+                createdAt,
+                marchedAt: createdAt,
+                items: t1Items,
+                subtotal,
+                discount,
+                total,
+                recorrido: 1,
+                segundoTiempoMarchado: t2Marchado,
+                tercerTiempoMarchado: t3Marchado,
+                waitingTiemposLabels: waitingLabels
+            });
+        }
+
+        // 2DO TIEMPO TICKET (si tiene items de 2do tiempo y está marchado)
+        if (hasT2 && t2Marchado) {
+            const ticketId = `${parentOrderId}__T2`;
+            const status = this.resolveTicketStatus(ticketId, backendStatus, 2);
+            const latestUpdate = t2Items.find((it) => it.updatedAt)?.updatedAt || createdAt;
+            const t2Waiting: string[] = [];
+            if (hasT3 && !t3Marchado) {
+                t2Waiting.push('3er Tiempo en espera');
             }
-            return it;
-        });
 
-        return {
-            id: String(order?.id ?? ''),
-            tenantId: Number(order?.tenantId ?? this.tenantId),
-            status,
-            customerId: order?.customerId ?? null,
-            customerName: order?.customerName ?? order?.nombre ?? 'Cliente General',
-            mesaId,
-            mesaNombre,
-            mesaNumero,
-            source: order?.source,
-            createdAt: String(order?.fecha ?? order?.createdAt ?? order?.fechaCreacion ?? new Date().toISOString()),
-            items: refinedItems,
-            subtotal: Number(order?.subtotal ?? 0),
-            discount: Number(order?.descuento ?? 0),
-            total: Number(order?.total ?? order?.totalFinal ?? 0),
-            recorrido,
-            segundoTiempoMarchado: has2doMarchado
-        };
+            tickets.push({
+                id: ticketId,
+                parentOrderId,
+                tiempo: 2,
+                tiempoLabel: '2do Tiempo',
+                tenantId,
+                status,
+                customerId,
+                customerName,
+                mesaId,
+                mesaNombre,
+                mesaNumero,
+                source,
+                createdAt: latestUpdate,
+                marchedAt: latestUpdate,
+                items: t2Items,
+                subtotal,
+                discount,
+                total,
+                recorrido: 2,
+                segundoTiempoMarchado: true,
+                tercerTiempoMarchado: t3Marchado,
+                waitingTiemposLabels: t2Waiting
+            });
+        }
+
+        // 3ER TIEMPO TICKET (si tiene items de 3er tiempo y está marchado)
+        if (hasT3 && t3Marchado) {
+            const ticketId = `${parentOrderId}__T3`;
+            const status = this.resolveTicketStatus(ticketId, backendStatus, 3);
+            const latestUpdate = t3Items.find((it) => it.updatedAt)?.updatedAt || createdAt;
+
+            tickets.push({
+                id: ticketId,
+                parentOrderId,
+                tiempo: 3,
+                tiempoLabel: '3er Tiempo',
+                tenantId,
+                status,
+                customerId,
+                customerName,
+                mesaId,
+                mesaNombre,
+                mesaNumero,
+                source,
+                createdAt: latestUpdate,
+                marchedAt: latestUpdate,
+                items: t3Items,
+                subtotal,
+                discount,
+                total,
+                recorrido: 3,
+                segundoTiempoMarchado: t2Marchado,
+                tercerTiempoMarchado: true,
+                waitingTiemposLabels: []
+            });
+        }
+
+        return tickets;
     }
 
-    private mapSseOrderToKitchen(event: SseNewOrderEvent): KitchenOrder {
-        return this.mapOrderDataToKitchen(event.order);
-    }
+    private resolveTicketStatus(ticketId: string, backendStatus: KitchenOrderStatus, tiempo = 1): KitchenOrderStatus {
+        if (backendStatus === 'CANCELADA') return 'CANCELADA';
+        if (backendStatus === 'PAGADA') return 'PAGADA';
 
-    private mapOrderDataToKitchen(order: any): KitchenOrder {
-        const rawItems = order?.items ?? [];
-        const items: KitchenOrderItem[] = rawItems.map((item: any) => this.mapItem(item));
-        const mesaId = order?.idMesa ?? order?.mesaId;
-        const mesaNombre = order?.mesaNombre;
-        const mesaNumero = order?.mesaNumero;
+        if (this.ticketStatuses.has(ticketId)) {
+            const persisted = this.ticketStatuses.get(ticketId)!;
+            if (backendStatus === 'LISTO') return 'LISTO';
+            return persisted;
+        }
 
-        const has2doMarchado = items.some((it: KitchenOrderItem) => it.tiempo === 2 && it.tiempoMarchado);
-        const recorrido = order?.recorrido ?? (has2doMarchado ? 2 : 1);
+        if (backendStatus === 'LISTO') return 'LISTO';
 
-        const refinedItems = items.map((it: KitchenOrderItem) => {
-            if (recorrido === 2 && it.tiempo === 1) {
-                return { ...it, yaSalio: true };
-            }
-            return it;
-        });
+        if (tiempo === 2 || tiempo === 3) {
+            return 'CONFIRMADA';
+        }
 
-        return {
-            id: String(order?.id ?? ''),
-            tenantId: Number(order?.tenantId ?? this.tenantId),
-            status: this.normalizeStatus(order?.estado),
-            customerId: order?.customerId ?? null,
-            customerName: order?.customerName ?? (order?.customerId != null ? `Cliente #${order.customerId}` : 'Cliente General'),
-            mesaId,
-            mesaNombre,
-            mesaNumero,
-            source: order?.source,
-            createdAt: order?.fecha ?? order?.createdAt ?? new Date().toISOString(),
-            items: refinedItems,
-            subtotal: Number(order?.subtotal ?? 0),
-            discount: Number(order?.descuento ?? 0),
-            total: Number(order?.total ?? 0),
-            recorrido,
-            segundoTiempoMarchado: has2doMarchado
-        };
+        return backendStatus;
     }
 
     private mapItem(item: any): KitchenOrderItem {
         const rawComments = String(item?.comentarios ?? '');
-        let tiempo: 1 | 2 = item?.tiempo === 2 ? 2 : 1;
+        let tiempo: 1 | 2 | 3 = item?.tiempo === 3 ? 3 : (item?.tiempo === 2 ? 2 : 1);
         let tiempoMarchado = !!item?.tiempoMarchado;
+        const paraLlevar = item?.paraLlevar || rawComments.includes('PARA LLEVAR');
 
-        if (rawComments.includes('2DO TIEMPO') || rawComments.includes('SEGUNDO TIEMPO')) {
+        if (rawComments.includes('3ER TIEMPO') || rawComments.includes('TERCER TIEMPO')) {
+            tiempo = 3;
+            if (rawComments.includes('MARCHADO')) {
+                tiempoMarchado = true;
+            }
+        } else if (rawComments.includes('2DO TIEMPO') || rawComments.includes('SEGUNDO TIEMPO')) {
             tiempo = 2;
             if (rawComments.includes('MARCHADO')) {
                 tiempoMarchado = true;
@@ -428,9 +559,11 @@ export class KitchenOrderFacadeService implements OnDestroy {
             comments: rawComments,
             tiempo,
             tiempoMarchado,
+            paraLlevar,
             yaSalio: !!item?.yaSalio,
             excludedIngredientIds: Array.isArray(item?.excludedIngredientIds) ? item.excludedIngredientIds.map(Number) : [],
-            additionalIngredientIds: Array.isArray(item?.additionalIngredientIds) ? item.additionalIngredientIds.map(Number) : []
+            additionalIngredientIds: Array.isArray(item?.additionalIngredientIds) ? item.additionalIngredientIds.map(Number) : [],
+            updatedAt: item?.updatedAt
         };
     }
 
@@ -461,7 +594,35 @@ export class KitchenOrderFacadeService implements OnDestroy {
             return 'CANCELADA';
         }
 
-        // Default a PENDIENTE para órdenes nuevas del CHATBOT
         return 'PENDIENTE';
+    }
+
+    private getStorageKey(): string {
+        return `${this.STORAGE_KEY_PREFIX}${this.tenantId}`;
+    }
+
+    private loadTicketStatuses(): void {
+        try {
+            const raw = localStorage.getItem(this.getStorageKey());
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                this.ticketStatuses = new Map(Object.entries(parsed));
+            }
+        } catch (e) {
+            console.warn('[KitchenFacade] Error loading ticket statuses:', e);
+            this.ticketStatuses = new Map();
+        }
+    }
+
+    private saveTicketStatuses(): void {
+        try {
+            const obj: Record<string, string> = {};
+            this.ticketStatuses.forEach((val, key) => {
+                obj[key] = val;
+            });
+            localStorage.setItem(this.getStorageKey(), JSON.stringify(obj));
+        } catch (e) {
+            console.warn('[KitchenFacade] Error saving ticket statuses:', e);
+        }
     }
 }

@@ -22,6 +22,7 @@
           <div class="ticket-item-name">
             {{ item.cantidad }}x {{ item.productName ?? item.prod }}
             <span *ngIf="item.tiempo === 2" style="font-size: 0.8em; font-weight: bold; color: #b45309;">(2do Tiempo)</span>
+            <span *ngIf="item.tiempo === 3" style="font-size: 0.8em; font-weight: bold; color: #7e22ce;">(3er Tiempo)</span>
           </div>
           <div class="ticket-item-price">{{ fmt(itemPrice(item)) }}</div>
         </div>
