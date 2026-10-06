@@ -1642,7 +1642,8 @@ export class CajaComponent implements OnInit, OnDestroy {
 
     this.procesando.set(true);
     try {
-      await firstValueFrom(this.orderService.updateOrderStatus(target.id, 'CANCELLED', this.motivoCancelacion.trim()));
+      const email = this.authService.getCurrentUser()?.email || this.userName || undefined;
+      await firstValueFrom(this.orderService.updateOrderStatus(target.id, 'CANCELLED', email, this.motivoCancelacion.trim()));
       this.messageService.add({
         severity: 'info',
         summary: 'Comanda Cancelada',

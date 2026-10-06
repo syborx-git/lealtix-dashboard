@@ -136,12 +136,20 @@ export class OrderService {
     userEmail?: string,
     reason?: string
   ): Observable<UpdateOrderStatusResponse> {
+    let email = userEmail;
+    let cancelReason = reason;
+    // Si solo pasan 3 argumentos y el 3ro no tiene '@', o si el estado es cancelación y no hay 4to argumento
+    if (userEmail && !reason && !userEmail.includes('@')) {
+      cancelReason = userEmail;
+      email = undefined;
+    }
+
     const normalizedStatus = this.statusMap[status] ?? status;
     const url = `${this.baseUrl}/${orderId}/status`;
     const body: UpdateOrderStatusRequest = {
       estado: normalizedStatus,
-      ...(userEmail && { userEmail }),
-      ...(reason && { reason })
+      ...(email && { userEmail: email }),
+      ...(cancelReason && { reason: cancelReason })
     };
 
     return this.http

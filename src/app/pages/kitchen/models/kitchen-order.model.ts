@@ -14,12 +14,16 @@ export interface KitchenOrderItem {
     excludedIngredientIds?: number[];
     /** IDs de adicionales que el cliente pidió */
     additionalIngredientIds?: number[];
+    esBebida?: boolean;
     updatedAt?: string;
 }
 
 export interface KitchenOrder {
     id: string;
     parentOrderId?: string;
+    area?: 'COCINA' | 'BARRA';
+    barraEstado?: KitchenOrderStatus;
+    cocinaEstado?: KitchenOrderStatus;
     tiempo?: 1 | 2 | 3;
     tiempoLabel?: string;
     tenantId: number;

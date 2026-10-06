@@ -5,6 +5,8 @@ import { OrderSseService, SseNewOrderEvent, SseOrderStatusEvent } from '@/pages/
 import { KitchenOrder, KitchenOrderItem, KitchenOrderStatus } from '../models/kitchen-order.model';
 import { KitchenNotificationService } from './kitchen-notification.service';
 import { KitchenApiService } from './kitchen-api.service';
+import { InventoryService } from '@/pages/inventario/service/inventory.service';
+import { buildBeverageProductIds, isBeverageProduct } from './order-beverage-utils';
 
 @Injectable({
     providedIn: 'root'
@@ -23,6 +25,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
 
     private ticketStatuses = new Map<string, KitchenOrderStatus>();
     private readonly STORAGE_KEY_PREFIX = 'lealtix_kitchen_ticket_status_';
+    private beverageProductIds = new Set<number>();
 
     readonly orders$ = this.ordersSubject.asObservable();
     readonly loading$ = this.loadingSubject.asObservable();
@@ -31,10 +34,11 @@ export class KitchenOrderFacadeService implements OnDestroy {
     constructor(
         private kitchenApiService: KitchenApiService,
         private orderSseService: OrderSseService,
-        private kitchenNotificationService: KitchenNotificationService
+        private kitchenNotificationService: KitchenNotificationService,
+        private inventoryService: InventoryService
     ) {}
 
-    init(tenantId: number): void {
+    async init(tenantId: number): Promise<void> {
         if (tenantId <= 0) {
             return;
         }
@@ -42,6 +46,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
         this.teardown();
         this.tenantId = tenantId;
         this.loadTicketStatuses();
+        await this.loadBeverageCatalog(tenantId);
 
         this.loadOrders();
         this.startPolling();
@@ -68,8 +73,12 @@ export class KitchenOrderFacadeService implements OnDestroy {
 
     async startOrder(ticketId: string): Promise<void> {
         const parentId = this.extractParentOrderId(ticketId);
+        const ticket = this.ordersSubject.value.find((o) => o.id === ticketId);
+        const area: 'BARRA' | 'COCINA' | undefined = ticket?.area 
+            || (ticketId.includes('__BARRA') ? 'BARRA' : (ticketId.includes('__COCINA') ? 'COCINA' : undefined));
+
         try {
-            await firstValueFrom(this.kitchenApiService.updateStatus(parentId, 'start'));
+            await firstValueFrom(this.kitchenApiService.updateStatus(parentId, 'start', area));
         } catch (e) {
             console.warn('[KitchenFacade] Error actualizando backend a start:', e);
         }
@@ -87,6 +96,9 @@ export class KitchenOrderFacadeService implements OnDestroy {
         this.saveTicketStatuses();
 
         const parentId = this.extractParentOrderId(ticketId);
+        const ticket = this.ordersSubject.value.find((o) => o.id === ticketId);
+        const area: 'BARRA' | 'COCINA' | undefined = ticket?.area 
+            || (ticketId.includes('__BARRA') ? 'BARRA' : (ticketId.includes('__COCINA') ? 'COCINA' : undefined));
 
         // Actualizar el estado local inmediatamente
         const patched = this.ordersSubject.value.map((order) => {
@@ -101,27 +113,21 @@ export class KitchenOrderFacadeService implements OnDestroy {
         });
         this.emitOrders(patched);
 
-        // Solo marcar la orden completa como LISTO en el backend si TODOS los tickets activos terminaron
-        const siblingTickets = this.ordersSubject.value.filter(
-            (o) => (o.parentOrderId || this.extractParentOrderId(o.id)) === parentId
-        );
-        const allSiblingsReady = siblingTickets.every(
-            (o) => o.id === ticketId || o.status === 'LISTO' || o.status === 'PAGADA'
-        );
-
-        if (allSiblingsReady) {
-            try {
-                await firstValueFrom(this.kitchenApiService.updateStatus(parentId, 'finish'));
-            } catch (e) {
-                console.warn('[KitchenFacade] Error actualizando backend a finish:', e);
-            }
+        try {
+            await firstValueFrom(this.kitchenApiService.updateStatus(parentId, 'finish', area));
+        } catch (e) {
+            console.warn('[KitchenFacade] Error actualizando backend a finish:', e);
         }
     }
 
     async returnToConfirmedForSegundoTiempo(ticketId: string): Promise<void> {
         const parentId = this.extractParentOrderId(ticketId);
+        const ticket = this.ordersSubject.value.find((o) => o.id === ticketId);
+        const area: 'BARRA' | 'COCINA' | undefined = ticket?.area 
+            || (ticketId.includes('__BARRA') ? 'BARRA' : (ticketId.includes('__COCINA') ? 'COCINA' : undefined));
+
         try {
-            await firstValueFrom(this.kitchenApiService.updateStatus(parentId, 'return-confirmed'));
+            await firstValueFrom(this.kitchenApiService.updateStatus(parentId, 'return-confirmed', area));
         } catch (e) {
             console.warn('[KitchenFacade] Error actualizando backend a return-confirmed:', e);
         }
@@ -340,6 +346,22 @@ export class KitchenOrderFacadeService implements OnDestroy {
         this.emitOrders(remaining);
     }
 
+    private async loadBeverageCatalog(tenantId: number): Promise<void> {
+        this.beverageProductIds = new Set<number>();
+        try {
+            const response = await firstValueFrom(this.inventoryService.getBebidas(tenantId));
+            this.beverageProductIds = buildBeverageProductIds(Array.isArray(response?.object) ? response.object : []);
+        } catch (error) {
+            console.warn('[KitchenFacade] Error cargando catálogo de bebidas:', error);
+        }
+    }
+
+    private isBeverageItem(item: any): boolean {
+        if (item?.esBebida === true) return true;
+        const pid = item?.productId ?? item?.productoId;
+        return isBeverageProduct(pid, this.beverageProductIds);
+    }
+
     private mapBackendOrderToTickets(order: any): KitchenOrder[] {
         const parentOrderId = String(order?.id ?? '');
         const tenantId = Number(order?.tenantId ?? this.tenantId);
@@ -359,34 +381,217 @@ export class KitchenOrderFacadeService implements OnDestroy {
         const rawItems = order?.items ?? [];
         const allItems: KitchenOrderItem[] = rawItems.map((item: any) => this.mapItem(item));
 
-        // Separar por tiempos
-        const t1Items = allItems.filter((it) => !it.tiempo || it.tiempo === 1);
-        const t2Items = allItems.filter((it) => it.tiempo === 2);
-        const t3Items = allItems.filter((it) => it.tiempo === 3);
-
-        const hasT2 = t2Items.length > 0;
-        const hasT3 = t3Items.length > 0;
-        const t2Marchado = t2Items.some((it) => it.tiempoMarchado);
-        const t3Marchado = t3Items.some((it) => it.tiempoMarchado);
-
-        // Tiempos futuros en espera (para avisos informativos en tickets activos)
-        const waitingLabels: string[] = [];
-        if (hasT2 && !t2Marchado) {
-            waitingLabels.push('2do Tiempo en espera');
-        }
-        if (hasT3 && !t3Marchado) {
-            waitingLabels.push('3er Tiempo en espera');
-        }
+        // Separar items de barra (bebidas) e items de cocina (platillos)
+        const barraItems = allItems.filter((it) => it.esBebida);
+        const cocinaItems = allItems.filter((it) => !it.esBebida);
 
         const tickets: KitchenOrder[] = [];
 
-        // Si NO hay tiempos 2 ni 3, es una comanda sencilla
-        if (!hasT2 && !hasT3) {
-            const ticketId = parentOrderId;
+        // 1. TICKET DE BARRA (si la orden tiene bebidas)
+        if (barraItems.length > 0) {
+            const ticketId = `${parentOrderId}__BARRA`;
+            const rawBarraStatus = order?.barraEstado ? this.normalizeStatus(order.barraEstado) : backendStatus;
+            const barraStatus = this.resolveTicketStatus(ticketId, rawBarraStatus);
+
+            tickets.push({
+                id: ticketId,
+                parentOrderId,
+                area: 'BARRA',
+                barraEstado: rawBarraStatus,
+                cocinaEstado: order?.cocinaEstado ? this.normalizeStatus(order.cocinaEstado) : undefined,
+                tiempo: 1,
+                tiempoLabel: 'Barra',
+                tenantId,
+                status: barraStatus,
+                customerId,
+                customerName,
+                mesaId,
+                mesaNombre,
+                mesaNumero,
+                source,
+                createdAt,
+                marchedAt: createdAt,
+                items: barraItems,
+                subtotal,
+                discount,
+                total,
+                recorrido: 1,
+                segundoTiempoMarchado: false,
+                tercerTiempoMarchado: false,
+                waitingTiemposLabels: []
+            });
+        }
+
+        // 2. TICKETS DE COCINA (si la orden tiene platillos)
+        if (cocinaItems.length > 0) {
+            const rawCocinaStatus = order?.cocinaEstado ? this.normalizeStatus(order.cocinaEstado) : backendStatus;
+
+            // Separar platillos por tiempos
+            const t1Items = cocinaItems.filter((it) => !it.tiempo || it.tiempo === 1);
+            const t2Items = cocinaItems.filter((it) => it.tiempo === 2);
+            const t3Items = cocinaItems.filter((it) => it.tiempo === 3);
+
+            const hasT2 = t2Items.length > 0;
+            const hasT3 = t3Items.length > 0;
+            const t2Marchado = t2Items.some((it) => it.tiempoMarchado);
+            const t3Marchado = t3Items.some((it) => it.tiempoMarchado);
+
+            // Tiempos futuros en espera
+            const waitingLabels: string[] = [];
+            if (hasT2 && !t2Marchado) {
+                waitingLabels.push('2do Tiempo en espera');
+            }
+            if (hasT3 && !t3Marchado) {
+                waitingLabels.push('3er Tiempo en espera');
+            }
+
+            // Si NO hay tiempos 2 ni 3, es una comanda de cocina sencilla
+            if (!hasT2 && !hasT3) {
+                const ticketId = `${parentOrderId}__COCINA`;
+                const status = this.resolveTicketStatus(ticketId, rawCocinaStatus);
+                tickets.push({
+                    id: ticketId,
+                    parentOrderId,
+                    area: 'COCINA',
+                    cocinaEstado: rawCocinaStatus,
+                    barraEstado: order?.barraEstado ? this.normalizeStatus(order.barraEstado) : undefined,
+                    tiempo: 1,
+                    tiempoLabel: '1er Tiempo',
+                    tenantId,
+                    status,
+                    customerId,
+                    customerName,
+                    mesaId,
+                    mesaNombre,
+                    mesaNumero,
+                    source,
+                    createdAt,
+                    marchedAt: createdAt,
+                    items: cocinaItems,
+                    subtotal,
+                    discount,
+                    total,
+                    recorrido: 1,
+                    segundoTiempoMarchado: false,
+                    tercerTiempoMarchado: false,
+                    waitingTiemposLabels: []
+                });
+            } else {
+                // COMANDA DE COCINA CON MÚLTIPLES TIEMPOS: GENERAR UN TICKET POR TIEMPO
+                if (t1Items.length > 0) {
+                    const ticketId = `${parentOrderId}__COCINA__T1`;
+                    const status = this.resolveTicketStatus(ticketId, rawCocinaStatus, 1);
+                    tickets.push({
+                        id: ticketId,
+                        parentOrderId,
+                        area: 'COCINA',
+                        cocinaEstado: rawCocinaStatus,
+                        barraEstado: order?.barraEstado ? this.normalizeStatus(order.barraEstado) : undefined,
+                        tiempo: 1,
+                        tiempoLabel: '1er Tiempo',
+                        tenantId,
+                        status,
+                        customerId,
+                        customerName,
+                        mesaId,
+                        mesaNombre,
+                        mesaNumero,
+                        source,
+                        createdAt,
+                        marchedAt: createdAt,
+                        items: t1Items,
+                        subtotal,
+                        discount,
+                        total,
+                        recorrido: 1,
+                        segundoTiempoMarchado: t2Marchado,
+                        tercerTiempoMarchado: t3Marchado,
+                        waitingTiemposLabels: waitingLabels
+                    });
+                }
+
+                if (hasT2 && t2Marchado) {
+                    const ticketId = `${parentOrderId}__COCINA__T2`;
+                    const status = this.resolveTicketStatus(ticketId, rawCocinaStatus, 2);
+                    const latestUpdate = t2Items.find((it) => it.updatedAt)?.updatedAt || createdAt;
+                    const t2Waiting: string[] = [];
+                    if (hasT3 && !t3Marchado) {
+                        t2Waiting.push('3er Tiempo en espera');
+                    }
+
+                    tickets.push({
+                        id: ticketId,
+                        parentOrderId,
+                        area: 'COCINA',
+                        cocinaEstado: rawCocinaStatus,
+                        barraEstado: order?.barraEstado ? this.normalizeStatus(order.barraEstado) : undefined,
+                        tiempo: 2,
+                        tiempoLabel: '2do Tiempo',
+                        tenantId,
+                        status,
+                        customerId,
+                        customerName,
+                        mesaId,
+                        mesaNombre,
+                        mesaNumero,
+                        source,
+                        createdAt: latestUpdate,
+                        marchedAt: latestUpdate,
+                        items: t2Items,
+                        subtotal,
+                        discount,
+                        total,
+                        recorrido: 2,
+                        segundoTiempoMarchado: true,
+                        tercerTiempoMarchado: t3Marchado,
+                        waitingTiemposLabels: t2Waiting
+                    });
+                }
+
+                if (hasT3 && t3Marchado) {
+                    const ticketId = `${parentOrderId}__COCINA__T3`;
+                    const status = this.resolveTicketStatus(ticketId, rawCocinaStatus, 3);
+                    const latestUpdate = t3Items.find((it) => it.updatedAt)?.updatedAt || createdAt;
+
+                    tickets.push({
+                        id: ticketId,
+                        parentOrderId,
+                        area: 'COCINA',
+                        cocinaEstado: rawCocinaStatus,
+                        barraEstado: order?.barraEstado ? this.normalizeStatus(order.barraEstado) : undefined,
+                        tiempo: 3,
+                        tiempoLabel: '3er Tiempo',
+                        tenantId,
+                        status,
+                        customerId,
+                        customerName,
+                        mesaId,
+                        mesaNombre,
+                        mesaNumero,
+                        source,
+                        createdAt: latestUpdate,
+                        marchedAt: latestUpdate,
+                        items: t3Items,
+                        subtotal,
+                        discount,
+                        total,
+                        recorrido: 3,
+                        segundoTiempoMarchado: t2Marchado,
+                        tercerTiempoMarchado: true,
+                        waitingTiemposLabels: []
+                    });
+                }
+            }
+        }
+
+        // Si por alguna razón la orden no tenía ni barra ni cocina items, generar un ticket fallback
+        if (tickets.length === 0) {
+            const ticketId = `${parentOrderId}__COCINA`;
             const status = this.resolveTicketStatus(ticketId, backendStatus);
             tickets.push({
                 id: ticketId,
                 parentOrderId,
+                area: 'COCINA',
                 tiempo: 1,
                 tiempoLabel: '1er Tiempo',
                 tenantId,
@@ -406,107 +611,6 @@ export class KitchenOrderFacadeService implements OnDestroy {
                 recorrido: 1,
                 segundoTiempoMarchado: false,
                 tercerTiempoMarchado: false,
-                waitingTiemposLabels: []
-            });
-            return tickets;
-        }
-
-        // COMANDA CON MÚLTIPLES TIEMPOS: GENERAR UN TICKET INDEPENDIENTE POR TIEMPO
-
-        // 1ER TIEMPO TICKET (si tiene items de 1er tiempo)
-        if (t1Items.length > 0) {
-            const ticketId = `${parentOrderId}__T1`;
-            const status = this.resolveTicketStatus(ticketId, backendStatus);
-            tickets.push({
-                id: ticketId,
-                parentOrderId,
-                tiempo: 1,
-                tiempoLabel: '1er Tiempo',
-                tenantId,
-                status,
-                customerId,
-                customerName,
-                mesaId,
-                mesaNombre,
-                mesaNumero,
-                source,
-                createdAt,
-                marchedAt: createdAt,
-                items: t1Items,
-                subtotal,
-                discount,
-                total,
-                recorrido: 1,
-                segundoTiempoMarchado: t2Marchado,
-                tercerTiempoMarchado: t3Marchado,
-                waitingTiemposLabels: waitingLabels
-            });
-        }
-
-        // 2DO TIEMPO TICKET (si tiene items de 2do tiempo y está marchado)
-        if (hasT2 && t2Marchado) {
-            const ticketId = `${parentOrderId}__T2`;
-            const status = this.resolveTicketStatus(ticketId, backendStatus, 2);
-            const latestUpdate = t2Items.find((it) => it.updatedAt)?.updatedAt || createdAt;
-            const t2Waiting: string[] = [];
-            if (hasT3 && !t3Marchado) {
-                t2Waiting.push('3er Tiempo en espera');
-            }
-
-            tickets.push({
-                id: ticketId,
-                parentOrderId,
-                tiempo: 2,
-                tiempoLabel: '2do Tiempo',
-                tenantId,
-                status,
-                customerId,
-                customerName,
-                mesaId,
-                mesaNombre,
-                mesaNumero,
-                source,
-                createdAt: latestUpdate,
-                marchedAt: latestUpdate,
-                items: t2Items,
-                subtotal,
-                discount,
-                total,
-                recorrido: 2,
-                segundoTiempoMarchado: true,
-                tercerTiempoMarchado: t3Marchado,
-                waitingTiemposLabels: t2Waiting
-            });
-        }
-
-        // 3ER TIEMPO TICKET (si tiene items de 3er tiempo y está marchado)
-        if (hasT3 && t3Marchado) {
-            const ticketId = `${parentOrderId}__T3`;
-            const status = this.resolveTicketStatus(ticketId, backendStatus, 3);
-            const latestUpdate = t3Items.find((it) => it.updatedAt)?.updatedAt || createdAt;
-
-            tickets.push({
-                id: ticketId,
-                parentOrderId,
-                tiempo: 3,
-                tiempoLabel: '3er Tiempo',
-                tenantId,
-                status,
-                customerId,
-                customerName,
-                mesaId,
-                mesaNombre,
-                mesaNumero,
-                source,
-                createdAt: latestUpdate,
-                marchedAt: latestUpdate,
-                items: t3Items,
-                subtotal,
-                discount,
-                total,
-                recorrido: 3,
-                segundoTiempoMarchado: t2Marchado,
-                tercerTiempoMarchado: true,
                 waitingTiemposLabels: []
             });
         }
@@ -551,6 +655,8 @@ export class KitchenOrderFacadeService implements OnDestroy {
             }
         }
 
+        const isBeverage = item?.esBebida === true || this.isBeverageItem(item);
+
         return {
             productId: item?.productId,
             productName: item?.productName ?? item?.prod ?? `Producto #${item?.productId ?? '-'}`,
@@ -563,7 +669,8 @@ export class KitchenOrderFacadeService implements OnDestroy {
             yaSalio: !!item?.yaSalio,
             excludedIngredientIds: Array.isArray(item?.excludedIngredientIds) ? item.excludedIngredientIds.map(Number) : [],
             additionalIngredientIds: Array.isArray(item?.additionalIngredientIds) ? item.additionalIngredientIds.map(Number) : [],
-            updatedAt: item?.updatedAt
+            updatedAt: item?.updatedAt,
+            esBebida: isBeverage
         };
     }
 

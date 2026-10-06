@@ -3,6 +3,8 @@ import { CanActivateFn, ActivatedRouteSnapshot, RouterStateSnapshot, Router } fr
 import { AuthService } from './auth.service';
 import { MessageService } from 'primeng/api';
 
+import { homeRouteForRole } from './user-role';
+
 /**
  * Función guard para validar permisos en rutas
  * Uso en rutas: canActivate: [PermissionGuard], data: { permission: 'view_campaigns' }
@@ -27,8 +29,9 @@ export const PermissionGuard: CanActivateFn = (route: ActivatedRouteSnapshot, st
 
 	// Usuario no tiene permiso
 	const user = authService.getCurrentUser();
+	const userRole = user?.role || user?.rol;
 	console.warn(
-		`[PermissionGuard] Acceso denegado. Usuario: ${user?.email}, Rol: ${user?.rol}, Permiso requerido: ${requiredPermission}`
+		`[PermissionGuard] Acceso denegado. Usuario: ${user?.email}, Rol: ${userRole}, Permiso requerido: ${requiredPermission}`
 	);
 
 	if (messageService) {
@@ -40,8 +43,8 @@ export const PermissionGuard: CanActivateFn = (route: ActivatedRouteSnapshot, st
 		});
 	}
 
-	// Redirigir a la página anterior o al dashboard
-	router.navigate(['/dashboard/kpis']);
+	// Redirigir a la página correspondiente a su rol
+	router.navigate([homeRouteForRole(userRole)]);
 	return false;
 };
 

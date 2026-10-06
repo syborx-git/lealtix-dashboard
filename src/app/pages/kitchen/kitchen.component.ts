@@ -74,9 +74,10 @@ export class KitchenComponent implements OnInit, OnDestroy {
         await this.loadRecipeCatalog(tenantId);
 
         this.kitchenOrderFacadeService.orders$.pipe(takeUntil(this.destroy$)).subscribe((orders) => {
-            // La comanda llega completa desde Comandix; Cocina solo prepara platillos,
-            // así que se descartan los items que son bebidas (van a Barra).
+            // Cocina solo prepara platillos; se excluyen tickets de Barra
+            // y se descartan items que sean bebidas.
             this.orders = orders
+                .filter((order) => order.area !== 'BARRA')
                 .map((order) => ({
                     ...order,
                     items: order.items.filter((item) => !this.isBeverageItem(item.productId))
@@ -241,9 +242,9 @@ export class KitchenComponent implements OnInit, OnDestroy {
         if (!orderId) return '';
         const parts = orderId.split('__');
         const base = parts[0].slice(0, 8).toUpperCase();
-        if (parts.length > 1) {
-            const tag = parts[1];
-            const tiempoText = tag === 'T3' ? '3er T.' : (tag === 'T2' ? '2do T.' : '1er T.');
+        const tPart = parts.find((p) => p === 'T1' || p === 'T2' || p === 'T3');
+        if (tPart) {
+            const tiempoText = tPart === 'T3' ? '3er T.' : (tPart === 'T2' ? '2do T.' : '1er T.');
             return `${base} (${tiempoText})`;
         }
         return base;

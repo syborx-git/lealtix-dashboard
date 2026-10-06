@@ -47,21 +47,22 @@ export const appRoutes: Routes = [
                     { path: 'bodega', loadComponent: () => import('@/pages/bodega/bodega.component').then(m => m.BodegaComponent), title: 'Bodega', canActivate: [PermissionGuard], data: { permission: 'view_products' } },
                     { path: 'reportes/transferencias', loadComponent: () => import('@/pages/reportes/transferencias-report.component').then(m => m.TransferenciasReportComponent), title: 'Reportes - Transferencias de Bodega', canActivate: [PermissionGuard], data: { permission: 'view_products' } },
                     { path: 'reportes/mermas', loadComponent: () => import('@/pages/reportes/mermas-report.component').then(m => m.MermasReportComponent), title: 'Reportes - Mermas', canActivate: [PermissionGuard], data: { permission: 'manage_mermas' } },
-                    { path: 'reportes/ventas', loadComponent: () => import('@/pages/caja/caja.component').then(m => m.CajaComponent), title: 'Reportes - Ventas y Comandas', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'CAJA', 'MESERO'], permission: 'view_dashboard', initialView: 'reporte' } },
+                    { path: 'reportes/ventas', loadComponent: () => import('@/pages/caja/caja.component').then(m => m.CajaComponent), title: 'Reportes - Ventas y Comandas', canActivate: [RoleGuard], data: { roles: ['ADMIN', 'CAJA', 'MESERO'], initialView: 'reporte' } },
                     // Modulo maestro de Reportes y Analitica (12 reportes en 4 pilares).
                     // Ruta propia para no chocar con las vistas de reportes del POS.
                     {
                         path: 'reportes/analitica',
                         loadComponent: () => import('@/pages/reportes/reportes-shell.component').then(m => m.ReportesShellComponent),
                         title: 'Reportes y Analitica',
-                        canActivate: [RoleGuard, PermissionGuard],
-                        data: { roles: ['ADMIN', 'CAJA'], permission: 'view_dashboard' },
+                        canActivate: [RoleGuard],
+                        data: { roles: ['ADMIN', 'CAJA'] },
                         children: [
                             { path: '', pathMatch: 'full', redirectTo: 'ventas' },
                             { path: 'ventas', loadComponent: () => import('@/pages/reportes/ventas-tendencias-report.component').then(m => m.VentasTendenciasReportComponent), title: '1.1 Dashboard de Ventas y Tendencias' },
                             { path: 'corte-caja', loadComponent: () => import('@/pages/reportes/corte-caja-report.component').then(m => m.CorteCajaReportComponent), title: '1.2 Corte de Caja y Conciliacion' },
                             { path: 'mermas', loadComponent: () => import('@/pages/reportes/mermas-auditoria-report.component').then(m => m.MermasAuditoriaReportComponent), title: '2.3 Auditoria de Mermas' },
                             { path: 'stock-minimo', loadComponent: () => import('@/pages/reportes/stock-minimo-report.component').then(m => m.StockMinimoReportComponent), title: '2.4 Alertas de Stock Mínimo' },
+                            { path: 'tickets-cancelados', loadComponent: () => import('@/pages/reportes/tickets-cancelados-report.component').then(m => m.TicketsCanceladosReportComponent), title: '4.1 Auditoria de Tickets Cancelados' },
                         ]
                     },
                     { path: 'recetas', loadComponent: () => import('@/pages/recetas/recetas.component').then(m => m.RecetasComponent), title: 'Recetas', canActivate: [PermissionGuard], data: { permission: 'manage_recetas' } },
