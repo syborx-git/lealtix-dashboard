@@ -38,7 +38,9 @@ export class OrderService {
     PENDING: 'PENDIENTE',
     CONFIRMED: 'CONFIRMADA',
     REJECTED: 'RECHAZADO',
-    PAID: 'PAGADA'
+    PAID: 'PAGADA',
+    CANCELLED: 'CANCELADA',
+    CANCELED: 'CANCELADA'
   };
 
   constructor(private http: HttpClient) {}
