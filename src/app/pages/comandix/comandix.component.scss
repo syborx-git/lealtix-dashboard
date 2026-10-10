@@ -3164,19 +3164,29 @@
   grid-template-rows: minmax(0, 1fr);
 }
 
-// Panel central: la tarjeta de platillos scrollea por dentro
+// Panel central: scrollea la TARJETA del catálogo (el grid NO debe ser un
+// flex-item encogible, porque sus filas auto colapsaban a 2px y las tarjetas
+// de platillo no se veían).
 .pos-catalog-card {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .pos-catalog-card .pos-products-grid {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
+  flex: 0 0 auto;
+  overflow: visible;
   align-content: start;
-  padding-right: 0.2rem;
+}
+
+// Barra de título del menú fija mientras se scrollea el catálogo
+.pos-catalog-card > .flex.items-center.justify-between {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #ffffff;
 }
 
 // Comanda: llena el alto y su lista de ítems scrollea
@@ -3213,7 +3223,7 @@
 }
 
 // Scrollbars finas (look app nativa)
-.pos-catalog-card .pos-products-grid,
+.pos-catalog-card,
 .pos-categories-list,
 .ticket-receipt-card .overflow-y-auto {
   scrollbar-width: thin;
@@ -3225,7 +3235,7 @@
 @media (max-width: 767px) {
   .comandix-container { height: 100%; overflow: hidden; }
   .comandix-main-content { overflow-y: auto; }
-  .pos-catalog-card .pos-products-grid { overflow: visible; }
+  .pos-catalog-card { overflow: visible; }
   .pos-ticket-sticky { height: auto; }
   .ticket-receipt-card { height: auto; }
 }
