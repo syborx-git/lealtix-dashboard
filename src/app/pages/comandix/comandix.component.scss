@@ -3181,14 +3181,6 @@
   align-content: start;
 }
 
-// Barra de título del menú fija mientras se scrollea el catálogo
-.pos-catalog-card > .flex.items-center.justify-between {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: #ffffff;
-}
-
 // Comanda: llena el alto y su lista de ítems scrollea
 .comandix-right-column { height: 100%; min-height: 0; }
 
