@@ -66,6 +66,7 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true,
+              "serviceWorker": false,
               "fileReplacements": [
                 {
                   "replace": "src/app/pages/commons/environment.ts",
@@ -76,7 +77,8 @@
             "local": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true
+              "sourceMap": true,
+              "serviceWorker": false
             }
           },
           "defaultConfiguration": "production"

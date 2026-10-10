@@ -11,18 +11,26 @@
 :host {
   display: block;
   width: 100%;
+  height: 100%;
 }
 
 .comandix-main-content {
   display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(320px, 3fr);
+  // Catálogo flexible + comanda de ancho acotado: se aprovecha el horizontal
+  // en tablet landscape en lugar de encoger la comanda proporcionalmente.
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
   align-items: start;
   gap: 1.25rem;
   width: 100%;
   max-width: 100%;
   margin: 0;
+  // Contexto de consulta para repartir el POS según el ancho real disponible.
+  container-type: inline-size;
+  container-name: comandix;
 
-  @media (max-width: 1024px) {
+  // Solo se apila en teléfonos (<768). En tablet horizontal (>=768) se mantiene
+  // distribuido en dos columnas.
+  @media (max-width: 767px) {
     grid-template-columns: 1fr;
   }
 
@@ -131,6 +139,175 @@
   min-width: 0;
 }
 
+// ==================== RAIL DE CATEGORÍAS ====================
+// Barra de categorías: horizontal en móvil, rail vertical en tablet (como un
+// sistema de punto de venta).
+.pos-categories-rail {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 0.75rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  min-width: 0;
+}
+
+.pos-categories-rail-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+  padding: 0 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #64748b;
+
+  i { color: #7c3aed; }
+}
+
+.pos-categories-list {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+}
+
+.pos-category-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+
+  .pos-category-bar {
+    width: 4px;
+    height: 18px;
+    border-radius: 999px;
+    background: #cbd5e1;
+    flex-shrink: 0;
+    transition: background 0.18s ease;
+  }
+
+  &:hover {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+    color: #4338ca;
+  }
+
+  // Color de acento por categoría (rotación de 5 colores).
+  &:nth-child(5n + 1) .pos-category-bar { background: #f59e0b; }
+  &:nth-child(5n + 2) .pos-category-bar { background: #10b981; }
+  &:nth-child(5n + 3) .pos-category-bar { background: #ef4444; }
+  &:nth-child(5n + 4) .pos-category-bar { background: #3b82f6; }
+  &:nth-child(5n + 5) .pos-category-bar { background: #8b5cf6; }
+
+  &.active {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    border-color: #4f46e5;
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.28);
+
+    .pos-category-bar { background: rgba(255, 255, 255, 0.9); }
+  }
+}
+
+// ==================== POS EN TABLET HORIZONTAL ====================
+// Reparte el POS en 3 paneles como un sistema de punto de venta:
+// categorías (izquierda) · platillos (centro) · comanda (derecha).
+@container comandix (min-width: 900px) {
+  .pos-left-column {
+    display: grid;
+    grid-template-columns: 165px minmax(0, 1fr);
+    grid-template-areas:
+      'rail header'
+      'rail seats'
+      'rail catalog';
+    align-items: start;
+    gap: 1rem;
+  }
+
+  .pos-compact-header-card { grid-area: header; min-width: 0; }
+  .pos-seats-tabs-card { grid-area: seats; min-width: 0; }
+  .pos-catalog-card { grid-area: catalog; min-width: 0; }
+
+  .pos-categories-rail {
+    grid-area: rail;
+    align-self: start;
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .pos-categories-list {
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .pos-category-pill {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+// ==================== GRID DE PLATILLOS POR ANCHO DISPONIBLE ====================
+// El número de columnas se adapta al ancho real del panel central, no al del
+// viewport (que incluye la barra lateral del dashboard).
+.pos-catalog-card {
+  container-type: inline-size;
+}
+
+// Base: 1 columna; se sube según el ancho real del panel central.
+.pos-products-grid {
+  grid-template-columns: 1fr;
+}
+
+@container (min-width: 380px) {
+  .pos-products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@container (min-width: 640px) {
+  .pos-products-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@container (min-width: 940px) {
+  .pos-products-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+// Reduce la altura del header en tablet landscape para liberar área de venta.
+@media (min-width: 768px) and (max-width: 1399px) {
+  .comandix-header {
+    padding: 1rem 1.25rem;
+    border-radius: 14px;
+
+    .comandix-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 10px;
+    }
+
+    .comandix-title {
+      font-size: 1.6rem;
+    }
+  }
+}
+
 .comandix-right-column {
   display: block;
   width: 100%;
@@ -143,7 +320,7 @@
     display: flex;
     flex-direction: column;
 
-    @media (max-width: 1024px) {
+    @media (max-width: 767px) {
       position: relative;
       top: 0;
       max-height: none;
@@ -2744,3 +2921,313 @@
     white-space: nowrap;
   }
 }
+
+/* ============================================================================
+   REDISEÑO POS PROFESIONAL — tablet horizontal (sept 2026)
+   Se coloca al final para ganar en orden de cascada sobre los estilos previos.
+   ============================================================================ */
+
+// --- Fondo del módulo ---
+.comandix-container {
+  background:
+    radial-gradient(1100px 520px at 100% -20%, #eef2ff 0%, rgba(238, 242, 255, 0) 55%),
+    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+// --- Barra superior (marca + acciones + views) ---
+.comandix-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.1rem;
+  padding: 0.8rem 1.05rem;
+  border-radius: 18px;
+  background: linear-gradient(108deg, #312e81 0%, #4338ca 42%, #6366f1 100%);
+  box-shadow: 0 22px 44px -26px rgba(49, 46, 129, 0.95);
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(520px 150px at 90% -20%, rgba(255, 255, 255, 0.18), transparent 62%),
+      radial-gradient(360px 140px at 0% 130%, rgba(255, 255, 255, 0.08), transparent 60%);
+    pointer-events: none;
+  }
+}
+
+.comandix-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  position: relative;
+  z-index: 1;
+}
+
+.comandix-header .comandix-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comandix-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+
+  .comandix-title {
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .comandix-subtitle {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.72);
+  }
+}
+
+.comandix-top-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+// Segmented control para el cambio de vista
+.catalog-tabs.view-toggle {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 440px;
+  margin-left: auto;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 0.32rem;
+  gap: 0.22rem;
+  align-items: center;
+}
+
+.view-toggle-btn {
+  border-radius: 9px;
+  color: rgba(255, 255, 255, 0.82);
+  font-weight: 600;
+  padding: 0.6rem 0.85rem;
+
+  i { opacity: 0.9; }
+
+  &:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
+
+  &.active {
+    background: #ffffff;
+    color: #4338ca;
+    box-shadow: 0 10px 20px -12px rgba(0, 0, 0, 0.7);
+    i { opacity: 1; }
+  }
+}
+
+.view-toggle-refresh {
+  color: rgba(255, 255, 255, 0.85);
+  border-radius: 9px;
+  &:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
+}
+
+.orders-badge {
+  background: #ef4444;
+  color: #fff;
+  border-radius: 999px;
+  padding: 0 0.4rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  min-width: 1.05rem;
+  height: 1.05rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.35rem;
+}
+
+// --- Paneles con sombra suave unificada ---
+.pos-compact-header-card,
+.pos-seats-tabs-card,
+.pos-catalog-card,
+.pos-categories-rail {
+  border-radius: 16px !important;
+  border-color: #e6eaf2 !important;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 14px 34px -26px rgba(16, 24, 40, 0.5) !important;
+}
+
+// --- Tarjetas de platillo tipo POS ---
+.pos-catalog-card .dish-pos-card {
+  border-radius: 18px;
+  border: 1px solid #e9edf5;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.22s ease, border-color 0.22s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    border-color: #c7d2fe;
+    box-shadow: 0 22px 44px -22px rgba(79, 70, 229, 0.55);
+  }
+
+  h4 { font-weight: 700; }
+
+  // Botón "+" grande y con marca
+  button[aria-label^='Agregar'] {
+    width: 2.15rem !important;
+    height: 2.15rem !important;
+    border-radius: 14px !important;
+    background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+    color: #fff !important;
+    box-shadow: 0 10px 20px -10px rgba(79, 70, 229, 0.85) !important;
+
+    i { font-size: 0.85rem; }
+    &:hover { filter: brightness(1.06); transform: translateY(-1px); }
+  }
+
+  // Botón "ver detalle" más discreto
+  button[aria-label^='Ver detalles'] {
+    width: 2.15rem !important;
+    height: 2.15rem !important;
+    border-radius: 14px !important;
+    background: #f1f5f9 !important;
+    color: #64748b !important;
+  }
+}
+
+// --- Comanda / Ticket ---
+.ticket-receipt-card {
+  border-radius: 18px !important;
+  border-color: #e6eaf2 !important;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 30px 60px -40px rgba(16, 24, 40, 0.7) !important;
+}
+
+.ticket-receipt-header {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+}
+
+// Botón principal de la comanda
+.ticket-receipt-bottom button.bg-purple-600 {
+  background: linear-gradient(135deg, #6338f0 0%, #4f46e5 100%) !important;
+  box-shadow: 0 16px 30px -14px rgba(79, 70, 229, 0.9) !important;
+  border-radius: 14px !important;
+  padding-top: 0.85rem !important;
+  padding-bottom: 0.85rem !important;
+
+  &:hover { filter: brightness(1.05); }
+}
+
+// --- Panel central estrecho: apilar los campos en Mesa/Cliente ---
+// (dentro del layout de 3 paneles no caben en una sola fila)
+@container comandix (min-width: 900px) {
+  .pos-compact-header-card > .flex {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .pos-compact-header-card > .flex > .hidden { display: none !important; }
+  .pos-seats-tabs-card .hidden.sm\:inline-block { display: none !important; }
+}
+
+/* ============================================================================
+   MODO APP NATIVA — alto fijo, sin scroll de página; scroll interno por panel
+   Solo en tablet (dispositivos táctiles). En computadora se conserva el scroll.
+   ============================================================================ */
+@media (pointer: coarse) {
+.comandix-container {
+  height: 100%;
+  min-height: 0 !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.comandix-header { flex: 0 0 auto; }
+
+.comandix-main-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  align-items: stretch;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+// Panel central: la tarjeta de platillos scrollea por dentro
+.pos-catalog-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.pos-catalog-card .pos-products-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  align-content: start;
+  padding-right: 0.2rem;
+}
+
+// Comanda: llena el alto y su lista de ítems scrollea
+.comandix-right-column { height: 100%; min-height: 0; }
+
+.pos-ticket-sticky {
+  height: 100%;
+  max-height: none !important;
+  position: static !important;
+  top: 0 !important;
+}
+
+.ticket-receipt-card { height: 100%; min-height: 0 !important; }
+.ticket-receipt-card [class*='max-h-'] { max-height: none !important; }
+.ticket-receipt-card [class*='min-h-'] { min-height: 0 !important; }
+
+@container comandix (min-width: 900px) {
+  .pos-left-column {
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .pos-categories-rail {
+    height: 100%;
+    max-height: none !important;
+    position: static !important;
+    top: 0 !important;
+  }
+
+  .pos-categories-list { overflow-y: auto; min-height: 0; }
+  .pos-catalog-card { min-height: 0; }
+}
+
+// Scrollbars finas (look app nativa)
+.pos-catalog-card .pos-products-grid,
+.pos-categories-list,
+.ticket-receipt-card .overflow-y-auto {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, 0.35) transparent;
+}
+
+// En pantallas táctiles angostas (teléfono/tablet chica) el layout se apila;
+// el scroll ocurre SIEMPRE dentro del panel, nunca en la página.
+@media (max-width: 767px) {
+  .comandix-container { height: 100%; overflow: hidden; }
+  .comandix-main-content { overflow-y: auto; }
+  .pos-catalog-card .pos-products-grid { overflow: visible; }
+  .pos-ticket-sticky { height: auto; }
+  .ticket-receipt-card { height: auto; }
+}
+
+} // fin @media (pointer: coarse)

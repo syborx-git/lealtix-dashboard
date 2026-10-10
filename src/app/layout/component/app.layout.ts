@@ -1,7 +1,8 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { filter } from 'rxjs/operators';
 import confetti from 'canvas-confetti';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
@@ -22,6 +23,24 @@ import { AuthService } from '@/auth/auth.service';
             display: block;
             min-height: 100vh;
         }
+
+        /* Pantallas operativas (POS/tableros): app nativa a pantalla completa,
+           sin scroll de página; cada panel scrollea por dentro.
+           Solo se aplica en dispositivos táctiles (ver isFullBleed). */
+        .app-content:has(.app-main--flush) {
+            display: flex;
+            flex-direction: column;
+            height: 100dvh;
+            overflow: hidden;
+        }
+
+        .app-main--flush {
+            flex: 1 1 auto;
+            min-height: 0;
+            padding: 0 !important;
+            overflow: hidden;
+            position: relative;
+        }
     `],
     template: `
     <div class="min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -31,10 +50,11 @@ import { AuthService } from '@/auth/auth.service';
         <!-- El padding izquierdo sigue al ancho del sidebar (w-64 / w-20) -->
         <div class="app-content transition-all duration-300 ease-in-out" [ngClass]="layoutService.contentPaddingClass()">
             <app-topbar></app-topbar>
-            <main class="app-main min-h-[calc(100vh-8rem)] p-3 md:p-4 lg:p-6">
+            <main class="app-main"
+                  [ngClass]="isFullBleed() ? 'app-main--flush' : 'min-h-[calc(100vh-8rem)] p-3 md:p-4 lg:p-6'">
                 <router-outlet></router-outlet>
             </main>
-            <app-footer></app-footer>
+            <app-footer *ngIf="!isFullBleed()"></app-footer>
         </div>
 
         <p-toast position="bottom-right"></p-toast>
@@ -44,6 +64,10 @@ export class AppLayout implements OnInit, OnDestroy {
 
     private readonly NOTIFICATION_SOUND = 'assets/sounds/dragon-studio-correct-472358.mp3';
     private sseSub: Subscription | null = null;
+    private navSub: Subscription | null = null;
+
+    readonly isFullBleed = signal(false);
+    private readonly FULL_BLEED_ROUTES = ['/dashboard/comandix', '/dashboard/cocina', '/dashboard/barra'];
 
     constructor(
         public layoutService: LayoutService,
@@ -51,7 +75,28 @@ export class AppLayout implements OnInit, OnDestroy {
         private orderSseService: OrderSseService,
         private authService: AuthService,
         private messageService: MessageService
-    ) {}
+    ) {
+        this.updateFullBleed(this.router.url);
+        this.navSub = this.router.events
+            .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+            .subscribe((e) => this.updateFullBleed(e.urlAfterRedirects || e.url));
+    }
+
+    private updateFullBleed(url: string): void {
+        const clean = (url || '').split('?')[0];
+        const isOperationalRoute = this.FULL_BLEED_ROUTES.some((r) => clean.startsWith(r));
+        // Pantalla completa solo en dispositivos táctiles (tablet). En computadora
+        // con mouse se conserva el layout normal con scroll de página.
+        this.isFullBleed.set(isOperationalRoute && this.isTouchDevice());
+    }
+
+    private isTouchDevice(): boolean {
+        try {
+            return !!window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+        } catch {
+            return false;
+        }
+    }
 
     ngOnInit(): void {
         this.startGlobalOrderNotifications();
@@ -124,6 +169,9 @@ export class AppLayout implements OnInit, OnDestroy {
     ngOnDestroy() {
         if (this.sseSub) {
             this.sseSub.unsubscribe();
+        }
+        if (this.navSub) {
+            this.navSub.unsubscribe();
         }
 
         this.orderSseService.disconnect();
