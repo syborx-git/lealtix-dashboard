@@ -14,42 +14,44 @@
 
   <!-- ==================== HEADER ==================== -->
   <div class="comandix-header mb-3">
-    <div class="flex align-items-center justify-content-between gap-3 mb-3">
-      <div class="flex align-items-center gap-3">
-        <div class="comandix-icon">
-          <i class="pi pi-shopping-cart text-2xl text-white"></i>
-        </div>
-        <h1 class="text-3xl font-bold m-0 comandix-title">Comandix</h1>
+    <div class="comandix-brand">
+      <div class="comandix-icon">
+        <i class="pi pi-shopping-cart text-2xl text-white"></i>
       </div>
-      <div class="flex align-items-center gap-2 header-tags">
-        <p-tag
-          *ngIf="selectedCliente && activeView() === 'pos'"
-          [value]="selectedCliente.nombreCompleto"
-          icon="pi pi-user"
-          styleClass="p-tag-info"
-        ></p-tag>
-        <p-tag
-          *ngIf="!selectedCliente && activeView() === 'pos'"
-          value="Venta General"
-          icon="pi pi-shopping-bag"
-          styleClass="p-tag-secondary"
-        ></p-tag>
-        <!-- Botón carrito mobile -->
-        <button
-          *ngIf="cart().length > 0 && activeView() === 'pos'"
-          class="cart-button-mobile"
-          (click)="sidebarCarrito = true"
-          type="button"
-          title="Ver carrito"
-        >
-          <i class="pi pi-shopping-cart"></i>
-          <span class="cart-count">{{ cart().length }}</span>
-        </button>
+      <div class="comandix-brand-text">
+        <h1 class="comandix-title">Comandix</h1>
+        <span class="comandix-subtitle">Punto de venta · Restaurante</span>
       </div>
     </div>
 
+    <div class="comandix-top-actions header-tags">
+      <p-tag
+        *ngIf="selectedCliente && activeView() === 'pos'"
+        [value]="selectedCliente.nombreCompleto"
+        icon="pi pi-user"
+        styleClass="p-tag-info"
+      ></p-tag>
+      <p-tag
+        *ngIf="!selectedCliente && activeView() === 'pos'"
+        value="Venta General"
+        icon="pi pi-shopping-bag"
+        styleClass="p-tag-secondary"
+      ></p-tag>
+      <!-- Botón carrito mobile -->
+      <button
+        *ngIf="cart().length > 0 && activeView() === 'pos'"
+        class="cart-button-mobile"
+        (click)="sidebarCarrito = true"
+        type="button"
+        title="Ver carrito"
+      >
+        <i class="pi pi-shopping-cart"></i>
+        <span class="cart-count">{{ cart().length }}</span>
+      </button>
+    </div>
+
     <!-- ==================== TOGGLE DE VISTA ==================== -->
-    <div class="catalog-tabs view-toggle mb-3">
+    <div class="catalog-tabs view-toggle">
       <button
         class="catalog-tab view-toggle-btn"
         [class.active]="activeView() === 'pos'"
@@ -373,6 +375,36 @@
         </div>
       </div>
 
+      <!-- ==================== RAIL DE CATEGORÍAS (PANEL IZQUIERDO EN TABLET) ==================== -->
+      <aside class="pos-categories-rail">
+        <div class="pos-categories-rail-title">
+          <i class="pi pi-th-large"></i>
+          <span>Categorías</span>
+        </div>
+        <nav class="pos-categories-list">
+          <button
+            type="button"
+            class="pos-category-pill"
+            [class.active]="selectedCategoryId() === 0"
+            (click)="onCategoryFilterChange(0)"
+          >
+            <span class="pos-category-bar"></span>
+            <span class="pos-category-name">TODO</span>
+          </button>
+
+          <button
+            *ngFor="let cat of categories()"
+            type="button"
+            class="pos-category-pill"
+            [class.active]="selectedCategoryId() === cat.id"
+            (click)="onCategoryFilterChange(cat.id)"
+          >
+            <span class="pos-category-bar"></span>
+            <span class="pos-category-name">{{ cat.name }}</span>
+          </button>
+        </nav>
+      </aside>
+
       <!-- PASO 3: CATÁLOGO DE PRODUCTOS (JUSTO DEBAJO DE LAS PESTAÑAS DE COMENSALES) -->
       <div class="pos-catalog-card bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80">
         <!-- Toolbar superior: Título del Menú -->
@@ -386,34 +418,6 @@
               <span class="text-xs text-slate-400 font-medium">{{ filteredProducts().length }} platillos disponibles</span>
             </div>
           </div>
-        </div>
-
-        <!-- Barra de Categorías Horizontal en Cápsulas (Pills con scroll horizontal) -->
-        <div class="flex flex-row items-center gap-3 overflow-x-auto px-1 py-1.5 mb-5 scrollbar-hide no-scrollbar select-none">
-          <!-- Cápsula estática: TODO -->
-          <button
-            type="button"
-            class="rounded-full px-5 py-2 font-medium text-xs sm:text-sm transition-colors duration-200 cursor-pointer whitespace-nowrap shrink-0 border"
-            [ngClass]="selectedCategoryId() === 0
-              ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
-              : 'bg-white text-purple-600 border-purple-600 hover:bg-purple-50'"
-            (click)="onCategoryFilterChange(0)"
-          >
-            TODO
-          </button>
-
-          <!-- Cápsulas dinámicas por categoría -->
-          <button
-            *ngFor="let cat of categories()"
-            type="button"
-            class="rounded-full px-5 py-2 font-medium text-xs sm:text-sm transition-colors duration-200 cursor-pointer whitespace-nowrap shrink-0 border uppercase"
-            [ngClass]="selectedCategoryId() === cat.id
-              ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
-              : 'bg-white text-purple-600 border-purple-600 hover:bg-purple-50'"
-            (click)="onCategoryFilterChange(cat.id)"
-          >
-            {{ cat.name }}
-          </button>
         </div>
 
         <!-- Estado vacío catálogo general -->
@@ -431,7 +435,7 @@
         </div>
 
         <!-- Grid Responsivo de Platillos (3 a 4 columnas) -->
-        <div *ngIf="categories().length > 0 && filteredProducts().length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div *ngIf="categories().length > 0 && filteredProducts().length > 0" class="pos-products-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
           <div
             *ngFor="let product of filteredProducts()"
             class="dish-pos-card group bg-white rounded-2xl border border-slate-200/70 hover:border-purple-300 hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col cursor-pointer"
