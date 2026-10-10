@@ -74,8 +74,9 @@ interface CartItem {
   configKey?: string;
   asientoId?: string;
   asientoAlias?: string;
-  tiempo?: 1 | 2; // 1 = 1er Tiempo (Inmediato), 2 = 2do Tiempo (Por marchar)
+  tiempo?: 1 | 2 | 3; // 1 = 1er Tiempo (Inmediato), 2 = 2do Tiempo (Por marchar), 3 = 3er Tiempo (Por marchar)
   tiempoMarchado?: boolean;
+  paraLlevar?: boolean;
 }
 
 interface StockInfo {
@@ -583,17 +584,27 @@ configEditingItem: CartItem | null = null;
       .reduce((sum, i) => sum + (this.getCartItemUnitPrice(i) * i.cantidad), 0);
   }
 
-  // ==================== TIEMPOS DE SERVICIO (1er Tiempo vs 2do Tiempo) ====================
-  tiempoActivo = signal<1 | 2>(1);
+  // ==================== TIEMPOS DE SERVICIO (1er, 2do y 3er Tiempo) ====================
+  tiempoActivo = signal<1 | 2 | 3>(1);
 
-  setTiempoActivo(tiempo: 1 | 2): void {
+  setTiempoActivo(tiempo: 1 | 2 | 3): void {
     this.tiempoActivo.set(tiempo);
   }
 
   toggleItemTiempo(item: CartItem): void {
-    const nuevoTiempo: 1 | 2 = item.tiempo === 2 ? 1 : 2;
+    const current = item.tiempo || 1;
+    const nuevoTiempo: 1 | 2 | 3 = current === 1 ? 2 : (current === 2 ? 3 : 1);
     this.cart.update((items) =>
       items.map((i) => (this.cartItemKey(i) === this.cartItemKey(item) ? { ...i, tiempo: nuevoTiempo } : i))
+    );
+    this.persistCartDraft();
+    this.cdr.detectChanges();
+  }
+
+  toggleItemParaLlevar(item: CartItem): void {
+    const nuevoParaLlevar = !item.paraLlevar;
+    this.cart.update((items) =>
+      items.map((i) => (this.cartItemKey(i) === this.cartItemKey(item) ? { ...i, paraLlevar: nuevoParaLlevar } : i))
     );
     this.persistCartDraft();
     this.cdr.detectChanges();
@@ -612,6 +623,21 @@ configEditingItem: CartItem | null = null;
   hasSegundoTiempoMarchado(order: PendingOrder | null | undefined): boolean {
     if (!order?.items) return false;
     return order.items.some((it) => it.tiempo === 2 && it.tiempoMarchado);
+  }
+
+  hasTercerTiempo(order: PendingOrder | null | undefined): boolean {
+    if (!order?.items) return false;
+    return order.items.some((it) => it.tiempo === 3);
+  }
+
+  hasTercerTiempoPendiente(order: PendingOrder | null | undefined): boolean {
+    if (!order?.items) return false;
+    return order.items.some((it) => it.tiempo === 3 && !it.tiempoMarchado);
+  }
+
+  hasTercerTiempoMarchado(order: PendingOrder | null | undefined): boolean {
+    if (!order?.items) return false;
+    return order.items.some((it) => it.tiempo === 3 && it.tiempoMarchado);
   }
 
   async marcharSegundoTiempo(order: PendingOrder): Promise<void> {
@@ -654,6 +680,110 @@ configEditingItem: CartItem | null = null;
       this.messageService.add({
         severity: 'error',
         summary: 'Error al marchar',
+        detail: msg,
+        life: 3000
+      });
+    } finally {
+      this.processingOrderAction.set(false);
+    }
+  }
+
+  async marcharTercerTiempo(order: PendingOrder): Promise<void> {
+    if (!order || this.processingOrderAction()) return;
+    this.processingOrderAction.set(true);
+
+    try {
+      try {
+        await firstValueFrom(this.orderService.marcharTercerTiempo(order.id));
+      } catch (errEndpoint) {
+        console.warn('[Comandix] Fallback a updateOrderStatus tras error en marcharTercerTiempo:', errEndpoint);
+        await firstValueFrom(this.orderService.updateOrderStatus(order.id, 'CONFIRMADA'));
+      }
+
+      const updatedOrder: PendingOrder = {
+        ...order,
+        estado: 'CONFIRMADA',
+        tercerTiempoMarchado: true,
+        items: (order.items || []).map((it) => (it.tiempo === 3 ? { ...it, tiempoMarchado: true } : it))
+      };
+
+      this.pendingOrders.update((orders) =>
+        orders.map((o) => (o.id === order.id ? updatedOrder : o))
+      );
+
+      if (this.selectedOrder()?.id === order.id) {
+        this.selectedOrder.set(updatedOrder);
+      }
+
+      this.playNotificationSound(1);
+
+      this.messageService.add({
+        severity: 'success',
+        summary: '¡3er Tiempo Enviado a Cocina!',
+        detail: `Se notificó a cocina para comenzar la preparación de los terceros tiempos de ${order.mesaNombre || 'la mesa'}`,
+        life: 4000
+      });
+    } catch (e: any) {
+      const msg = e?.error?.message || e?.message || 'No se pudo mandar el tercer tiempo a cocina';
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error al marchar',
+        detail: msg,
+        life: 3000
+      });
+    } finally {
+      this.processingOrderAction.set(false);
+    }
+  }
+
+  hasMultiplesTiemposPendientes(order: PendingOrder | null | undefined): boolean {
+    return this.hasSegundoTiempoPendiente(order) && this.hasTercerTiempoPendiente(order);
+  }
+
+  async marcharTodosLosTiempos(order: PendingOrder): Promise<void> {
+    if (!order || this.processingOrderAction()) return;
+    this.processingOrderAction.set(true);
+
+    try {
+      try {
+        await firstValueFrom(this.orderService.marcharTodosLosTiempos(order.id));
+      } catch (errEndpoint) {
+        console.warn('[Comandix] Fallback al marchar todos los tiempos:', errEndpoint);
+        await Promise.allSettled([
+          firstValueFrom(this.orderService.marcharSegundoTiempo(order.id)),
+          firstValueFrom(this.orderService.marcharTercerTiempo(order.id))
+        ]);
+      }
+
+      const updatedOrder: PendingOrder = {
+        ...order,
+        estado: 'CONFIRMADA',
+        segundoTiempoMarchado: true,
+        tercerTiempoMarchado: true,
+        items: (order.items || []).map((it) => (it.tiempo === 2 || it.tiempo === 3 ? { ...it, tiempoMarchado: true } : it))
+      };
+
+      this.pendingOrders.update((orders) =>
+        orders.map((o) => (o.id === order.id ? updatedOrder : o))
+      );
+
+      if (this.selectedOrder()?.id === order.id) {
+        this.selectedOrder.set(updatedOrder);
+      }
+
+      this.playNotificationSound(1);
+
+      this.messageService.add({
+        severity: 'success',
+        summary: '¡Todos los Tiempos Enviados a Cocina!',
+        detail: `Se notificó a cocina para comenzar la preparación de todos los tiempos de ${order.mesaNombre || 'la mesa'}`,
+        life: 4000
+      });
+    } catch (e: any) {
+      const msg = e?.error?.message || e?.message || 'No se pudieron mandar todos los tiempos a cocina';
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error al marchar tiempos',
         detail: msg,
         life: 3000
       });
@@ -802,20 +932,30 @@ configEditingItem: CartItem | null = null;
     const items = (order.items ?? []).map((it: any) => {
       let alias = it.asientoAlias;
       let comentarios = String(it.comentarios || '');
-      let tiempo: 1 | 2 = it.tiempo === 2 ? 2 : 1;
+      let tiempo: 1 | 2 | 3 = it.tiempo === 3 ? 3 : (it.tiempo === 2 ? 2 : 1);
       let tiempoMarchado: boolean = !!it.tiempoMarchado;
+      let paraLlevar: boolean = !!it.paraLlevar;
 
-      if (comentarios.includes('2DO TIEMPO') || comentarios.includes('SEGUNDO TIEMPO')) {
+      if (comentarios.includes('3ER TIEMPO') || comentarios.includes('TERCER TIEMPO')) {
+        tiempo = 3;
+        if (comentarios.includes('MARCHADO')) {
+          tiempoMarchado = true;
+        }
+      } else if (comentarios.includes('2DO TIEMPO') || comentarios.includes('SEGUNDO TIEMPO')) {
         tiempo = 2;
         if (comentarios.includes('MARCHADO')) {
           tiempoMarchado = true;
         }
       }
 
+      if (comentarios.includes('PARA LLEVAR')) {
+        paraLlevar = true;
+      }
+
       if (!alias && comentarios.startsWith('[')) {
         const m = comentarios.match(/^\[(.*?)\]\s*(.*)$/);
         if (m) {
-          if (!m[1].includes('2DO TIEMPO') && !m[1].includes('SEGUNDO TIEMPO')) {
+          if (!m[1].includes('TIEMPO') && !m[1].includes('PARA LLEVAR')) {
             alias = m[1];
             comentarios = m[2];
           }
@@ -823,10 +963,15 @@ configEditingItem: CartItem | null = null;
       }
 
       const cleanComentarios = comentarios
+        .replace(/\[3ER TIEMPO\s*[-–]?\s*MARCHADO\]/gi, '')
+        .replace(/\[3ER TIEMPO\s*⏱️?\s*[-–]?\s*EN ESPERA\]/gi, '')
+        .replace(/\[3ER TIEMPO\]/gi, '')
+        .replace(/\[TERCER TIEMPO\]/gi, '')
         .replace(/\[2DO TIEMPO\s*[-–]?\s*MARCHADO\]/gi, '')
         .replace(/\[2DO TIEMPO\s*⏱️?\s*[-–]?\s*EN ESPERA\]/gi, '')
         .replace(/\[2DO TIEMPO\]/gi, '')
         .replace(/\[SEGUNDO TIEMPO\]/gi, '')
+        .replace(/\[PARA LLEVAR\s*🥡?\]/gi, '')
         .trim();
 
       return {
@@ -835,12 +980,15 @@ configEditingItem: CartItem | null = null;
         asientoId: it.idAsiento ?? it.asientoId,
         asientoAlias: alias,
         tiempo,
-        tiempoMarchado
+        tiempoMarchado,
+        paraLlevar
       };
     });
 
     const has2doPendiente = items.some((it: any) => it.tiempo === 2 && !it.tiempoMarchado);
     const has2doMarchado = items.some((it: any) => it.tiempo === 2 && it.tiempoMarchado);
+    const has3erPendiente = items.some((it: any) => it.tiempo === 3 && !it.tiempoMarchado);
+    const has3erMarchado = items.some((it: any) => it.tiempo === 3 && it.tiempoMarchado);
 
     return {
       id: order.id,
@@ -861,6 +1009,7 @@ configEditingItem: CartItem | null = null;
       mesaNumero,
       meseroNombre,
       segundoTiempoMarchado: has2doMarchado && !has2doPendiente,
+      tercerTiempoMarchado: has3erMarchado && !has3erPendiente,
       horaApertura,
       horaCierre,
       subcomandas: order.subcomandas ?? [],
@@ -2067,7 +2216,7 @@ const editingItem = this.configEditingItem;
     const tiempo = this.tiempoActivo();
 
     const existingItem = this.cart().find(
-      (item) => item.product.id === product.id && item.configKey === configKey && item.asientoId === seatId && (item.tiempo || 1) === tiempo
+      (item) => item.product.id === product.id && item.configKey === configKey && item.asientoId === seatId && (item.tiempo || 1) === tiempo && !item.paraLlevar
     );
 
     if (existingItem) {
@@ -2092,14 +2241,15 @@ const editingItem = this.configEditingItem;
           asientoId: seatId,
           asientoAlias: seatAlias,
           tiempo,
-          tiempoMarchado: false
+          tiempoMarchado: false,
+          paraLlevar: false
         }
       ]);
     }
 
     this.persistCartDraft();
 
-    const tiempoTag = tiempo === 2 ? ' (⏱️ 2do Tiempo)' : '';
+    const tiempoTag = tiempo === 3 ? ' (🍰 3er Tiempo)' : (tiempo === 2 ? ' (⏱️ 2do Tiempo)' : '');
     this.messageService.add({
       severity: 'success',
       summary: 'Producto añadido',
@@ -2142,7 +2292,7 @@ const editingItem = this.configEditingItem;
   }
 
   private cartItemKey(item: CartItem): string {
-    return `${item.product.id}::${item.configKey || ''}::${item.asientoId || 'seat-1'}::${item.tiempo || 1}`;
+    return `${item.product.id}::${item.configKey || ''}::${item.asientoId || 'seat-1'}::${item.tiempo || 1}::${item.paraLlevar ? 1 : 0}`;
   }
 
   getCartItemUnitPrice(item: CartItem): number {
@@ -2324,10 +2474,17 @@ trackByProductId = (index: number, item: CartItem): string => {
     try {
       const orderItems: OrderItem[] = this.cart().map((item) => {
         const is2do = item.tiempo === 2;
-        const tiempoTag = is2do ? (item.tiempoMarchado ? '[2DO TIEMPO - MARCHADO]' : '[2DO TIEMPO ⏱️ - EN ESPERA]') : '';
+        const is3er = item.tiempo === 3;
+        let tiempoTag = '';
+        if (is2do) {
+          tiempoTag = item.tiempoMarchado ? '[2DO TIEMPO - MARCHADO]' : '[2DO TIEMPO ⏱️ - EN ESPERA]';
+        } else if (is3er) {
+          tiempoTag = item.tiempoMarchado ? '[3ER TIEMPO - MARCHADO]' : '[3ER TIEMPO ⏱️ - EN ESPERA]';
+        }
+        const paraLlevarTag = item.paraLlevar ? '[PARA LLEVAR 🥡]' : '';
         const asientoTag = item.asientoAlias ? `[${item.asientoAlias}]` : '';
         const rawNotes = (item.comentarios || '').trim();
-        const fullComment = [asientoTag, tiempoTag, rawNotes].filter(Boolean).join(' ').trim();
+        const fullComment = [asientoTag, tiempoTag, paraLlevarTag, rawNotes].filter(Boolean).join(' ').trim();
 
         return {
           productId: item.product.id,
@@ -2338,6 +2495,7 @@ trackByProductId = (index: number, item: CartItem): string => {
           asientoAlias: item.asientoAlias,
           tiempo: item.tiempo || 1,
           tiempoMarchado: item.tiempoMarchado || false,
+          paraLlevar: item.paraLlevar || false,
           excludedIngredientIds: item.excludedIngredientIds?.length ? item.excludedIngredientIds : undefined,
           additionalIngredientIds: item.additionalIngredientIds?.length ? item.additionalIngredientIds : undefined
         };
@@ -2584,8 +2742,9 @@ trackByProductId = (index: number, item: CartItem): string => {
       configKey,
       asientoId: item.asientoId != null ? String(item.asientoId) : undefined,
       asientoAlias: item.asientoAlias,
-      tiempo: item.tiempo || 1,
-      tiempoMarchado: item.tiempoMarchado ?? false
+      tiempo: (item.tiempo === 3 ? 3 : (item.tiempo === 2 ? 2 : 1)) as 1 | 2 | 3,
+      tiempoMarchado: item.tiempoMarchado ?? false,
+      paraLlevar: item.paraLlevar ?? (item.comentarios?.includes('PARA LLEVAR') ?? false)
     };
   }
 

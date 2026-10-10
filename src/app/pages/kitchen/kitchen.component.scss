@@ -827,3 +827,55 @@
     }
   }
 }
+
+.kitchen-tiempo-pill {
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0.15rem 0.55rem;
+    border-radius: 9999px;
+    letter-spacing: 0.02em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+
+    &.tiempo-pill-1 {
+        background: #f1f5f9;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+    }
+
+    &.tiempo-pill-2 {
+        background: #fef3c7;
+        color: #92400e;
+        border: 1px solid #f59e0b;
+    }
+
+    &.tiempo-pill-3 {
+        background: #f3e8ff;
+        color: #6b21a8;
+        border: 1px solid #c084fc;
+    }
+}
+
+.kitchen-waiting-strip {
+    margin-top: 0.35rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.kitchen-waiting-badge {
+    background: #fffbeb;
+    color: #b45309;
+    border: 1px dashed #fcd34d;
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+

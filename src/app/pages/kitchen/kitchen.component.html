@@ -32,6 +32,10 @@
                         <span class="label">Estado:</span>
                         <span class="value">{{ order.status }}</span>
                     </div>
+                    <div class="detail-item" *ngIf="order.tiempoLabel">
+                        <span class="label">Tiempo:</span>
+                        <span class="value font-bold text-slate-800">{{ order.tiempoLabel }}</span>
+                    </div>
                 </div>
             </div>
 
@@ -60,13 +64,10 @@
                             <span class="item-quantity">{{ item.quantity }}x</span>
                             <span class="item-name" [class.line-through]="isItemYaSalio(order, item)">{{ item.productName }}</span>
                             <span *ngIf="isItemYaSalio(order, item)" class="kitchen-card-badge-salio font-bold text-slate-700 bg-slate-200 border border-slate-300 px-2 py-1 rounded">
-                                ✅ 1er Tiempo - Ya salió (NO volver a preparar)
+                                ✅ Ya salió
                             </span>
-                            <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('EN ESPERA') || (item.tiempo === 2 && !item.tiempoMarchado))" class="kitchen-tiempo-badge-espera">
-                                ⏱️ 2DO TIEMPO (EN ESPERA - NO PREPARAR)
-                            </span>
-                            <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('MARCHADO') || (item.tiempo === 2 && item.tiempoMarchado))" class="kitchen-tiempo-badge-marchado">
-                                🔥 2DO TIEMPO (¡MARCHANDO AHORA!)
+                            <span *ngIf="item.paraLlevar || item.comments?.includes('PARA LLEVAR')" class="px-2 py-0.5 rounded-md text-[11px] font-black bg-orange-100 text-orange-950 border border-orange-300 inline-flex items-center gap-1">
+                                🥡 PARA LLEVAR
                             </span>
                             <label *ngIf="order.status === 'EN_PREPARACION' && !isItemYaSalio(order, item)" class="item-check-control" (click)="$event.stopPropagation()">
                                 <input
@@ -217,7 +218,12 @@
                 <p-card>
                     <ng-template pTemplate="title">
                         <div class="order-head">
-                            <span>#{{ shortId(order.id) }}</span>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span>#{{ shortId(order.id) }}</span>
+                                <span *ngIf="order.tiempoLabel" class="kitchen-tiempo-pill" [ngClass]="'tiempo-pill-' + (order.tiempo || 1)">
+                                    {{ order.tiempoLabel }}
+                                </span>
+                            </div>
                             <span class="order-timer">{{ elapsedMinutes(order) }} min</span>
                         </div>
                     </ng-template>
@@ -226,18 +232,21 @@
                         <span>{{ order.customerName || 'Cliente General' }}</span>
                     </div>
 
+                    <div *ngIf="order.waitingTiemposLabels && order.waitingTiemposLabels.length > 0" class="kitchen-waiting-strip">
+                        <span *ngFor="let wl of order.waitingTiemposLabels" class="kitchen-waiting-badge">
+                            <i class="pi pi-clock text-[10px]"></i> {{ wl }}
+                        </span>
+                    </div>
+
                     <ul class="order-items">
-                        <li *ngFor="let item of order.items" [class.item-ya-salio]="isItemYaSalio(order, item)" [class.item-tiempo-espera]="!isItemYaSalio(order, item) && item.comments?.includes('EN ESPERA')">
+                        <li *ngFor="let item of order.items" [class.item-ya-salio]="isItemYaSalio(order, item)">
                             <div class="flex items-center gap-1.5 flex-wrap">
                                 <span class="item-main" [class.line-through]="isItemYaSalio(order, item)">{{ item.quantity }}x {{ item.productName }}</span>
                                 <span *ngIf="isItemYaSalio(order, item)" class="kitchen-card-badge-salio">
-                                    ✅ Ya salió (1er T.)
+                                    ✅ Ya salió
                                 </span>
-                                <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('EN ESPERA') || (item.tiempo === 2 && !item.tiempoMarchado))" class="kitchen-card-badge-espera">
-                                    ⏱️ 2do T. En Espera
-                                </span>
-                                <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('MARCHADO') || (item.tiempo === 2 && item.tiempoMarchado))" class="kitchen-card-badge-marchado">
-                                    🔥 2do T. Marchado
+                                <span *ngIf="item.paraLlevar || item.comments?.includes('PARA LLEVAR')" class="px-1.5 py-0.5 rounded text-[10px] font-black bg-orange-100 text-orange-950 border border-orange-300">
+                                    🥡 Llevar
                                 </span>
                             </div>
                             <span *ngIf="item.comments" class="item-comments">{{ item.comments }}</span>
@@ -273,7 +282,12 @@
                 <p-card>
                     <ng-template pTemplate="title">
                         <div class="order-head">
-                            <span>#{{ shortId(order.id) }}</span>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span>#{{ shortId(order.id) }}</span>
+                                <span *ngIf="order.tiempoLabel" class="kitchen-tiempo-pill" [ngClass]="'tiempo-pill-' + (order.tiempo || 1)">
+                                    {{ order.tiempoLabel }}
+                                </span>
+                            </div>
                             <span class="order-timer">{{ elapsedMinutes(order) }} min</span>
                         </div>
                     </ng-template>
@@ -282,18 +296,21 @@
                         <span>{{ order.customerName || 'Cliente General' }}</span>
                     </div>
 
+                    <div *ngIf="order.waitingTiemposLabels && order.waitingTiemposLabels.length > 0" class="kitchen-waiting-strip">
+                        <span *ngFor="let wl of order.waitingTiemposLabels" class="kitchen-waiting-badge">
+                            <i class="pi pi-clock text-[10px]"></i> {{ wl }}
+                        </span>
+                    </div>
+
                     <ul class="order-items">
-                        <li *ngFor="let item of order.items" [class.item-ya-salio]="isItemYaSalio(order, item)" [class.item-tiempo-espera]="!isItemYaSalio(order, item) && item.comments?.includes('EN ESPERA')">
+                        <li *ngFor="let item of order.items" [class.item-ya-salio]="isItemYaSalio(order, item)">
                             <div class="flex items-center gap-1.5 flex-wrap">
                                 <span class="item-main" [class.line-through]="isItemYaSalio(order, item)">{{ item.quantity }}x {{ item.productName }}</span>
                                 <span *ngIf="isItemYaSalio(order, item)" class="kitchen-card-badge-salio">
-                                    ✅ Ya salió (1er T.)
+                                    ✅ Ya salió
                                 </span>
-                                <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('EN ESPERA') || (item.tiempo === 2 && !item.tiempoMarchado))" class="kitchen-card-badge-espera">
-                                    ⏱️ 2do T. En Espera
-                                </span>
-                                <span *ngIf="!isItemYaSalio(order, item) && (item.comments?.includes('MARCHADO') || (item.tiempo === 2 && item.tiempoMarchado))" class="kitchen-card-badge-marchado">
-                                    🔥 2do T. Marchado
+                                <span *ngIf="item.paraLlevar || item.comments?.includes('PARA LLEVAR')" class="px-1.5 py-0.5 rounded text-[10px] font-black bg-orange-100 text-orange-950 border border-orange-300">
+                                    🥡 Llevar
                                 </span>
                             </div>
                             <span *ngIf="item.comments" class="item-comments">{{ item.comments }}</span>
@@ -329,7 +346,12 @@
                 <p-card>
                     <ng-template pTemplate="title">
                         <div class="order-head">
-                            <span>#{{ shortId(order.id) }}</span>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span>#{{ shortId(order.id) }}</span>
+                                <span *ngIf="order.tiempoLabel" class="kitchen-tiempo-pill" [ngClass]="'tiempo-pill-' + (order.tiempo || 1)">
+                                    {{ order.tiempoLabel }}
+                                </span>
+                            </div>
                             <span class="order-timer">{{ elapsedMinutes(order) }} min</span>
                         </div>
                     </ng-template>

@@ -20,9 +20,13 @@
         <span class="caja-hstat-label">Por cobrar</span>
         <span class="caja-hstat-value">{{ cuentasPorCobrarCount() }}</span>
       </div>
-      <div class="caja-hstat">
-        <span class="caja-hstat-label">Cobrado hoy</span>
-        <span class="caja-hstat-value">${{ diaVentas() | number:'1.2-2' }}</span>
+      <div
+        class="caja-hstat cursor-pointer hover:bg-slate-100/80 hover:scale-[1.02] transition-all"
+        (click)="abrirModalDesgloseVentas()"
+        title="Clic para ver desglose y distribución de cobros del día"
+      >
+        <span class="caja-hstat-label flex items-center gap-1">Cobrado hoy <i class="pi pi-external-link text-[10px] text-purple-600"></i></span>
+        <span class="caja-hstat-value text-emerald-700">${{ diaVentas() | number:'1.2-2' }}</span>
       </div>
     </div>
 
@@ -227,9 +231,116 @@
 
       <!-- TICKETS · Cerradas -->
       <ng-container *ngIf="ticketsVista() === 'cerradas'">
-        <div *ngIf="ticketsCerradas().length === 0" class="caja-empty">
-          <i class="pi pi-check-circle"></i>
-          <p>Aún no hay comandas cerradas</p>
+
+        <!-- ============ BARRA DE FILTROS DE TIEMPO Y PERIODO (CALCA DE REPORTES) ============ -->
+        <section class="mb-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 space-y-3.5">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+
+            <!-- Filtros rápidos (Presets) -->
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+              <span class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
+                Filtros rápidos:
+              </span>
+              <div class="flex flex-wrap items-center gap-1.5">
+                <button
+                  *ngFor="let opt of presetsCerradas"
+                  type="button"
+                  class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                  [ngClass]="presetCerradas() === opt.valor ? 'bg-purple-600 text-white shadow-md shadow-purple-200' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200/80'"
+                  (click)="aplicarPresetCerradas(opt.valor)"
+                >
+                  <i *ngIf="opt.icono" [class]="opt.icono" class="text-[11px]"></i>
+                  {{ opt.etiqueta }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Resumen y Contexto del Periodo -->
+            <div class="flex flex-wrap items-center gap-2 sm:ml-auto">
+              <!-- Periodo chip -->
+              <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 border border-purple-200/80 text-purple-700 text-xs font-extrabold">
+                <i class="pi pi-calendar text-purple-600"></i>
+                {{ etiquetaPeriodoCerradas() }}
+              </span>
+
+              <!-- Total cobrado en el periodo -->
+              <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200/80 text-emerald-700 text-xs font-black">
+                <i class="pi pi-dollar text-emerald-600"></i>
+                Total: ${{ totalCobradoCerradasFiltradas() | number:'1.2-2' }}
+              </span>
+
+              <!-- Botón refrescar historial -->
+              <button
+                type="button"
+                class="btn-refresh"
+                pTooltip="Refrescar comandas cerradas"
+                [disabled]="loadingHistorial()"
+                (click)="cargarHistorialComandas(true)"
+              >
+                <i class="pi pi-refresh" [class.pi-spin]="loadingHistorial()"></i>
+              </button>
+            </div>
+
+          </div>
+
+          <!-- Rango personalizado (Fecha inicial y final) -->
+          <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div class="flex items-center gap-1.5 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider shrink-0">
+              <i class="pi pi-calendar-plus text-slate-400"></i>
+              <span>Rango personalizado:</span>
+            </div>
+
+            <div class="flex-1 min-w-[260px] max-w-md flex items-center gap-2">
+              <p-datepicker
+                selectionMode="range"
+                [ngModel]="rangoFechasCerradas()"
+                (ngModelChange)="aplicarRangoCerradas($event)"
+                [readonlyInput]="true"
+                [showIcon]="true"
+                [showButtonBar]="true"
+                dateFormat="dd/mm/yy"
+                placeholder="Selecciona fecha inicial y final..."
+                appendTo="body"
+                styleClass="w-full"
+                inputStyleClass="w-full text-xs font-semibold py-1.5 px-3 rounded-xl border border-slate-200 text-slate-700 placeholder:text-slate-400 focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+              />
+              <button
+                *ngIf="presetCerradas() === 'PERSONALIZADO' && rangoFechasCerradas()"
+                type="button"
+                class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer shrink-0"
+                pTooltip="Quitar rango personalizado"
+                (click)="limpiarRangoCerradas()"
+              >
+                <i class="pi pi-times text-xs"></i>
+              </button>
+            </div>
+
+            <div class="text-xs text-slate-500 font-semibold sm:ml-auto flex items-center gap-2">
+              <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 font-extrabold">
+                {{ ticketsCerradas().length }} {{ ticketsCerradas().length === 1 ? 'ticket cerrado' : 'tickets cerrados' }}
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Empty state cuando no hay tickets en el periodo -->
+        <div *ngIf="ticketsCerradas().length === 0" class="caja-empty bg-white rounded-2xl border border-dashed border-slate-200 p-8 my-3 text-center">
+          <div class="w-12 h-12 mx-auto rounded-2xl bg-purple-50 flex items-center justify-center text-purple-500 text-xl mb-3">
+            <i class="pi pi-calendar-times"></i>
+          </div>
+          <p class="font-extrabold text-slate-700 text-sm mb-1">No hay tickets cerrados para {{ etiquetaPeriodoCerradas() }}</p>
+          <p class="text-xs text-slate-400 mb-4 max-w-md mx-auto">
+            No se encontraron cobros en el periodo seleccionado o con el término de búsqueda actual.
+          </p>
+          <button
+            *ngIf="presetCerradas() !== 'TODOS'"
+            type="button"
+            class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors cursor-pointer"
+            (click)="aplicarPresetCerradas('TODOS')"
+          >
+            <i class="pi pi-list"></i>
+            Ver todos los tickets cerrados
+          </button>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5">
@@ -253,7 +364,7 @@
                   <i class="pi pi-user text-slate-400"></i>{{ o.meseroNombre || 'Sin mesero' }}
                 </span>
                 <span class="shrink-0 flex items-center gap-1">
-                  <i class="pi pi-check text-emerald-500"></i>{{ (o.horaCierre || o.fechaCreacion) | date:'HH:mm' }}
+                  <i class="pi pi-check text-emerald-500"></i>{{ (o.horaCierre || o.fechaCreacion) | date:'dd/MM HH:mm' }}
                 </span>
               </div>
 
@@ -335,7 +446,7 @@
             <i class="pi pi-angle-right text-slate-300 ml-auto"></i>
           </div>
 
-          <div class="grid grid-cols-3 gap-2 text-center">
+          <div class="grid grid-cols-4 gap-1.5 text-center">
             <div class="bg-slate-50 rounded-xl py-2">
               <p class="text-base font-black text-slate-800 m-0 leading-none">{{ m.comandasActivas }}</p>
               <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Activas</span>
@@ -347,6 +458,10 @@
             <div class="bg-emerald-50 rounded-xl py-2">
               <p class="text-sm font-black text-emerald-700 m-0 leading-none">${{ m.dineroHoy | number:'1.0-0' }}</p>
               <span class="text-[9px] font-bold text-emerald-600/70 uppercase tracking-wider">Cobrado</span>
+            </div>
+            <div class="bg-amber-50 rounded-xl py-2">
+              <p class="text-sm font-black text-amber-700 m-0 leading-none">${{ (m.propinasHoy || 0) | number:'1.0-0' }}</p>
+              <span class="text-[9px] font-bold text-amber-600/80 uppercase tracking-wider">Propinas</span>
             </div>
           </div>
         </button>
@@ -369,14 +484,22 @@
 
       <!-- KPIs -->
       <div class="grid grid-cols-2 xl:grid-cols-4 gap-3.5 mb-4">
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
-          <div class="flex items-center gap-2 mb-2">
-            <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 grid place-items-center">
-              <i class="pi pi-dollar"></i>
-            </span>
-            <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Ventas del día</span>
+        <div
+          class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 cursor-pointer hover:border-purple-400 hover:shadow-md hover:scale-[1.01] transition-all group"
+          (click)="abrirModalDesgloseVentas()"
+          title="Clic para ver desglose y distribución de cobros del día"
+        >
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 grid place-items-center group-hover:scale-110 transition-transform">
+                <i class="pi pi-dollar"></i>
+              </span>
+              <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Ventas del día</span>
+            </div>
+            <i class="pi pi-external-link text-xs text-purple-400 group-hover:text-purple-600 transition-colors"></i>
           </div>
           <p class="text-2xl font-black text-slate-900 m-0">${{ diaVentas() | number:'1.2-2' }}</p>
+          <span class="text-[11px] font-semibold text-purple-600 mt-1 inline-block">Ver distribución por método &rarr;</span>
         </div>
 
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
@@ -827,7 +950,7 @@
     [(visible)]="modalPagoVisible"
     [modal]="true"
     [header]="'Cobro de Comanda'"
-    [style]="{ width: '100%', maxWidth: '480px' }"
+    [style]="{ width: '100%', maxWidth: '490px' }"
   >
     <div *ngIf="comandaSeleccionada() as c" class="space-y-4 py-2">
       <!-- Banner Comanda -->
@@ -837,8 +960,45 @@
           <span class="text-[11px] text-purple-600">Mesero: {{ c.meseroNombre }}</span>
         </div>
         <div class="text-right">
-          <span class="text-[10px] font-bold text-purple-700 uppercase block">Total Cuenta</span>
-          <span class="text-xl font-black text-purple-950">${{ c.total | number:'1.2-2' }}</span>
+          <span class="text-[10px] font-bold text-purple-700 uppercase block">Total Original</span>
+          <span class="text-base font-black text-purple-950">${{ c.total | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <!-- Ingreso / Ajuste del Monto de la Cuenta -->
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1.5">
+        <div class="flex justify-between items-center">
+          <label class="text-xs font-bold text-slate-700 uppercase flex items-center gap-1.5">
+            <i class="pi pi-dollar text-purple-600"></i>
+            <span>Monto de la Cuenta *</span>
+          </label>
+          <button
+            type="button"
+            *ngIf="montoCuentaInput !== c.total"
+            (click)="restablecerMontoOriginal()"
+            class="text-[10px] font-bold text-purple-600 hover:text-purple-800 underline cursor-pointer"
+            title="Restablecer al total original de la comanda"
+          >
+            Restablecer (${{ c.total | number:'1.2-2' }})
+          </button>
+        </div>
+        <div class="relative">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500 text-sm">$</span>
+          <input
+            type="number"
+            [(ngModel)]="montoCuentaInput"
+            (ngModelChange)="onMontoCuentaChange()"
+            min="0.01"
+            step="any"
+            placeholder="0.00"
+            class="w-full text-right font-black text-base pl-7 pr-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
+        </div>
+        <div class="flex justify-between text-[11px] text-slate-500 px-1">
+          <span>Subtotal base de cobro</span>
+          <span *ngIf="montoCuentaInput < c.total" class="text-amber-600 font-semibold">
+            (Descuento aplicado: -${{ (c.total - montoCuentaInput) | number:'1.2-2' }})
+          </span>
         </div>
       </div>
 
@@ -849,9 +1009,9 @@
           <button
             type="button"
             *ngFor="let m of ['EFECTIVO', 'VISA', 'MASTERCARD', 'TRANSFERENCIA', 'VALES']"
-            (click)="metodoPagoSeleccionado = m"
+            (click)="metodoPagoSeleccionado = m; onMontoCuentaChange()"
             [class]="metodoPagoSeleccionado === m
-              ? 'bg-purple-600 text-white border-purple-600 font-bold'
+              ? 'bg-purple-600 text-white border-purple-600 font-bold shadow-xs'
               : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 font-medium'"
             class="py-2 px-2.5 rounded-xl border text-xs text-center transition-all cursor-pointer"
           >
@@ -860,21 +1020,55 @@
         </div>
       </div>
 
-      <!-- Entrada de Propina Rápida -->
-      <div>
-        <div class="flex justify-between items-center mb-1">
-          <label class="text-xs font-bold text-slate-600 uppercase">Monto Propina ($)</label>
-          <span class="text-xs font-black text-purple-700">+${{ montoPropinaInput | number:'1.2-2' }}</span>
+      <!-- Entrada de Propina Rápida y Manual -->
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+        <div class="flex justify-between items-center">
+          <label class="text-xs font-bold text-slate-700 uppercase flex items-center gap-1.5">
+            <i class="pi pi-heart text-purple-600"></i>
+            <span>Propina ($)</span>
+          </label>
+          <span class="text-xs font-black text-purple-700">+${{ (montoPropinaInput || 0) | number:'1.2-2' }}</span>
         </div>
-        <div class="flex gap-2">
-          <button type="button" (click)="aplicarPropinaRapida(0.10)" class="flex-1 py-1 text-xs bg-purple-50 text-purple-700 font-bold rounded-lg border border-purple-200 hover:bg-purple-100">10%</button>
-          <button type="button" (click)="aplicarPropinaRapida(0.15)" class="flex-1 py-1 text-xs bg-purple-50 text-purple-700 font-bold rounded-lg border border-purple-200 hover:bg-purple-100">15%</button>
-          <button type="button" (click)="montoPropinaInput = 0" class="flex-1 py-1 text-xs bg-slate-100 text-slate-600 font-bold rounded-lg border border-slate-200 hover:bg-slate-200">$0</button>
+        <div class="grid grid-cols-4 gap-1.5">
+          <button
+            type="button"
+            (click)="aplicarPropinaRapida(0.10)"
+            class="py-1.5 text-xs bg-white text-purple-700 font-bold rounded-lg border border-purple-200 hover:bg-purple-50 transition-colors cursor-pointer"
+          >
+            10%
+          </button>
+          <button
+            type="button"
+            (click)="aplicarPropinaRapida(0.15)"
+            class="py-1.5 text-xs bg-white text-purple-700 font-bold rounded-lg border border-purple-200 hover:bg-purple-50 transition-colors cursor-pointer"
+          >
+            15%
+          </button>
+          <button
+            type="button"
+            (click)="aplicarPropinaRapida(0.20)"
+            class="py-1.5 text-xs bg-white text-purple-700 font-bold rounded-lg border border-purple-200 hover:bg-purple-50 transition-colors cursor-pointer"
+          >
+            20%
+          </button>
+          <button
+            type="button"
+            (click)="montoPropinaInput = 0; onPropinaChange()"
+            class="py-1.5 text-xs bg-white text-slate-600 font-bold rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors cursor-pointer"
+          >
+            $0
+          </button>
+        </div>
+        <div class="relative">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500 text-xs">Propina manual: $</span>
           <input
             type="number"
             [(ngModel)]="montoPropinaInput"
-            placeholder="Otra"
-            class="w-24 text-right text-xs p-1.5 rounded-lg border border-slate-200 font-bold"
+            (ngModelChange)="onPropinaChange()"
+            min="0"
+            step="any"
+            placeholder="0.00"
+            class="w-full text-right text-xs font-bold pl-28 pr-3 py-1.5 bg-white rounded-lg border border-slate-200 text-slate-800 focus:outline-none focus:ring-1 focus:ring-purple-500"
           />
         </div>
       </div>
@@ -886,12 +1080,31 @@
           <input
             type="number"
             [(ngModel)]="efectivoRecibidoInput"
-            class="w-28 text-right font-black text-sm p-1.5 bg-white border border-emerald-300 rounded-lg text-emerald-950"
+            min="0"
+            step="any"
+            class="w-32 text-right font-black text-sm p-1.5 bg-white border border-emerald-300 rounded-lg text-emerald-950 focus:outline-none focus:ring-1 focus:ring-emerald-500"
           />
+        </div>
+        <div class="flex gap-1.5 justify-end flex-wrap">
+          <button
+            type="button"
+            (click)="efectivoRecibidoInput = totalAPagarModal"
+            class="px-2 py-0.5 text-[10px] font-bold bg-white text-emerald-800 border border-emerald-300 rounded hover:bg-emerald-100 cursor-pointer"
+          >
+            Exacto (${{ totalAPagarModal | number:'1.2-2' }})
+          </button>
+          <button
+            type="button"
+            *ngFor="let billete of sugerirBilletes(totalAPagarModal)"
+            (click)="efectivoRecibidoInput = billete"
+            class="px-2 py-0.5 text-[10px] font-bold bg-white text-emerald-800 border border-emerald-300 rounded hover:bg-emerald-100 cursor-pointer"
+          >
+            ${{ billete }}
+          </button>
         </div>
         <div class="flex justify-between items-center text-xs pt-1 border-t border-emerald-200">
           <span class="font-bold text-slate-600">Cambio a entregar:</span>
-          <span class="font-black text-sm text-emerald-700">${{ cambioEfectivo | number:'1.2-2' }}</span>
+          <span class="font-black text-base text-emerald-700">${{ cambioEfectivo | number:'1.2-2' }}</span>
         </div>
       </div>
 
@@ -902,14 +1115,19 @@
           type="text"
           [(ngModel)]="referenciaPagoInput"
           placeholder="Ej: Autorización #928371"
-          class="w-full text-xs p-2.5 rounded-xl border border-slate-200"
+          class="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-purple-500"
         />
       </div>
 
-      <!-- Total Final a Registrar -->
-      <div class="flex justify-between items-center pt-2 border-t border-slate-100">
-        <span class="text-xs font-bold text-slate-500 uppercase">Total a Registrar:</span>
-        <span class="text-2xl font-black text-purple-900">${{ (montoCuentaInput + montoPropinaInput) | number:'1.2-2' }}</span>
+      <!-- Total Final a Registrar (Cuenta + Propina) -->
+      <div class="bg-purple-50/90 p-3.5 rounded-xl border border-purple-200 flex justify-between items-center">
+        <div>
+          <span class="text-xs font-bold text-purple-800 uppercase block">Total a Liquidar</span>
+          <span class="text-[11px] text-purple-600">
+            Cuenta: ${{ (montoCuentaInput || 0) | number:'1.2-2' }} + Propina: ${{ (montoPropinaInput || 0) | number:'1.2-2' }}
+          </span>
+        </div>
+        <span class="text-2xl font-black text-purple-950">${{ totalAPagarModal | number:'1.2-2' }}</span>
       </div>
     </div>
 
@@ -925,8 +1143,8 @@
         <button
           type="button"
           (click)="procesarCobro()"
-          [disabled]="procesando()"
-          class="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black shadow-md cursor-pointer flex items-center gap-1.5"
+          [disabled]="procesando() || montoCuentaInput <= 0"
+          class="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl text-xs font-black shadow-md cursor-pointer flex items-center gap-1.5"
         >
           <i *ngIf="procesando()" class="pi pi-spin pi-spinner"></i>
           <span>Cobrar y Liquidar</span>
@@ -980,6 +1198,15 @@
                 <span *ngIf="item.asientoAlias" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
                   👤 {{ item.asientoAlias }}
                 </span>
+                <span *ngIf="item.tiempo === 2 || (item.comentarios && item.comentarios.includes('2DO TIEMPO'))" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                  ⏱️ 2do Tiempo
+                </span>
+                <span *ngIf="item.tiempo === 3 || (item.comentarios && item.comentarios.includes('3ER TIEMPO'))" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-300">
+                  🍰 3er Tiempo
+                </span>
+                <span *ngIf="item.paraLlevar || (item.comentarios && item.comentarios.includes('PARA LLEVAR'))" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-950 border border-orange-300">
+                  🥡 Para llevar
+                </span>
                 <span class="text-xs text-slate-400">x{{ item.cantidad }}</span>
               </div>
               <div *ngIf="item.comentarios" class="text-slate-500 italic mt-0.5 text-[11px]">
@@ -1018,7 +1245,16 @@
     </div>
 
     <ng-template pTemplate="footer">
-      <div class="flex justify-end">
+      <div class="flex justify-end gap-2">
+        <button
+          type="button"
+          *ngIf="selectedOrderDetalle() as od"
+          (click)="imprimirTicket(od)"
+          class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
+        >
+          <i class="pi pi-print"></i>
+          <span>Imprimir Ticket</span>
+        </button>
         <button
           type="button"
           (click)="cerrarDetalleOrden()"
@@ -1105,4 +1341,191 @@
     (visibleChange)="onSplitModalVisibilityChange($event)"
     (cuentaCreada)="onCuentaCreadaEnCaja($event)"
   ></app-split-order-modal>
+
+  <!-- ==================== MODAL: DESGLOSE Y DISTRIBUCIÓN DE VENTAS DEL DÍA ==================== -->
+  <p-dialog
+    [(visible)]="modalDesgloseVentasVisible"
+    [modal]="true"
+    [style]="{ width: '100%', maxWidth: '780px' }"
+    [draggable]="false"
+    [resizable]="false"
+    (onHide)="cerrarModalDesgloseVentas()"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 grid place-items-center">
+          <i class="pi pi-chart-pie text-lg"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-black text-slate-900 m-0">Distribución de Ventas del Día</h3>
+          <p class="text-xs text-slate-400 m-0">
+            {{ fechaCorteTexto }} <span *ngIf="turnoActivo() as turno">· Turno #{{ turno.idTurno }} ({{ turno.nombreCajero }})</span>
+          </p>
+        </div>
+      </div>
+    </ng-template>
+
+    <div class="space-y-4 py-1">
+      <!-- Total General Bar -->
+      <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-purple-600 text-white shadow-sm flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <span class="text-[11px] font-black uppercase tracking-wider text-emerald-100 block">Venta Total Recaudada Hoy</span>
+          <span class="text-3xl font-black">${{ diaVentas() | number:'1.2-2' }}</span>
+        </div>
+        <div class="flex items-center gap-4 text-right">
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-100 block">Comandas</span>
+            <span class="text-lg font-black">{{ diaComandas() }}</span>
+          </div>
+          <div class="h-8 w-px bg-white/20"></div>
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-100 block">Propinas</span>
+            <span class="text-lg font-black">${{ diaPropinas() | number:'1.2-2' }}</span>
+          </div>
+          <div class="h-8 w-px bg-white/20"></div>
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-100 block">Ticket Promedio</span>
+            <span class="text-lg font-black">${{ diaTicketPromedio() | number:'1.2-2' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Métodos Principales (Cards Resumen) -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <!-- Efectivo -->
+        <div class="bg-emerald-50/70 border border-emerald-200/80 rounded-2xl p-3.5 relative overflow-hidden">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-xs font-black text-emerald-900 flex items-center gap-1.5">
+              <i class="pi pi-money-bill text-emerald-600"></i> Efectivo en Caja
+            </span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-200/70 text-emerald-800">
+              {{ diaVentas() > 0 ? ((totalEfectivoDia() / diaVentas()) * 100 | number:'1.0-0') : 0 }}%
+            </span>
+          </div>
+          <p class="text-2xl font-black text-emerald-950 m-0">${{ totalEfectivoDia() | number:'1.2-2' }}</p>
+          <span class="text-[11px] font-medium text-emerald-700/80 block mt-1">
+            💵 Debe haber físicamente en caja
+          </span>
+        </div>
+
+        <!-- Tarjetas -->
+        <div class="bg-blue-50/70 border border-blue-200/80 rounded-2xl p-3.5 relative overflow-hidden">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-xs font-black text-blue-900 flex items-center gap-1.5">
+              <i class="pi pi-credit-card text-blue-600"></i> Tarjetas (Terminal)
+            </span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-200/70 text-blue-800">
+              {{ diaVentas() > 0 ? ((totalTarjetaDia() / diaVentas()) * 100 | number:'1.0-0') : 0 }}%
+            </span>
+          </div>
+          <p class="text-2xl font-black text-blue-950 m-0">${{ totalTarjetaDia() | number:'1.2-2' }}</p>
+          <span class="text-[11px] font-medium text-blue-700/80 block mt-1">
+            💳 Terminal bancaria / vouchers
+          </span>
+        </div>
+
+        <!-- Transferencias -->
+        <div class="bg-purple-50/70 border border-purple-200/80 rounded-2xl p-3.5 relative overflow-hidden">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-xs font-black text-purple-900 flex items-center gap-1.5">
+              <i class="pi pi-send text-purple-600"></i> Transferencias SPEI
+            </span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-200/70 text-purple-800">
+              {{ diaVentas() > 0 ? ((totalTransferenciaDia() / diaVentas()) * 100 | number:'1.0-0') : 0 }}%
+            </span>
+          </div>
+          <p class="text-2xl font-black text-purple-950 m-0">${{ totalTransferenciaDia() | number:'1.2-2' }}</p>
+          <span class="text-[11px] font-medium text-purple-700/80 block mt-1">
+            📱 Cuenta bancaria digital
+          </span>
+        </div>
+      </div>
+
+      <!-- Barra de Distribución Visual Continua -->
+      <div *ngIf="diaVentas() > 0" class="space-y-1.5">
+        <div class="flex items-center justify-between text-xs font-bold text-slate-500">
+          <span>Distribución porcentual por método de pago</span>
+          <span>100% de cobros procesados</span>
+        </div>
+        <div class="h-3 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+          <div
+            *ngFor="let m of metodosPagoDia(); let idx = index"
+            [style.width.%]="(m.totalRecaudado / diaVentas()) * 100"
+            [style.backgroundColor]="getColorMetodo(idx)"
+            [title]="m.metodoPago + ': $' + (m.totalRecaudado | number:'1.2-2') + ' (' + ((m.totalRecaudado / diaVentas()) * 100 | number:'1.0-0') + '%)'"
+            class="h-full transition-all"
+          ></div>
+        </div>
+      </div>
+
+      <!-- Tabla Detallada por Método de Pago -->
+      <div class="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-2xs">
+        <table class="w-full text-xs text-left">
+          <thead class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 uppercase tracking-wider text-[10px]">
+            <tr>
+              <th class="py-2.5 px-3.5">Método de Pago</th>
+              <th class="py-2.5 px-3 text-center">Cobros</th>
+              <th class="py-2.5 px-3 text-right">Cuenta (Ventas)</th>
+              <th class="py-2.5 px-3 text-right">Propinas</th>
+              <th class="py-2.5 px-3 text-right font-black text-slate-700">Total Recaudado</th>
+              <th class="py-2.5 px-3.5 text-right">% Participación</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr *ngFor="let m of metodosPagoDia(); let idx = index" class="hover:bg-slate-50/80 transition-colors">
+              <td class="py-2.5 px-3.5 font-bold text-slate-800 flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full shrink-0" [style.backgroundColor]="getColorMetodo(idx)"></span>
+                <span>{{ m.metodoPago }}</span>
+              </td>
+              <td class="py-2.5 px-3 text-center text-slate-600 font-semibold">{{ m.transacciones }}</td>
+              <td class="py-2.5 px-3 text-right text-slate-600">${{ m.totalCuenta | number:'1.2-2' }}</td>
+              <td class="py-2.5 px-3 text-right text-amber-600 font-medium">${{ m.totalPropina | number:'1.2-2' }}</td>
+              <td class="py-2.5 px-3 text-right font-black text-slate-900">${{ m.totalRecaudado | number:'1.2-2' }}</td>
+              <td class="py-2.5 px-3.5 text-right font-bold text-purple-700">
+                {{ diaVentas() > 0 ? ((m.totalRecaudado / diaVentas()) * 100 | number:'1.1-1') : 0 }}%
+              </td>
+            </tr>
+            <tr *ngIf="metodosPagoDia().length === 0">
+              <td colspan="6" class="py-6 text-center text-slate-400">
+                <i class="pi pi-inbox text-xl block mb-1 text-slate-300"></i>
+                Sin cobros registrados el día de hoy
+              </td>
+            </tr>
+          </tbody>
+          <tfoot *ngIf="metodosPagoDia().length > 0" class="bg-slate-50 font-black text-slate-900 border-t border-slate-200">
+            <tr>
+              <td class="py-2.5 px-3.5">TOTALES</td>
+              <td class="py-2.5 px-3 text-center">{{ diaComandas() }}</td>
+              <td class="py-2.5 px-3 text-right">${{ diaCuentaVentas() | number:'1.2-2' }}</td>
+              <td class="py-2.5 px-3 text-right text-amber-700">${{ diaPropinas() | number:'1.2-2' }}</td>
+              <td class="py-2.5 px-3 text-right text-emerald-700">${{ diaVentas() | number:'1.2-2' }}</td>
+              <td class="py-2.5 px-3.5 text-right text-purple-800">100%</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex items-center justify-between w-full pt-1">
+        <button
+          type="button"
+          (click)="cargarResumenDia(true)"
+          [disabled]="loadingResumenDia()"
+          class="px-3.5 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer inline-flex items-center gap-1.5"
+        >
+          <i class="pi" [class.pi-refresh]="!loadingResumenDia()" [class.pi-spin]="loadingResumenDia()" [class.pi-spinner]="loadingResumenDia()"></i>
+          <span>Actualizar datos</span>
+        </button>
+
+        <button
+          type="button"
+          (click)="cerrarModalDesgloseVentas()"
+          class="px-5 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer"
+        >
+          Entendido, Cerrar
+        </button>
+      </div>
+    </ng-template>
+  </p-dialog>
 </div>

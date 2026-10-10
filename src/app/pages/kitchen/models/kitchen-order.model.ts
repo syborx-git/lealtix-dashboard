@@ -6,17 +6,22 @@ export interface KitchenOrderItem {
     quantity: number;
     unitPrice: number;
     comments?: string;
-    tiempo?: 1 | 2;
+    tiempo?: 1 | 2 | 3;
     tiempoMarchado?: boolean;
+    paraLlevar?: boolean;
     yaSalio?: boolean;
     /** IDs de ingredientes modificables que el cliente NO quiere */
     excludedIngredientIds?: number[];
     /** IDs de adicionales que el cliente pidió */
     additionalIngredientIds?: number[];
+    updatedAt?: string;
 }
 
 export interface KitchenOrder {
     id: string;
+    parentOrderId?: string;
+    tiempo?: 1 | 2 | 3;
+    tiempoLabel?: string;
     tenantId: number;
     status: KitchenOrderStatus;
     customerId?: number | null;
@@ -26,10 +31,13 @@ export interface KitchenOrder {
     mesaNumero?: number;
     source?: string;
     createdAt: string;
+    marchedAt?: string;
     items: KitchenOrderItem[];
     subtotal: number;
     discount: number;
     total: number;
     recorrido?: number;
     segundoTiempoMarchado?: boolean;
+    tercerTiempoMarchado?: boolean;
+    waitingTiemposLabels?: string[];
 }

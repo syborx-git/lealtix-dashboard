@@ -1,0 +1,41 @@
+@use './reportes-comun' as *;
+
+.font-bold {
+  font-weight: 700;
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.text-red-600 {
+  color: #dc2626;
+}
+
+.text-slate-800 {
+  color: var(--lealtix-slate-800, #1e293b);
+}
+
+.text-slate-500 {
+  color: var(--lealtix-slate-500, #64748b);
+}
+
+.text-slate-400 {
+  color: var(--lealtix-slate-400, #94a3b8);
+}
+
+.font-mono {
+  font-family: monospace;
+}
+
+.flex {
+  display: flex;
+}
+
+.justify-content-end {
+  justify-content: flex-end;
+}

@@ -17,6 +17,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { InputTextModule } from 'primeng/inputtext';
 import { DividerModule } from 'primeng/divider';
 import { ChartModule } from 'primeng/chart';
+import { DatePickerModule } from 'primeng/datepicker';
 
 // Componentes
 import { SplitOrderModalComponent } from '@/pages/comandix/components/split-order-modal/split-order-modal.component';
@@ -43,6 +44,15 @@ export type SeccionCaja = 'tickets' | 'meseros' | 'dia';
 /** Sub-vista de la categoría TICKETS: comandas abiertas o ya cerradas (pagadas). */
 export type VistaTickets = 'abiertas' | 'cerradas';
 
+/** Presets de filtrado de tiempo para tickets terminados/cerrados. */
+export type PresetTicketsCerradas = 'HOY' | 'AYER' | 'ESTA_SEMANA' | 'ESTE_MES' | 'TODOS' | 'PERSONALIZADO';
+
+export interface PresetCerradasOpcion {
+  valor: PresetTicketsCerradas;
+  etiqueta: string;
+  icono?: string;
+}
+
 @Component({
   selector: 'app-caja',
   standalone: true,
@@ -59,6 +69,7 @@ export type VistaTickets = 'abiertas' | 'cerradas';
     InputTextModule,
     DividerModule,
     ChartModule,
+    DatePickerModule,
     SplitOrderModalComponent
   ],
   providers: [MessageService],
@@ -143,10 +154,143 @@ export class CajaComponent implements OnInit, OnDestroy {
     return this.comandasActivas().filter(o => this.coincideBusqueda(o, q));
   });
 
-  /** TICKETS → sub-vista "Cerradas": comandas ya pagadas. */
+  // ==================== FILTRO DE TIEMPO / PERIODO PARA TICKETS CERRADOS ====================
+  readonly presetsCerradas: PresetCerradasOpcion[] = [
+    { valor: 'HOY', etiqueta: 'Hoy', icono: 'pi pi-calendar' },
+    { valor: 'AYER', etiqueta: 'Ayer' },
+    { valor: 'ESTA_SEMANA', etiqueta: 'Esta semana' },
+    { valor: 'ESTE_MES', etiqueta: 'Este mes' },
+    { valor: 'TODOS', etiqueta: 'Todos' },
+  ];
+
+  presetCerradas = signal<PresetTicketsCerradas>('HOY');
+  rangoFechasCerradas = signal<Date[] | null>(null);
+
+  /** Etiqueta descriptiva del periodo seleccionado para tickets cerrados. */
+  etiquetaPeriodoCerradas = computed<string>(() => {
+    const p = this.presetCerradas();
+    const rango = this.rangoFechasCerradas();
+    if (p === 'PERSONALIZADO' && rango && rango.length > 0 && rango[0]) {
+      const f1 = this.formatoFechaCorta(rango[0]);
+      const f2 = rango[1] ? this.formatoFechaCorta(rango[1]) : f1;
+      return `${f1} - ${f2}`;
+    }
+    if (p === 'HOY') {
+      return `Hoy (${this.formatoFechaCorta(new Date())})`;
+    }
+    const match = this.presetsCerradas.find(o => o.valor === p);
+    return match ? match.etiqueta : 'Hoy';
+  });
+
+  aplicarPresetCerradas(preset: PresetTicketsCerradas): void {
+    this.presetCerradas.set(preset);
+    this.rangoFechasCerradas.set(null);
+  }
+
+  aplicarRangoCerradas(fechas: Date[] | null): void {
+    this.rangoFechasCerradas.set(fechas);
+    if (fechas && fechas.length > 0 && fechas[0]) {
+      this.presetCerradas.set('PERSONALIZADO');
+    }
+  }
+
+  limpiarRangoCerradas(): void {
+    this.rangoFechasCerradas.set(null);
+    this.presetCerradas.set('HOY');
+  }
+
+  private formatoFechaCorta(d: Date): string {
+    const dia = String(d.getDate()).padStart(2, '0');
+    const mes = String(d.getMonth() + 1).padStart(2, '0');
+    const anio = d.getFullYear();
+    return `${dia}/${mes}/${anio}`;
+  }
+
+  obtenerFechaOrden(o: PendingOrder): Date | null {
+    const raw = this.fechaCierreOrden(o);
+    if (!raw) return null;
+    const cleanStr = typeof raw === 'string' ? raw.replace(' ', 'T') : raw;
+    const d = new Date(cleanStr);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  /** Valida si una orden cae en el periodo o preset seleccionado. */
+  private ordenCaeEnFiltroFecha(o: PendingOrder): boolean {
+    const preset = this.presetCerradas();
+    if (preset === 'TODOS') return true;
+
+    const fecha = this.obtenerFechaOrden(o);
+    if (!fecha) return false;
+
+    const ahora = new Date();
+
+    if (preset === 'HOY') {
+      return (
+        fecha.getFullYear() === ahora.getFullYear() &&
+        fecha.getMonth() === ahora.getMonth() &&
+        fecha.getDate() === ahora.getDate()
+      );
+    }
+
+    if (preset === 'AYER') {
+      const ayer = new Date(ahora);
+      ayer.setDate(ahora.getDate() - 1);
+      return (
+        fecha.getFullYear() === ayer.getFullYear() &&
+        fecha.getMonth() === ayer.getMonth() &&
+        fecha.getDate() === ayer.getDate()
+      );
+    }
+
+    if (preset === 'ESTA_SEMANA') {
+      const diaSemana = ahora.getDay();
+      const difLunes = (diaSemana === 0 ? -6 : 1) - diaSemana;
+      const lunes = new Date(ahora);
+      lunes.setDate(ahora.getDate() + difLunes);
+      lunes.setHours(0, 0, 0, 0);
+
+      const domingo = new Date(lunes);
+      domingo.setDate(lunes.getDate() + 6);
+      domingo.setHours(23, 59, 59, 999);
+
+      return fecha >= lunes && fecha <= domingo;
+    }
+
+    if (preset === 'ESTE_MES') {
+      return (
+        fecha.getFullYear() === ahora.getFullYear() &&
+        fecha.getMonth() === ahora.getMonth()
+      );
+    }
+
+    if (preset === 'PERSONALIZADO') {
+      const rango = this.rangoFechasCerradas();
+      if (!rango || rango.length === 0 || !rango[0]) return true;
+
+      const inicio = new Date(rango[0]);
+      inicio.setHours(0, 0, 0, 0);
+
+      const fin = new Date(rango[1] ? rango[1] : rango[0]);
+      fin.setHours(23, 59, 59, 999);
+
+      return fecha >= inicio && fecha <= fin;
+    }
+
+    return true;
+  }
+
+  /** TICKETS → sub-vista "Cerradas": comandas ya pagadas filtradas por búsqueda y tiempo. */
   ticketsCerradas = computed(() => {
     const q = (this.busquedaCerradas() || '').toLowerCase().trim();
-    return this.comandasCerradas().filter(o => this.coincideBusqueda(o, q));
+    return this.comandasCerradas().filter(o => {
+      if (!this.coincideBusqueda(o, q)) return false;
+      return this.ordenCaeEnFiltroFecha(o);
+    });
+  });
+
+  /** Total recaudado en los tickets cerrados que coinciden con el filtro actual. */
+  totalCobradoCerradasFiltradas = computed(() => {
+    return this.ticketsCerradas().reduce((sum, o) => sum + (o.totalFinal ?? o.subtotal ?? 0), 0);
   });
 
   // Reporte General de Ventas y Comandas
@@ -237,6 +381,9 @@ export class CajaComponent implements OnInit, OnDestroy {
   modalTicketVisible = signal<boolean>(false);
   ticketActual = signal<TicketPrecuenta | null>(null);
 
+  // Modal Desglose Ventas del Día
+  modalDesgloseVentasVisible = signal<boolean>(false);
+
   // Modal de Pago / Cobro
   modalPagoVisible = signal<boolean>(false);
   comandaSeleccionada = signal<ComandaCajaRow | null>(null);
@@ -289,26 +436,30 @@ export class CajaComponent implements OnInit, OnDestroy {
     return o.horaCierre || o.payment?.paidAt || o.fechaCreacion || o.horaApertura || '';
   }
 
-  /** Dinero y platillos cobrados hoy por cada mesero, según el historial de órdenes. */
+  /** Dinero, platillos y propinas cobrados hoy por cada mesero, según el historial de órdenes. */
   private cobrosHoyPorMesero = computed(() => {
-    const mapa = new Map<string, { tickets: number; dinero: number; platillos: number }>();
+    const mapa = new Map<string, { tickets: number; dinero: number; platillos: number; propinas: number }>();
     for (const o of this.comandasCerradas()) {
       if (!this.esMismoDia(this.fechaCierreOrden(o))) continue;
       const keyName = (o.meseroNombre || '').trim().toLowerCase();
       const keyEmail = (o.payment?.paidBy ? String(o.payment.paidBy) : '').trim().toLowerCase();
+      const keyId = o.meseroId ? `id:${o.meseroId}` : '';
 
       const dinero = o.totalFinal ?? o.subtotal ?? 0;
+      const propina = this.propinaOrden(o);
       const platillos = (o.items ?? []).reduce((s, it) => s + (it.cantidad || 0), 0);
 
       const updateKey = (k: string) => {
         if (!k) return;
-        const prev = mapa.get(k) ?? { tickets: 0, dinero: 0, platillos: 0 };
+        const prev = mapa.get(k) ?? { tickets: 0, dinero: 0, platillos: 0, propinas: 0 };
         prev.tickets += 1;
         prev.dinero += dinero;
         prev.platillos += platillos;
+        prev.propinas += propina;
         mapa.set(k, prev);
       };
 
+      if (keyId) updateKey(keyId);
       if (keyName) updateKey(keyName);
       if (keyEmail && keyEmail !== keyName) updateKey(keyEmail);
     }
@@ -317,16 +468,18 @@ export class CajaComponent implements OnInit, OnDestroy {
 
   /**
    * Cards de CORTE DE MESEROS: cada mesero con sus comandas vivas y lo que
-   * lleva cobrado hoy (tickets, dinero y platillos).
+   * lleva cobrado hoy (tickets, dinero, platillos y propinas).
    */
   meserosConActivas = computed(() =>
     this.meseros()
       .map(m => {
+        const keyId = `id:${m.id}`;
         const keyName = (m.nombre || '').trim().toLowerCase();
         const keyEmail = (m.email || '').trim().toLowerCase();
-        const hoy = this.cobrosHoyPorMesero().get(keyName)
+        const hoy = this.cobrosHoyPorMesero().get(keyId)
+                 ?? this.cobrosHoyPorMesero().get(keyName)
                  ?? (keyEmail ? this.cobrosHoyPorMesero().get(keyEmail) : undefined)
-                 ?? { tickets: 0, dinero: 0, platillos: 0 };
+                 ?? { tickets: 0, dinero: 0, platillos: 0, propinas: 0 };
 
         const activasPorNombre = keyName ? (this.comandasActivasPorMesero().get(m.nombre.trim()) ?? 0) : 0;
 
@@ -337,7 +490,8 @@ export class CajaComponent implements OnInit, OnDestroy {
           comandasActivas: activasPorNombre,
           ticketsHoy: hoy.tickets,
           dineroHoy: hoy.dinero,
-          platillosHoy: hoy.platillos
+          platillosHoy: hoy.platillos,
+          propinasHoy: hoy.propinas
         };
       })
       .sort((a, b) => b.dineroHoy - a.dineroHoy || a.nombre.localeCompare(b.nombre, 'es'))
@@ -433,58 +587,108 @@ export class CajaComponent implements OnInit, OnDestroy {
     this.comandasCerradas().filter(o => this.esMismoDia(this.fechaCierreOrden(o)))
   );
 
-  /** Propina estimada de la orden: el pago incluye la propina y el total es la cuenta. */
+  /** Propina de la orden (directa o calculada a partir del pago). */
   propinaOrden(o: PendingOrder): number {
+    if (o.propina !== undefined && o.propina !== null) {
+      return Number(o.propina) || 0;
+    }
     const cuenta = o.totalFinal ?? o.subtotal ?? 0;
     return Math.max(0, (o.payment?.amount ?? 0) - cuenta);
   }
 
   diaComandas = computed(() => {
-    const r = this.resumenDia()?.totalComandasCobradas ?? 0;
-    const h = this.ordenesPagadasHoy().length;
-    return Math.max(r, h);
+    const r = this.resumenDia();
+    if (r?.totalComandasCobradas !== undefined && r?.totalComandasCobradas !== null) {
+      return r.totalComandasCobradas;
+    }
+    return this.ordenesPagadasHoy().length;
   });
 
+  /** Total recaudado en el día (cuenta + propinas cobradas hoy). */
   diaVentas = computed(() => {
-    const r = this.resumenDia()?.totalVentas ?? 0;
-    const h = this.ordenesPagadasHoy().reduce((s, o) => s + (o.totalFinal ?? o.subtotal ?? 0), 0);
-    return Math.max(r, h);
+    const r = this.resumenDia();
+    if (r?.totalVentas !== undefined && r?.totalVentas !== null) {
+      return r.totalVentas;
+    }
+    return this.ordenesPagadasHoy().reduce((s, o) => {
+      const cuenta = o.totalFinal ?? o.subtotal ?? 0;
+      const propina = this.propinaOrden(o);
+      return s + cuenta + propina;
+    }, 0);
+  });
+
+  /** Importe neto de la cuenta (ventas de platillos/bebidas sin propina). */
+  diaCuentaVentas = computed(() => {
+    const r = this.resumenDia();
+    if (r?.totalCuenta !== undefined && r?.totalCuenta !== null) {
+      return r.totalCuenta;
+    }
+    const recaudado = this.diaVentas();
+    const propinas = this.diaPropinas();
+    return Math.max(0, recaudado - propinas);
   });
 
   diaPropinas = computed(() => {
-    const r = this.resumenDia()?.totalPropinas ?? 0;
-    const h = this.ordenesPagadasHoy().reduce((s, o) => s + this.propinaOrden(o), 0);
-    return Math.max(r, h);
+    const r = this.resumenDia();
+    if (r?.totalPropinas !== undefined && r?.totalPropinas !== null) {
+      return r.totalPropinas;
+    }
+    return this.ordenesPagadasHoy().reduce((s, o) => s + this.propinaOrden(o), 0);
   });
 
   diaArticulos = computed(() => {
-    const r = this.resumenDia()?.totalArticulosVendidos ?? 0;
-    const h = this.ordenesPagadasHoy().reduce(
+    const r = this.resumenDia();
+    if (r?.totalArticulosVendidos !== undefined && r?.totalArticulosVendidos !== null) {
+      return r.totalArticulosVendidos;
+    }
+    return this.ordenesPagadasHoy().reduce(
       (s, o) => s + (o.items ?? []).reduce((x, it) => x + (it.cantidad || 0), 0),
       0
     );
-    return Math.max(r, h);
   });
 
   diaTicketPromedio = computed(() => (this.diaComandas() > 0 ? this.diaVentas() / this.diaComandas() : 0));
 
-  /** Métodos de pago del día. Usa el corte del backend y si no, lo arma del historial. */
+  /** Métodos de pago del día acotados estrictamente a la fecha actual. */
   metodosPagoDia = computed<DesgloseMetodoPago[]>(() => {
     const delTurno = this.resumenDia()?.desgloseMetodos ?? [];
-    const ventasTurno = this.resumenDia()?.totalVentas ?? 0;
-    const ventasHistorial = this.ordenesPagadasHoy().reduce((s, o) => s + (o.totalFinal ?? o.subtotal ?? 0), 0);
+    const mapa = new Map<string, DesgloseMetodoPago>();
 
-    if (delTurno.length > 0 && ventasTurno >= ventasHistorial) {
-      return delTurno;
+    if (delTurno.length > 0) {
+      for (const dt of delTurno) {
+        const clave = this.normalizarNombreMetodo(dt.metodoPago);
+        const cuenta = Number(dt.totalCuenta || 0);
+        const propina = Number(dt.totalPropina || 0);
+        const recaudado = Number(dt.totalRecaudado || (cuenta + propina));
+        const prev = mapa.get(clave) ?? {
+          metodoPago: clave,
+          transacciones: 0,
+          totalCuenta: 0,
+          totalPropina: 0,
+          totalRecaudado: 0
+        };
+        prev.transacciones += Number(dt.transacciones || 0);
+        prev.totalCuenta += cuenta;
+        prev.totalPropina += propina;
+        prev.totalRecaudado += recaudado;
+        mapa.set(clave, prev);
+      }
+      return Array.from(mapa.values()).sort((a, b) => b.totalRecaudado - a.totalRecaudado);
     }
 
-    const mapa = new Map<string, DesgloseMetodoPago>();
+    // Respaldo desde el historial de comandas pagadas en el día
     for (const o of this.ordenesPagadasHoy()) {
       const rawMetodo = o.payment?.method || 'EFECTIVO';
-      const clave = CajaComponent.NOMBRE_METODO[rawMetodo.toUpperCase()] ?? rawMetodo.toUpperCase();
+      const clave = this.normalizarNombreMetodo(rawMetodo);
       const cuenta = o.totalFinal ?? o.subtotal ?? 0;
       const propina = this.propinaOrden(o);
-      const prev = mapa.get(clave) ?? { metodoPago: clave, transacciones: 0, totalCuenta: 0, totalPropina: 0, totalRecaudado: 0 };
+      const prev = mapa.get(clave) ?? {
+        metodoPago: clave,
+        transacciones: 0,
+        totalCuenta: 0,
+        totalPropina: 0,
+        totalRecaudado: 0
+      };
       prev.transacciones += 1;
       prev.totalCuenta += cuenta;
       prev.totalPropina += propina;
@@ -492,14 +696,44 @@ export class CajaComponent implements OnInit, OnDestroy {
       mapa.set(clave, prev);
     }
 
-    for (const dt of delTurno) {
-      if (!mapa.has(dt.metodoPago)) {
-        mapa.set(dt.metodoPago, dt);
-      }
-    }
-
     return Array.from(mapa.values()).sort((a, b) => b.totalRecaudado - a.totalRecaudado);
   });
+
+  totalEfectivoDia = computed(() => {
+    return this.metodosPagoDia()
+      .filter(m => this.normalizarNombreMetodo(m.metodoPago) === 'EFECTIVO')
+      .reduce((sum, m) => sum + m.totalRecaudado, 0);
+  });
+
+  totalTarjetaDia = computed(() => {
+    return this.metodosPagoDia()
+      .filter(m => this.normalizarNombreMetodo(m.metodoPago) === 'TARJETA')
+      .reduce((sum, m) => sum + m.totalRecaudado, 0);
+  });
+
+  totalTransferenciaDia = computed(() => {
+    return this.metodosPagoDia()
+      .filter(m => this.normalizarNombreMetodo(m.metodoPago) === 'TRANSFERENCIA')
+      .reduce((sum, m) => sum + m.totalRecaudado, 0);
+  });
+
+  totalOtrosMetodosDia = computed(() => {
+    return this.metodosPagoDia()
+      .filter(m => {
+        const nom = this.normalizarNombreMetodo(m.metodoPago);
+        return nom !== 'EFECTIVO' && nom !== 'TARJETA' && nom !== 'TRANSFERENCIA';
+      })
+      .reduce((sum, m) => sum + m.totalRecaudado, 0);
+  });
+
+  async abrirModalDesgloseVentas(): Promise<void> {
+    await this.cargarResumenDia(false);
+    this.modalDesgloseVentasVisible.set(true);
+  }
+
+  cerrarModalDesgloseVentas(): void {
+    this.modalDesgloseVentasVisible.set(false);
+  }
 
   /** Datos de la gráfica: participación de cada método de pago en lo recaudado. */
   metodosPagoChartData = computed(() => {
@@ -551,10 +785,28 @@ export class CajaComponent implements OnInit, OnDestroy {
 
   private static readonly NOMBRE_METODO: Record<string, string> = {
     CASH: 'EFECTIVO',
+    EFECTIVO: 'EFECTIVO',
+    DINERO: 'EFECTIVO',
     CARD: 'TARJETA',
+    TARJETA: 'TARJETA',
+    VISA: 'TARJETA',
+    MASTERCARD: 'TARJETA',
+    DEBITO: 'TARJETA',
+    CREDITO: 'TARJETA',
+    TERMINAL: 'TARJETA',
     TRANSFER: 'TRANSFERENCIA',
-    MIXED: 'MIXTO'
+    TRANSFERENCIA: 'TRANSFERENCIA',
+    SPEI: 'TRANSFERENCIA',
+    BANCO: 'TRANSFERENCIA',
+    MIXED: 'MIXTO',
+    MIXTO: 'MIXTO'
   };
+
+  normalizarNombreMetodo(raw?: string | null): string {
+    if (!raw) return 'EFECTIVO';
+    const norm = raw.trim().toUpperCase();
+    return CajaComponent.NOMBRE_METODO[norm] ?? norm;
+  }
 
   /**
    * Corte del día del mesero seleccionado.
@@ -780,32 +1032,224 @@ export class CajaComponent implements OnInit, OnDestroy {
 
   // ==================== PRE-CUENTA (IMPRIMIR TICKET) ====================
 
-  async imprimirTicket(comanda: PendingOrder | ComandaCajaRow): Promise<void> {
+  /** Genera la estructura de ticket de pre-cuenta localmente a partir de la orden. */
+  private construirTicketLocal(comanda: PendingOrder | ComandaCajaRow): TicketPrecuenta {
+    const orden = ('items' in comanda && Array.isArray((comanda as any).items))
+      ? (comanda as PendingOrder)
+      : this.todasComandas().find(o => o.id === comanda.id);
+
+    const total = this.totalCuenta(comanda);
+    const id = comanda.id || '';
+    const folio = id.length > 8 ? id.slice(0, 8).toUpperCase() : id;
+    const mesa = comanda.mesaNombre || 'Mesa General';
+    const mesero = comanda.meseroNombre || 'Sin asignar';
+    const cliente = this.getClientLabel(orden);
+
+    const items = (orden?.items || []).map(it => ({
+      nombreProducto: this.getProductLabel(it),
+      cantidad: it.cantidad || 1,
+      precioUnitario: this.getItemPrice(it),
+      totalLinea: this.getItemPrice(it) * (it.cantidad || 1),
+      asientoAlias: it.asientoAlias
+    }));
+
+    return {
+      idComanda: id,
+      folioComanda: folio,
+      mesaNombre: mesa,
+      meseroNombre: mesero,
+      clienteNombre: cliente,
+      fechaApertura: orden?.horaApertura || orden?.fechaCreacion || new Date().toISOString(),
+      fechaImpresion: new Date().toISOString(),
+      subtotal: orden?.subtotal || total,
+      descuento: orden?.descuento || 0,
+      total,
+      propinaSugerida10: Math.round(total * 0.10 * 100) / 100,
+      propinaSugerida15: Math.round(total * 0.15 * 100) / 100,
+      propinaSugerida20: Math.round(total * 0.20 * 100) / 100,
+      items: items.length > 0 ? items : [{
+        nombreProducto: 'Consumo General',
+        cantidad: 1,
+        precioUnitario: total,
+        totalLinea: total
+      }]
+    };
+  }
+
+  async imprimirTicket(comanda: PendingOrder | ComandaCajaRow, autoPrint = true): Promise<void> {
+    if (!comanda) return;
     this.procesando.set(true);
+
     try {
       const resp = await firstValueFrom(this.cajaService.imprimirTicket(comanda.id, this.tenantId));
-      const ticket = resp.object || resp.data;
-      this.ticketActual.set(ticket || null);
+      const ticket = resp?.object || resp?.data;
+      if (ticket) {
+        this.ticketActual.set(ticket);
+      } else {
+        this.ticketActual.set(this.construirTicketLocal(comanda));
+      }
+
       this.modalTicketVisible.set(true);
 
-      // Actualizar tablero local
-      await this.cargarTablero(false);
-      await this.cargarHistorialComandas(false);
+      // Actualizar estado local
+      await Promise.all([
+        this.cargarTablero(false),
+        this.cargarHistorialComandas(false)
+      ]);
 
       this.messageService.add({
         severity: 'info',
         summary: 'Ticket en Mesa',
-        detail: `Pre-cuenta de ${comanda.mesaNombre} generada. La comanda pasó a estado "Por Cobrar".`
+        detail: `Pre-cuenta de ${comanda.mesaNombre || 'Mesa'} generada. La comanda pasó a "Por Cobrar".`
       });
+      if (autoPrint) {
+        setTimeout(() => this.imprimirVentanaTicket(), 250);
+      }
     } catch (err: any) {
-      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo generar el ticket de pre-cuenta' });
+      console.warn('Fallback a pre-cuenta local para comanda:', comanda.id, err);
+      // Fallback seguro: siempre abrir el ticket para que el cajero pueda imprimir
+      const ticket = this.construirTicketLocal(comanda);
+      this.ticketActual.set(ticket);
+      this.modalTicketVisible.set(true);
+
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Ticket Generado',
+        detail: `Pre-cuenta de ${comanda.mesaNombre || 'Mesa'} lista para imprimir.`
+      });
+
+      if (autoPrint) {
+        setTimeout(() => this.imprimirVentanaTicket(), 250);
+      }
     } finally {
       this.procesando.set(false);
     }
   }
 
+  /**
+   * Imprime el ticket térmico con formato estándar 80mm en una ventana/iframe aislada.
+   * Evita problemas de estilos CSS globales y no altera la visualización del dashboard.
+   */
   imprimirVentanaTicket(): void {
-    window.print();
+    const t = this.ticketActual();
+    if (!t) return;
+
+    const fechaFormateada = t.fechaImpresion ? new Date(t.fechaImpresion).toLocaleString('es-MX') : new Date().toLocaleString('es-MX');
+
+    let itemsHtml = '';
+    for (const it of t.items || []) {
+      itemsHtml += `
+        <tr>
+          <td style="text-align: left; padding: 3px 0;">${it.cantidad}x ${it.nombreProducto}${it.asientoAlias ? ' (' + it.asientoAlias + ')' : ''}</td>
+          <td style="text-align: right; padding: 3px 0; font-weight: bold;">$${(it.totalLinea || 0).toFixed(2)}</td>
+        </tr>
+      `;
+    }
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Ticket - Comanda #${t.folioComanda}</title>
+          <style>
+            @page {
+              size: 80mm auto;
+              margin: 0;
+            }
+            body {
+              font-family: 'Courier New', Courier, monospace;
+              width: 72mm;
+              margin: 0 auto;
+              padding: 12px 0;
+              font-size: 12px;
+              color: #000;
+              line-height: 1.25;
+            }
+            .text-center { text-align: center; }
+            .text-right { text-align: right; }
+            .bold { font-weight: bold; }
+            .divider { border-top: 1px dashed #000; margin: 6px 0; }
+            .double-divider { border-top: 2px dashed #000; margin: 8px 0; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            .title { font-size: 16px; font-weight: 900; margin: 0 0 2px 0; text-align: center; }
+            .subtitle { font-size: 11px; margin: 0 0 4px 0; text-align: center; }
+            .total-row { font-size: 15px; font-weight: 900; }
+            .propina-box { border: 1px dashed #444; padding: 6px; margin: 8px 0; font-size: 11px; }
+          </style>
+        </head>
+        <body>
+          <div class="title">PRE-CUENTA</div>
+          <div class="subtitle">Comanda #${t.folioComanda}</div>
+          <div class="divider"></div>
+          <div><strong>Mesa:</strong> ${t.mesaNombre || 'Mesa General'}</div>
+          <div><strong>Mesero:</strong> ${t.meseroNombre || 'Sin asignar'}</div>
+          <div><strong>Cliente:</strong> ${t.clienteNombre || 'Venta General'}</div>
+          <div><strong>Fecha:</strong> ${fechaFormateada}</div>
+          <div class="divider"></div>
+          <table>
+            <thead>
+              <tr style="border-bottom: 1px dashed #000;">
+                <th style="text-align: left; padding: 2px 0;">Cant / Platillo</th>
+                <th style="text-align: right; padding: 2px 0;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+          <div class="divider"></div>
+          ${t.descuento && t.descuento > 0 ? `
+            <div style="display:flex; justify-content:space-between;">
+              <span>Subtotal:</span>
+              <span>$${(t.subtotal || t.total).toFixed(2)}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span>Descuento:</span>
+              <span>-$${(t.descuento).toFixed(2)}</span>
+            </div>
+          ` : ''}
+          <div style="display:flex; justify-content:space-between;" class="total-row">
+            <span>TOTAL:</span>
+            <span>$${(t.total || 0).toFixed(2)}</span>
+          </div>
+          <div class="divider"></div>
+          <div class="propina-box">
+            <div class="text-center bold" style="margin-bottom: 3px;">PROPINA SUGERIDA</div>
+            <div style="display:flex; justify-content:space-between;"><span>10%:</span> <strong>$${(t.propinaSugerida10 || (t.total * 0.10)).toFixed(2)}</strong></div>
+            <div style="display:flex; justify-content:space-between;"><span>15%:</span> <strong>$${(t.propinaSugerida15 || (t.total * 0.15)).toFixed(2)}</strong></div>
+            <div style="display:flex; justify-content:space-between;"><span>20%:</span> <strong>$${(t.propinaSugerida20 || (t.total * 0.20)).toFixed(2)}</strong></div>
+          </div>
+          <div class="double-divider"></div>
+          <div class="text-center" style="font-size: 10px;">¡Gracias por su visita!</div>
+          <div class="text-center" style="font-size: 9px; margin-top: 2px;">Este ticket no es un comprobante fiscal</div>
+        </body>
+      </html>
+    `;
+
+    let iframe = document.getElementById('ticket-print-iframe') as HTMLIFrameElement;
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id = 'ticket-print-iframe';
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = 'none';
+      document.body.appendChild(iframe);
+    }
+
+    const doc = iframe.contentWindow?.document;
+    if (doc) {
+      doc.open();
+      doc.write(htmlContent);
+      doc.close();
+      setTimeout(() => {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      }, 250);
+    }
   }
 
   // ==================== COBRO DE COMANDA ====================
@@ -851,42 +1295,94 @@ export class CajaComponent implements OnInit, OnDestroy {
     const fila = this.aFilaCaja(comanda);
     this.comandaSeleccionada.set(fila);
     this.metodoPagoSeleccionado = 'EFECTIVO';
-    this.montoCuentaInput = this.totalCuenta(fila);
+    const total = Number((this.totalCuenta(fila)).toFixed(2));
+    this.montoCuentaInput = total;
     this.montoPropinaInput = 0;
     this.referenciaPagoInput = '';
-    this.efectivoRecibidoInput = this.totalCuenta(fila);
+    this.efectivoRecibidoInput = total;
     this.modalPagoVisible.set(true);
   }
 
   aplicarPropinaRapida(porcentaje: number): void {
-    const base = this.montoCuentaInput || 0;
+    const base = Number(this.montoCuentaInput) || 0;
     this.montoPropinaInput = Math.round(base * porcentaje * 100) / 100;
+    this.onPropinaChange();
+  }
+
+  onMontoCuentaChange(): void {
+    if (this.metodoPagoSeleccionado === 'EFECTIVO' && this.efectivoRecibidoInput < this.totalAPagarModal) {
+      this.efectivoRecibidoInput = this.totalAPagarModal;
+    }
+  }
+
+  onPropinaChange(): void {
+    if (this.metodoPagoSeleccionado === 'EFECTIVO' && this.efectivoRecibidoInput < this.totalAPagarModal) {
+      this.efectivoRecibidoInput = this.totalAPagarModal;
+    }
+  }
+
+  restablecerMontoOriginal(): void {
+    const c = this.comandaSeleccionada();
+    if (c) {
+      this.montoCuentaInput = Number((c.total ?? 0).toFixed(2));
+      this.onMontoCuentaChange();
+    }
+  }
+
+  sugerirBilletes(total: number): number[] {
+    const t = Number(total) || 0;
+    const denominaciones = [50, 100, 200, 500, 1000];
+    return denominaciones.filter(d => d > t).slice(0, 2);
+  }
+
+  get totalAPagarModal(): number {
+    const cuenta = Number(this.montoCuentaInput) || 0;
+    const propina = Number(this.montoPropinaInput) || 0;
+    return Math.round((cuenta + propina) * 100) / 100;
   }
 
   get cambioEfectivo(): number {
-    const totalPagar = (this.montoCuentaInput || 0) + (this.montoPropinaInput || 0);
-    const recibido = this.efectivoRecibidoInput || 0;
-    return Math.max(0, recibido - totalPagar);
+    const recibido = Number(this.efectivoRecibidoInput) || 0;
+    return Math.max(0, Math.round((recibido - this.totalAPagarModal) * 100) / 100);
   }
 
   async procesarCobro(): Promise<void> {
     const comanda = this.comandaSeleccionada();
     if (!comanda) return;
 
-    if (this.montoCuentaInput <= 0) {
+    const montoCuenta = Number(this.montoCuentaInput) || 0;
+    const montoPropina = Number(this.montoPropinaInput) || 0;
+
+    if (montoCuenta <= 0) {
       this.messageService.add({ severity: 'warn', summary: 'Monto inválido', detail: 'El monto de la cuenta debe ser mayor a 0' });
+      return;
+    }
+
+    if (montoPropina < 0) {
+      this.messageService.add({ severity: 'warn', summary: 'Propina inválida', detail: 'El monto de propina no puede ser negativo' });
       return;
     }
 
     this.procesando.set(true);
     try {
+      let metodo = this.metodoPagoSeleccionado || 'EFECTIVO';
+      if (metodo === 'VISA' || metodo === 'MASTERCARD' || metodo === 'TARJETA') {
+        metodo = 'CARD';
+      } else if (metodo === 'TRANSFERENCIA') {
+        metodo = 'TRANSFER';
+      } else if (metodo === 'VALES') {
+        metodo = 'MIXED';
+      }
+
+      const cajeroId = this.userId > 0 ? this.userId : (this.turnoActivo()?.idCajero || 1);
+
       await firstValueFrom(this.cajaService.cobrarComanda(comanda.id, {
         tenantId: this.tenantId,
-        cajeroId: this.userId,
-        metodoPago: this.metodoPagoSeleccionado,
-        montoCuenta: this.montoCuentaInput,
-        montoPropina: this.montoPropinaInput,
-        referencia: this.referenciaPagoInput
+        cajeroId: cajeroId,
+        metodoPago: metodo,
+        montoCuenta: montoCuenta,
+        montoPropina: montoPropina,
+        referencia: this.referenciaPagoInput?.trim() || undefined
       }));
 
       this.modalPagoVisible.set(false);
@@ -895,7 +1391,7 @@ export class CajaComponent implements OnInit, OnDestroy {
       this.messageService.add({
         severity: 'success',
         summary: 'Pago Procesado',
-        detail: `Cuenta de ${comanda.mesaNombre} cobrada exitosamente ($${(this.montoCuentaInput + this.montoPropinaInput).toFixed(2)})`
+        detail: `Cuenta de ${comanda.mesaNombre} cobrada exitosamente ($${(montoCuenta + montoPropina).toFixed(2)})`
       });
 
       await Promise.all([
@@ -907,6 +1403,7 @@ export class CajaComponent implements OnInit, OnDestroy {
         await this.cargarResumenDia(false);
       }
     } catch (err: any) {
+      console.error('Error procesando cobro:', err);
       const msg = err?.error?.message || err?.message || 'Error procesando el pago';
       this.messageService.add({ severity: 'error', summary: 'Error de Cobro', detail: msg });
     } finally {
@@ -921,7 +1418,7 @@ export class CajaComponent implements OnInit, OnDestroy {
     if (showLoading) this.loadingHistorial.set(true);
     try {
       const resp = await firstValueFrom(
-        this.orderService.getOrdersByTenant(this.tenantId, undefined, 0, 100)
+        this.orderService.getOrdersByTenant(this.tenantId, undefined, 0, 250)
       );
       const rawOrders = (resp as any)?.object?.content ?? (resp as any)?.object ?? [];
       const mappedOrders: PendingOrder[] = (rawOrders || []).map((order: any) => this.mapBackendOrder(order));
@@ -1005,13 +1502,20 @@ export class CajaComponent implements OnInit, OnDestroy {
           comentarios = m[2];
         }
       }
+      const prodName = it.productName || it.prod || it.name || it.nombreProducto || it.productoNombre || it.product?.nombre || it.nombre;
+      const prodId = it.productId ?? it.productoId;
       return {
         ...it,
+        productName: prodName,
+        productId: prodId,
         comentarios,
         asientoId: it.idAsiento ?? it.asientoId,
         asientoAlias: alias
       };
     });
+
+    const propina = Number(order.propina ?? order.montoPropina ?? 0);
+    const cuenta = Number(order.total ?? order.totalFinal ?? 0);
 
     return {
       id: order.id,
@@ -1036,11 +1540,15 @@ export class CajaComponent implements OnInit, OnDestroy {
       horaApertura,
       horaCierre,
       subcomandas: order.subcomandas ?? [],
+      propina,
+      propinasLiquidadas: order.propinasLiquidadas ?? false,
       payment: {
         method: order.paidMethod ?? order.paymentMethod,
         reference: order.paymentReference ?? null,
         paidAt: order.paidAt,
-        paidBy: order.paidByName ?? order.paidBy
+        paidBy: order.paidByName ?? order.paidBy,
+        amount: order.payment?.amount ?? (cuenta + propina),
+        tip: propina
       }
     };
   }
@@ -1233,6 +1741,7 @@ export class CajaComponent implements OnInit, OnDestroy {
     };
     this.ticketActual.set(ticket);
     this.modalTicketVisible.set(true);
+    setTimeout(() => this.imprimirVentanaTicket(), 250);
   }
 
   getClientLabel(order: PendingOrder | null | undefined): string {
@@ -1255,7 +1764,16 @@ export class CajaComponent implements OnInit, OnDestroy {
   }
 
   getProductLabel(item: any): string {
-    return item?.productoNombre || item?.nombreProducto || item?.product?.nombre || item?.nombre || `Producto #${item?.productoId || ''}`;
+    return (
+      item?.productName ||
+      item?.prod ||
+      item?.name ||
+      item?.nombreProducto ||
+      item?.productoNombre ||
+      item?.product?.nombre ||
+      item?.nombre ||
+      (item?.productId ? `Producto #${item.productId}` : (item?.productoId ? `Producto #${item.productoId}` : 'Producto'))
+    );
   }
 
   getStatusClass(estado?: string): string {
@@ -1332,7 +1850,10 @@ export class CajaComponent implements OnInit, OnDestroy {
         this.resumenDia.set(null);
         return;
       }
-      const resp = await firstValueFrom(this.cajaService.getResumenTurno(turno.idTurno, this.tenantId));
+      this.fechaCorte.set(new Date());
+      const resp = await firstValueFrom(
+        this.cajaService.getResumenTurno(turno.idTurno, this.tenantId, this.fechaCorteISO())
+      );
       this.resumenDia.set(resp.object || resp.data || null);
     } catch (e: any) {
       this.resumenDia.set(null);
@@ -1393,7 +1914,9 @@ export class CajaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const propinas = this.corteDelDia()?.propinasPendientesLiquidar ?? this.totalPropinasMesero();
+    const propinas = (this.corteDelDia()?.propinasPendientesLiquidar && this.corteDelDia()!.propinasPendientesLiquidar > 0)
+      ? this.corteDelDia()!.propinasPendientesLiquidar
+      : this.totalPropinasMesero();
     if (propinas <= 0) {
       this.messageService.add({ severity: 'info', summary: 'Sin saldo', detail: 'No hay propinas pendientes de liquidar' });
       return;
