@@ -3181,12 +3181,17 @@
   align-content: start;
 }
 
-// Barra de título del menú fija mientras se scrollea el catálogo
+// Barra de título del menú: fija y a sangre (cubre el padding de la tarjeta
+// para que no se vea una franja por donde pasan los platillos al scrollear).
 .pos-catalog-card > .flex.items-center.justify-between {
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 3;
+  margin: -1.25rem -1.25rem 1rem;
+  padding: 1rem 1.25rem 0.9rem;
   background: #ffffff;
+  border-bottom: 1px solid #eef2f7;
+  box-shadow: 0 10px 18px -16px rgba(16, 24, 40, 0.55);
 }
 
 // Comanda: llena el alto y su lista de ítems scrollea
