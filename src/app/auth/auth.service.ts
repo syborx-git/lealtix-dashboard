@@ -9,6 +9,7 @@ export interface LoginCredentials {
 	email: string;
 	password: string;
 	tenantId?: number;  // Opcional - obtenido del backend si no se proporciona
+	longSession?: boolean; // true => token de larga duración (tablet/POS)
 }
 
 export interface BackendWrapper<T> {
@@ -113,7 +114,21 @@ export class AuthService {
 	login(credentials: LoginCredentials): Observable<LoginResponse> {
 		const url = `${this.baseUrl}/login`;
 		const headers = new HttpHeaders({ 'Content-Type': 'application/json', Accept: '*/*' });
-		return this.http.post<LoginResponse>(url, credentials, { headers });
+		// En tablet (táctil) se pide sesión larga para que no cierre sesión sola.
+		const payload: LoginCredentials = {
+			...credentials,
+			longSession: credentials.longSession ?? this.isTouchDevice()
+		};
+		return this.http.post<LoginResponse>(url, payload, { headers });
+	}
+
+	/** true si el dispositivo es táctil (tablet/POS). En desktop devuelve false. */
+	private isTouchDevice(): boolean {
+		try {
+			return !!window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+		} catch {
+			return false;
+		}
 	}
 
 	/**
