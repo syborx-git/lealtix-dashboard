@@ -13,11 +13,13 @@ export interface AppNotification {
   severity: 'success' | 'info' | 'warn' | 'error';
   ts: number;
   read: boolean;
+  route?: string;               // ruta a la que navega al hacer clic
 }
 
 interface AddOptions {
   sound?: boolean;
   toast?: boolean;
+  browser?: boolean;            // muestra notificación nativa del navegador
   dedupeKey?: string;
 }
 
@@ -72,7 +74,46 @@ export class NotificationService {
     if (opts.sound) {
       this.playSound();
     }
+    if (opts.browser) {
+      this.showBrowserNotification(notif);
+    }
     return notif;
+  }
+
+  /** Pide permiso para notificaciones nativas del navegador (una sola vez). */
+  ensureBrowserPermission(): void {
+    try {
+      if (typeof Notification === 'undefined') return;
+      if (Notification.permission === 'default') {
+        void Notification.requestPermission();
+      }
+    } catch {
+      // no soportado
+    }
+  }
+
+  private showBrowserNotification(n: AppNotification): void {
+    try {
+      if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+      const native = new Notification(n.title, {
+        body: n.message,
+        tag: n.type,
+        icon: 'favicon.ico'
+      });
+      native.onclick = () => {
+        try {
+          window.focus();
+          if (n.route) {
+            window.location.href = n.route;
+          }
+        } catch {
+          // noop
+        }
+        native.close();
+      };
+    } catch {
+      // no soportado o bloqueado
+    }
   }
 
   /** Limpia una clave de dedupe (p.ej. cuando el stock se recupera). */
