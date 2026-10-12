@@ -52,8 +52,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
     openNotification(n: AppNotification): void {
         this.notifications.markRead(n.id);
         this.notifications.closePanel();
-        if (n.route) {
-            this.router.navigateByUrl(n.route);
+        const route = this.notifications.resolveRoute(n);
+        if (route) {
+            void this.router.navigateByUrl(route);
         }
     }
 

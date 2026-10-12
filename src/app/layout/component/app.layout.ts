@@ -19,7 +19,6 @@ import { InventoryService } from '@/pages/inventario/service/inventory.service';
     selector: 'app-layout',
     standalone: true,
     imports: [CommonModule, HeaderComponent, SidebarComponent, RouterModule, AppFooter, ToastModule],
-    providers: [MessageService],
     styles: [`
         :host {
             display: block;
@@ -43,6 +42,30 @@ import { InventoryService } from '@/pages/inventario/service/inventory.service';
             overflow: hidden;
             position: relative;
         }
+
+        .notif-toast {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.7rem;
+            padding: 0.15rem 0;
+        }
+        .notif-toast > .pi {
+            font-size: 1.15rem;
+            margin-top: 1px;
+        }
+        .notif-toast-body {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        .notif-toast-title {
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        .notif-toast-detail {
+            font-size: 0.8rem;
+            opacity: 0.92;
+        }
     `],
     template: `
     <div class="min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -59,7 +82,17 @@ import { InventoryService } from '@/pages/inventario/service/inventory.service';
             <app-footer *ngIf="!isFullBleed()"></app-footer>
         </div>
 
-        <p-toast position="bottom-right"></p-toast>
+        <p-toast position="bottom-right">
+            <ng-template let-message pTemplate="message">
+                <div class="notif-toast" [style.cursor]="message.data?.route ? 'pointer' : 'default'" (click)="onToastClick(message)">
+                    <i class="pi" [ngClass]="message.icon || 'pi-bell'"></i>
+                    <div class="notif-toast-body">
+                        <span class="notif-toast-title">{{ message.summary }}</span>
+                        <span class="notif-toast-detail">{{ message.detail }}</span>
+                    </div>
+                </div>
+            </ng-template>
+        </p-toast>
     </div>`
 })
 export class AppLayout implements OnInit, OnDestroy {
@@ -109,6 +142,15 @@ export class AppLayout implements OnInit, OnDestroy {
         this.notificationService.ensureBrowserPermission();
     }
 
+    /** Al hacer clic en un toast, navega al apartado de la notificación. */
+    onToastClick(message: any): void {
+        const route = message?.data?.route;
+        if (route) {
+            void this.router.navigateByUrl(route);
+            this.messageService.clear();
+        }
+    }
+
     /**
      * Notificaciones globales en tiempo real (en cualquier página del dashboard):
      * nuevas órdenes, cambios de estado de pedidos y alertas de stock.
@@ -141,9 +183,13 @@ export class AppLayout implements OnInit, OnDestroy {
             }
         });
 
-        // Alertas de stock: al inicio y luego cada 5 min
-        this.loadStockAlerts(tenantId);
-        this.stockTimer = setInterval(() => this.loadStockAlerts(tenantId), this.STOCK_POLL_MS);
+        // Alertas de stock SOLO para ADMIN (meseros/cocina no las necesitan).
+        // Además se revisa al inicio y luego cada 5 min.
+        const role = String(this.authService.getUserRole?.() || '').toUpperCase();
+        if (role === 'ADMIN') {
+            this.loadStockAlerts(tenantId);
+            this.stockTimer = setInterval(() => this.loadStockAlerts(tenantId), this.STOCK_POLL_MS);
+        }
     }
 
     private notifyNewOrder(event: SseNewOrderEvent): void {
@@ -178,53 +224,35 @@ export class AppLayout implements OnInit, OnDestroy {
         const id = String(ev?.order?.id ?? '').slice(0, 6).toUpperCase();
         const client = ev?.order?.customerName ? ` · ${ev.order.customerName}` : '';
 
-        let title = 'Pedido actualizado';
-        let message = `Pedido #${id}${client}`;
-        let icon = 'pi-refresh';
-        let severity: 'success' | 'info' | 'warn' | 'error' = 'info';
-        let sound = false;
-
-        switch (estado) {
-            case 'CONFIRMADA':
-                title = 'Pedido confirmado';
-                message = `Pedido #${id} confirmado${client}`;
-                icon = 'pi-check-circle';
-                break;
-            case 'EN_PREPARACION':
-                title = 'En preparación';
-                message = `Pedido #${id} empezó a prepararse${client}`;
-                icon = 'pi-spinner';
-                break;
-            case 'LISTA':
-            case 'LISTO':
-            case 'READY':
-                title = '¡Pedido listo!';
-                message = `Pedido #${id} listo para entregar${client}`;
-                icon = 'pi-bell';
-                severity = 'success';
-                sound = true;
-                break;
-            case 'PAGADA':
-                title = 'Pedido pagado';
-                message = `Pedido #${id} pagado${client}`;
-                icon = 'pi-dollar';
-                severity = 'success';
-                break;
-            case 'CANCELADA':
-                title = 'Pedido cancelado';
-                message = `Pedido #${id} cancelado${client}`;
-                icon = 'pi-times-circle';
-                severity = 'error';
-                sound = true;
-                break;
-            default:
-                break;
+        // Solo se notifica al CONFIRMAR y al TERMINAR (para no saturar).
+        // El resto de transiciones (en preparación, pagado, cancelado) no notifican.
+        if (estado === 'CONFIRMADA') {
+            this.notificationService.add(
+                {
+                    type: 'order-status',
+                    group: 'order',
+                    title: 'Pedido confirmado',
+                    message: `Pedido #${id} confirmado${client}`,
+                    icon: 'pi-check-circle',
+                    severity: 'info',
+                    route: '/dashboard/comandix'
+                },
+                { toast: true }
+            );
+        } else if (estado === 'LISTO' || estado === 'LISTA' || estado === 'READY') {
+            this.notificationService.add(
+                {
+                    type: 'order-status',
+                    group: 'order',
+                    title: 'Pedido terminado',
+                    message: `Pedido #${id} listo para entregar${client}`,
+                    icon: 'pi-bell',
+                    severity: 'success',
+                    route: '/dashboard/comandix'
+                },
+                { sound: true, toast: true, browser: true }
+            );
         }
-
-        this.notificationService.add(
-            { type: 'order-status', group: 'order', title, message, icon, severity, route: '/dashboard/comandix' },
-            { sound, toast: true, browser: sound }
-        );
     }
 
     /** Revisa el inventario y avisa de productos con stock bajo o agotado. */

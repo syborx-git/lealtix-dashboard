@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, computed, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, ChangeDetectorRef, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -439,7 +439,7 @@ configEditingItem: CartItem | null = null;
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
   private editCountdownTimer: ReturnType<typeof setInterval> | null = null;
   private knownOrderIds = new Set<string>();
-  private readonly POLLING_INTERVAL_MS = 30_000;
+  private readonly POLLING_INTERVAL_MS = 6_000;
   private readonly NOTIFICATION_SOUND = 'assets/sounds/dragon-studio-correct-472358.mp3';
   private readonly ACTIVE_DASHBOARD_STATUSES: OrderStatus[] = ['PENDIENTE', 'CONFIRMADA', 'EN_PREPARACION', 'LISTO', 'PAGADA'];
 
@@ -488,6 +488,14 @@ configEditingItem: CartItem | null = null;
       this.subscribeToSseEvents();
     } else {
       this.loading.set(false);
+    }
+  }
+
+  /** Al volver a la pestaña (tablet suspendida) refresca las órdenes al instante. */
+  @HostListener('document:visibilitychange')
+  onVisibilityChange(): void {
+    if (typeof document !== 'undefined' && document.visibilityState === 'visible' && this.tenantId > 0) {
+      void this.pollOrders();
     }
   }
 
