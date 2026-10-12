@@ -214,7 +214,7 @@
     <div *ngIf="!loading" class="kitchen-grid">
         <section class="kitchen-column">
             <h3>Confirmada ({{ getPendingOrders().length }})</h3>
-            <article *ngFor="let order of getPendingOrders()" class="order-card" [ngClass]="freshnessClass(order)">
+            <article *ngFor="let order of getPendingOrders(); trackBy: trackByOrderId" class="order-card" [ngClass]="freshnessClass(order)">
                 <p-card>
                     <ng-template pTemplate="title">
                         <div class="order-head">
@@ -239,7 +239,7 @@
                     </div>
 
                     <ul class="order-items">
-                        <li *ngFor="let item of order.items" [class.item-ya-salio]="isItemYaSalio(order, item)">
+                        <li *ngFor="let item of order.items; trackBy: trackByItem" [class.item-ya-salio]="isItemYaSalio(order, item)">
                             <div class="flex items-center gap-1.5 flex-wrap">
                                 <span class="item-main" [class.line-through]="isItemYaSalio(order, item)">{{ item.quantity }}x {{ item.productName }}</span>
                                 <span *ngIf="isItemYaSalio(order, item)" class="kitchen-card-badge-salio">
@@ -278,7 +278,7 @@
 
         <section class="kitchen-column">
             <h3>En Preparacion ({{ getInProgressOrders().length }})</h3>
-            <article *ngFor="let order of getInProgressOrders()" class="order-card" [ngClass]="freshnessClass(order)">
+            <article *ngFor="let order of getInProgressOrders(); trackBy: trackByOrderId" class="order-card" [ngClass]="freshnessClass(order)">
                 <p-card>
                     <ng-template pTemplate="title">
                         <div class="order-head">
@@ -303,7 +303,7 @@
                     </div>
 
                     <ul class="order-items">
-                        <li *ngFor="let item of order.items" [class.item-ya-salio]="isItemYaSalio(order, item)">
+                        <li *ngFor="let item of order.items; trackBy: trackByItem" [class.item-ya-salio]="isItemYaSalio(order, item)">
                             <div class="flex items-center gap-1.5 flex-wrap">
                                 <span class="item-main" [class.line-through]="isItemYaSalio(order, item)">{{ item.quantity }}x {{ item.productName }}</span>
                                 <span *ngIf="isItemYaSalio(order, item)" class="kitchen-card-badge-salio">
@@ -342,7 +342,7 @@
 
         <section class="kitchen-column">
             <h3>Listo / Historial del Día ({{ getReadyOrders().length }})</h3>
-            <article *ngFor="let order of getReadyOrders()" class="order-card ready-card">
+            <article *ngFor="let order of getReadyOrdersShown(); trackBy: trackByOrderId" class="order-card ready-card">
                 <p-card>
                     <ng-template pTemplate="title">
                         <div class="order-head">
@@ -361,7 +361,7 @@
                     </div>
 
                     <ul class="order-items">
-                        <li *ngFor="let item of order.items">
+                        <li *ngFor="let item of order.items; trackBy: trackByItem">
                             <span class="item-main">{{ item.quantity }}x {{ item.productName }}</span>
                         </li>
                     </ul>

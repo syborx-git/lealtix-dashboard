@@ -491,11 +491,19 @@ configEditingItem: CartItem | null = null;
     }
   }
 
-  /** Al volver a la pestaña (tablet suspendida) refresca las órdenes al instante. */
+  /** Pausa el polling en segundo plano y refresca al volver a la pestaña. */
   @HostListener('document:visibilitychange')
   onVisibilityChange(): void {
-    if (typeof document !== 'undefined' && document.visibilityState === 'visible' && this.tenantId > 0) {
+    if (typeof document === 'undefined' || this.tenantId <= 0) {
+      return;
+    }
+    if (document.visibilityState === 'visible') {
+      if (this.pollingInterval === null) {
+        this.startPolling();
+      }
       void this.pollOrders();
+    } else {
+      this.stopPolling();
     }
   }
 
@@ -910,6 +918,8 @@ configEditingItem: CartItem | null = null;
         return mergedOrders;
       });
 
+      this.syncEditCountdown();
+
       // Mostrar alerta en primera carga si hay órdenes
       if (isFirstPoll && mappedOrders.length > 0) {
         console.log('[Comandix] 📊 Primera carga:', mappedOrders.length, 'órdenes activas');
@@ -1135,6 +1145,7 @@ configEditingItem: CartItem | null = null;
           this.pendingOrders.update(orders =>
             orders.map(o => o.id === orderId ? { ...o, estado: normalizedState } : o)
           );
+          this.syncEditCountdown();
 
           // 2. Si la orden fue PAGADA
           if (normalizedState === 'PAGADA') {
@@ -1405,14 +1416,20 @@ configEditingItem: CartItem | null = null;
     return diffMs < 2 * 60 * 1000;
   }
 
-  /** Arranca el timer que refresca nowTick cada segundo para el countdown de edición */
+  /** Timer de 1s para el countdown de edición: solo corre si hay órdenes editables (ahorra CPU). */
   private startEditCountdown(): void {
-    if (this.editCountdownTimer) {
-      clearInterval(this.editCountdownTimer);
-    }
-    this.editCountdownTimer = setInterval(() => {
+    this.syncEditCountdown();
+  }
+
+  private syncEditCountdown(): void {
+    const needs = this.pendingOrders().some((o) => this.canEditOrder(o));
+    if (needs && !this.editCountdownTimer) {
       this.nowTick.set(Date.now());
-    }, 1000);
+      this.editCountdownTimer = setInterval(() => this.nowTick.set(Date.now()), 1000);
+    } else if (!needs && this.editCountdownTimer) {
+      clearInterval(this.editCountdownTimer);
+      this.editCountdownTimer = null;
+    }
   }
 
   /** True si la comanda aún puede editarse (estado pendiente/confirmada y dentro de la prórroga) */
@@ -2309,6 +2326,14 @@ const editingItem = this.configEditingItem;
 
 trackByProductId = (index: number, item: CartItem): string => {
     return this.cartItemKey(item);
+  };
+
+  trackByProductGrid = (index: number, product: any): number | string => {
+    return product?.id ?? index;
+  };
+
+  trackByCategoryId = (index: number, cat: any): number | string => {
+    return cat?.id ?? index;
   };
 
   trackByOrderId(index: number, order: PendingOrder): string {
