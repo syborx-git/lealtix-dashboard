@@ -64,15 +64,69 @@
                     <i class="pi text-base" [ngClass]="isDarkTheme() ? 'pi-sun' : 'pi-moon'"></i>
                 </button>
 
-                <button
-                    type="button"
-                    class="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100 hover:text-indigo-600 dark:text-slate-300 dark:hover:bg-slate-800"
-                    aria-label="Notificaciones"
-                    title="Notificaciones"
-                >
-                    <i class="pi pi-bell text-base"></i>
-                    <span class="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900"></span>
-                </button>
+                <!-- Notificaciones -->
+                <div class="relative">
+                    <button
+                        type="button"
+                        class="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100 hover:text-indigo-600 dark:text-slate-300 dark:hover:bg-slate-800"
+                        aria-label="Notificaciones"
+                        title="Notificaciones"
+                        (click)="toggleNotifications()"
+                    >
+                        <i class="pi pi-bell text-base"></i>
+                        <span
+                            *ngIf="notifications.unreadCount() > 0"
+                            class="absolute -right-0.5 -top-0.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white ring-2 ring-white dark:ring-slate-900"
+                        >{{ notifications.unreadCount() > 9 ? '9+' : notifications.unreadCount() }}</span>
+                    </button>
+
+                    <!-- Backdrop para cerrar al hacer clic fuera -->
+                    <div *ngIf="notifications.panelOpen()" class="fixed inset-0 z-40" (click)="notifications.closePanel()"></div>
+
+                    <!-- Panel de notificaciones -->
+                    <div
+                        *ngIf="notifications.panelOpen()"
+                        class="absolute right-0 top-12 z-50 w-[340px] max-w-[85vw] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+                    >
+                        <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+                            <span class="text-sm font-bold text-slate-700 dark:text-slate-100">Notificaciones</span>
+                            <button type="button" class="text-xs font-semibold text-indigo-600 hover:underline" (click)="notifications.clear()">
+                                Limpiar
+                            </button>
+                        </div>
+                        <div class="max-h-[380px] overflow-y-auto">
+                            <div *ngIf="notifications.notifications().length === 0" class="px-4 py-10 text-center text-sm text-slate-400">
+                                Sin notificaciones por ahora
+                            </div>
+                            <div
+                                *ngFor="let n of notifications.notifications()"
+                                class="flex gap-3 border-b border-slate-50 px-4 py-3 transition-colors hover:bg-slate-50 dark:border-slate-800/60 dark:hover:bg-slate-800/40"
+                            >
+                                <div
+                                    class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                                    [ngClass]="{
+                                        'bg-emerald-50 text-emerald-600': n.severity === 'success',
+                                        'bg-sky-50 text-sky-600': n.severity === 'info',
+                                        'bg-amber-50 text-amber-600': n.severity === 'warn',
+                                        'bg-rose-50 text-rose-600': n.severity === 'error'
+                                    }"
+                                >
+                                    <i class="pi text-sm" [ngClass]="n.icon"></i>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="truncate text-sm font-semibold text-slate-700 dark:text-slate-100">{{ n.title }}</span>
+                                        <span class="shrink-0 text-[11px] text-slate-400">{{ notificationTimeAgo(n.ts) }}</span>
+                                    </div>
+                                    <p class="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">{{ n.message }}</p>
+                                </div>
+                                <button type="button" class="shrink-0 text-slate-300 hover:text-rose-500" title="Quitar" (click)="notifications.remove(n.id)">
+                                    <i class="pi pi-times text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <app-user-profile [simple]="true"></app-user-profile>
             </div>
