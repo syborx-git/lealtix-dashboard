@@ -106,6 +106,7 @@ export class AppLayout implements OnInit, OnDestroy {
 
     ngOnInit(): void {
         this.startGlobalOrderNotifications();
+        this.notificationService.ensureBrowserPermission();
     }
 
     /**
@@ -165,9 +166,10 @@ export class AppLayout implements OnInit, OnDestroy {
                 title: '¡Nuevo pedido!',
                 message: `${clientName} — Total: $${Number(total).toFixed(2)}`,
                 icon: 'pi-shopping-bag',
-                severity: 'success'
+                severity: 'success',
+                route: '/dashboard/comandix'
             },
-            { sound: true, toast: true }
+            { sound: true, toast: true, browser: true }
         );
     }
 
@@ -220,8 +222,8 @@ export class AppLayout implements OnInit, OnDestroy {
         }
 
         this.notificationService.add(
-            { type: 'order-status', group: 'order', title, message, icon, severity },
-            { sound, toast: true }
+            { type: 'order-status', group: 'order', title, message, icon, severity, route: '/dashboard/comandix' },
+            { sound, toast: true, browser: sound }
         );
     }
 
@@ -244,9 +246,10 @@ export class AppLayout implements OnInit, OnDestroy {
                                 title: 'Producto agotado',
                                 message: `${name} se quedó sin stock`,
                                 icon: 'pi-exclamation-triangle',
-                                severity: 'error'
+                                severity: 'error',
+                                route: '/dashboard/inventario-cocina'
                             },
-                            { dedupeKey: `stock-out-${id}` }
+                            { dedupeKey: `stock-out-${id}`, toast: true, browser: true }
                         );
                     } else if (p?.lowStock) {
                         this.notificationService.add(
@@ -256,9 +259,10 @@ export class AppLayout implements OnInit, OnDestroy {
                                 title: 'Stock bajo',
                                 message: `${name} con stock bajo (${p.stock ?? 0})`,
                                 icon: 'pi-box',
-                                severity: 'warn'
+                                severity: 'warn',
+                                route: '/dashboard/inventario-cocina'
                             },
-                            { dedupeKey: `stock-low-${id}` }
+                            { dedupeKey: `stock-low-${id}`, toast: false }
                         );
                     } else {
                         this.notificationService.clearDedupe(`stock-low-${id}`);

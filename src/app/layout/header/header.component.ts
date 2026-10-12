@@ -6,7 +6,7 @@ import { MenuListComponent } from '../component/menu-list/menu-list.component';
 import { LayoutService } from '../service/layout.service';
 import { MenuService } from '../service/menu.service';
 import { UserProfileComponent } from '@/shared/components/user-profile.component';
-import { NotificationService } from '@/shared/services/notification.service';
+import { NotificationService, AppNotification } from '@/shared/services/notification.service';
 
 @Component({
     selector: 'app-topbar',
@@ -46,6 +46,15 @@ export class HeaderComponent implements OnInit, OnDestroy {
         if (h < 24) return `hace ${h} h`;
         const d = Math.floor(h / 24);
         return `hace ${d} d`;
+    }
+
+    /** Abre el apartado indicado por la notificación. */
+    openNotification(n: AppNotification): void {
+        this.notifications.markRead(n.id);
+        this.notifications.closePanel();
+        if (n.route) {
+            this.router.navigateByUrl(n.route);
+        }
     }
 
     ngOnInit(): void {
