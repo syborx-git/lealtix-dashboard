@@ -1,12 +1,11 @@
 import { bootstrapApplication } from '@angular/platform-browser';
 import { appConfig } from './app.config';
 import { AppComponent } from './app.component';
-import { environment } from './app/pages/commons/environment';
 
-// En local/dev no debe haber Service Worker (PWA). Si quedó uno instalado de un
-// build de producción anterior servido en el mismo host, se limpia para evitar
-// que sirva assets viejos (lo que deja la app "cargando" indefinidamente).
-if (!environment.production && typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+// El panel YA NO usa Service Worker (PWA). Aquí limpiamos cualquier Service
+// Worker / caché que haya quedado instalado de una versión anterior, para que
+// el navegador siempre cargue la versión fresca (evita "app vieja cacheada").
+if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations()
     .then((regs) => regs.forEach((r) => r.unregister()))
     .catch(() => {});

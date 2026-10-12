@@ -31,9 +31,10 @@ export const appConfig: ApplicationConfig = {
         { provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true },
         { provide: HTTP_INTERCEPTORS, useClass: LoadingInterceptor, multi: true },
 
-        // PWA: service worker (solo en producción)
+        // PWA desactivado: el Service Worker causaba "app vieja cacheada" tras
+        // cada deploy (se quedaba cargando). El panel ahora siempre carga fresco.
         provideServiceWorker('ngsw-worker.js', {
-            enabled: environment.production,
+            enabled: false,
             registrationStrategy: 'registerImmediately'
         })
     ]

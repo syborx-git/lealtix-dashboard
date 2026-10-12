@@ -35,8 +35,7 @@
             "styles": [
               "src/assets/styles.scss"
             ],
-            "scripts": [],
-            "serviceWorker": "ngsw-config.json"
+            "scripts": []
           },
           "configurations": {
             "production": {
