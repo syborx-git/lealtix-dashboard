@@ -22,6 +22,25 @@
         <meta name="apple-mobile-web-app-title" content="Comandix POS" />
         <link rel="apple-touch-icon" href="icons/icon-192.png" />
 
+        <!-- El panel ya NO usa Service Worker. Desregistra cualquier SW/caché viejo
+             (de versiones anteriores de la PWA) para evitar "app vieja cacheada". -->
+        <script>
+            (function () {
+                try {
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.getRegistrations().then(function (regs) {
+                            regs.forEach(function (r) { r.unregister(); });
+                        });
+                    }
+                    if (window.caches && caches.keys) {
+                        caches.keys().then(function (keys) {
+                            keys.forEach(function (k) { caches.delete(k); });
+                        });
+                    }
+                } catch (e) { /* ignore */ }
+            })();
+        </script>
+
     </head>
 
     <body>
