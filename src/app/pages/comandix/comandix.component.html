@@ -393,7 +393,7 @@
           </button>
 
           <button
-            *ngFor="let cat of categories()"
+            *ngFor="let cat of categories(); trackBy: trackByCategoryId"
             type="button"
             class="pos-category-pill"
             [class.active]="selectedCategoryId() === cat.id"
@@ -437,7 +437,7 @@
         <!-- Grid Responsivo de Platillos (3 a 4 columnas) -->
         <div *ngIf="categories().length > 0 && filteredProducts().length > 0" class="pos-products-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
           <div
-            *ngFor="let product of filteredProducts()"
+            *ngFor="let product of filteredProducts(); trackBy: trackByProductGrid"
             class="dish-pos-card group bg-white rounded-2xl border border-slate-200/70 hover:border-purple-300 hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col cursor-pointer"
             (click)="addToCart(product)"
           >
