@@ -23,7 +23,7 @@ interface AddOptions {
   dedupeKey?: string;
 }
 
-const STORAGE_KEY = 'lealtix-notifications';
+const STORAGE_KEY = 'lealtix-notifications-v2';
 const MAX_ITEMS = 60;
 const NOTIFICATION_SOUND = 'assets/sounds/dragon-studio-correct-472358.mp3';
 
@@ -68,7 +68,9 @@ export class NotificationService {
         severity: notif.severity,
         summary: notif.title,
         detail: notif.message,
-        life: 5000
+        life: 5000,
+        icon: `pi ${notif.icon}`,
+        data: { route: this.resolveRoute(notif) }
       });
     }
     if (opts.sound) {
@@ -119,6 +121,20 @@ export class NotificationService {
   /** Limpia una clave de dedupe (p.ej. cuando el stock se recupera). */
   clearDedupe(key: string): void {
     this.seenKeys.delete(key);
+  }
+
+  /**
+   * Ruta destino de la notificación. Si no trae `route` (p.ej. notificaciones
+   * guardadas antes de existir este campo), se infiere por tipo/grupo.
+   */
+  resolveRoute(n: AppNotification): string | null {
+    if (n?.route) return n.route;
+    const t = n?.type || '';
+    if (t.startsWith('stock')) return '/dashboard/inventario-cocina';
+    if (t === 'new-order' || t === 'order-status') return '/dashboard/comandix';
+    if (n?.group === 'stock') return '/dashboard/inventario-cocina';
+    if (n?.group === 'order') return '/dashboard/comandix';
+    return null;
   }
 
   markRead(id: string): void {
