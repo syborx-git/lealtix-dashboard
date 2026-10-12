@@ -31,7 +31,8 @@ export class PwaUpdateService {
                 }
             });
 
-        // Buscar actualizaciones cada 3 minutos (y al volver a la pestaña)
+        // Buscar actualizaciones al iniciar y cada 3 minutos (y al volver a la pestaña)
+        this.swUpdate.checkForUpdate().catch(() => {});
         setInterval(() => this.swUpdate.checkForUpdate().catch(() => {}), 3 * 60 * 1000);
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
