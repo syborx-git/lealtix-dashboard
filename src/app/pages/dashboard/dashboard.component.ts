@@ -72,6 +72,24 @@ export class DashboardComponent implements OnInit {
   ventasResumen = signal<SalesSummaryDTO | null>(null);
   campanasPerformance = signal<CampaignPerformanceDTO[]>([]);
 
+  // KPIs del inicio (datos reales)
+  enPreparacion = signal<number>(0);
+  enEspera = signal<number>(0);
+  cuponesCanjeados = computed(() => this.cuponesStats().reduce((sum, c) => sum + (Number(c?.couponsRedeemed) || 0), 0));
+  cuponesEmitidos = computed(() => this.cuponesStats().reduce((sum, c) => sum + (Number(c?.couponsCreated) || 0), 0));
+  clientesNuevosPeriodo = computed(() => this.clientesNuevos().reduce((sum, p) => sum + (Number(p?.count) || 0), 0));
+
+  // Series y órdenes (datos reales)
+  ventasPeriodo = signal<SalesByPeriodDTO[]>([]);
+  comandasFinalizadas = signal<number>(0);
+  totalOrdenes = signal<number>(0);
+  comandasDelDia = signal<Array<{ id: string; label: string; cls: string }>>([]);
+  ingresosSemana = computed(() => {
+    const s = this.ventasPeriodo();
+    if (s.length) return Number(s[s.length - 1]?.totalSales) || 0;
+    return this.ventasResumen()?.totalSales ?? 0;
+  });
+
   // Costos y Ganancias (simulados por ahora; después se conectan datos reales)
   private static readonly COST_PERCENTAGE = 0.55;
   costos = computed(() => (this.ventasResumen()?.totalSales ?? 0) * DashboardComponent.COST_PERCENTAGE);
@@ -159,29 +177,45 @@ export class DashboardComponent implements OnInit {
   topClientsOptions = signal<any>(null);
 
   // Ingresos semanales (bar chart ProTend – barras dobles)
-  weeklyBalanceData: any = {
-    labels: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie'],
-    datasets: [
-      {
-        label: 'Completado',
-        data: [48, 68, 38, 88, 48, 68],
-        backgroundColor: '#10b981',
-        borderRadius: 8,
-        borderSkipped: false,
-        barPercentage: 0.6,
-        categoryPercentage: 0.5
-      },
-      {
-        label: 'En Proceso',
-        data: [78, 42, 55, 68, 72, 40],
-        backgroundColor: '#f59e0b',
-        borderRadius: 8,
-        borderSkipped: false,
-        barPercentage: 0.6,
-        categoryPercentage: 0.5
-      }
-    ]
-  };
+  weeklyBalanceData = computed(() => {
+    const series = this.ventasPeriodo().slice(-6);
+    const max = Math.max(1, ...series.map((p) => Math.max(Number(p.identifiedSales) || 0, Number(p.generalSales) || 0)));
+    const labels = series.map((p) => this.shortDateLabel(p.periodStart));
+    const identified = series.map((p) => Math.round((Number(p.identifiedSales) || 0) / max * 100));
+    const general = series.map((p) => Math.round((Number(p.generalSales) || 0) / max * 100));
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Identificado',
+          data: identified,
+          backgroundColor: '#10b981',
+          borderRadius: 8,
+          borderSkipped: false,
+          barPercentage: 0.6,
+          categoryPercentage: 0.5
+        },
+        {
+          label: 'General',
+          data: general,
+          backgroundColor: '#f59e0b',
+          borderRadius: 8,
+          borderSkipped: false,
+          barPercentage: 0.6,
+          categoryPercentage: 0.5
+        }
+      ]
+    };
+  });
+
+  private shortDateLabel(iso: string): string {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+    } catch {
+      return '';
+    }
+  }
 
   weeklyBalanceOptions: any = {
     responsive: true,
@@ -431,6 +465,7 @@ export class DashboardComponent implements OnInit {
         this.cuponesStats.set(cupones);
         this.ventasResumen.set(ventas);
         this.campanasPerformance.set(performance);
+        this.ventasPeriodo.set(ventasPeriodo);
 
         // Asignar nuevas métricas de lealtad
         const repeatRate = this.extractValue(res.repeatPurchase);
@@ -465,6 +500,50 @@ export class DashboardComponent implements OnInit {
         this.loading.set(false);
       }
     });
+
+    this.cargarOrdenes();
+  }
+
+  // Órdenes activas (En preparación / En espera) para el KPI del inicio
+  private cargarOrdenes(): void {
+    this.dashboardService.ventasTickets(this.tenantId, 200).subscribe({
+      next: (res: any) => {
+        const obj = res?.object ?? res;
+        const arr: any[] = Array.isArray(obj?.content)
+          ? obj.content
+          : Array.isArray(obj)
+            ? obj
+            : Array.isArray(res?.content) ? res.content : [];
+        const prep = arr.filter((o) => (o?.estado || '').toUpperCase() === 'EN_PREPARACION').length;
+        const esp = arr.filter((o) => ['CONFIRMADA', 'PENDIENTE'].includes((o?.estado || '').toUpperCase())).length;
+        const fin = arr.filter((o) => ['PAGADA', 'CERRADA', 'FINALIZADA', 'COMPLETADA'].includes((o?.estado || '').toUpperCase())).length;
+        this.enPreparacion.set(prep);
+        this.enEspera.set(esp);
+        this.comandasFinalizadas.set(fin);
+        this.totalOrdenes.set(arr.length);
+
+        const labelFor = (e: string): { label: string; cls: string } => {
+          if (['PAGADA', 'CERRADA', 'FINALIZADA', 'COMPLETADA'].includes(e)) return { label: 'Completado', cls: 'completed' };
+          if (e === 'EN_PREPARACION') return { label: 'En preparación', cls: 'in-progress' };
+          if (e === 'CANCELADA') return { label: 'Cancelado', cls: 'in-progress' };
+          return { label: 'Nuevo', cls: 'new' };
+        };
+        this.comandasDelDia.set(
+          arr.slice(0, 4).map((o) => {
+            const e = (o?.estado || '').toUpperCase();
+            const m = labelFor(e);
+            return { id: String(o?.id ?? '').slice(0, 6).toUpperCase(), label: m.label, cls: m.cls };
+          })
+        );
+      },
+      error: () => {
+        this.enPreparacion.set(0);
+        this.enEspera.set(0);
+        this.comandasFinalizadas.set(0);
+        this.totalOrdenes.set(0);
+        this.comandasDelDia.set([]);
+      }
+    });
   }
 
   private buildSalesPeriodChart(series: SalesByPeriodDTO[]): void {
@@ -472,7 +551,7 @@ export class DashboardComponent implements OnInit {
       this.buildSimulatedSalesPeriodChart(this.periodo());
       return;
     }
-    const labels = series.map(s => s.periodStart);
+    const labels = series.map(s => this.shortDateLabel(s.periodStart));
     const total = series.map(s => s.totalSales);
     const identified = series.map(s => s.identifiedSales);
     const general = series.map(s => s.generalSales);
