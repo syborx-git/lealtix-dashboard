@@ -3182,23 +3182,16 @@
   padding: 1.25rem;
 }
 
-// Barra de título del menú: pegada al borde superior de la tarjeta (sin la
-// franja que dejaba el padding) para que se vea limpia al scrollear.
+// Barra de título del menú: SIN sticky (se va con el scroll, no se queda fija).
 .pos-catalog-card {
   padding: 0 !important;
 }
 
 .pos-catalog-card > .flex.items-center.justify-between {
-  position: sticky;
-  top: 0;
-  z-index: 3;
+  position: static;
   margin: 0;
-  padding: 1rem 1.25rem 0.9rem;
+  padding: 1.25rem 1.25rem 0.9rem;
   background: #ffffff;
-  border-bottom: 1px solid #eef2f7;
-  border-top-left-radius: 1rem;
-  border-top-right-radius: 1rem;
-  box-shadow: 0 10px 18px -16px rgba(16, 24, 40, 0.55);
 }
 
 // Estados vacíos del catálogo conservan su padding lateral (la tarjeta ya no lo tiene)
