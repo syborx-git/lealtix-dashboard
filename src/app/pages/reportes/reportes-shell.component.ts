@@ -144,6 +144,13 @@ export class ReportesShellComponent {
       color: '#ea580c',
       reportes: [
         {
+          key: 'tickets-cancelados',
+          nombre: 'Auditoría de tickets cancelados',
+          descripcion: 'Folio, responsable, motivos, importes y detalle de comandas canceladas',
+          ruta: '/dashboard/reportes/analitica/tickets-cancelados',
+          disponible: true,
+        },
+        {
           key: 'tiempos',
           nombre: 'Tiempos de Servicio',
           descripcion: 'De la comanda al platillo listo',

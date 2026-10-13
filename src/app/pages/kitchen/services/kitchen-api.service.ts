@@ -51,7 +51,7 @@ export class KitchenApiService {
         );
     }
 
-    updateStatus(orderId: string, action: KitchenTransitionAction): Observable<any> {
+    updateStatus(orderId: string, action: KitchenTransitionAction, area?: 'BARRA' | 'COCINA'): Observable<any> {
         const estadoMap: { [key in KitchenTransitionAction]: string } = {
             'start': 'EN_PREPARACION',
             'finish': 'LISTO',
@@ -60,7 +60,10 @@ export class KitchenApiService {
 
         const estado = estadoMap[action];
         const url = `${this.kitchenBaseUrl}/${orderId}/status`;
-        const body = { estado };
+        const body: Record<string, any> = { estado };
+        if (area) {
+            body['area'] = area;
+        }
 
         return this.http.patch(url, body);
     }

@@ -136,8 +136,8 @@ export class MenuService {
                 label: 'Reportes',
                 icon: 'pi pi-fw pi-chart-bar',
                 items: [
-                    { label: 'Analitica de Ventas', icon: 'pi pi-fw pi-chart-line', routerLink: ['/dashboard/reportes/analitica/ventas'], roles: ['ADMIN', 'CAJA'], requiredPermissions: ['view_dashboard'] },
-                    { label: 'Ventas y Comandas', icon: 'pi pi-fw pi-receipt', routerLink: ['/dashboard/reportes/ventas'], roles: ['ADMIN', 'CAJA'], requiredPermissions: ['view_dashboard'] },
+                    { label: 'Analitica de Ventas', icon: 'pi pi-fw pi-chart-line', routerLink: ['/dashboard/reportes/analitica/ventas'], roles: ['ADMIN', 'CAJA'], requiredPermissions: ['view_dashboard', 'view_reports', 'view_sales'] },
+                    { label: 'Ventas y Comandas', icon: 'pi pi-fw pi-receipt', routerLink: ['/dashboard/reportes/ventas'], roles: ['ADMIN', 'CAJA'], requiredPermissions: ['view_dashboard', 'view_reports', 'view_sales'] },
                     { label: 'Transferencias de Bodega', icon: 'pi pi-fw pi-arrows-alt', routerLink: ['/dashboard/reportes/transferencias'], roles: ['ADMIN'], requiredPermissions: ['view_products'] },
                     { label: 'Reportes de Mermas', icon: 'pi pi-fw pi-database', routerLink: ['/dashboard/reportes/mermas'], roles: ['ADMIN'], requiredPermissions: ['manage_mermas'] }
                 ]

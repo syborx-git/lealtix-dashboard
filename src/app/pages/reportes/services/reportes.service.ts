@@ -102,6 +102,14 @@ export interface StockMinimoReporteDTO {
   inventarioGeneral: TablaReporteDTO;
 }
 
+export interface AuditoriaTicketsCanceladosDTO {
+  meta: ReporteMetaDTO;
+  kpis: KpiDTO[];
+  porMotivo: TablaReporteDTO;
+  porResponsable: TablaReporteDTO;
+  detalle: TablaReporteDTO;
+}
+
 export interface GenericResponse<T> {
   code: number;
   message: string;
@@ -180,6 +188,24 @@ export class ReportesService {
     const params = new HttpParams().set('tenantId', String(tenantId));
     return this.http.get(`${this.baseUrl}/stock-minimo/export`, {
       params,
+      responseType: 'blob',
+    });
+  }
+
+  /** Reporte Auditoría: Auditoria de tickets cancelados por motivo, responsable y detalle. */
+  obtenerTicketsCancelados(
+    tenantId: number,
+    params: ReportesParams
+  ): Observable<GenericResponse<AuditoriaTicketsCanceladosDTO>> {
+    return this.http.get<GenericResponse<AuditoriaTicketsCanceladosDTO>>(`${this.baseUrl}/tickets-cancelados`, {
+      params: this.construirParams(tenantId, params),
+    });
+  }
+
+  /** Reporte Auditoría: Exportación en Excel (.xlsx) con desglose y detalle cronológico. */
+  exportarTicketsCancelados(tenantId: number, params: ReportesParams): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/tickets-cancelados/export`, {
+      params: this.construirParams(tenantId, params),
       responseType: 'blob',
     });
   }

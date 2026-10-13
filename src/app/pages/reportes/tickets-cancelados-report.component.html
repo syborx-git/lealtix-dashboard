@@ -1,0 +1,414 @@
+<!-- ============ REPORTE 4.1: AUDITORÍA DE TICKETS CANCELADOS ============ -->
+
+@if (loading() && !reporte()) {
+  <div class="reporte-panel">
+    <div class="kpi-grid">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="kpi-card">
+          <p-skeleton width="55%" height="0.8rem" />
+          <p-skeleton width="70%" height="1.6rem" styleClass="mt-3" />
+          <p-skeleton width="45%" height="0.75rem" styleClass="mt-2" />
+        </div>
+      }
+    </div>
+    <div class="panel">
+      <p-skeleton width="30%" height="1.1rem" />
+      <p-skeleton height="16rem" styleClass="mt-3" />
+    </div>
+  </div>
+} @else if (error() && !reporte()) {
+  <div class="panel panel--error">
+    <i class="pi pi-exclamation-triangle"></i>
+    <h3>No se pudo cargar la auditoría de tickets cancelados</h3>
+    <p>{{ error() }}</p>
+    <button pButton type="button" label="Reintentar" icon="pi pi-refresh" (click)="recargar()"></button>
+  </div>
+} @else if (reporte(); as datos) {
+  <div class="reporte-panel">
+    <!-- ============ SUBENCABEZADO ============ -->
+    <div class="reporte-subheader">
+      <div>
+        <h3>{{ datos.meta.nombre }}</h3>
+        <p class="reporte-subheader__rango">
+          {{ datos.meta.rangoActual.etiqueta }}
+          <i class="pi pi-arrow-right"></i>
+          comparado con {{ datos.meta.rangoAnterior.etiqueta }}
+        </p>
+      </div>
+      <div class="reporte-subheader__acciones">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          severity="secondary"
+          [outlined]="true"
+          size="small"
+          [loading]="loading()"
+          (click)="recargar()"
+          pTooltip="Actualizar datos"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-file-excel"
+          label="Exportar a Excel"
+          size="small"
+          [loading]="exportando()"
+          (click)="exportar()"
+        ></button>
+      </div>
+    </div>
+
+    <!-- ============ AVISO METODOLOGICO ============ -->
+    <div class="reporte-nota">
+      <i class="pi pi-info-circle"></i>
+      <div>
+        <strong>Control y Auditoría de Caja:</strong> Se auditan todas las comandas y tickets cancelados durante el periodo seleccionado,
+        identificando el motivo documentado por caja, el usuario responsable de la anulación, la mesa y el desglose de productos que no fueron cobrados.
+      </div>
+    </div>
+
+    <!-- ============ KPIs COMPARATIVOS ============ -->
+    <app-kpi-grid [kpis]="datos.kpis" />
+
+    <!-- ============ MOTIVOS Y GRAFICA ============ -->
+    <div class="grid-2">
+      <!-- Gráfica de distribución por motivo -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Distribución de cancelaciones por motivo</h4>
+            <p class="panel__subtitulo">Impacto económico acumulado según la causa reportada</p>
+          </div>
+        </div>
+        @if (datos.porMotivo.filas.length) {
+          <div class="panel__grafica panel__grafica--alta">
+            <p-chart type="doughnut" [data]="motivoChartData()" [options]="motivoChartOptions" />
+          </div>
+        } @else {
+          <div class="panel__vacio">
+            <i class="pi pi-check-circle"></i>
+            <p>No se registraron tickets cancelados en este periodo</p>
+          </div>
+        }
+      </div>
+
+      <!-- Tabla por motivo -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Pérdidas por motivo de cancelación</h4>
+            <p class="panel__subtitulo">Participación sobre el total de tickets anulados</p>
+          </div>
+        </div>
+        <p-table
+          [value]="datos.porMotivo.filas"
+          styleClass="p-datatable-sm"
+          [tableStyle]="{ 'min-width': '100%' }"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              @for (col of datos.porMotivo.columnas; track col.key) {
+                <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-fila>
+            <tr>
+              @for (col of datos.porMotivo.columnas; track col.key) {
+                <td [style.text-align]="alineacion(col)">
+                  @if (col.key === 'motivo') {
+                    <span class="font-bold text-slate-800">{{ valorCelda(fila, col) }}</span>
+                  } @else if (col.key === 'total') {
+                    <span class="font-bold text-red-600">{{ valorCelda(fila, col) }}</span>
+                  } @else {
+                    {{ valorCelda(fila, col) }}
+                  }
+                </td>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td [attr.colspan]="datos.porMotivo.columnas.length" class="empty-cell">
+                Sin cancelaciones en el periodo seleccionado.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+
+    <!-- ============ AUDITORIA POR RESPONSABLE ============ -->
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <h4>Cancelaciones por responsable</h4>
+          <p class="panel__subtitulo">Usuario o cajero que autorizó la baja del ticket</p>
+        </div>
+      </div>
+      <p-table
+        [value]="datos.porResponsable.filas"
+        styleClass="p-datatable-sm"
+        [tableStyle]="{ 'min-width': '100%' }"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            @for (col of datos.porResponsable.columnas; track col.key) {
+              <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-fila>
+          <tr>
+            @for (col of datos.porResponsable.columnas; track col.key) {
+              <td [style.text-align]="alineacion(col)">
+                @if (col.key === 'responsable') {
+                  <span class="font-semibold text-slate-800">
+                    <i class="pi pi-user mr-1 text-slate-400"></i>
+                    {{ valorCelda(fila, col) }}
+                  </span>
+                } @else if (col.key === 'total') {
+                  <span class="font-bold text-red-600">{{ valorCelda(fila, col) }}</span>
+                } @else {
+                  {{ valorCelda(fila, col) }}
+                }
+              </td>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td [attr.colspan]="datos.porResponsable.columnas.length" class="empty-cell">
+              Sin responsables registrados con cancelaciones en este periodo.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- ============ DETALLE CRONOLOGICO DE TICKETS CANCELADOS ============ -->
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <h4>Detalle cronológico de tickets cancelados</h4>
+          <p class="panel__subtitulo">Historial completo con folio, mesa, responsable, motivo y opción de ver detalle del ticket</p>
+        </div>
+      </div>
+      <p-table
+        #dtDetalle
+        [value]="datos.detalle.filas"
+        [paginator]="true"
+        [rows]="10"
+        [rowsPerPageOptions]="[5, 10, 20, 50]"
+        styleClass="p-datatable-sm"
+        [globalFilterFields]="['folio', 'responsable', 'mesa', 'motivo', 'itemsResumen', 'mesero']"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} tickets"
+        [tableStyle]="{ 'min-width': '65rem' }"
+      >
+        <ng-template pTemplate="caption">
+          <div class="flex justify-content-end">
+            <p-iconfield iconPosition="left">
+              <p-inputicon styleClass="pi pi-search" />
+              <input
+                pInputText
+                type="text"
+                placeholder="Buscar por folio, responsable, mesa, motivo..."
+                (input)="dtDetalle.filterGlobal($any($event.target).value, 'contains')"
+              />
+            </p-iconfield>
+          </div>
+        </ng-template>
+        <ng-template pTemplate="header">
+          <tr>
+            @for (col of datos.detalle.columnas; track col.key) {
+              <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+            }
+            <th style="text-align: center; width: 7rem;">Acciones</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-fila>
+          <tr>
+            @for (col of datos.detalle.columnas; track col.key) {
+              <td [style.text-align]="alineacion(col)">
+                @if (col.key === 'folio') {
+                  <span class="font-mono font-bold text-slate-800">#{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'mesa') {
+                  <p-tag [value]="fila['mesa']" severity="info" />
+                } @else if (col.key === 'responsable') {
+                  <span class="font-medium text-slate-700">
+                    <i class="pi pi-user mr-1 text-slate-400"></i>
+                    {{ valorCelda(fila, col) }}
+                  </span>
+                } @else if (col.key === 'motivo') {
+                  <span class="font-semibold text-red-700 bg-red-50 px-2 py-1 rounded">
+                    {{ valorCelda(fila, col) }}
+                  </span>
+                } @else if (col.key === 'total') {
+                  <span class="font-bold text-red-600">{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'itemsResumen') {
+                  <span class="text-xs text-slate-600" [title]="fila['itemsResumen']">
+                    {{ valorCelda(fila, col) }}
+                  </span>
+                } @else {
+                  {{ valorCelda(fila, col) }}
+                }
+              </td>
+            }
+            <td style="text-align: center;">
+              <button
+                pButton
+                type="button"
+                icon="pi pi-eye"
+                label="Ver ticket"
+                size="small"
+                severity="secondary"
+                [outlined]="true"
+                (click)="abrirDetalle(fila)"
+                pTooltip="Ver detalle completo del ticket y motivo"
+              ></button>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td [attr.colspan]="datos.detalle.columnas.length + 1" class="empty-cell">
+              No hay tickets cancelados registrados en el periodo seleccionado.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+
+  <!-- ============ MODAL DE DETALLE COMPLETO DEL TICKET CANCELADO ============ -->
+  <p-dialog
+    [(visible)]="detalleModalVisible"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [header]="'Auditoría de Ticket Cancelado #' + (ticketSeleccionado()?.folio || '')"
+    [style]="{ width: '42rem', maxWidth: '95vw' }"
+    (onHide)="cerrarDetalle()"
+  >
+    @if (ticketSeleccionado(); as t) {
+      <!-- Cuadro Destacado del Motivo de Cancelación -->
+      <div class="motivo-box">
+        <div class="motivo-label">
+          <i class="pi pi-exclamation-circle"></i>
+          Motivo de Cancelación Registrado
+        </div>
+        <div class="motivo-text">
+          "{{ t.motivo || 'Sin motivo especificado' }}"
+        </div>
+      </div>
+
+      <!-- Resumen de Metadatos del Ticket -->
+      <div class="ticket-meta-grid">
+        <div class="meta-item">
+          <span class="meta-label">Folio</span>
+          <span class="meta-val font-mono">#{{ t.folio }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Mesa</span>
+          <span class="meta-val">{{ t.mesa }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Cancelado Por</span>
+          <span class="meta-val">{{ t.responsable }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Fecha Cancelación</span>
+          <span class="meta-val">{{ t.fechaCancelacion }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Mesero</span>
+          <span class="meta-val">{{ t.mesero }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Total Cancelado</span>
+          <span class="meta-val text-red-600 font-bold">{{ moneda(t.total) }}</span>
+        </div>
+      </div>
+
+      <!-- Detalle de Productos/Platillos -->
+      <div class="panel__header" style="margin-bottom: 0.5rem;">
+        <div>
+          <h4 style="font-size: 0.95rem; margin: 0;">Platillos y Bebidas de la Comanda</h4>
+          <p class="panel__subtitulo" style="margin: 0; font-size: 0.78rem;">Artículos cancelados que componían esta cuenta</p>
+        </div>
+      </div>
+
+      @if (cargandoDetalleTicket()) {
+        <div style="display: flex; justify-content: center; align-items: center; padding: 2rem;">
+          <p-progressSpinner styleClass="w-3rem h-3rem" strokeWidth="4" />
+        </div>
+      } @else if (ordenDetalleCompleto()?.items?.length) {
+        <table class="ticket-items-table">
+          <thead>
+            <tr>
+              <th>Cant.</th>
+              <th>Descripción</th>
+              <th class="text-right">P. Unitario</th>
+              <th class="text-right">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of ordenDetalleCompleto().items; track item.id || $index) {
+              <tr>
+                <td style="font-weight: 700; color: #1e293b;">{{ item.cantidad }}x</td>
+                <td>
+                  <div class="item-title">{{ item.nombreProducto || item.productoNombre || item.nombre || 'Producto' }}</div>
+                  @if (item.notas || item.especificaciones || item.comentarios) {
+                    <div class="item-nota">
+                      Nota: {{ item.notas || item.especificaciones || item.comentarios }}
+                    </div>
+                  }
+                </td>
+                <td class="text-right text-slate-600">
+                  {{ moneda(item.precioUnitario ?? (item.precio ?? 0)) }}
+                </td>
+                <td class="text-right font-semibold text-slate-800">
+                  {{ moneda((item.subtotal ?? ((item.cantidad || 1) * (item.precioUnitario || item.precio || 0)))) }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+
+        <!-- Resumen de Totales -->
+        <div class="ticket-total-summary">
+          <div class="summary-box">
+            <div class="total-label">Monto Total Anulado</div>
+            <div class="total-val">{{ moneda(ordenDetalleCompleto().total ?? t.total) }}</div>
+          </div>
+        </div>
+      } @else {
+        <!-- Fallback si los items ya fueron sintetizados en la tabla -->
+        <div style="background: #f8fafc; padding: 1rem; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <div style="font-weight: 600; color: #334155; margin-bottom: 0.25rem;">Resumen de artículos:</div>
+          <div style="color: #64748b; font-size: 0.9rem;">{{ t.itemsResumen }}</div>
+          <div class="ticket-total-summary">
+            <div class="summary-box">
+              <div class="total-label">Monto Total Anulado</div>
+              <div class="total-val">{{ moneda(t.total) }}</div>
+            </div>
+          </div>
+        </div>
+      }
+    }
+
+    <ng-template pTemplate="footer">
+      <button
+        pButton
+        type="button"
+        label="Cerrar"
+        icon="pi pi-times"
+        severity="secondary"
+        [outlined]="true"
+        (click)="cerrarDetalle()"
+      ></button>
+    </ng-template>
+  </p-dialog>
+}

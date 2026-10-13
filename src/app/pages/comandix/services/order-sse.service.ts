@@ -176,7 +176,9 @@ export class OrderSseService implements OnDestroy {
         } else {
           // readyState === CONNECTING: el navegador está reintentando por su cuenta
           this.reconnectAttempts++;
-          console.warn('[OrderSSE] Reconexión automática del navegador (intento ' + this.reconnectAttempts + ')');
+          if (this.reconnectAttempts <= 3 || this.reconnectAttempts % 10 === 0) {
+            console.warn('[OrderSSE] Reconexión automática del navegador (intento ' + this.reconnectAttempts + ')');
+          }
           this.connectionStatusSubject.next('disconnected');
         }
       };

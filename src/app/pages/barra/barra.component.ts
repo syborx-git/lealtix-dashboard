@@ -76,9 +76,10 @@ export class BarraComponent implements OnInit, OnDestroy {
         await this.loadRecipeCatalog(tenantId);
 
         this.kitchenOrderFacadeService.orders$.pipe(takeUntil(this.destroy$)).subscribe((orders) => {
-            // La comanda llega completa desde Comandix; Barra solo prepara bebidas,
-            // así que se conservan únicamente los items que son bebidas.
+            // Barra solo prepara bebidas; se descartan tickets de Cocina
+            // y se conservan únicamente los items que son bebidas.
             this.orders = orders
+                .filter((order) => order.area !== 'COCINA')
                 .map((order) => ({
                     ...order,
                     items: order.items.filter((item) => this.isBeverageItem(item.productId))
@@ -211,7 +212,9 @@ export class BarraComponent implements OnInit, OnDestroy {
     }
 
     shortId(orderId: string): string {
-        return orderId.slice(0, 8).toUpperCase();
+        if (!orderId) return '';
+        const base = orderId.split('__')[0];
+        return base.slice(0, 8).toUpperCase();
     }
 
     elapsedMinutes(order: KitchenOrder): number {
