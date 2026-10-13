@@ -3165,15 +3165,13 @@
   grid-template-rows: minmax(0, 1fr);
 }
 
-// Panel central: scrollea la TARJETA del catálogo (el grid NO debe ser un
-// flex-item encogible, porque sus filas auto colapsaban a 2px y las tarjetas
-// de platillo no se veían).
+// Scrollea TODA la columna central (mesa + comensales + platillos): al bajar,
+// la configuración se va y se ven más platillos. El catálogo no scrollea solo.
 .pos-catalog-card {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: visible;
 }
 
 .pos-catalog-card .pos-products-grid {
@@ -3220,19 +3218,22 @@
   .pos-left-column {
     height: 100%;
     min-height: 0;
-    grid-template-rows: auto auto minmax(0, 1fr);
-    align-items: stretch;
+    grid-template-rows: auto auto auto;
+    align-items: start;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .pos-categories-rail {
-    height: 100%;
-    max-height: none !important;
-    position: static !important;
-    top: 0 !important;
+    align-self: start;
+    position: sticky;
+    top: 0;
+    max-height: 100%;
+    height: auto;
   }
 
   .pos-categories-list { overflow-y: auto; min-height: 0; }
-  .pos-catalog-card { min-height: 0; }
+  .pos-catalog-card { min-height: 0; overflow: visible; }
 
   // Prioridad al catálogo de platillos en tablet: compactar la configuración
   // (Mesa/Cliente y Comensales) para que el menú se lleve la mayor parte del alto.
