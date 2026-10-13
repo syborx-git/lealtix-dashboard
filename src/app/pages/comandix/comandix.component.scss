@@ -235,7 +235,7 @@
       'rail seats'
       'rail catalog';
     align-items: start;
-    gap: 1rem;
+    gap: 0.5rem;
   }
 
   .pos-compact-header-card { grid-area: header; min-width: 0; }
@@ -3129,14 +3129,15 @@
   &:hover { filter: brightness(1.05); }
 }
 
-// --- Panel central estrecho: apilar los campos en Mesa/Cliente ---
-// (dentro del layout de 3 paneles no caben en una sola fila)
+// --- Panel central estrecho: Mesa y Cliente en una sola fila (más compacto) ---
+// Así la cabecera ocupa menos alto y el menú de platillos sube.
 @container comandix (min-width: 900px) {
   .pos-compact-header-card > .flex {
-    flex-direction: column !important;
-    align-items: stretch !important;
+    flex-direction: row !important;
+    align-items: center !important;
   }
-  .pos-compact-header-card > .flex > .hidden { display: none !important; }
+  // Mesa más angosta para darle más espacio al buscador de Cliente.
+  .pos-compact-header-card > .flex > .flex-1:nth-child(1) { flex: 0 0 40% !important; }
   .pos-seats-tabs-card .hidden.sm\:inline-block { display: none !important; }
 }
 
@@ -3154,7 +3155,7 @@
   box-sizing: border-box;
 }
 
-.comandix-header { flex: 0 0 auto; }
+.comandix-header { flex: 0 0 auto; padding: 0.7rem 0.95rem !important; margin-bottom: 0.5rem !important; }
 
 .comandix-main-content {
   flex: 1 1 auto;
@@ -3235,9 +3236,9 @@
 
   // Prioridad al catálogo de platillos en tablet: compactar la configuración
   // (Mesa/Cliente y Comensales) para que el menú se lleve la mayor parte del alto.
-  .pos-compact-header-card { padding: 0.55rem 0.9rem !important; }
+  .pos-compact-header-card { padding: 0.4rem 0.8rem !important; }
   .pos-compact-header-card label { display: none !important; }
-  .pos-seats-tabs-card { padding: 0.6rem 0.9rem !important; }
+  .pos-seats-tabs-card { padding: 0.45rem 0.8rem !important; }
   .pos-seats-tabs-card > .flex.items-center.justify-between { margin-bottom: 0.4rem !important; }
   .pos-seats-tabs-card > .mt-2\.5 { margin-top: 0.4rem !important; padding-top: 0.4rem !important; }
 
