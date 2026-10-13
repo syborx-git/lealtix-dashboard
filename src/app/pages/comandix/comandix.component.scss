@@ -3232,6 +3232,18 @@
 
   .pos-categories-list { overflow-y: auto; min-height: 0; }
   .pos-catalog-card { min-height: 0; }
+
+  // Prioridad al catálogo de platillos en tablet: compactar la configuración
+  // (Mesa/Cliente y Comensales) para que el menú se lleve la mayor parte del alto.
+  .pos-compact-header-card { padding: 0.55rem 0.9rem !important; }
+  .pos-compact-header-card label { display: none !important; }
+  .pos-seats-tabs-card { padding: 0.6rem 0.9rem !important; }
+  .pos-seats-tabs-card > .flex.items-center.justify-between { margin-bottom: 0.4rem !important; }
+  .pos-seats-tabs-card > .mt-2\.5 { margin-top: 0.4rem !important; padding-top: 0.4rem !important; }
+
+  // Menú de platillos: menos relleno interno para mostrar más platillos.
+  .pos-catalog-card .pos-products-grid { padding: 0.75rem 1rem 1rem !important; }
+  .pos-catalog-card > .flex.items-center.justify-between { padding: 0.7rem 1rem 0.6rem !important; margin-bottom: 0 !important; }
 }
 
 // Scrollbars finas (look app nativa)
