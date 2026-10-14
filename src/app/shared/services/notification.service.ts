@@ -63,7 +63,9 @@ export class NotificationService {
     this.notifications.update((list) => [notif, ...list].slice(0, MAX_ITEMS));
     this.persist();
 
-    if (opts.toast !== false) {
+    // Por defecto NO se muestran mensajes emergentes (toasts): la notificación
+    // solo aparece en la campana de arriba. (Los toasts de error siguen aparte.)
+    if (opts.toast === true) {
       this.messageService.add({
         severity: notif.severity,
         summary: notif.title,
