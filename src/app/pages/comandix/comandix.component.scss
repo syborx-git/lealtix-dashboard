@@ -2122,6 +2122,39 @@
       background: var(--surface-ground);
     }
 
+    // Tarjetas del POS en oscuro: antes quedaban blancas (color fijo) y el texto
+    // claro se veía tenue. Ahora van oscuras como el resto del tema.
+    .pos-categories-rail,
+    .pos-catalog-card,
+    .pos-compact-header-card,
+    .pos-seats-tabs-card,
+    .ticket-receipt-card,
+    .dish-pos-card {
+      background: var(--surface-card) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .pos-categories-rail-title { color: #94a3b8 !important; }
+
+    .pos-category-pill:not(.active) {
+      background: rgba(255, 255, 255, 0.04) !important;
+      border-color: rgba(255, 255, 255, 0.1) !important;
+      color: #e6e8ef !important;
+    }
+
+    // Ticket: cabecera/pie e ítems también oscuros (quedaban blancos).
+    .ticket-receipt-header,
+    .ticket-receipt-bottom {
+      background: var(--surface-card) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .ticket-receipt-card [class*='bg-slate-'],
+    .ticket-receipt-card [class*='bg-white'],
+    .ticket-receipt-card [class*='bg-amber-'] {
+      background-color: rgba(255, 255, 255, 0.04) !important;
+    }
+
     @media (max-width: 768px) {
       .comandix-container {
         background: var(--surface-ground) !important;
