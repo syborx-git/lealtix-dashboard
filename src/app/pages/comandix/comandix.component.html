@@ -552,9 +552,9 @@
           <i class="pi pi-star-fill mr-1"></i> Nueva Orden
         </div>
 
-        <!-- Prórroga de edición -->
-        <div *ngIf="canEditOrder(order) && editCountdownLabel(order)" class="order-new-badge editable-badge">
-          <i class="pi pi-pencil mr-1"></i> {{ editCountdownLabel(order) }}
+        <!-- Editable en cualquier momento (mientras no esté pagada/cancelada) -->
+        <div *ngIf="canEditOrder(order)" class="order-new-badge editable-badge">
+          <i class="pi pi-pencil mr-1"></i> Editable
         </div>
 
         <!-- Cabecera de la tarjeta -->

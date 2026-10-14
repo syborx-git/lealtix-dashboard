@@ -443,11 +443,8 @@ configEditingItem: CartItem | null = null;
   private readonly NOTIFICATION_SOUND = 'assets/sounds/dragon-studio-correct-472358.mp3';
   private readonly ACTIVE_DASHBOARD_STATUSES: OrderStatus[] = ['PENDIENTE', 'CONFIRMADA', 'EN_PREPARACION', 'LISTO', 'PAGADA'];
 
-  /** Prórroga de edición de comandas enviadas (minutos) */
-  private readonly EDIT_WINDOW_MINUTES = 3;
-  /** Timestamp 'ahora' para refrescar el countdown de edición cada segundo */
-  nowTick = signal<number>(Date.now());
-  private readonly editableStates: OrderStatus[] = ['PENDIENTE', 'CONFIRMADA'];
+  /** La comanda siempre puede editarse mientras no esté pagada/cancelada. */
+  private readonly editableStates: OrderStatus[] = ['PENDIENTE', 'CONFIRMADA', 'EN_PREPARACION', 'LISTO'];
 
   private destroy$ = new Subject<void>();
 
@@ -1356,8 +1353,8 @@ configEditingItem: CartItem | null = null;
     if (!this.canEditOrder(order)) {
       this.messageService.add({
         severity: 'error',
-        summary: 'Prórroga vencida',
-        detail: 'La comanda se envió hace más de 3 minutos y ya no puede editarse',
+        summary: 'No se puede editar',
+        detail: 'Una comanda pagada o cancelada no puede editarse',
         life: 3000
       });
       return;
@@ -1416,49 +1413,25 @@ configEditingItem: CartItem | null = null;
     return diffMs < 2 * 60 * 1000;
   }
 
-  /** Timer de 1s para el countdown de edición: solo corre si hay órdenes editables (ahorra CPU). */
+  /** Timer de edición: ya no hay prórroga, se limpia por compatibilidad. */
   private startEditCountdown(): void {
     this.syncEditCountdown();
   }
 
   private syncEditCountdown(): void {
-    const needs = this.pendingOrders().some((o) => this.canEditOrder(o));
-    if (needs && !this.editCountdownTimer) {
-      this.nowTick.set(Date.now());
-      this.editCountdownTimer = setInterval(() => this.nowTick.set(Date.now()), 1000);
-    } else if (!needs && this.editCountdownTimer) {
+    if (this.editCountdownTimer) {
       clearInterval(this.editCountdownTimer);
       this.editCountdownTimer = null;
     }
   }
 
-  /** True si la comanda aún puede editarse (estado pendiente/confirmada y dentro de la prórroga) */
+  /**
+   * La comanda puede editarse en cualquier momento mientras NO esté pagada ni
+   * cancelada (permite agregar platillos si llega otro comensal o piden más).
+   */
   canEditOrder(order: PendingOrder): boolean {
     if (!order) return false;
-    if (!this.editableStates.includes(order.estado as OrderStatus)) return false;
-    if (!order.fechaCreacion) return false;
-    const created = new Date(order.fechaCreacion).getTime();
-    const now = this.nowTick();
-    const diffMs = now - created;
-    return diffMs >= 0 && diffMs < this.EDIT_WINDOW_MINUTES * 60 * 1000;
-  }
-
-  /** Segundos restantes de la prórroga para la orden (0 si venció) */
-  private getEditableRemainingSeconds(order: PendingOrder): number {
-    if (!order?.fechaCreacion) return 0;
-    const created = new Date(order.fechaCreacion).getTime();
-    const diffMs = this.nowTick() - created;
-    const remainingSec = Math.ceil((this.EDIT_WINDOW_MINUTES * 60 * 1000 - diffMs) / 1000);
-    return remainingSec > 0 ? remainingSec : 0;
-  }
-
-  /** Etiqueta "Editable por mm:ss" para la tarjeta de la comanda */
-  editCountdownLabel(order: PendingOrder): string {
-    const seconds = this.getEditableRemainingSeconds(order);
-    if (seconds <= 0) return '';
-    const mm = Math.floor(seconds / 60).toString().padStart(2, '0');
-    const ss = (seconds % 60).toString().padStart(2, '0');
-    return `Editable por ${mm}:${ss}`;
+    return this.editableStates.includes(order.estado as OrderStatus);
   }
 
   /** Nombre legible del cliente para mostrar en la tarjeta */
@@ -2539,8 +2512,8 @@ trackByProductId = (index: number, item: CartItem): string => {
         if (!this.canEditOrder(editingOrder)) {
           this.messageService.add({
             severity: 'error',
-            summary: 'Prórroga vencida',
-            detail: 'La comanda se envió hace más de 3 minutos y ya no puede editarse',
+            summary: 'No se puede editar',
+            detail: 'Una comanda pagada o cancelada no puede editarse',
             life: 3000
           });
           this.processingOrder.set(false);
