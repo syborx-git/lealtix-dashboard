@@ -2142,3 +2142,35 @@ body.modulo-fullscreen-active .app-content {
     white-space: nowrap;
   }
 }
+
+/* ============================================================================
+   MODO OSCURO GLOBAL — contraste de textos oscuros de Tailwind (slate/gray).
+   En oscuro, los textos oscuros quedaban casi invisibles sobre superficies
+   oscuras en TODO el sistema (facturación, reportes, clientes, etc.).
+   Se convierten a tonos claros.
+   ============================================================================ */
+:root[class*='app-dark'],
+.app-dark {
+  .text-slate-500,
+  .text-gray-500 { color: #cbd5e1 !important; }
+
+  .text-slate-600,
+  .text-gray-600 { color: #cbd5e1 !important; }
+
+  .text-slate-700,
+  .text-gray-700 { color: #e2e8f0 !important; }
+
+  .text-slate-800,
+  .text-gray-800 { color: #e6e8ef !important; }
+
+  .text-slate-900,
+  .text-gray-900 { color: #ffffff !important; }
+
+  // Fondos claros de Tailwind → superficies oscuras (tarjetas "blancas" que
+  // dejaban el texto claro ilegible).
+  .bg-white { background-color: var(--surface-card) !important; }
+  .bg-slate-50,
+  .bg-gray-50 { background-color: var(--surface-section) !important; }
+  .bg-slate-100,
+  .bg-gray-100 { background-color: rgba(255, 255, 255, 0.05) !important; }
+}
