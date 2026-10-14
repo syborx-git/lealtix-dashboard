@@ -2155,6 +2155,13 @@
       background-color: rgba(255, 255, 255, 0.04) !important;
     }
 
+    // Textos oscuros de Tailwind → claros en modo oscuro (precios, cantidades,
+    // nombres, etc. que antes quedaban casi invisibles sobre tarjetas oscuras).
+    .comandix-container .text-slate-600 { color: #cbd5e1 !important; }
+    .comandix-container .text-slate-700 { color: #e2e8f0 !important; }
+    .comandix-container .text-slate-800 { color: #e6e8ef !important; }
+    .comandix-container .text-slate-900 { color: #ffffff !important; }
+
     @media (max-width: 768px) {
       .comandix-container {
         background: var(--surface-ground) !important;
