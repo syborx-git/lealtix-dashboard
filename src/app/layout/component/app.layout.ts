@@ -215,7 +215,7 @@ export class AppLayout implements OnInit, OnDestroy {
                 severity: 'success',
                 route: '/dashboard/comandix'
             },
-            { sound: true, toast: true, browser: true }
+            { sound: true, browser: true }
         );
     }
 
@@ -237,7 +237,7 @@ export class AppLayout implements OnInit, OnDestroy {
                     severity: 'info',
                     route: '/dashboard/comandix'
                 },
-                { toast: true }
+                {  }
             );
         } else if (estado === 'LISTO' || estado === 'LISTA' || estado === 'READY') {
             this.notificationService.add(
@@ -250,7 +250,7 @@ export class AppLayout implements OnInit, OnDestroy {
                     severity: 'success',
                     route: '/dashboard/comandix'
                 },
-                { sound: true, toast: true, browser: true }
+                { sound: true, browser: true }
             );
         }
     }
@@ -277,7 +277,7 @@ export class AppLayout implements OnInit, OnDestroy {
                                 severity: 'error',
                                 route: '/dashboard/inventario-cocina'
                             },
-                            { dedupeKey: `stock-out-${id}`, toast: true, browser: true }
+                            { dedupeKey: `stock-out-${id}`, browser: true }
                         );
                     } else if (p?.lowStock) {
                         this.notificationService.add(
