@@ -1880,103 +1880,107 @@
     </ng-template>
   </p-dialog>
 
-  <!-- Modal de Detalle del Platillo (Inspirado en Card View moderna) -->
+  <!-- Modal de Detalle del Platillo (hero rediseñado) -->
   <div
     *ngIf="showProductDetailModal() && selectedProductDetail()"
-    class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300"
+    class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm dish-detail-overlay"
     (click)="closeProductDetail()"
   >
     <div
-      class="relative w-full max-w-[380px] bg-white rounded-[32px] p-4 shadow-2xl border border-slate-100 dish-detail-card"
+      class="dish-detail-card relative w-full bg-white rounded-[28px] p-3 md:p-4 shadow-2xl border border-slate-100"
       (click)="$event.stopPropagation()"
     >
-      <!-- Imagen con badges y botón de cierre -->
-      <div class="relative aspect-[4/3] w-full rounded-[24px] overflow-hidden bg-slate-100 shadow-inner">
-        <img
-          *ngIf="selectedProductDetail()?.imageUrl && selectedProductDetail()!.imageUrl!.trim()"
-          [src]="selectedProductDetail()!.imageUrl"
-          [alt]="selectedProductDetail()!.name"
-          class="w-full h-full object-cover"
-          (error)="onImageError($event)"
-        />
-        <div
-          *ngIf="!selectedProductDetail()?.imageUrl || !selectedProductDetail()!.imageUrl!.trim()"
-          class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400 gap-2"
-        >
-          <i class="pi pi-image text-5xl text-slate-300"></i>
-          <span class="text-xs font-semibold text-slate-400">Sin imagen registrada</span>
-        </div>
+      <!-- Botón cerrar -->
+      <button
+        type="button"
+        (click)="closeProductDetail()"
+        class="absolute top-3 right-3 md:top-4 md:right-4 z-20 w-10 h-10 rounded-full bg-white/85 hover:bg-white text-slate-700 flex items-center justify-center backdrop-blur-md transition-all cursor-pointer shadow-lg"
+        aria-label="Cerrar modal"
+      >
+        <i class="pi pi-times text-sm"></i>
+      </button>
 
-        <!-- Botón Cerrar flotante con blur -->
-        <button
-          type="button"
-          (click)="closeProductDetail()"
-          class="absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-md transition-all cursor-pointer shadow-md z-10"
-          aria-label="Cerrar modal"
-        >
-          <i class="pi pi-times text-xs"></i>
-        </button>
-
-        <!-- Badge de stock flotante superior izquierda -->
-        <span
-          *ngIf="getProductStockInfo(selectedProductDetail()!)"
-          class="absolute top-3.5 left-3.5 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-md shadow-xs"
-          [class.bg-emerald-500/90]="!isProductLowStock(selectedProductDetail()!) && !isProductCriticalStock(selectedProductDetail()!)"
-          [class.text-white]="true"
-          [class.bg-amber-500/90]="isProductLowStock(selectedProductDetail()!) && !isProductCriticalStock(selectedProductDetail()!)"
-          [class.bg-rose-500/90]="isProductCriticalStock(selectedProductDetail()!)"
-        >
-          {{ getProductStockText(selectedProductDetail()!) }}
-        </span>
-      </div>
-
-      <!-- Contenido / Información del platillo -->
-      <div class="px-2 pt-4 pb-2">
-        <!-- Fila de Título y Precio -->
-        <div class="flex items-start justify-between gap-3">
-          <h3 class="text-xl font-bold text-slate-900 leading-snug tracking-tight">
-            {{ selectedProductDetail()?.name }}
-          </h3>
-          <div class="shrink-0 bg-[#2b211e] text-white px-3.5 py-1.5 rounded-full text-base font-black tracking-wide shadow-xs">
-            ${{ selectedProductDetail()?.price | number:'1.2-2' }}
+      <div class="dish-detail-grid">
+        <!-- Imagen (hero) -->
+        <div class="dish-detail-media relative w-full rounded-[22px] overflow-hidden bg-slate-100 shadow-inner">
+          <img
+            *ngIf="selectedProductDetail()?.imageUrl && selectedProductDetail()!.imageUrl!.trim()"
+            [src]="selectedProductDetail()!.imageUrl"
+            [alt]="selectedProductDetail()!.name"
+            class="dish-detail-img"
+            (error)="onImageError($event)"
+          />
+          <div
+            *ngIf="!selectedProductDetail()?.imageUrl || !selectedProductDetail()!.imageUrl!.trim()"
+            class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400 gap-2"
+          >
+            <i class="pi pi-image text-5xl text-slate-300"></i>
+            <span class="text-xs font-semibold text-slate-400">Sin imagen registrada</span>
           </div>
-        </div>
 
-        <!-- Descripción del platillo -->
-        <p class="text-slate-500 text-xs sm:text-sm leading-relaxed mt-2.5 min-h-[2.5rem]">
-          {{ selectedProductDetail()?.description || 'Platillo preparado con ingredientes frescos y recetas tradicionales de la más alta calidad.' }}
-        </p>
+          <div class="dish-detail-media-grad"></div>
 
-        <!-- Badges / Etiquetas de información -->
-        <div class="flex flex-wrap items-center gap-2 mt-4 pt-1">
-          <span *ngIf="getProductCategoryName(selectedProductDetail())" class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-1.5">
-            <i class="pi pi-tag text-[10px] text-purple-600"></i>
-            {{ getProductCategoryName(selectedProductDetail()) }}
-          </span>
-          <span *ngIf="getProductStockInfo(selectedProductDetail()!)" class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-1.5">
-            <i class="pi pi-box text-[10px] text-slate-500"></i>
+          <!-- Badge de stock flotante -->
+          <span
+            *ngIf="getProductStockInfo(selectedProductDetail()!)"
+            class="absolute top-3.5 left-3.5 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-md shadow-sm"
+            [class.bg-emerald-500/90]="!isProductLowStock(selectedProductDetail()!) && !isProductCriticalStock(selectedProductDetail()!)"
+            [class.text-white]="true"
+            [class.bg-amber-500/90]="isProductLowStock(selectedProductDetail()!) && !isProductCriticalStock(selectedProductDetail()!)"
+            [class.bg-rose-500/90]="isProductCriticalStock(selectedProductDetail()!)"
+          >
             {{ getProductStockText(selectedProductDetail()!) }}
           </span>
-          <span *ngIf="selectedProductDetail()?.recipes && selectedProductDetail()!.recipes!.length > 0" class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-1.5">
-            <i class="pi pi-sliders-h text-[10px] text-slate-500"></i>
-            {{ selectedProductDetail()!.recipes!.length }} ingredientes
-          </span>
-          <span *ngIf="selectedProductDetail()?.additionals && selectedProductDetail()!.additionals!.length > 0" class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-1.5">
-            <i class="pi pi-plus-circle text-[10px] text-purple-600"></i>
-            {{ selectedProductDetail()!.additionals!.length }} adicionales
-          </span>
         </div>
 
-        <!-- Botón de acción Agregar a la comanda -->
-        <div class="mt-6 pt-1">
-          <button
-            type="button"
-            (click)="addProductFromDetail(selectedProductDetail()!)"
-            class="w-full bg-[#2b211e] hover:bg-[#1a1412] active:scale-[0.98] text-white font-bold py-3.5 px-6 rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-md hover:shadow-lg cursor-pointer text-sm sm:text-base"
+        <!-- Información del platillo -->
+        <div class="dish-detail-info flex flex-col px-1 md:px-1.5 pt-4 md:pt-1 pb-2">
+          <span
+            *ngIf="getProductCategoryName(selectedProductDetail())"
+            class="inline-flex w-fit items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-purple-700 bg-purple-50 border border-purple-100 px-3 py-1 rounded-full"
           >
-            <i class="pi pi-shopping-cart text-sm"></i>
-            <span>Agregar a la comanda</span>
-          </button>
+            <i class="pi pi-tag text-[10px]"></i>{{ getProductCategoryName(selectedProductDetail()) }}
+          </span>
+
+          <h3 class="dish-detail-name text-2xl md:text-[28px] font-extrabold text-slate-900 leading-tight tracking-tight mt-3">
+            {{ selectedProductDetail()?.name }}
+          </h3>
+
+          <div class="dish-detail-price mt-3 flex items-baseline">
+            <span class="text-[32px] font-black">${{ selectedProductDetail()?.price | number:'1.2-2' }}</span>
+          </div>
+
+          <p class="text-slate-500 text-sm leading-relaxed mt-3">
+            {{ selectedProductDetail()?.description || 'Platillo preparado con ingredientes frescos y recetas tradicionales de la más alta calidad.' }}
+          </p>
+
+          <!-- Etiquetas -->
+          <div class="flex flex-wrap items-center gap-2 mt-4">
+            <span *ngIf="getProductStockInfo(selectedProductDetail()!)" class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-1.5">
+              <i class="pi pi-box text-[10px] text-slate-500"></i>
+              {{ getProductStockText(selectedProductDetail()!) }}
+            </span>
+            <span *ngIf="selectedProductDetail()?.recipes && selectedProductDetail()!.recipes!.length > 0" class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-1.5">
+              <i class="pi pi-sliders-h text-[10px] text-slate-500"></i>
+              {{ selectedProductDetail()!.recipes!.length }} ingredientes
+            </span>
+            <span *ngIf="selectedProductDetail()?.additionals && selectedProductDetail()!.additionals!.length > 0" class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-1.5">
+              <i class="pi pi-plus-circle text-[10px] text-purple-600"></i>
+              {{ selectedProductDetail()!.additionals!.length }} adicionales
+            </span>
+          </div>
+
+          <!-- Botón de acción -->
+          <div class="mt-6 md:mt-auto pt-3">
+            <button
+              type="button"
+              (click)="addProductFromDetail(selectedProductDetail()!)"
+              class="dish-detail-cta w-full active:scale-[0.99] text-white font-bold py-3.5 px-6 rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg cursor-pointer text-sm sm:text-base"
+            >
+              <i class="pi pi-shopping-cart text-sm"></i>
+              <span>Agregar a la comanda</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
