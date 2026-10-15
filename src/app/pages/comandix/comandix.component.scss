@@ -2386,6 +2386,71 @@
       background: rgba(255, 255, 255, 0.03);
       border-color: rgba(218, 159, 91, 0.2);
     }
+
+    /* --- Tarjetas de comanda (Activas / Cerradas / Canceladas) --- */
+    .order-card-id,
+    .order-card-client,
+    .order-card-id *,
+    .order-card-client * {
+      color: var(--text-color) !important;
+    }
+    .order-card-items-count,
+    .order-card-items-count *,
+    .order-card-total,
+    .order-card-total * {
+      color: var(--text-color-secondary) !important;
+    }
+    .orders-empty-state h3 { color: var(--text-color) !important; }
+    .orders-empty-state p { color: var(--text-color-secondary) !important; }
+
+    /* ==================== REPORTE GENERAL DE VENTAS (oscuro) ==================== */
+    .report-view-container {
+      .report-header-card,
+      .report-kpi-card,
+      .search-input-wrapper,
+      .report-table-card {
+        background: var(--surface-card) !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+      }
+
+      .report-filter-pill {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-color: rgba(255, 255, 255, 0.12) !important;
+        color: #e6e8ef !important;
+      }
+      .report-filter-pill:hover { background: rgba(255, 255, 255, 0.1) !important; }
+      .report-filter-pill.active {
+        background: #4f46e5 !important;
+        border-color: #4f46e5 !important;
+        color: #ffffff !important;
+      }
+
+      .kpi-label { color: #a9b4c7 !important; }
+      .report-search-field { color: var(--text-color) !important; background: transparent !important; }
+
+      .minimal-report-table {
+        th {
+          background: rgba(255, 255, 255, 0.04) !important;
+          color: #cbd5e1 !important;
+          border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        td {
+          color: var(--text-color) !important;
+          border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+        }
+        tr:hover td { background: rgba(255, 255, 255, 0.04) !important; }
+      }
+
+      .report-client-registered { color: var(--text-color) !important; }
+      .report-client-unregistered {
+        background: rgba(255, 255, 255, 0.08) !important;
+        color: #cbd5e1 !important;
+      }
+      .subcomanda-badge {
+        background: rgba(99, 102, 241, 0.18) !important;
+        color: #a5b4fc !important;
+      }
+    }
   }
 }
 
@@ -3084,7 +3149,7 @@
 }
 
 .orders-badge {
-  background: #ef4444;
+  background: #dc2626;
   color: #fff;
   border-radius: 999px;
   padding: 0 0.4rem;

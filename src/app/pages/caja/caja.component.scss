@@ -388,3 +388,48 @@
   scrollbar-width: thin;
 }
 
+/* ============================================================================
+   MODO OSCURO — Caja (superficies y textos legibles)
+   ============================================================================ */
+::ng-deep {
+:root[class*='app-dark'],
+.app-dark {
+  .caja-page { background: var(--surface-ground) !important; }
+
+  .caja-ventanas {
+    background: var(--surface-card) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+  .caja-ventana { color: #cbd5e1 !important; }
+  .caja-ventana:hover { background: rgba(255, 255, 255, 0.06) !important; color: #c7d2fe !important; }
+  .caja-ventana.active { color: #ffffff !important; background: #7c3aed !important; }
+  .caja-ventana-badge { background: rgba(124, 58, 237, 0.25) !important; color: #ddd6fe !important; }
+  .caja-ventana.active .caja-ventana-badge { background: rgba(0, 0, 0, 0.3) !important; color: #ffffff !important; }
+
+  .caja-tabs { border-bottom-color: rgba(255, 255, 255, 0.08) !important; }
+  .caja-tab { color: #cbd5e1 !important; }
+  .caja-tab:hover { background: rgba(255, 255, 255, 0.06) !important; color: #c7d2fe !important; }
+  .caja-tab.active { color: #c4b5fd !important; background: rgba(124, 58, 237, 0.18) !important; border-color: rgba(124, 58, 237, 0.4) !important; }
+  .caja-tab-badge { background: rgba(255, 255, 255, 0.1) !important; color: #e2e8f0 !important; }
+  .caja-tab.active .caja-tab-badge { background: #7c3aed !important; color: #ffffff !important; }
+  .caja-tab-note { color: #cbd5e1 !important; }
+
+  .caja-search {
+    background: var(--surface-card) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: var(--text-color) !important;
+  }
+  .caja-search::placeholder { color: #94a3b8 !important; }
+
+  .btn-refresh {
+    background: var(--surface-card) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #cbd5e1 !important;
+  }
+  .btn-refresh:hover:not(:disabled) { background: rgba(124, 58, 237, 0.18) !important; color: #c4b5fd !important; }
+
+  .caja-empty { color: #cbd5e1 !important; }
+}
+}
+
+

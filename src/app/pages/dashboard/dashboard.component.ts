@@ -305,6 +305,38 @@ export class DashboardComponent implements OnInit {
     const tickColor = dark ? '#9aa3b5' : '#64748b';
     const legendColor = dark ? '#cbd2e0' : '#334155';
 
+    // Gráfico principal (línea) con colores según tema
+    this.proTendLineOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          align: 'end',
+          labels: {
+            usePointStyle: true,
+            pointStyle: 'circle',
+            boxWidth: 8,
+            boxHeight: 8,
+            padding: 16,
+            font: { size: 12, weight: '600' },
+            color: legendColor
+          }
+        },
+        tooltip: {
+          backgroundColor: dark ? 'rgba(20,20,28,0.95)' : 'rgba(15,23,42,0.9)',
+          padding: 12,
+          cornerRadius: 8
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 }, color: tickColor } },
+        y: { min: 0, max: 100, grid: { color: gridColor }, ticks: { stepSize: 20, font: { size: 11 }, color: tickColor } }
+      }
+    };
+
     const baseOptions = {
       responsive: true,
       maintainAspectRatio: false,
