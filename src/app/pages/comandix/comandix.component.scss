@@ -2136,6 +2136,15 @@
 
     .pos-categories-rail-title { color: #94a3b8 !important; }
 
+    // Botón "ver detalle" del platillo: de gris claro a oscuro translúcido
+    .pos-catalog-card .dish-pos-card button[aria-label^='Ver detalles'] {
+      background: rgba(255, 255, 255, 0.08) !important;
+      color: #cbd5e1 !important;
+    }
+    .pos-catalog-card .dish-pos-card .aspect-video {
+      background: rgba(255, 255, 255, 0.04) !important;
+    }
+
     .pos-category-pill:not(.active) {
       background: rgba(255, 255, 255, 0.04) !important;
       border-color: rgba(255, 255, 255, 0.1) !important;
@@ -3233,8 +3242,8 @@
     width: 2.75rem !important;
     height: 2.75rem !important;
     border-radius: 16px !important;
-    background: #f1f5f9 !important;
-    color: #64748b !important;
+    background: var(--surface-section, #f1f5f9) !important;
+    color: var(--text-color-secondary, #64748b) !important;
 
     i { font-size: 1rem; }
   }

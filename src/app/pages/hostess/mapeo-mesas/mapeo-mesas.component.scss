@@ -718,3 +718,34 @@
         font-size: 0.78rem;
     }
 }
+
+/* ============================================================================
+   MODO OSCURO — Mapeo de Mesas (plano y panel de reservaciones)
+   ============================================================================ */
+::ng-deep {
+:root[class*='app-dark'],
+.app-dark {
+  .plano-wrap {
+    background: var(--surface-ground) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+  .workspace {
+    background-color: var(--surface-ground) !important;
+    background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.06) 1px, transparent 0) !important;
+  }
+  .workspace-grid {
+    background-image:
+      linear-gradient(rgba(129, 140, 248, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(129, 140, 248, 0.1) 1px, transparent 1px) !important;
+  }
+  .reservas-panel {
+    background: var(--surface-card) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+  .reservas-panel-head { border-bottom-color: rgba(255, 255, 255, 0.08) !important; }
+  .reservas-panel-count {
+    background: rgba(16, 185, 129, 0.25) !important;
+    color: #6ee7b7 !important;
+  }
+}
+}

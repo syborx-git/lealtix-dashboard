@@ -3301,6 +3301,38 @@
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 14px 34px -28px rgba(0, 0, 0, 0.7) !important;
   }
 
+  /* El contenedor del dashboard estaba forzado a blanco con !important */
+  .dashboard-container,
+  .dashboard-content-wrapper {
+    background-color: var(--surface-ground) !important;
+    background-image: none !important;
+  }
+
+  /* Fichas decorativas de iconos (pastel) → tenues acordes al tema oscuro */
+  .kpi-icon-circle.yellow { background-color: rgba(245, 158, 11, 0.22) !important; }
+  .kpi-icon-circle.green { background-color: rgba(16, 185, 129, 0.22) !important; }
+  .kpi-icon-circle.purple { background-color: rgba(139, 92, 246, 0.22) !important; }
+  .kpi-icon-circle.orange { background-color: rgba(249, 115, 22, 0.22) !important; }
+  .icon-box-kpi, .icon-box-kpi.green, .icon-box-kpi.purple, .icon-box-kpi.orange,
+  .sparkline-box, .sparkline-box.green, .sparkline-box.purple, .sparkline-box.orange {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+  }
+  /* Iconos/emojis de las fichas: color claro (no afecta a los emojis) */
+  .kpi-icon-circle span,
+  .icon-box-kpi span,
+  .sparkline-box span { color: #e6e8ef !important; }
+
+  /* Botón del banner promocional: de blanco sólido a "glass" acorde al tema */
+  .promo-btn {
+    background-color: rgba(255, 255, 255, 0.16) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    box-shadow: none !important;
+  }
+  .promo-btn:hover {
+    background-color: rgba(255, 255, 255, 0.26) !important;
+  }
+
   /* Textos principales */
   .kpi-value,
   .sub-kpi-value,
