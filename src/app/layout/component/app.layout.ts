@@ -103,6 +103,7 @@ export class AppLayout implements OnInit, OnDestroy {
     private stockTimer: ReturnType<typeof setInterval> | null = null;
 
     readonly isFullBleed = signal(false);
+    private prevSidebarCollapsed: boolean | null = null;
     private readonly FULL_BLEED_ROUTES = ['/dashboard/comandix', '/dashboard/cocina', '/dashboard/barra'];
     private readonly STOCK_POLL_MS = 5 * 60 * 1000;
 
@@ -126,7 +127,22 @@ export class AppLayout implements OnInit, OnDestroy {
         const isOperationalRoute = this.FULL_BLEED_ROUTES.some((r) => clean.startsWith(r));
         // Pantalla completa solo en dispositivos táctiles (tablet). En computadora
         // con mouse se conserva el layout normal con scroll de página.
-        this.isFullBleed.set(isOperationalRoute && this.isTouchDevice());
+        const fullBleed = isOperationalRoute && this.isTouchDevice();
+        this.isFullBleed.set(fullBleed);
+
+        // En tablet, en pantallas operativas (POS/cocina/barra) se colapsa el menú
+        // lateral a iconos para dar más espacio a los platillos. Se restaura al salir.
+        if (fullBleed) {
+            if (this.prevSidebarCollapsed === null) {
+                this.prevSidebarCollapsed = this.layoutService.isSidebarCollapsed();
+            }
+            if (!this.layoutService.isSidebarCollapsed()) {
+                this.layoutService.setSidebarCollapsed(true);
+            }
+        } else if (this.prevSidebarCollapsed !== null) {
+            this.layoutService.setSidebarCollapsed(this.prevSidebarCollapsed);
+            this.prevSidebarCollapsed = null;
+        }
     }
 
     private isTouchDevice(): boolean {

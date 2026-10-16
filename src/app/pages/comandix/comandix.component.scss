@@ -18,7 +18,7 @@
   display: grid;
   // Catálogo flexible + comanda de ancho acotado: se aprovecha el horizontal
   // en tablet landscape en lugar de encoger la comanda proporcionalmente.
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
   align-items: start;
   gap: 1.25rem;
   width: 100%;
@@ -229,7 +229,7 @@
 @container comandix (min-width: 900px) {
   .pos-left-column {
     display: grid;
-    grid-template-columns: 165px minmax(0, 1fr);
+    grid-template-columns: 132px minmax(0, 1fr);
     grid-template-areas:
       'rail header'
       'rail seats'
@@ -278,15 +278,15 @@
   grid-template-columns: 1fr;
 }
 
-@container (min-width: 380px) {
+@container (min-width: 340px) {
   .pos-products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-@container (min-width: 640px) {
+@container (min-width: 720px) {
   .pos-products-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-@container (min-width: 940px) {
+@container (min-width: 1120px) {
   .pos-products-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
@@ -3173,9 +3173,9 @@
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 14px 34px -26px rgba(16, 24, 40, 0.5) !important;
 }
 
-// --- Tarjetas de platillo tipo POS ---
+// --- Tarjetas de platillo tipo POS (grandes para elegir rápido en tablet) ---
 .pos-catalog-card .dish-pos-card {
-  border-radius: 18px;
+  border-radius: 20px;
   border: 1px solid #e9edf5;
   background: #fff;
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
@@ -3187,30 +3187,61 @@
     box-shadow: 0 22px 44px -22px rgba(79, 70, 229, 0.55);
   }
 
-  h4 { font-weight: 700; }
+  // Imagen más alta: el platillo se ve grande
+  .aspect-video { aspect-ratio: 4 / 3 !important; }
 
-  // Botón "+" grande y con marca
+  // Nombre del platillo (hasta 2 líneas, alto estable para que las tarjetas alineen)
+  h4 {
+    font-weight: 800 !important;
+    font-size: 1.05rem !important;
+    line-height: 1.25 !important;
+    -webkit-line-clamp: 2 !important;
+    line-clamp: 2 !important;
+    min-height: 2.5em;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  // Precio más grande
+  span.text-base { font-size: 1.22rem !important; }
+
+  // Badge de stock más visible
+  .absolute.top-2.right-2 {
+    font-size: 0.78rem !important;
+    padding: 0.24rem 0.66rem !important;
+    border-radius: 999px !important;
+  }
+
+  // Cuerpo con algo más de aire
+  > div:last-child { padding: 0.95rem 1.05rem 1.05rem !important; }
+
+  // Botones grandes (tap fácil en tablet)
   button[aria-label^='Agregar'] {
-    width: 2.15rem !important;
-    height: 2.15rem !important;
-    border-radius: 14px !important;
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+    border-radius: 16px !important;
     background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
     color: #fff !important;
     box-shadow: 0 10px 20px -10px rgba(79, 70, 229, 0.85) !important;
 
-    i { font-size: 0.85rem; }
+    i { font-size: 1.05rem; }
     &:hover { filter: brightness(1.06); transform: translateY(-1px); }
   }
 
-  // Botón "ver detalle" más discreto
   button[aria-label^='Ver detalles'] {
-    width: 2.15rem !important;
-    height: 2.15rem !important;
-    border-radius: 14px !important;
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+    border-radius: 16px !important;
     background: #f1f5f9 !important;
     color: #64748b !important;
+
+    i { font-size: 1rem; }
   }
 }
+
+// Rejilla del catálogo: un poco más de aire entre tarjetas
+.pos-catalog-card .pos-products-grid { gap: 1.05rem !important; }
 
 // --- Comanda / Ticket ---
 .ticket-receipt-card {
