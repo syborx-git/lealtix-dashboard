@@ -1472,9 +1472,9 @@
             
             <!-- GRUPO 1: ACCIONES SECUNDARIAS / DESTRUCTIVAS (IZQUIERDA) -->
             <div class="flex items-center gap-2 flex-wrap">
-              <!-- Rechazar (Rojo contorno - solo si PENDIENTE) -->
+              <!-- Rechazar (Rojo contorno - solo ADMIN y si PENDIENTE) -->
               <button
-                *ngIf="order.estado === 'PENDIENTE'"
+                *ngIf="order.estado === 'PENDIENTE' && isAdmin"
                 type="button"
                 (click)="rechazarOrden(order)"
                 [disabled]="processingOrderAction()"

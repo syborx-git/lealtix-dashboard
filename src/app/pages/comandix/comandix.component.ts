@@ -442,6 +442,9 @@ configEditingItem: CartItem | null = null;
   private readonly POLLING_INTERVAL_MS = 6_000;
   private readonly NOTIFICATION_SOUND = 'assets/sounds/dragon-studio-correct-472358.mp3';
   private readonly ACTIVE_DASHBOARD_STATUSES: OrderStatus[] = ['PENDIENTE', 'CONFIRMADA', 'EN_PREPARACION', 'LISTO', 'PAGADA'];
+  // Estados que se consultan por polling. Incluye CANCELADA para que las
+  // comandas canceladas aparezcan en su pestaña (no solo las activas).
+  private readonly POLL_STATUSES: OrderStatus[] = ['PENDIENTE', 'CONFIRMADA', 'EN_PREPARACION', 'LISTO', 'PAGADA', 'CANCELADA'];
 
   /** La comanda siempre puede editarse mientras no esté pagada/cancelada. */
   private readonly editableStates: OrderStatus[] = ['PENDIENTE', 'CONFIRMADA', 'EN_PREPARACION', 'LISTO'];
@@ -859,7 +862,7 @@ configEditingItem: CartItem | null = null;
     try {
       console.log('[Comandix] 🔄 Consultando órdenes activas...');
       const responses = await Promise.all(
-        this.ACTIVE_DASHBOARD_STATUSES.map((status) =>
+        this.POLL_STATUSES.map((status) =>
           firstValueFrom(this.orderService.getOrdersByTenant(this.tenantId, status))
         )
       );
@@ -1425,6 +1428,11 @@ configEditingItem: CartItem | null = null;
     }
   }
 
+  /** Solo el ADMIN puede cancelar/rechazar comandas (anti-robo). */
+  get isAdmin(): boolean {
+    return this.authService.getUserRole() === 'ADMIN';
+  }
+
   /**
    * La comanda puede editarse en cualquier momento mientras NO esté pagada ni
    * cancelada (permite agregar platillos si llega otro comensal o piden más).
@@ -1641,7 +1649,8 @@ configEditingItem: CartItem | null = null;
         life: 3000
       });
 
-      this.removeOrderFromList(order.id);
+      // La comanda cancelada debe pasar a la pestaña "Canceladas" (no desaparecer).
+      this.patchOrderStatus(order.id, 'CANCELADA' as OrderStatus);
       this.showCancelOrderDialog.set(false);
       this.selectedOrderForCancellation.set(null);
       this.closeOrderDetail();
