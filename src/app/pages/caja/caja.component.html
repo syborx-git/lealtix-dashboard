@@ -218,7 +218,8 @@
                 <button
                   type="button"
                   class="ml-auto px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black shadow-xs cursor-pointer flex items-center gap-1.5"
-                  (click)="abrirModalCobro(o)"
+                  (click)="clickMarcarPagada(o)"
+                  title="Imprime ticket para la mesa y abre ventana de cobro"
                 >
                   <i class="pi pi-check-circle"></i>
                   <span>Marcar pagada</span>
@@ -1017,38 +1018,53 @@
   <p-dialog
     [(visible)]="modalTicketVisible"
     [modal]="true"
-    [header]="'Ticket Pre-Cuenta (En Mesa)'"
-    [style]="{ width: '100%', maxWidth: '420px' }"
+    [header]="'Ticket Térmico (58mm)'"
+    [style]="{ width: '100%', maxWidth: '380px' }"
   >
-    <div *ngIf="ticketActual() as t" class="ticket-thermal-preview bg-white p-4 rounded-xl border border-dashed border-slate-300 font-mono text-xs text-slate-800 space-y-3">
-      <div class="text-center pb-2 border-b border-dashed border-slate-300">
-        <h3 class="font-extrabold text-sm m-0">PRE-CUENTA</h3>
-        <p class="text-[11px] text-slate-500 m-0">Comanda #{{ t.folioComanda }}</p>
-        <p class="text-[11px] text-slate-500 m-0">{{ t.mesaNombre }} · {{ t.meseroNombre }}</p>
+    <div *ngIf="ticketActual() as t" class="ticket-thermal-preview bg-white p-3 rounded-lg border border-dashed border-black font-mono text-[11px] text-black space-y-2">
+      <!-- Encabezado del negocio -->
+      <div class="text-center pb-2 border-b border-dashed border-black">
+        <h3 class="font-black text-xs uppercase m-0 tracking-wider">{{ businessName() }}</h3>
+        <p *ngIf="businessAddress()" class="text-[10px] text-black font-semibold m-0 uppercase">{{ businessAddress() }}</p>
+        <p *ngIf="businessPhone()" class="text-[10px] text-black font-semibold m-0">TEL: {{ businessPhone() }}</p>
+        <div class="mt-1 pt-1 border-t border-dotted border-black">
+          <p class="font-extrabold text-[12px] m-0">{{ t.estado === 'PAGADA' ? 'COMPROBANTE DE PAGO' : 'TICKET DE CONSUMO (PRE-CUENTA)' }}</p>
+          <p class="text-[10px] m-0 font-bold">FOLIO: #{{ t.folioComanda }}</p>
+          <p class="text-[10px] m-0 font-bold">MESA: {{ t.mesaNombre }} · {{ t.meseroNombre }}</p>
+          <p *ngIf="t.clienteNombre" class="text-[10px] m-0 font-bold">CLIENTE: {{ t.clienteNombre }}</p>
+        </div>
       </div>
 
       <!-- Items -->
-      <div class="space-y-1.5 py-1 border-b border-dashed border-slate-300">
-        <div *ngFor="let it of t.items" class="flex justify-between">
-          <span>{{ it.cantidad }}x {{ it.nombreProducto }}</span>
-          <strong>${{ it.totalLinea | number:'1.2-2' }}</strong>
+      <div class="space-y-1 py-1 border-b border-dashed border-black">
+        <div *ngFor="let it of t.items" class="flex justify-between items-start text-[11px] leading-tight">
+          <span class="font-bold flex-1 pr-1">{{ it.cantidad }}x {{ it.nombreProducto }}</span>
+          <strong class="font-black">${{ it.totalLinea | number:'1.2-2' }}</strong>
         </div>
       </div>
 
       <!-- Totales -->
-      <div class="space-y-1 pt-1 text-right">
-        <div class="flex justify-between font-bold text-sm">
+      <div class="space-y-1 pt-1 text-right text-black">
+        <div *ngIf="t.descuento && t.descuento > 0" class="flex justify-between text-[11px] font-bold">
+          <span>DESCUENTO:</span>
+          <span>-${{ t.descuento | number:'1.2-2' }}</span>
+        </div>
+        <div class="flex justify-between font-black text-sm border-t border-black pt-1">
           <span>TOTAL:</span>
           <span>${{ t.total | number:'1.2-2' }}</span>
         </div>
       </div>
 
-      <!-- Propinas Sugeridas -->
-      <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-[11px] space-y-1 mt-3">
-        <span class="font-bold text-slate-600 block text-center uppercase tracking-wider text-[10px]">Propina Sugerida</span>
+      <!-- Propinas Sugeridas o Comprobante -->
+      <div *ngIf="t.estado !== 'PAGADA'" class="bg-gray-100 p-2 rounded border border-dashed border-black text-[10px] space-y-1 mt-2 font-bold text-black">
+        <span class="block text-center uppercase tracking-wider text-[10px] font-black">Propina Sugerida (Opcional)</span>
         <div class="flex justify-between"><span>10%:</span> <strong>${{ t.propinaSugerida10 | number:'1.2-2' }}</strong></div>
         <div class="flex justify-between"><span>15%:</span> <strong>${{ t.propinaSugerida15 | number:'1.2-2' }}</strong></div>
         <div class="flex justify-between"><span>20%:</span> <strong>${{ t.propinaSugerida20 | number:'1.2-2' }}</strong></div>
+      </div>
+      <div *ngIf="t.estado === 'PAGADA'" class="bg-gray-100 p-2 rounded border border-dashed border-black text-center text-[10px] font-bold uppercase mt-2">
+        <span>¡GRACIAS POR SU PREFERENCIA!</span>
+        <p *ngIf="t.metodoPago" class="m-0 mt-0.5 text-[9px]">PAGADO CON: {{ t.metodoPago }}</p>
       </div>
     </div>
 
@@ -1436,7 +1452,7 @@
             type="button"
             *ngIf="selectedOrderDetalle() as od"
             [disabled]="od.estado === 'PAGADA' || od.estado === 'CANCELADA'"
-            (click)="cerrarDetalleOrden(); abrirModalCobro(od)"
+            (click)="cerrarDetalleOrden(); clickMarcarPagada(od)"
             class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
           >
             <i class="pi pi-check-circle"></i>

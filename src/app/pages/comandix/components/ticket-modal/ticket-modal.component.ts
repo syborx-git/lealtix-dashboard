@@ -40,34 +40,62 @@ export class TicketModalComponent {
           <meta charset="utf-8">
           <title>Ticket #${this.order?.id ? this.order.id.slice(0, 8).toUpperCase() : ''}</title>
           <style>
-            @page { size: 80mm auto; margin: 0; }
-            body {
-              font-family: 'Courier New', Courier, monospace;
-              width: 72mm;
+            @page {
+              size: 58mm auto;
+              margin: 0;
+            }
+            * {
+              box-sizing: border-box;
+              margin: 0;
+              padding: 0;
+            }
+            html, body {
+              width: 58mm;
+              margin: 0;
+              padding: 0;
+              background: #ffffff;
+              color: #000000;
+              font-family: 'Courier New', Courier, 'Lucida Console', Monaco, monospace;
+              font-size: 11px;
+              line-height: 1.25;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+              -webkit-font-smoothing: none;
+            }
+            .ticket-container {
+              width: 48mm;
+              max-width: 48mm;
+              min-width: 48mm;
               margin: 0 auto;
-              padding: 10px 0;
-              font-size: 12px;
-              color: #000;
-              line-height: 1.35;
+              padding: 2mm 0 14mm 0;
+              box-sizing: border-box;
               text-align: center;
             }
-            .ticket-business { font-size: 15px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; }
-            .ticket-line { font-size: 11px; }
-            .ticket-sep { border-top: 1px dashed #000; margin: 6px 0; }
-            .ticket-meta, .ticket-items, .ticket-totals { text-align: left; }
-            .ticket-item { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
-            .ticket-item-name { flex: 1; word-break: break-word; }
-            .ticket-total-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
-            .ticket-total-final { font-weight: 900; font-size: 14px; margin-top: 4px; }
+            .ticket-business { font-size: 13.5px; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1.2; margin-bottom: 2px; }
+            .ticket-line { font-size: 10px; font-weight: 700; line-height: 1.25; }
+            .ticket-type { font-size: 11px; font-weight: 900; text-transform: uppercase; margin-top: 3px; letter-spacing: 1px; }
+            .ticket-sep { border-bottom: 1px dashed #000000; margin: 5px 0; width: 100%; }
+            .ticket-meta { text-align: left; font-size: 10.5px; font-weight: 700; line-height: 1.35; }
+            .ticket-meta-row { display: flex; justify-content: space-between; gap: 2px; }
+            .ticket-items { text-align: left; }
+            .ticket-item { display: flex; justify-content: space-between; gap: 4px; margin-bottom: 3px; font-size: 10.5px; }
+            .ticket-item-name { flex: 1; word-break: break-word; font-weight: 700; }
+            .ticket-item-tag { font-size: 9.5px; font-weight: 900; color: #000000; }
+            .ticket-item-price { text-align: right; font-weight: 900; white-space: nowrap; }
+            .ticket-totals { text-align: left; font-size: 11px; }
+            .ticket-total-row { display: flex; justify-content: space-between; margin-bottom: 2px; font-weight: 700; }
+            .ticket-total-final { font-weight: 900; font-size: 15px; border-top: 1px dashed #000000; border-bottom: 1px dashed #000000; padding: 4px 0; margin: 4px 0; }
             .ticket-qr-section { margin-top: 6px; text-align: center; }
-            .ticket-qr-label { font-weight: bold; margin-bottom: 4px; font-size: 11px; }
-            .ticket-qr-help { font-size: 10px; margin-top: 3px; }
-            .ticket-qr-section canvas, .ticket-qr-section img { width: 32mm !important; height: 32mm !important; }
-            .ticket-footer { margin-top: 8px; font-size: 11px; }
+            .ticket-qr-label { font-weight: 900; margin-bottom: 4px; font-size: 10.5px; }
+            .ticket-qr-help { font-size: 9.5px; font-weight: 700; margin-top: 2px; }
+            .ticket-qr-section canvas, .ticket-qr-section img { width: 28mm !important; height: 28mm !important; margin: 0 auto; }
+            .ticket-footer { margin-top: 6px; font-size: 10px; font-weight: 700; text-align: center; }
           </style>
         </head>
         <body>
-          ${ticketEl.innerHTML}
+          <div class="ticket-container">
+            ${ticketEl.innerHTML}
+          </div>
         </body>
       </html>
     `;

@@ -91,6 +91,8 @@ export interface TicketPrecuenta {
   propinaSugerida15: number;
   propinaSugerida20: number;
   items: ItemPrecuenta[];
+  estado?: string;
+  metodoPago?: string;
 }
 
 export interface DesgloseMetodoPago {

@@ -28,6 +28,7 @@ import { SplitOrderModalComponent } from '@/pages/comandix/components/split-orde
 import { CajaService } from './services/caja.service';
 import { OrderService } from '@/pages/comandix/services/order.service';
 import { AuthService } from '@/auth/auth.service';
+import { TenantService } from '@/pages/admin-page/service/tenant.service';
 import {
   TurnoDTO,
   ComandaCajaRow,
@@ -87,8 +88,13 @@ export class CajaComponent implements OnInit, OnDestroy {
   private cajaService = inject(CajaService);
   private orderService = inject(OrderService);
   private authService = inject(AuthService);
+  private tenantService = inject(TenantService);
   private messageService = inject(MessageService);
   private route = inject(ActivatedRoute);
+
+  businessName = signal<string>('Restaurante');
+  businessAddress = signal<string>('');
+  businessPhone = signal<string>('');
 
   private destroy$ = new Subject<void>();
   private pollingTimer: any = null;
@@ -1027,7 +1033,22 @@ export class CajaComponent implements OnInit, OnDestroy {
     if (this.tenantId > 0) {
       this.cargarDatosIniciales();
       this.iniciarPolling();
+      this.cargarDatosNegocio();
     }
+  }
+
+  private cargarDatosNegocio(): void {
+    if (this.tenantId <= 0) return;
+    this.tenantService.getTenantById(this.tenantId).subscribe({
+      next: (t: any) => {
+        if (t) {
+          this.businessName.set(t.bussinessName || t.nombreNegocio || 'Restaurante');
+          this.businessAddress.set(t.direccion || '');
+          this.businessPhone.set(t.telefono || '');
+        }
+      },
+      error: (e) => console.warn('[Caja] No se pudo obtener datos del negocio:', e)
+    });
   }
 
   ngOnDestroy(): void {
@@ -1218,11 +1239,13 @@ export class CajaComponent implements OnInit, OnDestroy {
         cantidad: 1,
         precioUnitario: total,
         totalLinea: total
-      }]
+      }],
+      estado: comanda.estado,
+      metodoPago: (comanda as any).metodoPago || (orden as any)?.metodoPago
     };
   }
 
-  async imprimirTicket(comanda: PendingOrder | ComandaCajaRow, autoPrint = true): Promise<void> {
+  async imprimirTicket(comanda: PendingOrder | ComandaCajaRow, autoPrint = true, mostrarModalPreview = true): Promise<void> {
     if (!comanda) return;
     this.procesando.set(true);
 
@@ -1235,7 +1258,9 @@ export class CajaComponent implements OnInit, OnDestroy {
         this.ticketActual.set(this.construirTicketLocal(comanda));
       }
 
-      this.modalTicketVisible.set(true);
+      if (mostrarModalPreview) {
+        this.modalTicketVisible.set(true);
+      }
 
       // Actualizar estado local
       await Promise.all([
@@ -1243,26 +1268,30 @@ export class CajaComponent implements OnInit, OnDestroy {
         this.cargarHistorialComandas(false)
       ]);
 
-      this.messageService.add({
-        severity: 'info',
-        summary: 'Ticket en Mesa',
-        detail: `Pre-cuenta de ${comanda.mesaNombre || 'Mesa'} generada. La comanda pasó a "Por Cobrar".`
-      });
+      if (mostrarModalPreview) {
+        this.messageService.add({
+          severity: 'info',
+          summary: 'Ticket en Mesa',
+          detail: `Pre-cuenta de ${comanda.mesaNombre || 'Mesa'} generada. La comanda pasó a "Por Cobrar".`
+        });
+      }
+
       if (autoPrint) {
         setTimeout(() => this.imprimirVentanaTicket(), 250);
       }
     } catch (err: any) {
       console.warn('Fallback a pre-cuenta local para comanda:', comanda.id, err);
-      // Fallback seguro: siempre abrir el ticket para que el cajero pueda imprimir
+      // Fallback seguro: siempre generar el ticket local
       const ticket = this.construirTicketLocal(comanda);
       this.ticketActual.set(ticket);
-      this.modalTicketVisible.set(true);
-
-      this.messageService.add({
-        severity: 'info',
-        summary: 'Ticket Generado',
-        detail: `Pre-cuenta de ${comanda.mesaNombre || 'Mesa'} lista para imprimir.`
-      });
+      if (mostrarModalPreview) {
+        this.modalTicketVisible.set(true);
+        this.messageService.add({
+          severity: 'info',
+          summary: 'Ticket Generado',
+          detail: `Pre-cuenta de ${comanda.mesaNombre || 'Mesa'} lista para imprimir.`
+        });
+      }
 
       if (autoPrint) {
         setTimeout(() => this.imprimirVentanaTicket(), 250);
@@ -1273,8 +1302,30 @@ export class CajaComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Imprime el ticket térmico con formato estándar 80mm en una ventana/iframe aislada.
-   * Evita problemas de estilos CSS globales y no altera la visualización del dashboard.
+   * Acción al dar clic en el botón "Marcar pagada":
+   * 1. Imprime de inmediato el ticket térmico de 58mm (área útil 48mm, margen de 5mm) para llevárselo a la mesa.
+   * 2. Abre el modal de cobro para ingresar el método de pago y liquidar la comanda.
+   */
+  async clickMarcarPagada(comanda: PendingOrder | ComandaCajaRow): Promise<void> {
+    if (!comanda) return;
+
+    // Imprimir de inmediato el ticket en segundo plano para la mesa
+    void this.imprimirTicket(comanda, true, false);
+
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Imprimiendo ticket',
+      detail: `Imprimiendo ticket de ${comanda.mesaNombre || 'Mesa'} para llevar a la mesa...`,
+      life: 3000
+    });
+
+    // Abrir modal de cobro
+    await this.abrirModalCobro(comanda);
+  }
+
+  /**
+   * Imprime el ticket térmico con formato estándar 58mm (área de impresión 48mm y margen de 5mm)
+   * en un iframe aislado con tipografía monospaced de alto contraste (#000000) para máxima legibilidad.
    */
   imprimirVentanaTicket(): void {
     const t = this.ticketActual();
@@ -1286,11 +1337,18 @@ export class CajaComponent implements OnInit, OnDestroy {
     for (const it of t.items || []) {
       itemsHtml += `
         <tr>
-          <td style="text-align: left; padding: 3px 0;">${it.cantidad}x ${it.nombreProducto}${it.asientoAlias ? ' (' + it.asientoAlias + ')' : ''}</td>
-          <td style="text-align: right; padding: 3px 0; font-weight: bold;">$${(it.totalLinea || 0).toFixed(2)}</td>
+          <td class="item-desc">
+            ${it.cantidad}x ${it.nombreProducto}${it.asientoAlias ? ' (' + it.asientoAlias + ')' : ''}
+          </td>
+          <td class="item-price">$${(it.totalLinea || 0).toFixed(2)}</td>
         </tr>
       `;
     }
+
+    const bName = (this.businessName() || 'RESTAURANTE').toUpperCase();
+    const bAddress = this.businessAddress();
+    const bPhone = this.businessPhone();
+    const esPagada = (t as any).estado === 'PAGADA' || (t as any).isPaid === true;
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -1300,75 +1358,246 @@ export class CajaComponent implements OnInit, OnDestroy {
           <title>Ticket - Comanda #${t.folioComanda}</title>
           <style>
             @page {
-              size: 80mm auto;
+              size: 58mm auto;
               margin: 0;
             }
-            body {
-              font-family: 'Courier New', Courier, monospace;
-              width: 72mm;
-              margin: 0 auto;
-              padding: 12px 0;
-              font-size: 12px;
-              color: #000;
+            * {
+              box-sizing: border-box;
+              margin: 0;
+              padding: 0;
+            }
+            html, body {
+              width: 58mm;
+              margin: 0;
+              padding: 0;
+              background: #ffffff;
+              color: #000000;
+              font-family: 'Courier New', Courier, 'Lucida Console', Monaco, monospace;
+              font-size: 11px;
               line-height: 1.25;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+              -webkit-font-smoothing: none;
+            }
+            .ticket-container {
+              width: 48mm;
+              max-width: 48mm;
+              min-width: 48mm;
+              margin: 0 auto;
+              padding: 2mm 0 14mm 0;
+              box-sizing: border-box;
             }
             .text-center { text-align: center; }
             .text-right { text-align: right; }
-            .bold { font-weight: bold; }
-            .divider { border-top: 1px dashed #000; margin: 6px 0; }
-            .double-divider { border-top: 2px dashed #000; margin: 8px 0; }
-            table { width: 100%; border-collapse: collapse; font-size: 11px; }
-            .title { font-size: 16px; font-weight: 900; margin: 0 0 2px 0; text-align: center; }
-            .subtitle { font-size: 11px; margin: 0 0 4px 0; text-align: center; }
-            .total-row { font-size: 15px; font-weight: 900; }
-            .propina-box { border: 1px dashed #444; padding: 6px; margin: 8px 0; font-size: 11px; }
+            .text-left { text-align: left; }
+            .bold { font-weight: 700; }
+            .extra-bold { font-weight: 900; }
+
+            .business-title {
+              font-size: 13.5px;
+              font-weight: 900;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              text-align: center;
+              line-height: 1.2;
+              margin-bottom: 2px;
+            }
+            .business-info {
+              font-size: 10px;
+              font-weight: 700;
+              text-align: center;
+              line-height: 1.25;
+            }
+            .ticket-type {
+              font-size: 11px;
+              font-weight: 900;
+              text-transform: uppercase;
+              text-align: center;
+              margin-top: 3px;
+              letter-spacing: 1px;
+            }
+
+            .divider {
+              border: none;
+              border-bottom: 1px dashed #000000;
+              margin: 5px 0;
+              width: 100%;
+            }
+            .divider-double {
+              border: none;
+              border-bottom: 2px solid #000000;
+              margin: 6px 0;
+              width: 100%;
+            }
+
+            .meta-section {
+              font-size: 10.5px;
+              font-weight: 700;
+              line-height: 1.35;
+              margin: 3px 0;
+            }
+            .meta-row {
+              display: flex;
+              justify-content: space-between;
+              gap: 2px;
+            }
+
+            .items-table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 10.5px;
+              margin: 2px 0;
+            }
+            .items-table th {
+              font-size: 10px;
+              font-weight: 900;
+              text-transform: uppercase;
+              border-bottom: 1px dashed #000000;
+              padding-bottom: 2px;
+            }
+            .items-table td {
+              padding: 2.5px 0;
+              vertical-align: top;
+            }
+            .item-desc {
+              text-align: left;
+              font-weight: 700;
+              word-break: break-word;
+              padding-right: 4px;
+            }
+            .item-price {
+              text-align: right;
+              font-weight: 900;
+              white-space: nowrap;
+            }
+
+            .totals-section {
+              margin-top: 2px;
+              font-size: 11px;
+            }
+            .total-row {
+              display: flex;
+              justify-content: space-between;
+              padding: 1.5px 0;
+              font-weight: 700;
+            }
+            .total-final {
+              font-size: 15px;
+              font-weight: 900;
+              border-top: 1px dashed #000000;
+              border-bottom: 1px dashed #000000;
+              padding: 4px 0;
+              margin: 4px 0;
+            }
+
+            .propina-box {
+              border: 1px dashed #000000;
+              padding: 4px;
+              margin: 6px 0;
+              font-size: 10px;
+              font-weight: 700;
+            }
+            .propina-title {
+              text-align: center;
+              font-weight: 900;
+              margin-bottom: 2px;
+              font-size: 10px;
+            }
+            .propina-row {
+              display: flex;
+              justify-content: space-between;
+              padding: 1px 0;
+            }
+
+            .footer {
+              margin-top: 6px;
+              text-align: center;
+              font-size: 10px;
+              font-weight: 700;
+              line-height: 1.3;
+            }
+            .footer-note {
+              font-size: 9px;
+              margin-top: 2px;
+            }
           </style>
         </head>
         <body>
-          <div class="title">PRE-CUENTA</div>
-          <div class="subtitle">Comanda #${t.folioComanda}</div>
-          <div class="divider"></div>
-          <div><strong>Mesa:</strong> ${t.mesaNombre || 'Mesa General'}</div>
-          <div><strong>Mesero:</strong> ${t.meseroNombre || 'Sin asignar'}</div>
-          <div><strong>Cliente:</strong> ${t.clienteNombre || 'Venta General'}</div>
-          <div><strong>Fecha:</strong> ${fechaFormateada}</div>
-          <div class="divider"></div>
-          <table>
-            <thead>
-              <tr style="border-bottom: 1px dashed #000;">
-                <th style="text-align: left; padding: 2px 0;">Cant / Platillo</th>
-                <th style="text-align: right; padding: 2px 0;">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemsHtml}
-            </tbody>
-          </table>
-          <div class="divider"></div>
-          ${t.descuento && t.descuento > 0 ? `
-            <div style="display:flex; justify-content:space-between;">
-              <span>Subtotal:</span>
-              <span>$${(t.subtotal || t.total).toFixed(2)}</span>
+          <div class="ticket-container">
+            <div class="business-title">${bName}</div>
+            ${bAddress ? `<div class="business-info">${bAddress}</div>` : ''}
+            ${bPhone ? `<div class="business-info">Tel: ${bPhone}</div>` : ''}
+            <div class="ticket-type">*** ${esPagada ? 'TICKET DE VENTA' : 'PRE-CUENTA'} ***</div>
+            <div class="divider"></div>
+
+            <div class="meta-section">
+              <div class="meta-row"><span>FOLIO:</span> <strong>#${t.folioComanda}</strong></div>
+              <div class="meta-row"><span>MESA:</span> <strong>${t.mesaNombre || 'Mesa General'}</strong></div>
+              <div class="meta-row"><span>MESERO:</span> <span>${t.meseroNombre || 'Sin asignar'}</span></div>
+              <div class="meta-row"><span>CLIENTE:</span> <span>${t.clienteNombre || 'Venta General'}</span></div>
+              <div class="meta-row"><span>FECHA:</span> <span>${fechaFormateada}</span></div>
             </div>
-            <div style="display:flex; justify-content:space-between;">
-              <span>Descuento:</span>
-              <span>-$${(t.descuento).toFixed(2)}</span>
+
+            <div class="divider"></div>
+
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th class="text-left">Cant / Descripción</th>
+                  <th class="text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+              </tbody>
+            </table>
+
+            <div class="divider"></div>
+
+            <div class="totals-section">
+              ${t.descuento && t.descuento > 0 ? `
+                <div class="total-row">
+                  <span>SUBTOTAL:</span>
+                  <span>$${(t.subtotal || t.total).toFixed(2)}</span>
+                </div>
+                <div class="total-row">
+                  <span>DESCUENTO:</span>
+                  <span>-$${(t.descuento).toFixed(2)}</span>
+                </div>
+              ` : ''}
+              <div class="total-row total-final">
+                <span>TOTAL:</span>
+                <span>$${(t.total || 0).toFixed(2)}</span>
+              </div>
+              ${esPagada ? `
+                <div class="total-row">
+                  <span>ESTADO:</span>
+                  <span class="bold">PAGADO ✓</span>
+                </div>
+                ${(t as any).metodoPago ? `
+                  <div class="total-row">
+                    <span>MÉTODO:</span>
+                    <span class="bold">${(t as any).metodoPago}</span>
+                  </div>
+                ` : ''}
+              ` : ''}
             </div>
-          ` : ''}
-          <div style="display:flex; justify-content:space-between;" class="total-row">
-            <span>TOTAL:</span>
-            <span>$${(t.total || 0).toFixed(2)}</span>
+
+            ${!esPagada ? `
+              <div class="propina-box">
+                <div class="propina-title">PROPINA SUGERIDA</div>
+                <div class="propina-row"><span>10%:</span> <strong>$${(t.propinaSugerida10 || (t.total * 0.10)).toFixed(2)}</strong></div>
+                <div class="propina-row"><span>15%:</span> <strong>$${(t.propinaSugerida15 || (t.total * 0.15)).toFixed(2)}</strong></div>
+                <div class="propina-row"><span>20%:</span> <strong>$${(t.propinaSugerida20 || (t.total * 0.20)).toFixed(2)}</strong></div>
+              </div>
+            ` : ''}
+
+            <div class="divider-double"></div>
+            <div class="footer">
+              <div>¡GRACIAS POR SU PREFERENCIA!</div>
+              <div class="footer-note">${esPagada ? 'Comprobante de Pago' : 'Este ticket no es un comprobante fiscal'}</div>
+            </div>
           </div>
-          <div class="divider"></div>
-          <div class="propina-box">
-            <div class="text-center bold" style="margin-bottom: 3px;">PROPINA SUGERIDA</div>
-            <div style="display:flex; justify-content:space-between;"><span>10%:</span> <strong>$${(t.propinaSugerida10 || (t.total * 0.10)).toFixed(2)}</strong></div>
-            <div style="display:flex; justify-content:space-between;"><span>15%:</span> <strong>$${(t.propinaSugerida15 || (t.total * 0.15)).toFixed(2)}</strong></div>
-            <div style="display:flex; justify-content:space-between;"><span>20%:</span> <strong>$${(t.propinaSugerida20 || (t.total * 0.20)).toFixed(2)}</strong></div>
-          </div>
-          <div class="double-divider"></div>
-          <div class="text-center" style="font-size: 10px;">¡Gracias por su visita!</div>
-          <div class="text-center" style="font-size: 9px; margin-top: 2px;">Este ticket no es un comprobante fiscal</div>
         </body>
       </html>
     `;
@@ -1924,7 +2153,9 @@ export class CajaComponent implements OnInit, OnDestroy {
         precioUnitario: this.getItemPrice(it),
         totalLinea: this.getItemPrice(it) * it.cantidad,
         asientoAlias: it.asientoAlias
-      }))
+      })),
+      estado: 'PAGADA',
+      metodoPago: (order as any).metodoPago || order.payment?.method || 'PAGADO'
     };
     this.ticketActual.set(ticket);
     this.modalTicketVisible.set(true);

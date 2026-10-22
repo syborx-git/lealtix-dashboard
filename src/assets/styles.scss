@@ -2038,11 +2038,11 @@ body.modulo-fullscreen-active .app-content {
   padding-left: 0 !important;
 }
 
-/* ===== Ticket de compra (impresión térmica 80 mm) ===== */
+/* ===== Ticket de compra (impresión térmica 58 mm / área imprimible 48 mm / margen 5 mm) ===== */
 @media print {
-  /* Papel térmico de 80 mm de ancho; alto continuo */
+  /* Papel térmico de 58 mm de ancho; alto continuo */
   @page {
-    size: 80mm auto;
+    size: 58mm auto;
     margin: 0;
   }
 
@@ -2061,10 +2061,10 @@ body.modulo-fullscreen-active .app-content {
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
-    width: 80mm !important;
-    max-width: 80mm !important;
+    width: 58mm !important;
+    max-width: 58mm !important;
     margin: 0 !important;
-    padding: 0 2mm !important;
+    padding: 0 !important;
     box-shadow: none !important;
     max-height: none !important;
     overflow: visible !important;
@@ -2072,17 +2072,28 @@ body.modulo-fullscreen-active .app-content {
     background: #fff !important;
   }
 
-  /* El ticket ocupa todo el ancho imprimible del papel */
+  /* El ticket centrado a 48mm dentro del papel de 58mm (margen de 5mm en cada lado) */
   body.ticket-print-mode .ticket {
-    width: 100% !important;
-    font-size: 12px !important;
+    width: 48mm !important;
+    max-width: 48mm !important;
+    min-width: 48mm !important;
+    margin: 0 auto !important;
+    padding: 2mm 0 14mm 0 !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: #000000 !important;
+    font-family: 'Courier New', Courier, 'Lucida Console', Monaco, monospace !important;
+    line-height: 1.25 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
-  /* El QR en tamaño legible (aprox. 20 mm) */
+  /* El QR en tamaño legible para 48mm */
   body.ticket-print-mode .ticket-qr-section canvas,
   body.ticket-print-mode .ticket-qr-section img {
-    width: 30mm !important;
-    height: 30mm !important;
+    width: 28mm !important;
+    height: 28mm !important;
+    margin: 0 auto !important;
   }
 
   body.ticket-print-mode .ticket-actions { display: none !important; }
