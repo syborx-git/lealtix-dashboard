@@ -55,9 +55,19 @@ export class CajaService {
     return this.http.get<ApiResponse<TableroCaja>>(`${this.baseUrl}/tablero`, { params });
   }
 
-  imprimirTicket(orderId: string, tenantId: number): Observable<ApiResponse<TicketPrecuenta>> {
-    const params = new HttpParams().set('tenantId', tenantId.toString());
+  imprimirTicket(orderId: string, tenantId: number, silencioso = true): Observable<ApiResponse<TicketPrecuenta>> {
+    const params = new HttpParams()
+      .set('tenantId', tenantId.toString())
+      .set('imprimirSilencioso', silencioso.toString());
     return this.http.post<ApiResponse<TicketPrecuenta>>(`${this.baseUrl}/comandas/${orderId}/imprimir-ticket`, {}, { params });
+  }
+
+  imprimirTicketDirecto(orderId: string, tenantId: number, printerName?: string): Observable<ApiResponse<TicketPrecuenta>> {
+    let params = new HttpParams().set('tenantId', tenantId.toString());
+    if (printerName) {
+      params = params.set('printerName', printerName);
+    }
+    return this.http.post<ApiResponse<TicketPrecuenta>>(`${this.baseUrl}/comandas/${orderId}/imprimir-directo`, {}, { params });
   }
 
   cobrarComanda(orderId: string, req: CobrarComandaRequest): Observable<ApiResponse<PagoDTO>> {

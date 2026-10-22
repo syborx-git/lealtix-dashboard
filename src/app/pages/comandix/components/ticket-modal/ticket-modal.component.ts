@@ -1,7 +1,9 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { QRCodeComponent } from 'angularx-qrcode';
 import { PendingOrder } from '../../models/order.model';
+import { CajaService } from '@/pages/caja/services/caja.service';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-ticket-modal',
@@ -11,6 +13,8 @@ import { PendingOrder } from '../../models/order.model';
   styleUrls: ['./ticket-modal.component.scss']
 })
 export class TicketModalComponent {
+  private cajaService = inject(CajaService);
+
   @Input() visible = false;
   @Input() order: PendingOrder | null = null;
   @Input() businessName = 'Lealtix';
@@ -24,7 +28,20 @@ export class TicketModalComponent {
     return this.order ? `${this.invoiceBaseUrl}${this.order.id}` : '';
   }
 
-  print(): void {
+  async print(): Promise<void> {
+    if (this.order?.id) {
+      try {
+        const tenantId = Number(localStorage.getItem('tenantId')) || 1;
+        const resp = await firstValueFrom(this.cajaService.imprimirTicketDirecto(this.order.id, tenantId));
+        if (resp?.object?.impresoEnHardware) {
+          this.close();
+          return;
+        }
+      } catch (e) {
+        console.warn('Fallback a impresión de ventana:', e);
+      }
+    }
+
     const ticketEl = document.querySelector('.ticket') as HTMLElement;
     if (!ticketEl) {
       document.body.classList.add('ticket-print-mode');

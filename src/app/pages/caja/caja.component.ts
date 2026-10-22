@@ -1268,16 +1268,27 @@ export class CajaComponent implements OnInit, OnDestroy {
         this.cargarHistorialComandas(false)
       ]);
 
-      if (mostrarModalPreview) {
-        this.messageService.add({
-          severity: 'info',
-          summary: 'Ticket en Mesa',
-          detail: `Pre-cuenta de ${comanda.mesaNombre || 'Mesa'} generada. La comanda pasó a "Por Cobrar".`
-        });
-      }
+      const yaImpresoEnHardware = ticket?.impresoEnHardware === true;
 
-      if (autoPrint) {
-        setTimeout(() => this.imprimirVentanaTicket(), 250);
+      if (yaImpresoEnHardware) {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Ticket Impreso',
+          detail: `Ticket de ${comanda.mesaNombre || 'Mesa'} impreso silenciosamente en ${ticket?.nombreImpresora || 'POS-58'}.`,
+          life: 3000
+        });
+      } else {
+        if (mostrarModalPreview) {
+          this.messageService.add({
+            severity: 'info',
+            summary: 'Ticket en Mesa',
+            detail: `Pre-cuenta de ${comanda.mesaNombre || 'Mesa'} generada. La comanda pasó a "Por Cobrar".`
+          });
+        }
+
+        if (autoPrint) {
+          setTimeout(() => this.imprimirVentanaTicket(), 250);
+        }
       }
     } catch (err: any) {
       console.warn('Fallback a pre-cuenta local para comanda:', comanda.id, err);
@@ -2131,7 +2142,7 @@ export class CajaComponent implements OnInit, OnDestroy {
 
   // ==================== REIMPRESIÓN Y FORMATEO ====================
 
-  reimprimirTicketCerrada(order: PendingOrder): void {
+  async reimprimirTicketCerrada(order: PendingOrder): Promise<void> {
     const total = order.totalFinal ?? order.subtotal ?? 0;
     const ticket: TicketPrecuenta = {
       idComanda: order.id,
@@ -2158,6 +2169,22 @@ export class CajaComponent implements OnInit, OnDestroy {
       metodoPago: (order as any).metodoPago || order.payment?.method || 'PAGADO'
     };
     this.ticketActual.set(ticket);
+
+    try {
+      const resp = await firstValueFrom(this.cajaService.imprimirTicketDirecto(order.id, this.tenantId));
+      if (resp?.object?.impresoEnHardware) {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Ticket Reimpreso',
+          detail: `Comprobante de ${ticket.mesaNombre} impreso silenciosamente en ${resp.object.nombreImpresora || 'POS-58'}.`,
+          life: 3000
+        });
+        return;
+      }
+    } catch (e) {
+      console.warn('Fallback a impresión de ventana para comanda cerrada:', e);
+    }
+
     this.modalTicketVisible.set(true);
     setTimeout(() => this.imprimirVentanaTicket(), 250);
   }

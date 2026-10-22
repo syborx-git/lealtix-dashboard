@@ -93,6 +93,8 @@ export interface TicketPrecuenta {
   items: ItemPrecuenta[];
   estado?: string;
   metodoPago?: string;
+  impresoEnHardware?: boolean;
+  nombreImpresora?: string;
 }
 
 export interface DesgloseMetodoPago {
