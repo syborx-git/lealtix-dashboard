@@ -282,6 +282,7 @@ export class ComandixComponent implements OnInit, OnDestroy {
   showOrderDetail = signal<boolean>(false);
   processingOrderAction = signal<boolean>(false);
   editingPendingOrder = signal<PendingOrder | null>(null);
+  appendingToOrder = signal<PendingOrder | null>(null);
   showCloseOrderModal = signal<boolean>(false);
   selectedOrderForPayment = signal<PendingOrder | null>(null);
   showCancelOrderDialog = signal<boolean>(false);
@@ -1843,9 +1844,11 @@ export class ComandixComponent implements OnInit, OnDestroy {
           if (normalizedState === 'PAGADA') {
             this.loadMesas();
             const isEditingThis = this.editingPendingOrder()?.id === orderId;
+            const isAppendingThis = this.appendingToOrder()?.id === orderId;
 
-            if (isEditingThis) {
+            if (isEditingThis || isAppendingThis) {
               this.editingPendingOrder.set(null);
+              this.appendingToOrder.set(null);
               this.cart.set([]); // Bloquea y limpia el carrito inmediatamente
 
               this.messageService.add({
@@ -2064,6 +2067,7 @@ export class ComandixComponent implements OnInit, OnDestroy {
     this.descuentoAplicado.set(Number(latestOrder.descuento ?? 0));
     this.cart.set(this.buildCartFromPendingOrder(latestOrder));
     this.editingPendingOrder.set(latestOrder);
+    this.appendingToOrder.set(null);
     if (latestOrder.mesaId) {
       const foundMesa = this.mesas().find(m => m.id === latestOrder.mesaId);
       if (foundMesa) {
@@ -2104,6 +2108,95 @@ export class ComandixComponent implements OnInit, OnDestroy {
         life: 3000
       });
     }
+  }
+
+  /**
+   * Abre una comanda abierta para agregar más platillos o bebidas (nueva ronda).
+   * Los nuevos artículos se enviarán a cocina y barra como una nueva orden/ticket
+   * pero pertenecerán a la misma comanda y aparecerán en la misma cuenta al cobrar.
+   */
+  abrirComandaParaAgregar(order: PendingOrder): void {
+    if (!order) return;
+    if (order.estado === 'PAGADA' || order.estado === 'CANCELADA') {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Comanda no disponible',
+        detail: `No se pueden agregar productos a una comanda en estado ${order.estado}`,
+        life: 3000
+      });
+      return;
+    }
+
+    const latestOrder = this.pendingOrders().find((o) => o.id === order.id) ?? order;
+
+    // Asignar contexto de adición a comanda
+    this.appendingToOrder.set(latestOrder);
+    this.editingPendingOrder.set(null);
+
+    // Resolver cliente de la orden
+    this.selectedCliente = this.resolveClienteFromOrder(latestOrder);
+
+    // Asignar mesa de la comanda
+    if (latestOrder.mesaId) {
+      const foundMesa = this.mesas().find(m => m.id === latestOrder.mesaId);
+      if (foundMesa) {
+        this.selectedMesa.set(foundMesa);
+      } else {
+        this.selectedMesa.set({
+          id: latestOrder.mesaId,
+          nombre: latestOrder.mesaNombre || `Mesa #${latestOrder.mesaId}`,
+          numero: latestOrder.mesaNumero,
+          tenantId: this.tenantId,
+          capacidad: 4,
+          estado: 'OCUPADA'
+        });
+      }
+    }
+
+    // El carrito empieza limpio para los NUEVOS platillos a agregar
+    this.cart.set([]);
+    this.clearCartDraft();
+    this.descuentoAplicado.set(0);
+    this.codigoCupon = '';
+
+    // Cerrar cualquier modal abierto
+    this.closeOrderDetail();
+    this.modalMesaConsultadaVisible.set(false);
+    this.modalOpcionesGrupoVisible.set(false);
+
+    // Cambiar al menú POS
+    this.switchView('pos');
+
+    const mesaTxt = latestOrder.mesaNombre ? ` (${latestOrder.mesaNombre})` : '';
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Comanda abierta',
+      detail: `Agregando productos a la comanda #${latestOrder.id.slice(0, 8).toUpperCase()}${mesaTxt}. Los nuevos artículos se sumarán a la misma cuenta.`,
+      life: 4000
+    });
+  }
+
+  cancelarAgregarAComanda(): void {
+    const currentOrder = this.appendingToOrder();
+    this.appendingToOrder.set(null);
+    this.resetForm();
+    this.selectedMesa.set(null);
+    this.switchView('orders');
+
+    if (currentOrder) {
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Operación cancelada',
+        detail: `No se agregaron productos a la comanda #${currentOrder.id.slice(0, 8).toUpperCase()}`,
+        life: 3000
+      });
+    }
+  }
+
+  canAbrirComanda(order: PendingOrder | null | undefined): boolean {
+    if (!order) return false;
+    const normalized = this.normalizeOrderStatus(order.estado);
+    return normalized !== 'PAGADA' && normalized !== 'CANCELADA' && normalized !== 'RECHAZADO';
   }
 
   private playNotificationSound(times = 1, delayMs = 500): void {
@@ -3689,6 +3782,53 @@ trackByProductId = (index: number, item: CartItem): string => {
         return;
       }
 
+      const appendingOrder = this.appendingToOrder();
+      if (appendingOrder) {
+        if (!this.canAbrirComanda(appendingOrder)) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Comanda cerrada',
+            detail: 'La comanda ya no se encuentra abierta para agregar productos',
+            life: 3000
+          });
+          this.processingOrder.set(false);
+          return;
+        }
+
+        const currentUser = this.authService.getCurrentUser();
+        const appendRequest: TenantClientOrderCreateRequest = {
+          customerId: this.selectedCliente?.id ?? appendingOrder.customerId ?? null,
+          tenantId: appendingOrder.tenantId,
+          items: orderItems,
+          subtotal: this.subtotal(),
+          descuento: this.descuentoAplicado(),
+          totalFinal: this.totalFinal(),
+          couponCode: this.codigoCupon.trim() || null,
+          redeemedBy: this.selectedCliente?.id ?? null,
+          redemptionChannel: 'COMANDIX',
+          source: 'POS',
+          mesaId: this.selectedMesa()?.id ?? appendingOrder.mesaId,
+          meseroId: currentUser?.id,
+          meseroEmail: currentUser?.email
+        };
+
+        await firstValueFrom(this.orderService.addItemsToOrder(appendingOrder.id, appendRequest));
+
+        this.messageService.add({
+          severity: 'success',
+          summary: '¡Platillos enviados a cocina/barra!',
+          detail: `Se agregaron ${orderItems.length} producto(s) a la comanda #${appendingOrder.id.slice(0, 8).toUpperCase()}`,
+          life: 4000
+        });
+
+        this.resetForm();
+        this.selectedMesa.set(null);
+        this.switchView('orders');
+        void this.pollOrders();
+        this.loadMesas();
+        return;
+      }
+
       const currentUser = this.authService.getCurrentUser();
       const orderRequest: TenantClientOrderCreateRequest = {
         customerId: this.selectedCliente?.id ?? null,
@@ -3778,6 +3918,7 @@ trackByProductId = (index: number, item: CartItem): string => {
     this.codigoCupon = '';
     this.descuentoAplicado.set(0);
     this.editingPendingOrder.set(null);
+    this.appendingToOrder.set(null);
   }
 
   limpiarCarrito(): void {

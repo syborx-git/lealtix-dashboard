@@ -16,6 +16,7 @@ export interface OrderItem {
   excludedIngredientIds?: number[];
   /** Insumos adicionales seleccionados por el cliente (se descuentan) */
   additionalIngredientIds?: number[];
+  ronda?: number;
 }
 
 export interface ComandaAsiento {
@@ -123,6 +124,7 @@ export interface PendingOrderItem {
   paraLlevar?: boolean;
   excludedIngredientIds?: number[];
   additionalIngredientIds?: number[];
+  ronda?: number;
 }
 
 export interface PendingOrder {
