@@ -6,6 +6,8 @@ export interface KitchenOrderItem {
     quantity: number;
     unitPrice: number;
     comments?: string;
+    asientoId?: string | number;
+    asientoAlias?: string;
     tiempo?: 1 | 2 | 3;
     tiempoMarchado?: boolean;
     paraLlevar?: boolean;

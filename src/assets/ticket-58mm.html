@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ticket de Venta 58mm - Restaurante Demo</title>
+  <style>
+    /* ==========================================================================
+       1. REGLAS GLOBALES Y DE IMPRESIÓN (@media print)
+       ========================================================================== */
+    @page {
+      /* Define el ancho exacto del rollo térmico de 58mm y altura continua */
+      size: 58mm auto;
+      margin: 0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #f1f5f9;
+      color: #000000;
+      font-family: 'Courier New', Courier, 'Lucida Console', Monaco, monospace;
+      font-size: 11px;
+      line-height: 1.25;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* Ocultar elementos de pantalla al imprimir */
+    @media print {
+      body {
+        background-color: #ffffff !important;
+        padding: 0 !important;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      .ticket-container {
+        box-shadow: none !important;
+        border: none !important;
+        margin: 0 auto !important;
+        padding: 2mm 0 12mm 0 !important; /* Espacio inferior para avance de papel/corte */
+        width: 48mm !important;
+        max-width: 48mm !important;
+      }
+    }
+
+    /* ==========================================================================
+       2. CONTENEDOR DEL TICKET (SIMULACIÓN EN PANTALLA Y ÁREA DE 48mm)
+       ========================================================================== */
+    /* Toolbar de vista previa en pantalla */
+    .preview-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: #1e293b;
+      color: #ffffff;
+      padding: 10px 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-size: 13px;
+    }
+
+    .btn-print {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .btn-print:hover {
+      background: #1d4ed8;
+    }
+
+    .preview-info {
+      color: #94a3b8;
+      font-size: 12px;
+    }
+
+    /* Contenedor del Ticket (Papel 58mm / Área de impresión 48mm) */
+    .ticket-wrapper {
+      display: flex;
+      justify-content: center;
+      padding: 20px 10px 40px;
+    }
+
+    .ticket-container {
+      width: 48mm;
+      max-width: 48mm;
+      min-width: 48mm;
+      background: #ffffff;
+      color: #000000;
+      padding: 2mm 1mm 14mm 1mm; /* 14mm inferior para evitar corte de texto */
+      margin: 0 auto;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+      border-radius: 2px;
+      overflow: hidden;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+
+    /* ==========================================================================
+       3. TIPOGRAFÍA Y FORMATO DE TEXTO (100% NEGRO PURO, SIN DITHERING)
+       ========================================================================== */
+    .text-center {
+      text-align: center;
+    }
+
+    .text-left {
+      text-align: left;
+    }
+
+    .text-right {
+      text-align: right;
+    }
+
+    .bold {
+      font-weight: 700;
+    }
+
+    .extra-bold {
+      font-weight: 900;
+    }
+
+    /* Encabezado */
+    .business-title {
+      font-size: 14px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      line-height: 1.2;
+      margin-bottom: 3px;
+    }
+
+    .business-info {
+      font-size: 11px;
+      line-height: 1.3;
+      margin-bottom: 2px;
+    }
+
+    /* Divisores punteados (CSS border puro para no desbordar caracteres) */
+    .ticket-divider {
+      border: none;
+      border-bottom: 1px dashed #000000;
+      margin: 5px 0;
+      width: 100%;
+    }
+
+    .ticket-divider-double {
+      border: none;
+      border-bottom: 1px double #000000;
+      margin: 5px 0;
+      width: 100%;
+    }
+
+    /* Metadatos */
+    .meta-section {
+      font-size: 11px;
+      line-height: 1.35;
+      margin: 4px 0;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 2px;
+    }
+
+    .meta-label {
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .meta-value {
+      text-align: right;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ==========================================================================
+       4. TABLA DE PARTIDAS / PRODUCTOS (FLEXBOX A PRUEBA DE DESBORDES)
+       ========================================================================== */
+    .items-table {
+      width: 100%;
+      margin: 4px 0;
+    }
+
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      font-size: 10px;
+      text-transform: uppercase;
+      padding-bottom: 3px;
+      border-bottom: 1px solid #000000;
+      margin-bottom: 4px;
+    }
+
+    .item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 4px;
+      margin-bottom: 5px;
+      line-height: 1.25;
+    }
+
+    .item-description {
+      flex: 1 1 auto;
+      min-width: 0;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      /* Envoltura obligatoria de nombres largos sin romper el precio */
+      word-break: break-word;
+      overflow-wrap: break-word;
+      white-space: normal;
+    }
+
+    .item-price {
+      flex: 0 0 auto;
+      text-align: right;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    /* ==========================================================================
+       5. TOTALES
+       ========================================================================== */
+    .totals-section {
+      margin: 4px 0;
+    }
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2px;
+      font-size: 11px;
+    }
+
+    .total-final {
+      font-size: 14px;
+      font-weight: 900;
+      margin-top: 3px;
+      padding-top: 3px;
+      border-top: 1px solid #000000;
+    }
+
+    /* ==========================================================================
+       6. PIE DE PÁGINA Y SECCIÓN DE FACTURACIÓN (QR NÍTIDO)
+       ========================================================================== */
+    .footer-section {
+      text-align: center;
+      margin-top: 6px;
+      line-height: 1.3;
+    }
+
+    .qr-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 6px auto;
+    }
+
+    .qr-code {
+      width: 28mm;
+      height: 28mm;
+      max-width: 110px;
+      max-height: 110px;
+      image-rendering: pixelated;
+      margin: 4px 0;
+    }
+
+    .qr-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .qr-instruction {
+      font-size: 10px;
+      line-height: 1.2;
+      max-width: 44mm;
+      margin: 0 auto;
+    }
+
+    .thank-you {
+      font-size: 12px;
+      font-weight: 700;
+      margin-top: 8px;
+      text-transform: uppercase;
+    }
+
+    /* Espacio final de alimentación de papel (paper feed) para guillotina */
+    .cut-margin {
+      height: 10mm;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- BARRA SUPERIOR PARA PANTALLA (SE OCULTA AUTOMÁTICAMENTE AL IMPRIMIR) -->
+  <div class="preview-toolbar no-print">
+    <span><b>Previsualización Térmica 58mm</b> (Área útil: 48mm)</span>
+    <button class="btn-print" onclick="window.print()">
+      🖨️ Imprimir Ticket (Ctrl + P)
+    </button>
+    <span class="preview-info">Optimizado para EPSON, Xprinter, POS-58, Bixolon y genéricas</span>
+  </div>
+
+  <!-- ENVOLTORIO PRINCIPAL -->
+  <div class="ticket-wrapper">
+    <div class="ticket-container" id="ticket-58mm">
+
+      <!-- ==================== ENCABEZADO ==================== -->
+      <div class="text-center">
+        <div class="business-title">RESTAURANTE DEMO</div>
+        <div class="business-info">Av. Insurgentes Sur 1234, Col. Del Valle, CDMX</div>
+        <div class="business-info">Tel: (55) 1234-5678</div>
+      </div>
+
+      <div class="ticket-divider"></div>
+
+      <!-- ==================== METADATOS ==================== -->
+      <div class="meta-section">
+        <div class="meta-row">
+          <span class="meta-label">Ticket:</span>
+          <span class="meta-value">#TK-8921</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Cliente:</span>
+          <span class="meta-value">Consumidor Final</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Fecha:</span>
+          <span class="meta-value">20/10/2026 13:45</span>
+        </div>
+      </div>
+
+      <div class="ticket-divider"></div>
+
+      <!-- ==================== TABLA DE PRODUCTOS ==================== -->
+      <div class="items-table">
+        <div class="item-header">
+          <span>DESCRIPCIÓN</span>
+          <span>IMPORTE</span>
+        </div>
+
+        <!-- Partida 1: Pan Artesanal -->
+        <div class="item-row">
+          <div class="item-description">1x PAN ARTESANAL</div>
+          <div class="item-price">$35.00</div>
+        </div>
+
+        <!-- Partida 2: Copa de Frutos Rojos -->
+        <div class="item-row">
+          <div class="item-description">1x COPA DE FRUTOS ROJOS</div>
+          <div class="item-price">$155.00</div>
+        </div>
+      </div>
+
+      <div class="ticket-divider"></div>
+
+      <!-- ==================== TOTALES ==================== -->
+      <div class="totals-section">
+        <div class="total-row total-final">
+          <span class="bold">TOTAL:</span>
+          <span class="extra-bold">$190.00</span>
+        </div>
+      </div>
+
+      <div class="ticket-divider"></div>
+
+      <!-- ==================== PIE DE PÁGINA Y FACTURACIÓN ==================== -->
+      <div class="footer-section">
+        <div class="qr-container">
+          <div class="qr-title">¿Necesitas factura?</div>
+
+          <!-- Código QR Nítido generado en SVG (sin compresión que cause dithering térmico) -->
+          <svg class="qr-code" viewBox="0 0 29 29" shape-rendering="crispEdges">
+            <!-- Fondo blanco puro -->
+            <rect width="29" height="29" fill="#ffffff" />
+            <!-- Patrones de posicionamiento y módulos en negro puro #000000 -->
+            <!-- Esquina Sup. Izquierda -->
+            <rect x="2" y="2" width="7" height="7" fill="#000000" />
+            <rect x="3" y="3" width="5" height="5" fill="#ffffff" />
+            <rect x="4" y="4" width="3" height="3" fill="#000000" />
+            <!-- Esquina Sup. Derecha -->
+            <rect x="20" y="2" width="7" height="7" fill="#000000" />
+            <rect x="21" y="3" width="5" height="5" fill="#ffffff" />
+            <rect x="22" y="4" width="3" height="3" fill="#000000" />
+            <!-- Esquina Inf. Izquierda -->
+            <rect x="2" y="20" width="7" height="7" fill="#000000" />
+            <rect x="3" y="21" width="5" height="5" fill="#ffffff" />
+            <rect x="4" y="22" width="3" height="3" fill="#000000" />
+            <!-- Sincronización y Módulos de Datos -->
+            <rect x="10" y="4" width="1" height="1" fill="#000000" />
+            <rect x="12" y="4" width="1" height="1" fill="#000000" />
+            <rect x="14" y="4" width="1" height="1" fill="#000000" />
+            <rect x="16" y="4" width="1" height="1" fill="#000000" />
+            <rect x="18" y="4" width="1" height="1" fill="#000000" />
+            <rect x="4" y="10" width="1" height="1" fill="#000000" />
+            <rect x="4" y="12" width="1" height="1" fill="#000000" />
+            <rect x="4" y="14" width="1" height="1" fill="#000000" />
+            <rect x="4" y="16" width="1" height="1" fill="#000000" />
+            <rect x="4" y="18" width="1" height="1" fill="#000000" />
+            <!-- Centro / Datos -->
+            <rect x="11" y="11" width="2" height="2" fill="#000000" />
+            <rect x="15" y="11" width="3" height="1" fill="#000000" />
+            <rect x="10" y="14" width="2" height="2" fill="#000000" />
+            <rect x="14" y="14" width="2" height="2" fill="#000000" />
+            <rect x="17" y="13" width="2" height="3" fill="#000000" />
+            <rect x="11" y="18" width="3" height="1" fill="#000000" />
+            <rect x="16" y="17" width="2" height="2" fill="#000000" />
+            <rect x="21" y="11" width="2" height="3" fill="#000000" />
+            <rect x="24" y="12" width="2" height="2" fill="#000000" />
+            <rect x="20" y="16" width="3" height="1" fill="#000000" />
+            <rect x="22" y="19" width="3" height="2" fill="#000000" />
+            <rect x="11" y="22" width="2" height="2" fill="#000000" />
+            <rect x="15" y="21" width="2" height="3" fill="#000000" />
+            <rect x="19" y="23" width="2" height="2" fill="#000000" />
+            <rect x="23" y="23" width="3" height="1" fill="#000000" />
+            <rect x="21" y="25" width="2" height="2" fill="#000000" />
+          </svg>
+
+          <div class="qr-instruction">Escanea el código para facturar</div>
+        </div>
+
+        <div class="thank-you">¡Gracias por tu compra!</div>
+
+        <!-- Margen de alimentación para que la cuchilla/guillotina no corte el texto -->
+        <div class="cut-margin"></div>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>

@@ -51,8 +51,40 @@
     </div>
 </p-toolbar>
 
+<!-- ==================== BARRA DE ÁREAS DEL LOCAL (Pizarrón por Área) ==================== -->
+<div class="mapeo-areas-bar">
+    <div class="areas-pills-container">
+        <span class="areas-label">
+            <i class="pi pi-map-marker text-primary"></i>
+            <span>Áreas:</span>
+        </span>
+        <button
+            *ngFor="let a of areas()"
+            type="button"
+            class="area-pill-btn"
+            [class.active]="areaSeleccionada() === a"
+            (click)="seleccionarArea(a)"
+        >
+            <span class="area-dot"></span>
+            <span class="area-name">{{ a }}</span>
+            <span class="area-count-badge">{{ conteoMesasPorArea(a) }}</span>
+        </button>
+    </div>
+    <div class="areas-actions">
+        <p-button
+            label="Agregar nueva área"
+            icon="pi pi-plus"
+            severity="info"
+            [outlined]="true"
+            pTooltip="Crear un nuevo pizarrón para terraza, balcón, segundo piso, etc."
+            tooltipPosition="bottom"
+            (onClick)="abrirNuevaAreaDialog()"
+        ></p-button>
+    </div>
+</div>
+
 <!-- Barra de estado de la sala -->
-<div *ngIf="!loading() && mesas().length > 0" class="sala-legenda">
+<div *ngIf="!loading() && (mesasDelArea().length > 0 || areas().length > 1)" class="sala-legenda">
     <div class="legenda-chip">
         <span class="dot dot-libre"></span> Libres
         <span class="count">{{ conteoEstado('LIBRE') }}</span>
@@ -86,7 +118,7 @@
     <p-progressSpinner styleClass="w-4rem h-4rem" strokeWidth="4"></p-progressSpinner>
 </div>
 
-<div *ngIf="!loading() && mesas().length === 0" class="mapeo-empty">
+<div *ngIf="!loading() && mesas().length === 0 && areas().length <= 1" class="mapeo-empty">
     <i class="pi pi-table"></i>
     <h3>No hay mesas registradas</h3>
     <p>Crea la primera mesa para comenzar el mapeo del local.</p>
@@ -94,15 +126,18 @@
 </div>
 
 <!-- ==================== PLANO INTERACTIVO + RESERVACIONES ==================== -->
-<div *ngIf="!loading() && mesas().length > 0" class="mapeo-layout">
+<div *ngIf="!loading() && (mesas().length > 0 || areas().length > 1 || areaSeleccionada() !== 'Principal')" class="mapeo-layout">
     <div class="plano-wrap">
     <div
         class="workspace"
         [class.modo-edicion]="modo === 'edicion'"
         [class.modo-operacion]="modo === 'operacion'"
+        [class.resizing-ew]="resize()?.edge === 'e' || resize()?.edge === 'w'"
+        [class.resizing-ns]="resize()?.edge === 'n' || resize()?.edge === 's'"
+        [class.resizing-nwse]="resize()?.edge === 'se'"
         (pointermove)="onWorkspacePointerMove($event)"
-        (pointerup)="onDragEnd()"
-        (pointercancel)="onDragEnd()"
+        (pointerup)="onDragOrResizeEnd($event)"
+        (pointercancel)="onDragOrResizeEnd($event)"
         (click)="onWorkspaceClick($event)"
     >
         <!-- Pista/medidas esquemáticas del espacio -->
@@ -113,9 +148,26 @@
             <span class="grupo-etiqueta">{{ grupo.etiqueta }} · {{ grupo.capacidadTotal }} pax</span>
         </div>
 
+        <!-- Pizarrón en blanco para área sin mesas -->
+        <div *ngIf="mesasDelArea().length === 0" class="workspace-empty-canvas">
+            <div class="workspace-empty-card">
+                <div class="empty-badge-area">
+                    <i class="pi pi-map-marker"></i>
+                    <span>Área: {{ areaSeleccionada() }}</span>
+                </div>
+                <h3>Pizarrón en Blanco</h3>
+                <p>Esta área no tiene mesas asignadas todavía. Puedes agregar su propia distribución de mesas.</p>
+                <p-button
+                    [label]="'Agregar Mesa a ' + areaSeleccionada()"
+                    icon="pi pi-plus"
+                    (onClick)="crearNuevaMesa()"
+                ></p-button>
+            </div>
+        </div>
+
         <!-- Mesas -->
         <div
-            *ngFor="let mesa of mesas()"
+            *ngFor="let mesa of mesasDelArea()"
             class="mesa-floor"
             [class.estado-libre]="mesa.estado === 'LIBRE'"
             [class.estado-ocupada]="mesa.estado === 'OCUPADA'"
@@ -126,6 +178,7 @@
             [class.mesa-vertical]="esVertical(mesa)"
             [class.en-grupo]="!!mesa.idGrupoTemporal"
             [class.dragging]="isDragging(mesa.id)"
+            [class.resizing]="isResizing(mesa.id)"
             [class.seleccionable]="unirMode && mesa.estado === 'LIBRE'"
             [class.bloqueada]="unirMode && mesa.estado !== 'LIBRE'"
             [class.seleccionada]="isSelected(mesa.id)"
@@ -139,6 +192,15 @@
             [pTooltip]="tooltipMesa(mesa)"
             tooltipPosition="top"
         >
+            <!-- Manillas para alargar/ajustar aristas en Modo Edición (mesas cuadradas/rectangulares) -->
+            <ng-container *ngIf="modo === 'edicion' && (mesa.forma ?? 'cuadrada') !== 'redonda' && !isDragging(mesa.id)">
+                <span class="arista-handle handle-e" (pointerdown)="onResizePointerDown($event, mesa, 'e')" title="Ajustar lado derecho"></span>
+                <span class="arista-handle handle-w" (pointerdown)="onResizePointerDown($event, mesa, 'w')" title="Ajustar lado izquierdo"></span>
+                <span class="arista-handle handle-s" (pointerdown)="onResizePointerDown($event, mesa, 's')" title="Ajustar lado inferior"></span>
+                <span class="arista-handle handle-n" (pointerdown)="onResizePointerDown($event, mesa, 'n')" title="Ajustar lado superior"></span>
+                <span class="arista-handle handle-se" (pointerdown)="onResizePointerDown($event, mesa, 'se')" title="Ajustar tamaño"></span>
+            </ng-container>
+
             <!-- Indicador de selección en modo unir -->
             <span *ngIf="unirMode" class="mesa-select-indicator">
                 <i [class]="isSelected(mesa.id) ? 'pi pi-check' : 'pi pi-plus'"></i>
@@ -211,9 +273,24 @@
 <!-- ==================== MENÚ RÁPIDO DE MESA (hostess) ==================== -->
 <div *ngIf="popoverMesa() as mesaPop" class="mesa-popover" [ngStyle]="popoverStyle()" (click)="$event.stopPropagation()">
     <div class="popover-head">
-        <span class="popover-title">#{{ mesaPop.id }} · {{ mesaPop.nombre }} <span *ngIf="mesaPop.numero" class="text-xs opacity-75">(M-{{ mesaPop.numero }})</span></span>
+        <div class="popover-title-wrap">
+            <span class="popover-title">{{ mesaPop.nombre }}</span>
+            <span class="popover-id-badge" *ngIf="mesaPop.identificador || mesaPop.id">
+                ID: {{ mesaPop.identificador || mesaPop.id }}
+            </span>
+        </div>
         <p-tag [value]="mesaPop.estado" [severity]="getEstadoSeverity(mesaPop.estado)"></p-tag>
     </div>
+    
+    <div class="popover-meta" *ngIf="(mesaPop.forma ?? 'cuadrada') === 'cuadrada'">
+        <small class="dim-badge">
+            <i class="pi pi-arrows-alt"></i> {{ Math.round(mesaPop.ancho || 80) }} × {{ Math.round(mesaPop.alto || 80) }} px
+        </small>
+        <small class="cap-badge">
+            <i class="pi pi-users"></i> {{ mesaPop.capacidad }} personas
+        </small>
+    </div>
+
     <p-tag *ngIf="mesaPop.idGrupoTemporal" value="En grupo" severity="info" styleClass="popover-grupo-tag"></p-tag>
 
     <div class="popover-section">
@@ -245,17 +322,18 @@
     </div>
 
     <p-button
-            icon="pi pi-replay"
-            class="popover-full"
-            label="Rotar 90°"
-            severity="secondary"
-            [outlined]="true"
-            [text]="false"
-            size="small"
-            styleClass="w-full"
-            (onClick)="rotarMesa(mesaPop)"
-        ></p-button>
-        <div class="popover-actions">
+        icon="pi pi-replay"
+        class="popover-full"
+        label="Rotar 90°"
+        severity="secondary"
+        [outlined]="true"
+        [text]="false"
+        size="small"
+        styleClass="w-full"
+        (onClick)="rotarMesa(mesaPop)"
+    ></p-button>
+
+    <div class="popover-actions">
         <p-button
             *ngIf="mesaPop.idGrupoTemporal"
             class="popover-separar"
@@ -276,32 +354,101 @@
 </div>
 
 <!-- ==================== DIÁLOGO CREAR / EDITAR ==================== -->
-<p-dialog [(visible)]="mesaDialogVisible" [style]="{ width: '450px' }" [modal]="true" [closable]="false" styleClass="minimal-modal">
+<p-dialog [(visible)]="mesaDialogVisible" [style]="{ width: '480px', maxWidth: '95vw' }" [modal]="true" [closable]="false" styleClass="minimal-modal mesa-dialog">
     <ng-template pTemplate="header">
         <div class="inline-flex align-items-center gap-2">
-            <i class="pi pi-table mr-2"></i>
-            <span class="font-bold white-space-nowrap">{{ editingMesa ? 'Editar Mesa' : 'Nueva Mesa' }}</span>
+            <i class="pi pi-table mr-2 text-primary font-bold"></i>
+            <span class="font-bold text-lg white-space-nowrap">{{ editingMesa ? 'Editar Mesa' : 'Nueva Mesa' }}</span>
         </div>
     </ng-template>
     <div class="mesa-form">
+        <!-- Área a la que pertenece la mesa -->
         <div class="field">
-            <label for="mesa-nombre">Nombre *</label>
-            <input pInputText id="mesa-nombre" [(ngModel)]="formNombre" class="w-full" placeholder="Ej. Mesa central" />
+            <label for="mesa-area" class="field-title">
+                Área o zona del local <span class="text-red-500">*</span>
+            </label>
+            <p-select
+                id="mesa-area"
+                [options]="areaOptions()"
+                optionLabel="label"
+                optionValue="value"
+                [(ngModel)]="formArea"
+                appendTo="body"
+                panelStyleClass="mesa-select-panel"
+                styleClass="w-full"
+            ></p-select>
+            <small class="field-hint">Área o piso donde se ubica esta mesa (ej. Principal, Terraza, Balcón...).</small>
         </div>
+
+        <!-- 1. Nombre a mostrar en el mapa -->
         <div class="field">
-            <label for="mesa-numero">Número</label>
-            <p-inputNumber id="mesa-numero" [(ngModel)]="formNumero" mode="decimal" class="w-full" inputId="integeronly"></p-inputNumber>
+            <label for="mesa-nombre" class="field-title">
+                1. Nombre que se mostrará en el mapa <span class="text-red-500">*</span>
+            </label>
+            <input
+                pInputText
+                id="mesa-nombre"
+                [(ngModel)]="formNombre"
+                class="w-full"
+                placeholder="Ej. Barra, 1, 2, Mesa 3..."
+            />
+            <small class="field-hint">Texto visible directamente sobre la mesa en el plano.</small>
         </div>
+
+        <!-- 2. Identificador único -->
         <div class="field">
-            <label for="mesa-capacidad">Capacidad *</label>
-            <p-inputNumber id="mesa-capacidad" [(ngModel)]="formCapacidad" mode="decimal" [min]="1" class="w-full" inputId="integeronly"></p-inputNumber>
+            <label for="mesa-identificador" class="field-title">
+                2. Identificador único <span class="text-red-500">*</span>
+            </label>
+            <input
+                pInputText
+                id="mesa-identificador"
+                [(ngModel)]="formIdentificador"
+                class="w-full"
+                placeholder="Ej. 1, 2, BARRA-1, M-10..."
+            />
+            <small class="field-hint">Código único para identificar la mesa (actúa como el ID).</small>
         </div>
+
+        <!-- 3. Cantidad de personas -->
         <div class="field">
-            <label for="mesa-forma">Forma</label>
-            <p-select id="mesa-forma" [options]="formaOptions" optionLabel="label" optionValue="value" [(ngModel)]="formForma" appendTo="body" panelStyleClass="mesa-select-panel" styleClass="w-full"></p-select>
+            <label for="mesa-capacidad" class="field-title">
+                3. Cantidad de personas <span class="text-red-500">*</span>
+            </label>
+            <p-inputNumber
+                id="mesa-capacidad"
+                [(ngModel)]="formCapacidad"
+                mode="decimal"
+                [min]="1"
+                [max]="50"
+                [showButtons]="true"
+                buttonLayout="horizontal"
+                incrementButtonIcon="pi pi-plus"
+                decrementButtonIcon="pi pi-minus"
+                class="w-full"
+                inputId="integeronly"
+            ></p-inputNumber>
+            <small class="field-hint">Capacidad máxima de comensales.</small>
         </div>
+
+        <!-- 4. Forma de la mesa -->
         <div class="field">
-            <label for="mesa-estado">Estado</label>
+            <label class="field-title">
+                4. Forma de la mesa <span class="text-red-500">*</span>
+            </label>
+            <p-selectButton
+                [options]="formaOptions"
+                optionLabel="label"
+                optionValue="value"
+                [(ngModel)]="formForma"
+                styleClass="w-full forma-toggle"
+            ></p-selectButton>
+            <small class="field-hint">Las mesas cuadradas permiten alargar y ajustar cada lado en el Modo Edición del plano.</small>
+        </div>
+
+        <!-- Estado de la mesa (en modo edición de mesa existente) -->
+        <div class="field" *ngIf="editingMesa">
+            <label for="mesa-estado" class="field-title">Estado de la mesa</label>
             <p-select
                 id="mesa-estado"
                 [options]="estadoOptions"
@@ -313,20 +460,49 @@
                 styleClass="w-full"
             ></p-select>
         </div>
-        <div class="field">
-            <label>Orientación</label>
-            <p-selectbutton
-                [options]="rotacionOptions"
-                optionLabel="label"
-                optionValue="value"
-                [(ngModel)]="formRotacion"
-                styleClass="w-full"
-            ></p-selectbutton>
-        </div>
-        <small class="field-hint" *ngIf="!editingMesa">La mesa nueva se colocará en el centro del plano; arrástrala en modo Edición.</small>
+
+        <small class="field-hint" *ngIf="!editingMesa">
+            La mesa se creará en el plano para que la acomodes y ajustes su tamaño a conveniencia en Modo Edición.
+        </small>
     </div>
     <ng-template pTemplate="footer">
         <p-button label="Cancelar" icon="pi pi-times" [text]="true" (onClick)="mesaDialogVisible = false"></p-button>
-        <p-button [label]="editingMesa ? 'Actualizar' : 'Crear'" icon="pi pi-check" styleClass="minimal-submit" [loading]="saving" (onClick)="saveMesa()"></p-button>
+        <p-button [label]="editingMesa ? 'Guardar Cambios' : 'Registrar Mesa'" icon="pi pi-check" styleClass="minimal-submit" [loading]="saving" (onClick)="saveMesa()"></p-button>
+    </ng-template>
+</p-dialog>
+
+<!-- ==================== DIÁLOGO AGREGAR NUEVA ÁREA ==================== -->
+<p-dialog
+    [(visible)]="nuevaAreaDialogVisible"
+    [modal]="true"
+    [header]="'Agregar Nueva Área'"
+    [style]="{ width: '440px', maxWidth: '95vw' }"
+    [draggable]="false"
+    [resizable]="false"
+    styleClass="minimal-modal dialog-nueva-area"
+>
+    <div class="py-2">
+        <p class="text-sm text-slate-600 mb-3 line-height-3 m-0">
+            Ingresa el nombre o identificador para la nueva área (por ejemplo: <b>Terraza</b>, <b>Segundo Piso</b>, <b>Balcón</b> o <b>Barra Exterior</b>). Esto pintará un nuevo <b>pizarrón en blanco</b> con su propia distribución de mesas.
+        </p>
+        <div class="field mt-3">
+            <label for="nueva-area-input" class="field-title">
+                Nombre o identificador del área <span class="text-red-500">*</span>
+            </label>
+            <input
+                pInputText
+                id="nueva-area-input"
+                [(ngModel)]="formNuevaAreaNombre"
+                placeholder="Ej. Terraza, Segundo Piso, Balcón..."
+                class="w-full mt-1"
+                (keydown.enter)="guardarNuevaArea()"
+                autofocus
+            />
+            <small class="field-hint">Las mesas que configures en este nuevo pizarrón quedarán guardadas en esta área.</small>
+        </div>
+    </div>
+    <ng-template pTemplate="footer">
+        <p-button label="Cancelar" icon="pi pi-times" [text]="true" severity="secondary" (onClick)="nuevaAreaDialogVisible = false"></p-button>
+        <p-button label="Crear Pizarrón" icon="pi pi-check" styleClass="minimal-submit" [disabled]="!formNuevaAreaNombre.trim()" (onClick)="guardarNuevaArea()"></p-button>
     </ng-template>
 </p-dialog>

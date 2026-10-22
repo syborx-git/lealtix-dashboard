@@ -11,6 +11,7 @@ import { AppFooter } from './app.footer';
 import { LayoutService } from '../service/layout.service';
 import { OrderSseService, SseNewOrderEvent } from '@/pages/comandix/services/order-sse.service';
 import { AuthService } from '@/auth/auth.service';
+import { InactivityService } from '@/auth/inactivity.service';
 
 @Component({
     selector: 'app-layout',
@@ -50,11 +51,13 @@ export class AppLayout implements OnInit, OnDestroy {
         public router: Router,
         private orderSseService: OrderSseService,
         private authService: AuthService,
-        private messageService: MessageService
+        private messageService: MessageService,
+        private inactivityService: InactivityService
     ) {}
 
     ngOnInit(): void {
         this.startGlobalOrderNotifications();
+        this.inactivityService.start();
     }
 
     /**
@@ -126,6 +129,7 @@ export class AppLayout implements OnInit, OnDestroy {
             this.sseSub.unsubscribe();
         }
 
+        this.inactivityService.stop();
         this.orderSseService.disconnect();
     }
 }

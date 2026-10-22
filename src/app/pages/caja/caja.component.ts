@@ -18,6 +18,8 @@ import { InputTextModule } from 'primeng/inputtext';
 import { DividerModule } from 'primeng/divider';
 import { ChartModule } from 'primeng/chart';
 import { DatePickerModule } from 'primeng/datepicker';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { TextareaModule } from 'primeng/textarea';
 
 // Componentes
 import { SplitOrderModalComponent } from '@/pages/comandix/components/split-order-modal/split-order-modal.component';
@@ -34,9 +36,12 @@ import {
   CorteMesero,
   DesgloseMetodoPago,
   ResumenTurnoCorte,
-  MeseroSimple
+  MeseroSimple,
+  CorteCajaDiarioDTO,
+  GenerarCorteDiarioRequest,
+  EstadoCorteDiarioHoyDTO
 } from './models/caja.model';
-import { PendingOrder, PendingOrderItem, OrderStatus, ReporteVentaRow, TipInfo } from '@/pages/comandix/models/order.model';
+import { PendingOrder, PendingOrderItem, OrderStatus, ReporteVentaRow, TipInfo, CATEGORIAS_CANCELACION } from '@/pages/comandix/models/order.model';
 
 /** Las tres categorías del slider principal de "Caja y Cortes". */
 export type SeccionCaja = 'tickets' | 'meseros' | 'dia';
@@ -70,6 +75,8 @@ export interface PresetCerradasOpcion {
     DividerModule,
     ChartModule,
     DatePickerModule,
+    InputNumberModule,
+    TextareaModule,
     SplitOrderModalComponent
   ],
   providers: [MessageService],
@@ -400,6 +407,9 @@ export class CajaComponent implements OnInit, OnDestroy {
   // Modal Cancelar Comanda
   modalCancelarVisible = signal<boolean>(false);
   comandaACancelar = signal<{ id: string; folio: string; mesaNombre?: string; total: number } | null>(null);
+  categoriasCancelacion = CATEGORIAS_CANCELACION;
+  categoriaCancelacion = 'Alto tiempo de espera';
+  comentarioCancelacion = '';
   motivoCancelacion = '';
 
   // Modal Dividir Comanda (Split)
@@ -413,7 +423,7 @@ export class CajaComponent implements OnInit, OnDestroy {
   meseroSeleccionado = signal<MeseroSimple | null>(null);
   corteMesero = signal<CorteMesero | null>(null);
   loadingCorte = signal<boolean>(false);
-  retencionPropinasPorc = 15; // 15% retención por defecto para cocina/barra
+  retencionPropinasPorc = 50; // 50% retención por defecto para cocina/barra/pool
   /** Modal con el corteamplio del mesero: tickets, dinero y platillos vendidos. */
   modalCorteMeseroVisible = signal<boolean>(false);
 
@@ -735,6 +745,144 @@ export class CajaComponent implements OnInit, OnDestroy {
     this.modalDesgloseVentasVisible.set(false);
   }
 
+  // ============ ARQUEO / GENERACIÓN DEL CORTE DEL DÍA ============
+  estadoCorteHoy = signal<EstadoCorteDiarioHoyDTO | null>(null);
+  corteHoyYaGenerado = computed(() => this.estadoCorteHoy()?.yaGenerado ?? false);
+  corteHoy = computed(() => this.estadoCorteHoy()?.corte ?? null);
+
+  modalGenerarCorteDiaVisible = signal<boolean>(false);
+  modalVerCorteDiaVisible = signal<boolean>(false);
+  guardandoCorteDia = signal<boolean>(false);
+
+  // Inputs ingresados en el modal de arqueo
+  inputRealEfectivo = signal<number | null>(null);
+  inputRealTarjeta = signal<number | null>(null);
+  inputRealTransferencia = signal<number | null>(null);
+  inputRealOtros = signal<number | null>(null);
+  inputComentariosCorte = signal<string>('');
+
+  // Comparativas en vivo en el modal
+  totalRealDeclarado = computed(() => {
+    const ef = Number(this.inputRealEfectivo() ?? 0);
+    const tar = Number(this.inputRealTarjeta() ?? 0);
+    const trans = Number(this.inputRealTransferencia() ?? 0);
+    const ot = Number(this.inputRealOtros() ?? 0);
+    return ef + tar + trans + ot;
+  });
+
+  diferenciaTotalCorte = computed(() => {
+    return this.totalRealDeclarado() - this.diaVentas();
+  });
+
+  diferenciaEfectivoCorte = computed(() => {
+    return Number(this.inputRealEfectivo() ?? 0) - this.totalEfectivoDia();
+  });
+
+  diferenciaTarjetaCorte = computed(() => {
+    return Number(this.inputRealTarjeta() ?? 0) - this.totalTarjetaDia();
+  });
+
+  diferenciaTransferenciaCorte = computed(() => {
+    return Number(this.inputRealTransferencia() ?? 0) - this.totalTransferenciaDia();
+  });
+
+  diferenciaOtrosCorte = computed(() => {
+    return Number(this.inputRealOtros() ?? 0) - this.totalOtrosMetodosDia();
+  });
+
+  async consultarEstadoCorteHoy(): Promise<void> {
+    if (this.tenantId <= 0) return;
+    try {
+      const resp = await firstValueFrom(this.cajaService.getEstadoCorteDiarioHoy(this.tenantId));
+      if (resp?.code === 200 && resp.object) {
+        this.estadoCorteHoy.set(resp.object);
+      }
+    } catch (e: any) {
+      console.warn('[Caja] No se pudo consultar estado del corte de hoy:', e);
+    }
+  }
+
+  abrirModalGenerarCorteDia(): void {
+    if (this.corteHoyYaGenerado()) {
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Corte del día ya realizado',
+        detail: 'El corte de hoy ya fue generado y no puede volverse a realizar hasta mañana.'
+      });
+      return;
+    }
+    this.inputRealEfectivo.set(null);
+    this.inputRealTarjeta.set(null);
+    this.inputRealTransferencia.set(null);
+    this.inputRealOtros.set(null);
+    this.inputComentariosCorte.set('');
+    this.modalGenerarCorteDiaVisible.set(true);
+  }
+
+  cerrarModalGenerarCorteDia(): void {
+    this.modalGenerarCorteDiaVisible.set(false);
+  }
+
+  abrirModalVerCorteDia(): void {
+    this.modalVerCorteDiaVisible.set(true);
+  }
+
+  cerrarModalVerCorteDia(): void {
+    this.modalVerCorteDiaVisible.set(false);
+  }
+
+  async confirmarGenerarCorteDia(): Promise<void> {
+    if (this.guardandoCorteDia()) return;
+    if (this.corteHoyYaGenerado()) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Operación bloqueada',
+        detail: 'El corte del día de hoy ya se encuentra registrado.'
+      });
+      return;
+    }
+
+    this.guardandoCorteDia.set(true);
+    try {
+      const req: GenerarCorteDiarioRequest = {
+        tenantId: this.tenantId,
+        realEfectivo: Number(this.inputRealEfectivo() ?? 0),
+        realTarjeta: Number(this.inputRealTarjeta() ?? 0),
+        realTransferencia: Number(this.inputRealTransferencia() ?? 0),
+        realOtros: Number(this.inputRealOtros() ?? 0),
+        comentarios: this.inputComentariosCorte().trim() || undefined
+      };
+
+      const resp = await firstValueFrom(this.cajaService.generarCorteDiario(req));
+      if (resp?.code === 201 || resp?.code === 200) {
+        const corte = resp.object || (resp as any).data;
+        this.estadoCorteHoy.set({
+          yaGenerado: true,
+          corte,
+          sistemaActual: null
+        });
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Corte del día generado',
+          detail: 'El corte de caja del día se registró y concilió exitosamente.'
+        });
+        this.modalGenerarCorteDiaVisible.set(false);
+        await this.cargarResumenDia(false);
+      } else {
+        throw new Error(resp?.message || 'Error al generar corte');
+      }
+    } catch (e: any) {
+      const msg = e?.error?.message || e?.message || 'No fue posible registrar el corte del día';
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: msg
+      });
+    } finally {
+      this.guardandoCorteDia.set(false);
+    }
+  }
+
   /** Datos de la gráfica: participación de cada método de pago en lo recaudado. */
   metodosPagoChartData = computed(() => {
     const metodos = this.metodosPagoDia();
@@ -925,11 +1073,9 @@ export class CajaComponent implements OnInit, OnDestroy {
       await Promise.all([
         this.cargarTablero(false),
         this.cargarMeseros(),
-        this.cargarHistorialComandas(false)
+        this.cargarHistorialComandas(false),
+        this.consultarEstadoCorteHoy()
       ]);
-      if (this.seccionActiva() === 'dia') {
-        await this.cargarResumenDia(false);
-      }
       if (this.seccionActiva() === 'dia') {
         await this.cargarResumenDia(false);
       }
@@ -1622,6 +1768,8 @@ export class CajaComponent implements OnInit, OnDestroy {
       mesaNombre: order.mesaNombre,
       total
     });
+    this.categoriaCancelacion = 'Alto tiempo de espera';
+    this.comentarioCancelacion = '';
     this.motivoCancelacion = '';
     this.modalCancelarVisible.set(true);
   }
@@ -1629,21 +1777,26 @@ export class CajaComponent implements OnInit, OnDestroy {
   cerrarModalCancelar(): void {
     this.modalCancelarVisible.set(false);
     this.comandaACancelar.set(null);
+    this.comentarioCancelacion = '';
   }
 
   async confirmarCancelarComanda(): Promise<void> {
     const target = this.comandaACancelar();
     if (!target) return;
 
-    if (!this.motivoCancelacion || this.motivoCancelacion.trim().length === 0) {
-      this.messageService.add({ severity: 'warn', summary: 'Motivo requerido', detail: 'Por favor indica la razón de cancelación' });
+    const cat = this.categoriaCancelacion || 'Otro motivo';
+    const comm = this.comentarioCancelacion.trim();
+    if (cat === 'Otro motivo' && !comm) {
+      this.messageService.add({ severity: 'warn', summary: 'Comentario requerido', detail: 'Por favor indica la observación detallada para "Otro motivo"' });
       return;
     }
+
+    const compositeReason = comm ? `[${cat}] ${comm}` : cat;
 
     this.procesando.set(true);
     try {
       const email = this.authService.getCurrentUser()?.email || this.userName || undefined;
-      await firstValueFrom(this.orderService.updateOrderStatus(target.id, 'CANCELADA', email, this.motivoCancelacion.trim()));
+      await firstValueFrom(this.orderService.updateOrderStatus(target.id, 'CANCELADA', email, compositeReason, cat, comm));
       
       // Actualización optimista inmediata en la UI para desaparecer la comanda de Abiertas
       this.todasComandas.update(orders =>
@@ -1653,7 +1806,7 @@ export class CajaComponent implements OnInit, OnDestroy {
       this.messageService.add({
         severity: 'info',
         summary: 'Comanda Cancelada',
-        detail: `La comanda #${target.folio} fue cancelada correctamente`
+        detail: `La comanda #${target.folio} fue cancelada correctamente (${cat})`
       });
       this.cerrarModalCancelar();
       await Promise.all([
@@ -1671,8 +1824,9 @@ export class CajaComponent implements OnInit, OnDestroy {
   // ==================== DIVISIÓN DE COMANDA (SPLIT) ====================
 
   async abrirModalSplit(order: PendingOrder | ComandaCajaRow): Promise<void> {
-    if ('items' in order && Array.isArray((order as any).items)) {
-      this.orderParaSplit.set(order as PendingOrder);
+    const rawOrder = order as any;
+    if (rawOrder && Array.isArray(rawOrder.items) && rawOrder.items.length > 0) {
+      this.orderParaSplit.set(rawOrder as PendingOrder);
       this.modalSplitVisible.set(true);
       return;
     }
@@ -1692,6 +1846,8 @@ export class CajaComponent implements OnInit, OnDestroy {
         const mapped = this.mapBackendOrder(fullOrder);
         this.orderParaSplit.set(mapped);
         this.modalSplitVisible.set(true);
+      } else {
+        throw new Error('La orden no contiene datos');
       }
     } catch (e) {
       console.error('Error preparando orden para división:', e);
@@ -1701,21 +1857,45 @@ export class CajaComponent implements OnInit, OnDestroy {
     }
   }
 
+  dividirCuentaDesdeCobro(): void {
+    const comanda = this.comandaSeleccionada();
+    if (!comanda) return;
+    if (this.montoPropinaInput > 0) {
+      this.splitOrderTip.set({ amount: this.montoPropinaInput });
+    } else {
+      this.splitOrderTip.set(null);
+    }
+    this.modalPagoVisible.set(false);
+    this.abrirModalSplit(comanda);
+  }
+
+  dividirCuentaDesdeDetalle(order: PendingOrder): void {
+    this.cerrarDetalleOrden();
+    this.abrirModalSplit(order);
+  }
+
   onSplitModalVisibilityChange(visible: boolean): void {
     this.modalSplitVisible.set(visible);
     if (!visible) {
       this.orderParaSplit.set(null);
+      this.splitOrderTip.set(null);
     }
   }
 
   onCuentaCreadaEnCaja(event: any): void {
+    const totalComandas = event?.newOrderIds?.length ?? 1;
     this.messageService.add({
       severity: 'success',
-      summary: 'Cuenta Dividida',
-      detail: 'Se ha creado la nueva cuenta con los artículos seleccionados'
+      summary: totalComandas > 1 ? 'Cuenta dividida equitativamente' : 'Cuenta dividida',
+      detail:
+        totalComandas > 1
+          ? `La cuenta se dividió en ${totalComandas + 1} sub-comandas. Se han actualizado en caja para su cobro individual.`
+          : `Se ha creado una nueva sub-comanda. Las cuentas están listas para cobrarse por separado en caja.`,
+      life: 4500
     });
     this.modalSplitVisible.set(false);
     this.orderParaSplit.set(null);
+    this.splitOrderTip.set(null);
     this.cargarTablero(false);
     this.cargarHistorialComandas(false);
   }
@@ -1806,6 +1986,7 @@ export class CajaComponent implements OnInit, OnDestroy {
     }
     this.meseroSeleccionadoId.set(id);
     this.meseroSeleccionado.set(meseroObj);
+    this.retencionPropinasPorc = 50;
     this.modalCorteMeseroVisible.set(true);
     this.fechaCorte.set(new Date());
     await Promise.all([this.cargarCorteMesero(), this.cargarHistorialComandas(false)]);
@@ -1851,6 +2032,7 @@ export class CajaComponent implements OnInit, OnDestroy {
     if (this.tenantId <= 0) return;
     if (showLoading) this.loadingResumenDia.set(true);
     try {
+      await this.consultarEstadoCorteHoy();
       if (!this.turnoActivo()) await this.asegurarTurnoActivo();
       const turno = this.turnoActivo();
       if (!turno) {
@@ -1899,9 +2081,23 @@ export class CajaComponent implements OnInit, OnDestroy {
     }
   }
 
+  get propinaBrutaMesero(): number {
+    const corte = this.corteDelDia();
+    if (corte?.propinasPendientesLiquidar !== undefined && corte?.propinasPendientesLiquidar !== null) {
+      return corte.propinasPendientesLiquidar;
+    }
+    return this.totalPropinasMesero();
+  }
+
+  get retencionMontoMesero(): number {
+    const bruto = this.propinaBrutaMesero;
+    const porc = Math.min(100, Math.max(0, Number(this.retencionPropinasPorc) || 0));
+    return (bruto * (porc / 100));
+  }
+
   get propinaNetaMesero(): number {
-    const bruto = this.corteDelDia()?.propinasPendientesLiquidar ?? this.totalPropinasMesero();
-    const retencion = (bruto * (this.retencionPropinasPorc / 100));
+    const bruto = this.propinaBrutaMesero;
+    const retencion = this.retencionMontoMesero;
     return Math.max(0, bruto - retencion);
   }
 
@@ -1921,13 +2117,14 @@ export class CajaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const propinas = (this.corteDelDia()?.propinasPendientesLiquidar && this.corteDelDia()!.propinasPendientesLiquidar > 0)
-      ? this.corteDelDia()!.propinasPendientesLiquidar
-      : this.totalPropinasMesero();
+    const propinas = this.propinaBrutaMesero;
     if (propinas <= 0) {
       this.messageService.add({ severity: 'info', summary: 'Sin saldo', detail: 'No hay propinas pendientes de liquidar' });
       return;
     }
+
+    const porc = Math.min(100, Math.max(0, Number(this.retencionPropinasPorc) || 0));
+    const montoNeto = this.propinaNetaMesero;
 
     this.procesando.set(true);
     try {
@@ -1936,13 +2133,13 @@ export class CajaComponent implements OnInit, OnDestroy {
         idTurno: turno.idTurno,
         idMesero: idMesero,
         idCajero: this.userId,
-        porcentajeRetencion: this.retencionPropinasPorc
+        porcentajeRetencion: porc
       }));
 
       this.messageService.add({
         severity: 'success',
         summary: 'Propinas Liquidadas',
-        detail: `Se entregó neto de $${this.propinaNetaMesero.toFixed(2)} a ${nombre}`
+        detail: `Se entregó neto de $${montoNeto.toFixed(2)} a ${nombre} (${porc}% de retención)`
       });
 
       await this.cargarCorteMesero();

@@ -228,7 +228,8 @@ export class ProductMenuComponent implements OnInit {
             img_url: [''],
             productImage: [null], // store actual File/Blob for upload
             isActive: [true],
-            autoAvailability: [true]
+            autoAvailability: [true],
+            esVariable: [false]
         });
     }
 
@@ -1293,7 +1294,7 @@ export class ProductMenuComponent implements OnInit {
         (this.product as any).categories = [];
         this.submitted = false;
         // reset product form (clear productImage as well)
-        this.productForm.reset({ id: null, name: '', description: '', price: null, img_url: '', productImage: null, isActive: true, autoAvailability: true });
+        this.productForm.reset({ id: null, name: '', description: '', price: null, img_url: '', productImage: null, isActive: true, autoAvailability: true, esVariable: false });
         // ensure preview and internal file reference are cleared when creating new
         this.productImagePreview = null;
         this.productForm.get('productImage')?.setValue(null);
@@ -1317,7 +1318,8 @@ export class ProductMenuComponent implements OnInit {
             img_url: '',
             productImage: null,
             isActive: true,
-            autoAvailability: true
+            autoAvailability: true,
+            esVariable: false
         });
         // ensure preview and internal file reference are cleared when creating new
         this.productImagePreview = null;
@@ -1344,7 +1346,8 @@ export class ProductMenuComponent implements OnInit {
             price: product.price ?? null,
             img_url: product.imageUrl ?? '',
             isActive: product.isActive ?? true,
-            autoAvailability: (product as any).autoAvailability ?? true
+            autoAvailability: (product as any).autoAvailability ?? true,
+            esVariable: (product as any).esVariable ?? false
         });
         this.productForm.get('productImage')?.setValue(null);
         this.productImagePreview = product.imageUrl ?? null;
@@ -1545,6 +1548,7 @@ export class ProductMenuComponent implements OnInit {
                 price: prod.price,
                 isActive: prod.isActive,
                 autoAvailability: prod.autoAvailability ?? true,
+                esVariable: !!prod.esVariable,
                 imageUrl: imageUrl ?? prod.img_url
             } as any;
             this.startLoading();

@@ -110,6 +110,131 @@ export interface AuditoriaTicketsCanceladosDTO {
   detalle: TablaReporteDTO;
 }
 
+export interface AuditoriaCortesDiariosDTO {
+  meta: ReporteMetaDTO;
+  kpis: KpiDTO[];
+  porMetodo: TablaReporteDTO;
+  distribucion: TablaReporteDTO;
+  detalle: TablaReporteDTO;
+  listaCortes: any[];
+}
+
+export interface ChartPuntoDTO {
+  label?: string;
+  etiqueta?: string;
+  valor: number;
+  valorMoneda?: number;
+  unidad?: string;
+  categoria?: string;
+  area?: string;
+  subtexto?: string;
+}
+
+export interface CorteInsumosDTO {
+  meta: ReporteMetaDTO;
+  kpis: KpiDTO[];
+  areaFiltro: string;
+  platillosVendidos: TablaReporteDTO;
+  insumosConsumidos: TablaReporteDTO;
+  stockDisponible: TablaReporteDTO;
+  topPlatillos: ChartPuntoDTO[];
+  topInsumos: ChartPuntoDTO[];
+}
+
+export interface CuadranteResumenDTO {
+  cuadrante: string;
+  etiqueta: string;
+  icono: string;
+  color: string;
+  cantidadPlatillos: number;
+  unidadesVendidas: number;
+  ingresosTotales: number;
+  margenTotal: number;
+  porcentajeVentas: number;
+  porcentajeMargen: number;
+  estrategia: string;
+}
+
+export interface PuntoMatrizDTO {
+  productoId: number;
+  nombre: string;
+  categoria: string;
+  cuadrante: string;
+  volumenX: number;
+  margenY: number;
+  precio: number;
+  costo: number;
+  margenPct: number;
+  unidadesVendidas: number;
+  ingresosTotales: number;
+  margenTotal: number;
+}
+
+export interface IngenieriaMenuDTO {
+  meta: ReporteMetaDTO;
+  kpis: KpiDTO[];
+  umbralPopularidad: number;
+  umbralMargen: number;
+  resumenCuadrantes: Record<string, CuadranteResumenDTO>;
+  matrizProductos: TablaReporteDTO;
+  puntosGrafica: PuntoMatrizDTO[];
+}
+
+export interface KardexReporteDTO {
+  meta: ReporteMetaDTO;
+  kpis: KpiDTO[];
+  resumenInsumos: TablaReporteDTO;
+  movimientosDetalle: TablaReporteDTO;
+  transferenciasAreas?: TablaReporteDTO;
+  distribucionMovimientos: ChartPuntoDTO[];
+  topInsumosRotacion: ChartPuntoDTO[];
+}
+
+export interface RfmReporteDTO {
+  meta: ReporteMetaDTO;
+  kpis: KpiDTO[];
+  resumenSegmentos: TablaReporteDTO;
+  clientesDetalle: TablaReporteDTO;
+  distribucionSegmentos: ChartPuntoDTO[];
+  ingresosPorSegmento: ChartPuntoDTO[];
+}
+
+export interface CampanasReporteDTO {
+  meta: ReporteMetaDTO;
+  kpis: KpiDTO[];
+  resumenCampanas: TablaReporteDTO;
+  cuponesCanjeados: TablaReporteDTO;
+  canjesPorCampana: ChartPuntoDTO[];
+  comparativaDescuentoVenta: ChartPuntoDTO[];
+}
+
+export interface TiemposServicioReporteDTO {
+  meta: ReporteMetaDTO;
+  kpis: KpiDTO[];
+  tiemposPorEstacion: TablaReporteDTO;
+  detalleComandas: TablaReporteDTO;
+  distribucionRangos: ChartPuntoDTO[];
+  promedioPorEstacion: ChartPuntoDTO[];
+}
+
+export interface RendimientoMeseroReporteDTO {
+  meta: ReporteMetaDTO;
+  kpis: KpiDTO[];
+  tablaMeseros: TablaReporteDTO;
+  desgloseMetodosPago: TablaReporteDTO;
+  ventasPorMesero: ChartPuntoDTO[];
+  ticketsPorMesero: ChartPuntoDTO[];
+}
+
+export interface MapaCalorReporteDTO {
+  meta: ReporteMetaDTO;
+  kpis: KpiDTO[];
+  matrizAfluencia: TablaReporteDTO;
+  desglosePorHora: TablaReporteDTO;
+  afluenciaPorHora: ChartPuntoDTO[];
+  afluenciaPorDia: ChartPuntoDTO[];
+}
+
 export interface GenericResponse<T> {
   code: number;
   message: string;
@@ -121,6 +246,7 @@ export interface ReportesParams {
   from?: string;
   to?: string;
   granularidad?: string;
+  area?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -210,6 +336,160 @@ export class ReportesService {
     });
   }
 
+  /** Reporte 4.2: Auditoria de Cortes del Dia - comparativa teorico vs fisico */
+  obtenerCortesDiarios(
+    tenantId: number,
+    params: ReportesParams
+  ): Observable<GenericResponse<AuditoriaCortesDiariosDTO>> {
+    return this.http.get<GenericResponse<AuditoriaCortesDiariosDTO>>(`${this.baseUrl}/cortes-diarios`, {
+      params: this.construirParams(tenantId, params),
+    });
+  }
+
+  /** Reporte 4.2 en .xlsx real con desglose por metodo, distribucion y detalle cronologico. */
+  exportarCortesDiarios(tenantId: number, params: ReportesParams): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/cortes-diarios/export`, {
+      params: this.construirParams(tenantId, params),
+      responseType: 'blob',
+    });
+  }
+
+  /** Reporte 2.1: Corte Diario de Insumos (Cocina / Barra) */
+  obtenerCorteInsumos(
+    tenantId: number,
+    params: ReportesParams
+  ): Observable<GenericResponse<CorteInsumosDTO>> {
+    return this.http.get<GenericResponse<CorteInsumosDTO>>(`${this.baseUrl}/corte-insumos`, {
+      params: this.construirParams(tenantId, params),
+    });
+  }
+
+  exportarCorteInsumos(tenantId: number, params: ReportesParams): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/corte-insumos/export`, {
+      params: this.construirParams(tenantId, params),
+      responseType: 'blob',
+    });
+  }
+
+  /** Reporte 2.2: Matriz de Ingeniería del Menú (Kasavana & Smith) */
+  obtenerIngenieriaMenu(
+    tenantId: number,
+    params: ReportesParams
+  ): Observable<GenericResponse<IngenieriaMenuDTO>> {
+    return this.http.get<GenericResponse<IngenieriaMenuDTO>>(`${this.baseUrl}/ingenieria-menu`, {
+      params: this.construirParams(tenantId, params),
+    });
+  }
+
+  exportarIngenieriaMenu(tenantId: number, params: ReportesParams): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/ingenieria-menu/export`, {
+      params: this.construirParams(tenantId, params),
+      responseType: 'blob',
+    });
+  }
+
+  /** Reporte 2.2: Kardex de Insumos */
+  obtenerKardex(
+    tenantId: number,
+    params: ReportesParams
+  ): Observable<GenericResponse<KardexReporteDTO>> {
+    return this.http.get<GenericResponse<KardexReporteDTO>>(`${this.baseUrl}/kardex`, {
+      params: this.construirParams(tenantId, params),
+    });
+  }
+
+  exportarKardex(tenantId: number, params: ReportesParams): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/kardex/export`, {
+      params: this.construirParams(tenantId, params),
+      responseType: 'blob',
+    });
+  }
+
+  /** Reporte 3.1: Análisis RFM de Clientes */
+  obtenerRfm(
+    tenantId: number,
+    params: ReportesParams
+  ): Observable<GenericResponse<RfmReporteDTO>> {
+    return this.http.get<GenericResponse<RfmReporteDTO>>(`${this.baseUrl}/rfm`, {
+      params: this.construirParams(tenantId, params),
+    });
+  }
+
+  exportarRfm(tenantId: number, params: ReportesParams): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/rfm/export`, {
+      params: this.construirParams(tenantId, params),
+      responseType: 'blob',
+    });
+  }
+
+  /** Reporte 3.2: Rendimiento de Campañas y Cupones */
+  obtenerCampanas(
+    tenantId: number,
+    params: ReportesParams
+  ): Observable<GenericResponse<CampanasReporteDTO>> {
+    return this.http.get<GenericResponse<CampanasReporteDTO>>(`${this.baseUrl}/campanas`, {
+      params: this.construirParams(tenantId, params),
+    });
+  }
+
+  exportarCampanas(tenantId: number, params: ReportesParams): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/campanas/export`, {
+      params: this.construirParams(tenantId, params),
+      responseType: 'blob',
+    });
+  }
+
+  /** Reporte 4.3: Tiempos de Servicio y Preparación */
+  obtenerTiemposServicio(
+    tenantId: number,
+    params: ReportesParams
+  ): Observable<GenericResponse<TiemposServicioReporteDTO>> {
+    return this.http.get<GenericResponse<TiemposServicioReporteDTO>>(`${this.baseUrl}/tiempos`, {
+      params: this.construirParams(tenantId, params),
+    });
+  }
+
+  exportarTiemposServicio(tenantId: number, params: ReportesParams): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/tiempos/export`, {
+      params: this.construirParams(tenantId, params),
+      responseType: 'blob',
+    });
+  }
+
+  /** Reporte 4.4: Rendimiento por Mesero */
+  obtenerRendimientoMeseros(
+    tenantId: number,
+    params: ReportesParams
+  ): Observable<GenericResponse<RendimientoMeseroReporteDTO>> {
+    return this.http.get<GenericResponse<RendimientoMeseroReporteDTO>>(`${this.baseUrl}/meseros`, {
+      params: this.construirParams(tenantId, params),
+    });
+  }
+
+  exportarRendimientoMeseros(tenantId: number, params: ReportesParams): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/meseros/export`, {
+      params: this.construirParams(tenantId, params),
+      responseType: 'blob',
+    });
+  }
+
+  /** Reporte 4.5: Mapa de Calor de Afluencia */
+  obtenerMapaCalor(
+    tenantId: number,
+    params: ReportesParams
+  ): Observable<GenericResponse<MapaCalorReporteDTO>> {
+    return this.http.get<GenericResponse<MapaCalorReporteDTO>>(`${this.baseUrl}/mapa-calor`, {
+      params: this.construirParams(tenantId, params),
+    });
+  }
+
+  exportarMapaCalor(tenantId: number, params: ReportesParams): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/mapa-calor/export`, {
+      params: this.construirParams(tenantId, params),
+      responseType: 'blob',
+    });
+  }
+
   private construirParams(tenantId: number, params: ReportesParams): HttpParams {
     let httpParams = new HttpParams().set('tenantId', String(tenantId)).set('preset', params.preset);
 
@@ -221,6 +501,9 @@ export class ReportesService {
     }
     if (params.granularidad) {
       httpParams = httpParams.set('granularidad', params.granularidad);
+    }
+    if (params.area) {
+      httpParams = httpParams.set('area', params.area);
     }
     return httpParams;
   }

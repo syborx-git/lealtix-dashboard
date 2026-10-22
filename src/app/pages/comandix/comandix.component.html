@@ -23,6 +23,12 @@
       </div>
       <div class="flex align-items-center gap-2 header-tags">
         <p-tag
+          *ngIf="selectedMesa() && activeView() === 'pos'"
+          [value]="selectedMesa()!.nombre + (selectedMesa()!.numero ? ' (M-' + selectedMesa()!.numero + ')' : '')"
+          icon="pi pi-table"
+          severity="warn"
+        ></p-tag>
+        <p-tag
           *ngIf="selectedCliente && activeView() === 'pos'"
           [value]="selectedCliente.nombreCompleto"
           icon="pi pi-user"
@@ -50,6 +56,17 @@
 
     <!-- ==================== TOGGLE DE VISTA ==================== -->
     <div class="catalog-tabs view-toggle mb-3">
+      <button
+        class="catalog-tab view-toggle-btn"
+        [class.active]="activeView() === 'mesas'"
+        (click)="switchView('mesas')"
+        type="button"
+      >
+        <i class="pi pi-table"></i>
+        <span class="view-btn-label">Mapa de Mesas</span>
+        <span *ngIf="mesasOcupadasCount() > 0" class="orders-badge" style="background: #ef4444; color: #fff;">{{ mesasOcupadasCount() }}</span>
+      </button>
+
       <button
         class="catalog-tab view-toggle-btn"
         [class.active]="activeView() === 'pos'"
@@ -104,6 +121,19 @@
       </button>
 
       <button
+        class="catalog-tab view-toggle-btn"
+        [class.active]="activeView() === 'disponibilidad'"
+        (click)="switchView('disponibilidad')"
+        type="button"
+        title="Disponibilidad de platillos y bebidas (8-5 y 8-6)"
+      >
+        <i class="pi pi-box"></i>
+        <span class="view-btn-label">Disponibilidad</span>
+        <span *ngIf="items86Count() > 0" class="orders-badge" style="background: #ef4444; color: #fff;" pTooltip="Agotados (8-6)">8-6: {{ items86Count() }}</span>
+        <span *ngIf="items85Count() > 0" class="orders-badge" style="background: #f59e0b; color: #fff;" pTooltip="Pocas existencias (8-5)">8-5: {{ items85Count() }}</span>
+      </button>
+
+      <button
         *ngIf="activeView() === 'orders' && ordersView() === 'active'"
         class="view-toggle-refresh"
         (click)="pollOrders()"
@@ -114,6 +144,465 @@
       </button>
     </div>
   </div>
+
+  <!-- ==================== VISTA: MAPA DE MESAS (MESERO) ==================== -->
+  <div *ngIf="activeView() === 'mesas'" class="comandix-mesas-view">
+    <!-- BARRA SUPERIOR DE ESTADO Y ACCIONES DE MESAS -->
+    <div class="mesas-toolbar-card bg-white rounded-2xl p-3 md:p-4 mb-3 shadow-sm border border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-3">
+      
+      <!-- Contador y Leyenda de Estados -->
+      <div class="flex items-center gap-2 md:gap-3 flex-wrap">
+        <div class="legenda-chip" pTooltip="Mesas listas para tomar orden" tooltipPosition="bottom">
+          <span class="dot dot-libre"></span>
+          <span class="font-bold text-slate-700">Libres</span>
+          <span class="count bg-emerald-100 text-emerald-800">{{ mesasLibresCount() }}</span>
+        </div>
+        <div class="legenda-chip" pTooltip="Mesas con clientes o comanda activa" tooltipPosition="bottom">
+          <span class="dot dot-ocupada"></span>
+          <span class="font-bold text-slate-700">Ocupadas</span>
+          <span class="count bg-rose-100 text-rose-800">{{ mesasOcupadasCount() }}</span>
+        </div>
+        <div class="legenda-chip" pTooltip="Mesas reservadas" tooltipPosition="bottom">
+          <span class="dot dot-reservada"></span>
+          <span class="font-bold text-slate-700">Reservadas</span>
+          <span class="count bg-amber-100 text-amber-800">{{ mesasReservadasCount() }}</span>
+        </div>
+        <div
+          *ngIf="grupoTemporal().length > 0"
+          class="legenda-chip clickable"
+          (click)="onLegendGrupoClick()"
+          pTooltip="Ver opciones de mesas unidas"
+          tooltipPosition="bottom"
+        >
+          <span class="dot dot-grupo"></span>
+          <span class="font-bold text-slate-700">Unidas</span>
+          <span class="count bg-blue-100 text-blue-800">{{ grupoTemporal().length }}</span>
+        </div>
+      </div>
+
+      <!-- Acciones de Mesas (Mesero: Ver, Consultar, Unir) -->
+      <div class="flex items-center gap-2">
+        <button
+          *ngIf="!unirModeMesas()"
+          type="button"
+          (click)="activarUnionMode()"
+          class="px-3.5 py-2 text-xs md:text-sm font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors flex items-center gap-2 cursor-pointer shadow-2xs"
+          pTooltip="Selecciona dos o más mesas libres para atender a un grupo grande"
+          tooltipPosition="bottom"
+        >
+          <i class="pi pi-objects-column text-blue-600"></i>
+          <span>Unir Mesas</span>
+        </button>
+
+        <ng-container *ngIf="unirModeMesas()">
+          <button
+            type="button"
+            (click)="ejecutarUnionMesas()"
+            [disabled]="selectedMesaIds().size < 2"
+            class="px-3.5 py-2 text-xs md:text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-xl transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
+          >
+            <i class="pi pi-check"></i>
+            <span>Confirmar Unión ({{ selectedMesaIds().size }})</span>
+          </button>
+          <button
+            type="button"
+            (click)="cancelarUnionMode()"
+            class="px-3 py-2 text-xs md:text-sm font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+          >
+            <i class="pi pi-times"></i>
+            <span>Cancelar</span>
+          </button>
+        </ng-container>
+
+        <button
+          type="button"
+          (click)="loadMesas()"
+          class="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer border border-slate-200"
+          pTooltip="Refrescar estado de mesas"
+          tooltipPosition="bottom"
+        >
+          <i class="pi pi-refresh"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Banner informativo -->
+    <div class="flex items-center justify-between px-3 py-2 bg-slate-50 border border-slate-200/60 rounded-xl text-xs text-slate-600 mb-3">
+      <div class="flex items-center gap-2">
+        <i class="pi pi-info-circle text-blue-500 text-sm"></i>
+        <span *ngIf="!unirModeMesas()">
+          Toca una mesa <b>libre</b> para abrir su comanda automáticamente, o una mesa <b>ocupada</b> para consultar sus cuentas activas.
+        </span>
+        <span *ngIf="unirModeMesas()" class="text-blue-700 font-semibold">
+          Modo Unión Activo: Selecciona dos o más mesas <b>libres</b> para juntarlas y presiona "Confirmar Unión".
+        </span>
+      </div>
+      <div *ngIf="selectedMesa() as sm" class="hidden md:flex items-center gap-1.5 text-purple-700 font-bold">
+        <i class="pi pi-check-circle"></i>
+        <span>Mesa activa en comanda: {{ sm.nombre }}</span>
+      </div>
+    </div>
+
+    <!-- CONTENEDOR DEL PLANO INTERACTIVO -->
+    <div class="plano-container bg-white rounded-2xl p-2 md:p-3 shadow-sm border border-slate-200/80 overflow-hidden">
+      <div class="plano-wrap">
+        <div class="workspace modo-operacion">
+          <!-- Cuadrícula esquemática -->
+          <div class="workspace-grid"></div>
+
+          <!-- Bounding boxes de grupos unidos -->
+          <div
+            *ngFor="let grupo of grupoTemporal()"
+            class="mesa-grupo-borde"
+            [ngStyle]="{
+              left: grupo.x + 'px',
+              top: grupo.y + 'px',
+              width: grupo.width + 'px',
+              height: grupo.height + 'px'
+            }"
+          >
+            <button
+              type="button"
+              class="grupo-etiqueta"
+              (click)="onGrupoClick(grupo, $event)"
+              pTooltip="Opciones de grupo: Separar mesas o Abrir comanda"
+              tooltipPosition="top"
+            >
+              <i class="pi pi-link text-xs"></i>
+              <span>{{ grupo.etiqueta }} · {{ grupo.capacidadTotal }} pax</span>
+              <i class="pi pi-chevron-right text-[10px] opacity-75"></i>
+            </button>
+          </div>
+
+          <!-- Mesas en el plano -->
+          <div
+            *ngFor="let mesa of mesas()"
+            class="mesa-floor"
+            [class.estado-libre]="mesa.estado === 'LIBRE'"
+            [class.estado-ocupada]="mesa.estado === 'OCUPADA'"
+            [class.estado-reservada]="mesa.estado === 'RESERVADA'"
+            [class.forma-redonda]="(mesa.forma ?? 'cuadrada') === 'redonda'"
+            [class.forma-cuadrada]="(mesa.forma ?? 'cuadrada') === 'cuadrada'"
+            [class.forma-rectangular]="(mesa.forma ?? 'cuadrada') === 'rectangular'"
+            [class.mesa-vertical]="esVertical(mesa)"
+            [class.en-grupo]="!!mesa.idGrupoTemporal"
+            [class.seleccionable]="unirModeMesas() && mesa.estado === 'LIBRE'"
+            [class.bloqueada]="unirModeMesas() && mesa.estado !== 'LIBRE'"
+            [class.seleccionada]="isMesaSelected(mesa.id)"
+            [style.left.px]="mesaLeft(mesa)"
+            [style.top.px]="mesaTop(mesa)"
+            [style.width.px]="mesaWidth(mesa)"
+            [style.height.px]="mesaHeight(mesa)"
+            [style.transform]="mesaTransform(mesa)"
+            (click)="onMesaClick(mesa)"
+            [pTooltip]="tooltipMesa(mesa)"
+            tooltipPosition="top"
+          >
+            <!-- Indicador en modo unir -->
+            <span *ngIf="unirModeMesas()" class="mesa-select-indicator">
+              <i [class]="isMesaSelected(mesa.id) ? 'pi pi-check' : 'pi pi-plus'"></i>
+            </span>
+
+            <!-- Contenido de la mesa -->
+            <span class="mesa-label">{{ labelMesa(mesa) }}</span>
+            <span class="mesa-cap">
+              <i class="pi pi-user mesa-user-icon"></i>{{ mesa.capacidad }}
+            </span>
+
+            <!-- Badge de estado de comanda -->
+            <span *ngIf="mesa.estado === 'OCUPADA'" class="mesa-estado-mini-badge" title="Mesa Ocupada">
+              <i class="pi pi-utensils"></i>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: CONSULTA DE MESA (MESERO) ==================== -->
+  <p-dialog
+    [(visible)]="modalMesaConsultadaVisible"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '580px' }"
+    [draggable]="false"
+    [resizable]="false"
+    header="Detalle y Comandas de Mesa"
+    styleClass="mesa-consultar-dialog"
+  >
+    <div *ngIf="mesaConsultada() as mc" class="flex flex-col gap-4">
+      <!-- Tarjeta resumen de la mesa -->
+      <div class="p-4 rounded-2xl border" [ngClass]="{
+        'bg-rose-50/60 border-rose-200': mc.estado === 'OCUPADA',
+        'bg-amber-50/60 border-amber-200': mc.estado === 'RESERVADA',
+        'bg-emerald-50/60 border-emerald-200': mc.estado === 'LIBRE'
+      }">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg" [ngClass]="{
+              'bg-rose-600 text-white': mc.estado === 'OCUPADA',
+              'bg-amber-500 text-white': mc.estado === 'RESERVADA',
+              'bg-emerald-600 text-white': mc.estado === 'LIBRE'
+            }">
+              <i class="pi pi-table"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-base font-extrabold text-slate-900 m-0">{{ mc.nombre }}</h3>
+                <span *ngIf="mc.numero" class="text-xs font-bold text-slate-500">(Mesa {{ mc.numero }})</span>
+              </div>
+              <div class="text-xs text-slate-600 mt-1 flex items-center gap-2">
+                <span><i class="pi pi-users mr-1"></i>Capacidad: <b>{{ mc.capacidad }} personas</b></span>
+                <span *ngIf="mc.idGrupoTemporal" class="text-blue-600 font-bold">· Mesa unida en grupo</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider" [ngClass]="{
+              'bg-rose-100 text-rose-800 border border-rose-300': mc.estado === 'OCUPADA',
+              'bg-amber-100 text-amber-800 border border-amber-300': mc.estado === 'RESERVADA',
+              'bg-emerald-100 text-emerald-800 border border-emerald-300': mc.estado === 'LIBRE'
+            }">
+              {{ mc.estado }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comandas activas en esta mesa -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 m-0">Comandas Activas en esta mesa</h4>
+          <span class="text-xs font-bold text-slate-600">{{ ordenesDeMesaConsultada().length }} activa(s)</span>
+        </div>
+
+        <div *ngIf="ordenesDeMesaConsultada().length === 0" class="p-4 bg-slate-50 border border-slate-200/80 rounded-xl text-center text-xs text-slate-500">
+          <i class="pi pi-inbox text-slate-400 text-lg mb-1 block"></i>
+          <span>No hay comandas pendientes registradas para esta mesa.</span>
+        </div>
+
+        <div *ngIf="ordenesDeMesaConsultada().length > 0" class="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1">
+          <div
+            *ngFor="let order of ordenesDeMesaConsultada()"
+            class="p-3 bg-white border border-slate-200 rounded-xl shadow-2xs hover:border-blue-300 transition-colors flex items-center justify-between gap-3"
+          >
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-extrabold text-blue-700">#{{ order.id.slice(0, 8).toUpperCase() }}</span>
+                <span class="text-xs font-semibold text-slate-800 truncate">{{ getClientLabel(order) }}</span>
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">{{ order.estado }}</span>
+              </div>
+              <div class="text-[11px] text-slate-500 mt-0.5 flex items-center gap-3">
+                <span>{{ order.items?.length || 0 }} producto(s)</span>
+                <span>·</span>
+                <span>Total: <b class="text-slate-800">{{ (order.totalFinal || 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</b></span>
+                <span>·</span>
+                <span *ngIf="order.horaApertura">{{ getElapsedTime(order.horaApertura) }}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <button
+                type="button"
+                (click)="openOrderDetail(order); modalMesaConsultadaVisible.set(false)"
+                class="px-2.5 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+                title="Ver detalles de la orden"
+              >
+                Ver Detalle
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Acciones de la Mesa -->
+      <div class="pt-2 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <!-- Separar de grupo si está unida -->
+          <button
+            *ngIf="mc.idGrupoTemporal"
+            type="button"
+            (click)="separarGrupoDeMesa(mc.idGrupoTemporal!)"
+            class="px-3 py-2 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl transition-colors cursor-pointer w-full sm:w-auto"
+          >
+            <i class="pi pi-link-slash mr-1"></i> Separar de Grupo
+          </button>
+          <!-- Liberar mesa si está ocupada -->
+          <button
+            *ngIf="mc.estado === 'OCUPADA'"
+            type="button"
+            (click)="liberarMesaManual(mc)"
+            class="px-3 py-2 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors cursor-pointer w-full sm:w-auto"
+          >
+            <i class="pi pi-lock-open mr-1"></i> Liberar Mesa
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <button
+            type="button"
+            (click)="cerrarConsultaMesa()"
+            class="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer w-full sm:w-auto"
+          >
+            Cerrar
+          </button>
+          <button
+            type="button"
+            (click)="abrirComandaParaMesa(mc)"
+            class="px-4 py-2 text-xs font-extrabold text-white bg-purple-600 hover:bg-purple-700 rounded-xl shadow-sm transition-colors cursor-pointer w-full sm:w-auto flex items-center justify-center gap-1.5"
+          >
+            <i class="pi pi-plus-circle"></i>
+            <span>Nueva Comanda en Mesa</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </p-dialog>
+
+  <!-- ==================== MODAL: OPCIONES DE MESAS AGRUPADAS ==================== -->
+  <p-dialog
+    [(visible)]="modalOpcionesGrupoVisible"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '540px' }"
+    [draggable]="false"
+    [resizable]="false"
+    [header]="'Mesas Agrupadas: ' + (grupoSeleccionado()?.etiqueta || '')"
+    styleClass="modal-grupo-opciones-dialog"
+  >
+    <div *ngIf="grupoSeleccionado() as grupo" class="flex flex-col gap-4">
+      <!-- Tarjeta Resumen del Grupo -->
+      <div class="p-4 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/80 via-indigo-50/40 to-white shadow-2xs">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+              <i class="pi pi-objects-column text-xl"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-base font-extrabold text-slate-900 m-0">{{ grupo.etiqueta }}</h3>
+                <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                  {{ grupo.mesas.length }} mesas unidas
+                </span>
+              </div>
+              <div class="text-xs text-slate-600 mt-1 flex items-center gap-3">
+                <span><i class="pi pi-users mr-1 text-slate-500"></i>Capacidad Total: <b class="text-slate-800">{{ grupo.capacidadTotal }} personas</b></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de mesas que componen el grupo -->
+        <div class="mt-3 pt-3 border-t border-blue-100/80 flex flex-wrap gap-2 items-center">
+          <span class="text-xs font-semibold text-slate-500 mr-1">Mesas incluidas:</span>
+          <div
+            *ngFor="let m of grupo.mesas"
+            (click)="mesaDelGrupoSeleccionada.set(m)"
+            class="px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+            [ngClass]="{
+              'ring-2 ring-blue-500 bg-blue-100/90 border-blue-300 text-blue-900 shadow-2xs': mesaDelGrupoSeleccionada()?.id === m.id,
+              'bg-white border-slate-200 text-slate-700 hover:border-blue-300': mesaDelGrupoSeleccionada()?.id !== m.id
+            }"
+            [pTooltip]="'Clic para abrir comanda específicamente en ' + m.nombre"
+            tooltipPosition="top"
+          >
+            <i class="pi pi-table text-xs text-slate-500"></i>
+            <span>{{ m.nombre }}</span>
+            <span *ngIf="m.numero" class="text-[10px] text-slate-500">(M{{ m.numero }})</span>
+            <span
+              class="w-2 h-2 rounded-full"
+              [ngClass]="{
+                'bg-emerald-500': m.estado === 'LIBRE',
+                'bg-rose-500': m.estado === 'OCUPADA',
+                'bg-amber-500': m.estado === 'RESERVADA'
+              }"
+              [title]="'Estado: ' + m.estado"
+            ></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comandas activas en el grupo si las hay -->
+      <div *ngIf="ordenesDeGrupoSeleccionado().length > 0">
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 m-0">Comandas Activas en este grupo</h4>
+          <span class="text-xs font-bold text-slate-600">{{ ordenesDeGrupoSeleccionado().length }} activa(s)</span>
+        </div>
+        <div class="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+          <div
+            *ngFor="let order of ordenesDeGrupoSeleccionado()"
+            class="p-2.5 bg-white border border-slate-200 rounded-xl shadow-2xs flex items-center justify-between gap-3 text-xs"
+          >
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2">
+                <span class="font-extrabold text-blue-700">#{{ order.id.slice(0, 8).toUpperCase() }}</span>
+                <span class="font-semibold text-slate-800 truncate">{{ getClientLabel(order) }}</span>
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">{{ order.estado }}</span>
+              </div>
+              <div class="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2">
+                <span>{{ order.items?.length || 0 }} productos</span>
+                <span>·</span>
+                <span>Total: <b class="text-slate-800">{{ (order.totalFinal || 0) | currency:'MXN':'symbol-narrow':'1.2-2' }}</b></span>
+              </div>
+            </div>
+            <button
+              type="button"
+              (click)="openOrderDetail(order); modalOpcionesGrupoVisible.set(false)"
+              class="px-2.5 py-1 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+            >
+              Ver Detalle
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pregunta u orientación -->
+      <p class="text-xs text-slate-600 font-medium my-0">
+        ¿Qué acción deseas realizar con este grupo de mesas?
+      </p>
+
+      <!-- Botones de Acción Principales -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+        <!-- Botón 1: Separar Mesas -->
+        <button
+          type="button"
+          (click)="separarGrupoActual()"
+          class="p-3.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100/90 text-amber-900 transition-all flex flex-col items-start gap-1 cursor-pointer group shadow-2xs hover:shadow-sm"
+        >
+          <div class="flex items-center gap-2 font-extrabold text-sm text-amber-800 group-hover:text-amber-900">
+            <i class="pi pi-link-slash text-base text-amber-600 group-hover:scale-110 transition-transform"></i>
+            <span>Separar Mesas</span>
+          </div>
+          <span class="text-[11px] text-amber-700/90 font-normal leading-tight text-left">
+            Desagrupa las mesas para que vuelvan a operar de forma individual y libre.
+          </span>
+        </button>
+
+        <!-- Botón 2: Abrir Comanda -->
+        <button
+          type="button"
+          (click)="abrirComandaDesdeGrupo()"
+          class="p-3.5 rounded-xl border border-purple-300 bg-purple-600 hover:bg-purple-700 text-white transition-all flex flex-col items-start gap-1 cursor-pointer group shadow-2xs hover:shadow-sm"
+        >
+          <div class="flex items-center gap-2 font-extrabold text-sm text-white">
+            <i class="pi pi-receipt text-base text-purple-200 group-hover:scale-110 transition-transform"></i>
+            <span>Abrir Comanda</span>
+          </div>
+          <span class="text-[11px] text-purple-100 font-normal leading-tight text-left">
+            Entrar al punto de venta y registrar la comanda para este grupo de mesas.
+          </span>
+        </button>
+      </div>
+
+      <!-- Pie con botón Cerrar -->
+      <div class="pt-2 border-t border-slate-200 flex justify-end">
+        <button
+          type="button"
+          (click)="cerrarModalOpcionesGrupo()"
+          class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </p-dialog>
 
   <!-- ==================== LOADING STATE ==================== -->
   <div *ngIf="loading() && activeView() === 'pos'" class="loading-container">
@@ -159,33 +648,58 @@
             </div>
             <div class="flex-1 min-w-0">
               <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Mesa Asignada *</label>
-              <p-select
-                [options]="mesas()"
-                [ngModel]="selectedMesa()"
-                (ngModelChange)="selectedMesa.set($event)"
-                optionLabel="nombre"
-                placeholder="Seleccionar Mesa..."
-                styleClass="compact-p-select w-full"
-                appendTo="body"
-              >
-                <ng-template let-mesa #selectedItem>
-                  <div class="flex items-center gap-2" *ngIf="mesa">
-                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-extrabold bg-purple-100 text-purple-700">#{{ mesa.id }}</span>
-                    <span class="font-bold text-slate-800 text-sm">{{ mesa.nombre }}</span>
-                    <span *ngIf="mesa.numero" class="text-xs text-slate-400 font-normal">(M-{{ mesa.numero }})</span>
+
+              <!-- Mesa Bloqueada / No Reemplazable (Seleccionada desde el mapa) -->
+              <div *ngIf="selectedMesa() as mesa" class="mesa-locked-badge flex items-center justify-between p-2.5 bg-purple-50/70 border border-purple-200 rounded-xl w-full">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center flex-shrink-0 text-sm font-bold shadow-2xs">
+                    <i class="pi pi-lock"></i>
                   </div>
-                </ng-template>
-                <ng-template let-mesa #item>
-                  <div class="flex items-center justify-between py-1 w-full">
-                    <div class="flex items-center gap-2">
-                      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-extrabold bg-purple-100 text-purple-700">#{{ mesa.id }}</span>
-                      <span class="font-semibold text-slate-700">{{ mesa.nombre }}</span>
-                      <span *ngIf="mesa.numero" class="text-xs text-slate-400 font-normal">(M-{{ mesa.numero }})</span>
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-extrabold bg-purple-200 text-purple-800">
+                        #{{ mesa.id }}
+                      </span>
+                      <span class="font-extrabold text-slate-800 text-sm truncate">
+                        {{ mesa.nombre }}
+                      </span>
+                      <span *ngIf="mesa.numero" class="text-xs text-slate-500 font-semibold">
+                        (M-{{ mesa.numero }})
+                      </span>
                     </div>
-                    <span class="text-xs text-slate-400">Cap: {{ mesa.capacidad }}p</span>
+                    <div class="text-[11px] text-slate-500 font-medium flex items-center gap-2 mt-0.5">
+                      <span><i class="pi pi-users text-[10px] mr-1"></i>Capacidad: {{ mesa.capacidad }} pax</span>
+                      <span class="text-emerald-700 font-bold">· Mesa asignada</span>
+                    </div>
                   </div>
-                </ng-template>
-              </p-select>
+                </div>
+                <button
+                  type="button"
+                  (click)="volverAlMapa()"
+                  class="px-2.5 py-1.5 text-xs font-semibold text-purple-700 bg-white border border-purple-200 hover:bg-purple-100/60 rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0 cursor-pointer shadow-2xs ml-2"
+                  pTooltip="Regresar al mapa de mesas"
+                  tooltipPosition="left"
+                >
+                  <i class="pi pi-map"></i>
+                  <span>Ver Mapa</span>
+                </button>
+              </div>
+
+              <!-- Advertencia si no se ha seleccionado mesa -->
+              <div *ngIf="!selectedMesa()" class="mesa-unselected-warning flex items-center justify-between p-2.5 bg-amber-50 border border-amber-200 rounded-xl w-full">
+                <div class="flex items-center gap-2 min-w-0 text-amber-800 text-xs font-semibold">
+                  <i class="pi pi-exclamation-triangle text-amber-600 text-sm flex-shrink-0"></i>
+                  <span class="truncate">Ninguna mesa seleccionada</span>
+                </div>
+                <button
+                  type="button"
+                  (click)="volverAlMapa()"
+                  class="px-3 py-1.5 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0 cursor-pointer shadow-2xs ml-2"
+                >
+                  <i class="pi pi-map"></i>
+                  <span>Seleccionar en Mapa</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -454,13 +968,22 @@
               <!-- Badge de Stock -->
               <span
                 *ngIf="getProductStockInfo(product)"
-                class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[11px] font-bold backdrop-blur-md shadow-xs"
+                class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[11px] font-bold backdrop-blur-md shadow-xs z-10"
                 [class.bg-emerald-500/90]="!isProductLowStock(product) && !isProductCriticalStock(product)"
                 [class.text-white]="true"
                 [class.bg-amber-500/90]="isProductLowStock(product) && !isProductCriticalStock(product)"
                 [class.bg-rose-500/90]="isProductCriticalStock(product)"
               >
                 {{ getProductStockText(product) }}
+              </span>
+
+              <!-- Badge de Variantes / Subcomanda si el producto tiene variantes -->
+              <span
+                *ngIf="product.variants && product.variants.length > 0"
+                class="absolute top-2 left-2 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-purple-700/95 text-white backdrop-blur-md shadow-sm flex items-center gap-1 z-10"
+              >
+                <i class="pi pi-th-large text-[10px]"></i>
+                {{ product.variants.length }} variantes
               </span>
             </div>
 
@@ -470,7 +993,14 @@
                 {{ product.name }}
               </h4>
               <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-50">
-                <span class="text-base font-extrabold text-slate-900">${{ product.price | number:'1.2-2' }}</span>
+                <span class="text-base font-extrabold text-slate-900">
+                  <ng-container *ngIf="product.variants && product.variants.length > 0">
+                    <span class="text-xs text-slate-400 font-normal">Desde </span>${{ product.variants[0].precio | number:'1.2-2' }}
+                  </ng-container>
+                  <ng-container *ngIf="!product.variants || product.variants.length === 0">
+                    ${{ product.price | number:'1.2-2' }}
+                  </ng-container>
+                </span>
                 <div class="flex items-center gap-1.5">
                   <button
                     type="button"
@@ -484,10 +1014,11 @@
                   <button
                     type="button"
                     class="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white flex items-center justify-center transition-colors shadow-xs cursor-pointer"
-                    [attr.aria-label]="'Agregar ' + product.name"
+                    [attr.aria-label]="(product.variants && product.variants.length > 0 ? 'Ver variantes de ' : 'Agregar ') + product.name"
+                    [title]="product.variants && product.variants.length > 0 ? 'Elegir variante' : 'Agregar a la comanda'"
                     (click)="$event.stopPropagation(); addToCart(product)"
                   >
-                    <i class="pi pi-plus text-xs"></i>
+                    <i class="pi" [ngClass]="product.variants && product.variants.length > 0 ? 'pi-th-large' : 'pi-plus'" style="font-size: 11px;"></i>
                   </button>
                 </div>
               </div>
@@ -1015,6 +1546,580 @@
     </div>
   </div>
 
+  <!-- ==================== VISTA: DISPONIBILIDAD DE PLATILLOS (8-5 y 8-6) ==================== -->
+  <div *ngIf="activeView() === 'disponibilidad'" class="disponibilidad-view-container">
+
+    <!-- Encabezado de Disponibilidad -->
+    <div class="disponibilidad-header-card mb-4 bg-white rounded-2xl p-4 md:p-5 border border-slate-200/90 shadow-sm">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold shadow-md shadow-indigo-100 flex-shrink-0">
+            <i class="pi pi-box text-xl"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h2 class="text-xl md:text-2xl font-black text-slate-800 m-0 tracking-tight">
+                Disponibilidad de Platillos y Bebidas
+              </h2>
+              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200/60 uppercase tracking-wide">
+                En vivo
+              </span>
+            </div>
+            <p class="text-xs md:text-sm text-slate-500 m-0 mt-0.5">
+              Monitoreo operativo de existencias · Códigos <strong class="text-amber-600">8-5</strong> (crítico ≤ 3) y <strong class="text-rose-600">8-6</strong> (agotado)
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2.5 w-full md:w-auto">
+          <!-- Botón de Sincronizar Stock -->
+          <button
+            type="button"
+            (click)="loadStockInfo(); loadBebidas()"
+            class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold text-xs md:text-sm rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer border border-slate-200 shadow-2xs w-full md:w-auto"
+            pTooltip="Sincronizar existencias actuales de cocina y barra"
+            tooltipPosition="bottom"
+          >
+            <i class="pi pi-refresh text-indigo-600"></i>
+            <span>Sincronizar Stock</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TARJETAS KPI INTERACTIVAS (Filtros rápidos con 1 clic) -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 mb-5">
+      
+      <!-- KPI 1: Todos los Artículos -->
+      <button
+        type="button"
+        class="disp-kpi-filter-btn"
+        [class.active]="disponibilidadEstadoFiltro() === 'TODOS'"
+        (click)="disponibilidadEstadoFiltro.set('TODOS')"
+      >
+        <div class="disp-kpi-icon bg-slate-100 text-slate-700">
+          <i class="pi pi-list"></i>
+        </div>
+        <div class="text-left flex-1 min-w-0">
+          <div class="disp-kpi-label text-slate-500">Total Menú</div>
+          <div class="disp-kpi-value text-slate-800">{{ todosLosArticulosDisponibilidad().length }}</div>
+          <div class="disp-kpi-hint text-slate-400">Ver todos</div>
+        </div>
+        <div class="disp-kpi-badge" *ngIf="disponibilidadEstadoFiltro() === 'TODOS'">
+          <i class="pi pi-check"></i>
+        </div>
+      </button>
+
+      <!-- KPI 2: Disponibles (> 3) -->
+      <button
+        type="button"
+        class="disp-kpi-filter-btn kpi-disp"
+        [class.active]="disponibilidadEstadoFiltro() === 'DISPONIBLES'"
+        (click)="disponibilidadEstadoFiltro.set('DISPONIBLES')"
+      >
+        <div class="disp-kpi-icon bg-emerald-50 text-emerald-600">
+          <i class="pi pi-check-circle"></i>
+        </div>
+        <div class="text-left flex-1 min-w-0">
+          <div class="disp-kpi-label text-emerald-700">Disponibles (> 3)</div>
+          <div class="disp-kpi-value text-emerald-700">{{ itemsDisponiblesCount() }}</div>
+          <div class="disp-kpi-hint text-emerald-600">En servicio</div>
+        </div>
+        <div class="disp-kpi-badge badge-disp" *ngIf="disponibilidadEstadoFiltro() === 'DISPONIBLES'">
+          <i class="pi pi-check"></i>
+        </div>
+      </button>
+
+      <!-- KPI 3: Código 8-5 (Crítico ≤ 3) -->
+      <button
+        type="button"
+        class="disp-kpi-filter-btn kpi-85"
+        [class.active]="disponibilidadEstadoFiltro() === '8-5'"
+        (click)="disponibilidadEstadoFiltro.set('8-5')"
+      >
+        <div class="disp-kpi-icon bg-amber-100 text-amber-700">
+          <i class="pi pi-exclamation-triangle"></i>
+        </div>
+        <div class="text-left flex-1 min-w-0">
+          <div class="disp-kpi-label text-amber-800 flex items-center gap-1">
+            <span>8-5 Crítico (≤ 3)</span>
+          </div>
+          <div class="disp-kpi-value text-amber-700 flex items-center gap-1.5">
+            <span>{{ items85Count() }}</span>
+            <span *ngIf="items85Count() > 0" class="flex h-2 w-2 relative">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            </span>
+          </div>
+          <div class="disp-kpi-hint text-amber-700">Pocas porciones</div>
+        </div>
+        <div class="disp-kpi-badge badge-85" *ngIf="disponibilidadEstadoFiltro() === '8-5'">
+          <i class="pi pi-check"></i>
+        </div>
+      </button>
+
+      <!-- KPI 4: Código 8-6 (Agotados = 0) -->
+      <button
+        type="button"
+        class="disp-kpi-filter-btn kpi-86"
+        [class.active]="disponibilidadEstadoFiltro() === '8-6'"
+        (click)="disponibilidadEstadoFiltro.set('8-6')"
+      >
+        <div class="disp-kpi-icon bg-rose-100 text-rose-700">
+          <i class="pi pi-ban"></i>
+        </div>
+        <div class="text-left flex-1 min-w-0">
+          <div class="disp-kpi-label text-rose-800">8-6 Agotados</div>
+          <div class="disp-kpi-value text-rose-700">{{ items86Count() }}</div>
+          <div class="disp-kpi-hint text-rose-600">No comandar</div>
+        </div>
+        <div class="disp-kpi-badge badge-86" *ngIf="disponibilidadEstadoFiltro() === '8-6'">
+          <i class="pi pi-check"></i>
+        </div>
+      </button>
+
+      <!-- KPI 5: Salidas de hoy por este Mesero -->
+      <div class="disp-kpi-card bg-purple-50/70 rounded-2xl p-3.5 border border-purple-200/80 shadow-2xs flex items-center gap-3">
+        <div class="disp-kpi-icon bg-purple-100 text-purple-700">
+          <i class="pi pi-user-check"></i>
+        </div>
+        <div class="text-left flex-1 min-w-0">
+          <div class="disp-kpi-label text-purple-700 font-bold">Salidas hoy por ti</div>
+          <div class="disp-kpi-value text-purple-900">
+            {{ totalSalidasHoyMesero() }} <span class="text-xs font-semibold text-purple-600">uds</span>
+          </div>
+          <div class="disp-kpi-hint text-purple-600 font-medium">Tus órdenes hoy</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Barra de Filtros Operativos y Selector de Vista -->
+    <div class="disp-filters-card bg-white rounded-2xl p-4 border border-slate-200/90 shadow-sm mb-5 flex flex-col gap-3">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        
+        <!-- Buscador de texto con botón de limpiar -->
+        <div class="flex-1 min-w-[260px]">
+          <div class="relative w-full">
+            <i class="pi pi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10"></i>
+            <input
+              pInputText
+              type="text"
+              [ngModel]="disponibilidadBusqueda()"
+              (ngModelChange)="disponibilidadBusqueda.set($event)"
+              placeholder="Buscar platillo o bebida por nombre o categoría..."
+              class="w-full p-inputtext-sm text-sm rounded-xl"
+              style="padding-left: 2.5rem !important; padding-right: 2.5rem !important;"
+            />
+            <button
+              *ngIf="disponibilidadBusqueda().trim()"
+              type="button"
+              (click)="disponibilidadBusqueda.set('')"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 w-5 h-5 flex items-center justify-center rounded-full bg-slate-100 cursor-pointer"
+            >
+              <i class="pi pi-times text-[10px]"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filtro por Área (Barra / Cocina) -->
+        <div class="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200/80 self-start lg:self-auto">
+          <button
+            type="button"
+            class="disp-pill-btn"
+            [class.active]="disponibilidadAreaFiltro() === 'TODOS'"
+            (click)="disponibilidadAreaFiltro.set('TODOS')"
+          >
+            Todas las áreas
+          </button>
+          <button
+            type="button"
+            class="disp-pill-btn"
+            [class.active]="disponibilidadAreaFiltro() === 'COCINA'"
+            (click)="disponibilidadAreaFiltro.set('COCINA')"
+          >
+            <i class="pi pi-compass mr-1 text-xs text-blue-500"></i> Cocina
+          </button>
+          <button
+            type="button"
+            class="disp-pill-btn"
+            [class.active]="disponibilidadAreaFiltro() === 'BARRA'"
+            (click)="disponibilidadAreaFiltro.set('BARRA')"
+          >
+            <i class="pi pi-glass mr-1 text-xs text-purple-500"></i> Barra
+          </button>
+        </div>
+
+        <!-- Selector de Categoría -->
+        <div class="min-w-[190px]">
+          <p-select
+            [options]="categoriasDisponibilidad()"
+            [ngModel]="disponibilidadCategoriaFiltro()"
+            (ngModelChange)="disponibilidadCategoriaFiltro.set($event)"
+            placeholder="Filtrar por categoría"
+            styleClass="w-full p-select-sm rounded-xl"
+          >
+            <ng-template pTemplate="selectedItem" let-selected>
+              <div class="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                <i class="pi pi-tag text-slate-400"></i>
+                <span class="truncate">{{ selected }}</span>
+              </div>
+            </ng-template>
+          </p-select>
+        </div>
+
+        <!-- Selector de Modo de Vista (Cuadrícula vs Lista) -->
+        <div class="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200/80 self-end lg:self-auto">
+          <button
+            type="button"
+            (click)="disponibilidadModoVista.set('grid')"
+            class="p-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer"
+            [class.bg-white]="disponibilidadModoVista() === 'grid'"
+            [class.text-indigo-600]="disponibilidadModoVista() === 'grid'"
+            [class.shadow-2xs]="disponibilidadModoVista() === 'grid'"
+            [class.text-slate-500]="disponibilidadModoVista() !== 'grid'"
+            pTooltip="Vista en tarjetas"
+            tooltipPosition="bottom"
+          >
+            <i class="pi pi-th-large"></i>
+          </button>
+          <button
+            type="button"
+            (click)="disponibilidadModoVista.set('list')"
+            class="p-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer"
+            [class.bg-white]="disponibilidadModoVista() === 'list'"
+            [class.text-indigo-600]="disponibilidadModoVista() === 'list'"
+            [class.shadow-2xs]="disponibilidadModoVista() === 'list'"
+            [class.text-slate-500]="disponibilidadModoVista() !== 'list'"
+            pTooltip="Vista en lista compacta"
+            tooltipPosition="bottom"
+          >
+            <i class="pi pi-list"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Barra de Resumen de Filtros Activos & Reset -->
+      <div class="flex items-center justify-between pt-2.5 border-t border-slate-100 text-xs flex-wrap gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="font-bold text-slate-400 uppercase tracking-wider text-[11px]">Mostrando:</span>
+          <span class="font-extrabold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md">
+            {{ articulosDisponibilidadFiltrados().length }} de {{ todosLosArticulosDisponibilidad().length }} artículos
+          </span>
+          <span *ngIf="disponibilidadEstadoFiltro() !== 'TODOS'" class="font-semibold text-xs px-2 py-0.5 rounded-md flex items-center gap-1"
+            [class.bg-amber-100]="disponibilidadEstadoFiltro() === '8-5'"
+            [class.text-amber-800]="disponibilidadEstadoFiltro() === '8-5'"
+            [class.bg-rose-100]="disponibilidadEstadoFiltro() === '8-6'"
+            [class.text-rose-800]="disponibilidadEstadoFiltro() === '8-6'"
+            [class.bg-emerald-100]="disponibilidadEstadoFiltro() === 'DISPONIBLES'"
+            [class.text-emerald-800]="disponibilidadEstadoFiltro() === 'DISPONIBLES'"
+          >
+            <i class="pi" [class.pi-exclamation-triangle]="disponibilidadEstadoFiltro() === '8-5'" [class.pi-ban]="disponibilidadEstadoFiltro() === '8-6'" [class.pi-check]="disponibilidadEstadoFiltro() === 'DISPONIBLES'"></i>
+            Filtro: {{ disponibilidadEstadoFiltro() }}
+          </span>
+          <span *ngIf="disponibilidadAreaFiltro() !== 'TODOS'" class="font-semibold text-xs px-2 py-0.5 rounded-md bg-blue-50 text-blue-700">
+            Área: {{ disponibilidadAreaFiltro() }}
+          </span>
+        </div>
+
+        <button
+          *ngIf="hayFiltrosDisponibilidadActivos()"
+          type="button"
+          (click)="limpiarFiltrosDisponibilidad()"
+          class="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1 cursor-pointer bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition-colors"
+        >
+          <i class="pi pi-filter-slash text-xs"></i>
+          <span>Limpiar filtros</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- VISTA EN CUADRÍCULA (GRID) -->
+    <div
+      *ngIf="disponibilidadModoVista() === 'grid' && articulosDisponibilidadFiltrados().length > 0"
+      class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4"
+    >
+      <div
+        *ngFor="let item of articulosDisponibilidadFiltrados()"
+        class="disp-item-card bg-white rounded-2xl border p-3.5 shadow-2xs flex flex-col justify-between transition-all"
+        [class.card-86]="item.es86"
+        [class.card-85]="item.es85"
+        [class.card-disp]="item.esDisponible"
+      >
+        <!-- Parte Superior: Banner/Imagen con badges -->
+        <div>
+          <!-- CASO CON IMAGEN -->
+          <div *ngIf="item.imgUrl" class="relative w-full h-36 rounded-xl overflow-hidden bg-slate-100 mb-3 group">
+            <img
+              [src]="item.imgUrl"
+              [alt]="item.nombre"
+              class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              loading="lazy"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none"></div>
+
+            <!-- Badge Área Destino: Cocina vs Barra -->
+            <div class="absolute top-2 left-2 z-10">
+              <span
+                class="disp-area-badge"
+                [class.badge-cocina]="item.area === 'Cocina'"
+                [class.badge-barra]="item.area === 'Barra'"
+              >
+                <i [class]="item.area === 'Barra' ? 'pi pi-glass' : 'pi pi-compass'"></i>
+                {{ item.area }}
+              </span>
+            </div>
+
+            <!-- Badge Código Operativo: 8-6 / 8-5 / Disponible -->
+            <div class="absolute top-2 right-2 z-10">
+              <span *ngIf="item.es86" class="disp-status-badge badge-code-86">
+                <i class="pi pi-ban"></i> 8-6 AGOTADO
+              </span>
+              <span *ngIf="item.es85" class="disp-status-badge badge-code-85">
+                <i class="pi pi-exclamation-triangle"></i> 8-5 (QUEDAN {{ item.stock }})
+              </span>
+              <span *ngIf="item.esDisponible" class="disp-status-badge badge-code-disp">
+                <i class="pi pi-check"></i> DISPONIBLE
+              </span>
+            </div>
+          </div>
+
+          <!-- CASO SIN IMAGEN (Diseño premium estilizado) -->
+          <div
+            *ngIf="!item.imgUrl"
+            class="relative w-full h-24 rounded-xl overflow-hidden mb-3 p-3 flex flex-col justify-between"
+            [class.disp-hero-cocina]="item.area === 'Cocina'"
+            [class.disp-hero-barra]="item.area === 'Barra'"
+          >
+            <!-- Watermark sutil -->
+            <i
+              class="absolute right-2 -bottom-2 text-6xl opacity-15 pointer-events-none text-white"
+              [class]="item.area === 'Barra' ? 'pi pi-glass' : 'pi pi-compass'"
+            ></i>
+
+            <!-- Badges Superiores -->
+            <div class="flex items-center justify-between z-10">
+              <span
+                class="disp-area-badge"
+                [class.badge-cocina]="item.area === 'Cocina'"
+                [class.badge-barra]="item.area === 'Barra'"
+              >
+                <i [class]="item.area === 'Barra' ? 'pi pi-glass' : 'pi pi-compass'"></i>
+                {{ item.area }}
+              </span>
+
+              <span *ngIf="item.es86" class="disp-status-badge badge-code-86">
+                <i class="pi pi-ban"></i> 8-6 AGOTADO
+              </span>
+              <span *ngIf="item.es85" class="disp-status-badge badge-code-85">
+                <i class="pi pi-exclamation-triangle"></i> 8-5 (QUEDAN {{ item.stock }})
+              </span>
+              <span *ngIf="item.esDisponible" class="disp-status-badge badge-code-disp">
+                <i class="pi pi-check"></i> DISPONIBLE
+              </span>
+            </div>
+
+            <div class="z-10">
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-white/90 bg-black/30 backdrop-blur-sm px-2 py-0.5 rounded-md inline-block">
+                {{ item.categoria }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Nombre y Categoría -->
+          <div class="mb-2.5">
+            <span *ngIf="item.imgUrl" class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5 truncate">
+              {{ item.categoria }}
+            </span>
+            <h3 class="text-sm md:text-base font-extrabold text-slate-800 m-0 leading-tight line-clamp-2 min-h-[2.4rem]" [title]="item.nombre">
+              {{ item.nombre }}
+            </h3>
+          </div>
+
+          <!-- Indicador de Stock Actual y Barra de Progreso -->
+          <div
+            class="disp-stock-box p-2.5 rounded-xl mb-2.5"
+            [class.stock-zero]="item.es86"
+            [class.stock-low]="item.es85"
+            [class.stock-ok]="item.esDisponible"
+          >
+            <div class="flex items-center justify-between text-xs font-bold mb-1.5">
+              <span class="text-slate-600 flex items-center gap-1">
+                <i class="pi pi-box text-[11px] text-slate-400"></i>
+                <span>En {{ item.area }}:</span>
+              </span>
+              <span class="stock-num font-black text-sm">
+                {{ item.stock }} {{ item.stock === 1 ? 'unidad' : 'unidades' }}
+              </span>
+            </div>
+            <div class="w-full bg-slate-200/80 rounded-full h-1.5 overflow-hidden">
+              <div
+                class="h-full rounded-full transition-all duration-300"
+                [style.width]="item.es86 ? '0%' : (item.stock > 10 ? '100%' : (item.stock * 10) + '%')"
+                [class.bg-rose-500]="item.es86"
+                [class.bg-amber-500]="item.es85"
+                [class.bg-emerald-500]="item.esDisponible"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Métrica de Mesero: Salidas hoy por ti -->
+          <div class="disp-sales-mesero-box p-2 rounded-xl mb-3 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-1.5 text-purple-700 font-semibold truncate">
+              <i class="pi pi-user-check text-purple-600"></i>
+              <span class="truncate">Tus salidas hoy:</span>
+            </div>
+            <span class="font-extrabold text-xs px-2 py-0.5 rounded-md flex-shrink-0" [class]="item.salidasHoy > 0 ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-500'">
+              {{ item.salidasHoy }} {{ item.salidasHoy === 1 ? 'ud' : 'uds' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Parte Inferior: Precio y Botón de Acción -->
+        <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+          <div>
+            <span class="text-[10px] font-semibold text-slate-400 block uppercase">Precio</span>
+            <span class="text-base font-extrabold text-slate-800">${{ item.precio | number:'1.2-2' }}</span>
+          </div>
+
+          <button
+            type="button"
+            (click)="ordenarDesdeDisponibilidad(item)"
+            [disabled]="item.es86"
+            class="disp-order-btn"
+            [class.btn-disabled]="item.es86"
+            [title]="item.es86 ? 'Artículo en código 8-6 (sin stock)' : 'Agregar a la comanda'"
+          >
+            <i [class]="item.es86 ? 'pi pi-lock' : 'pi pi-plus'"></i>
+            <span>{{ item.es86 ? 'Agotado (8-6)' : 'Comandar' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VISTA EN LISTA (LIST) -->
+    <div
+      *ngIf="disponibilidadModoVista() === 'list' && articulosDisponibilidadFiltrados().length > 0"
+      class="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden"
+    >
+      <div class="divide-y divide-slate-100">
+        <div
+          *ngFor="let item of articulosDisponibilidadFiltrados()"
+          class="p-3.5 hover:bg-slate-50/80 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3"
+          [class.bg-rose-50/20]="item.es86"
+          [class.bg-amber-50/20]="item.es85"
+        >
+          <!-- Info de Producto: Icono/Thumb + Nombre + Categoría -->
+          <div class="flex items-center gap-3 min-w-[280px] flex-1">
+            <div
+              class="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-base flex-shrink-0"
+              [class.bg-blue-100]="item.area === 'Cocina'"
+              [class.text-blue-700]="item.area === 'Cocina'"
+              [class.bg-purple-100]="item.area === 'Barra'"
+              [class.text-purple-700]="item.area === 'Barra'"
+            >
+              <i [class]="item.area === 'Barra' ? 'pi pi-glass' : 'pi pi-compass'"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <h4 class="text-sm font-extrabold text-slate-800 m-0 leading-snug">
+                  {{ item.nombre }}
+                </h4>
+                <span
+                  class="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase"
+                  [class.bg-blue-50]="item.area === 'Cocina'"
+                  [class.text-blue-700]="item.area === 'Cocina'"
+                  [class.bg-purple-50]="item.area === 'Barra'"
+                  [class.text-purple-700]="item.area === 'Barra'"
+                >
+                  {{ item.area }}
+                </span>
+              </div>
+              <span class="text-xs text-slate-400 font-medium">{{ item.categoria }}</span>
+            </div>
+          </div>
+
+          <!-- Estado y Stock -->
+          <div class="flex items-center gap-4 flex-wrap md:flex-nowrap">
+            <!-- Badge 8-5 / 8-6 / Disp -->
+            <div>
+              <span *ngIf="item.es86" class="disp-status-badge badge-code-86">
+                <i class="pi pi-ban"></i> 8-6 AGOTADO
+              </span>
+              <span *ngIf="item.es85" class="disp-status-badge badge-code-85">
+                <i class="pi pi-exclamation-triangle"></i> 8-5 CRÍTICO
+              </span>
+              <span *ngIf="item.esDisponible" class="disp-status-badge badge-code-disp">
+                <i class="pi pi-check"></i> DISPONIBLE
+              </span>
+            </div>
+
+            <!-- Stock numérico -->
+            <div class="w-24 text-right">
+              <div class="text-[11px] text-slate-400 font-bold uppercase">Stock</div>
+              <div
+                class="text-sm font-black"
+                [class.text-rose-600]="item.es86"
+                [class.text-amber-600]="item.es85"
+                [class.text-emerald-700]="item.esDisponible"
+              >
+                {{ item.stock }} {{ item.stock === 1 ? 'ud' : 'uds' }}
+              </div>
+            </div>
+
+            <!-- Salidas hoy -->
+            <div class="w-24 text-right">
+              <div class="text-[11px] text-slate-400 font-bold uppercase">Tus salidas</div>
+              <div class="text-xs font-bold text-purple-700">
+                {{ item.salidasHoy }} {{ item.salidasHoy === 1 ? 'ud' : 'uds' }}
+              </div>
+            </div>
+
+            <!-- Precio -->
+            <div class="w-20 text-right">
+              <div class="text-[11px] text-slate-400 font-bold uppercase">Precio</div>
+              <div class="text-sm font-extrabold text-slate-800">
+                ${{ item.precio | number:'1.2-2' }}
+              </div>
+            </div>
+
+            <!-- Acción CTA -->
+            <div class="w-28 flex justify-end">
+              <button
+                type="button"
+                (click)="ordenarDesdeDisponibilidad(item)"
+                [disabled]="item.es86"
+                class="disp-order-btn"
+                [class.btn-disabled]="item.es86"
+              >
+                <i [class]="item.es86 ? 'pi pi-lock' : 'pi pi-plus'"></i>
+                <span>{{ item.es86 ? 'Agotado' : 'Comandar' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estado Vacío cuando no coinciden los filtros -->
+    <div *ngIf="articulosDisponibilidadFiltrados().length === 0" class="bg-white rounded-2xl p-8 border border-slate-200 text-center shadow-sm my-4">
+      <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center mx-auto mb-3 text-2xl shadow-inner">
+        <i class="pi pi-filter-slash"></i>
+      </div>
+      <h3 class="text-lg font-black text-slate-800 m-0">No se encontraron artículos</h3>
+      <p class="text-sm text-slate-500 m-0 mt-1 max-w-md mx-auto">
+        No hay platillos o bebidas que coincidan con la búsqueda o filtros aplicados (área, categoría o código 8-5/8-6).
+      </p>
+      <button
+        type="button"
+        (click)="limpiarFiltrosDisponibilidad()"
+        class="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-indigo-200 cursor-pointer inline-flex items-center gap-1.5"
+      >
+        <i class="pi pi-refresh"></i>
+        <span>Restablecer Filtros</span>
+      </button>
+    </div>
+  </div>
+
   <!-- ==================== TEMPLATE CARRITO ==================== -->
   <ng-template #carritoTemplate>
     <div class="ticket-receipt-card bg-white rounded-2xl border border-slate-200/80 shadow-sm flex flex-col overflow-hidden min-h-[calc(100vh-6rem)] md:min-h-[640px]">
@@ -1118,13 +2223,13 @@
               </div>
               <div class="flex items-center gap-1">
                 <p-button
-                  *ngIf="(item.product.recipes?.length || 0) + (item.product.additionals?.length || 0) > 0"
+                  *ngIf="(item.product.recipes?.length || 0) + (item.product.additionals?.length || 0) > 0 || item.selectedVariant"
                   icon="pi pi-pencil"
                   [rounded]="true"
                   [text]="true"
                   severity="secondary"
                   size="small"
-                  pTooltip="Editar ingredientes"
+                  pTooltip="Editar ingredientes / opciones"
                   (onClick)="editCartItem(item)"
                 ></p-button>
                 <p-button
@@ -1155,7 +2260,14 @@
 
             <!-- Nombre de platillo y precio unitario -->
             <div class="mb-2">
-              <h4 class="font-bold text-slate-800 text-sm leading-tight m-0">{{ item.product.name }}</h4>
+              <h4 class="font-bold text-slate-800 text-sm leading-tight m-0">
+                {{ item.product.name }}
+                <span *ngIf="item.selectedVariant" class="text-purple-700 font-extrabold block text-xs mt-1 flex items-center gap-1">
+                  <i class="pi pi-tag text-[10px]"></i>
+                  {{ item.selectedVariant.insumoName || item.selectedVariant.name }}
+                  <span *ngIf="item.selectedVariant.cantidad" class="text-slate-400 font-normal">({{ item.selectedVariant.cantidad }} {{ item.selectedVariant.unidad || 'ml' }})</span>
+                </span>
+              </h4>
               <span class="text-[11px] text-slate-400 font-medium">${{ getCartItemUnitPrice(item) | number:'1.2-2' }} c/u</span>
             </div>
 
@@ -1259,8 +2371,10 @@
             <button
               type="button"
               class="w-full py-3 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm shadow-sm hover:shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
-              [disabled]="processingOrder()"
+              [disabled]="processingOrder() || !selectedMesa()"
               (click)="finalizarVenta()"
+              [pTooltip]="!selectedMesa() ? 'Selecciona una mesa en el mapa antes de enviar la comanda' : ''"
+              tooltipPosition="top"
             >
               <i *ngIf="processingOrder()" class="pi pi-spin pi-spinner"></i>
               <i *ngIf="!processingOrder()" class="pi pi-send"></i>
@@ -1342,52 +2456,48 @@
           <i class="pi pi-list mr-2" style="color: #DA9F5B;"></i>Productos
         </h4>
 
-        <div *ngIf="order.items && order.items.length > 0">
-          <div *ngFor="let item of order.items" class="order-detail-item-block">
-            <div class="order-detail-item">
-              <div class="order-detail-item-info">
-                <div class="flex align-items-center gap-2 flex-wrap">
-                  <span class="order-detail-item-name">{{ getProductLabel(item) }}</span>
-                  <span *ngIf="item.asientoAlias" class="text-xs px-2 py-0 border-round bg-orange-100 text-orange-800 font-semibold">
-                    👤 {{ item.asientoAlias }}
-                  </span>
-                  <span *ngIf="item.tiempo === 2"
-                        class="text-xs px-2 py-0.5 border-round font-semibold"
-                        [ngClass]="item.tiempoMarchado ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900 border border-amber-300'">
-                    {{ item.tiempoMarchado ? '🔥 2do Tiempo Marchado' : '⏱️ 2do Tiempo (En espera)' }}
-                  </span>
-                  <span *ngIf="item.tiempo === 3"
-                        class="text-xs px-2 py-0.5 border-round font-semibold"
-                        [ngClass]="item.tiempoMarchado ? 'bg-purple-100 text-purple-800' : 'bg-fuchsia-100 text-fuchsia-900 border border-fuchsia-300'">
-                    {{ item.tiempoMarchado ? '🔥 3er Tiempo Marchado' : '🍰 3er Tiempo (En espera)' }}
-                  </span>
-                  <span *ngIf="item.paraLlevar || (item.comentarios && item.comentarios.includes('PARA LLEVAR'))"
-                        class="text-xs px-2 py-0.5 rounded-md font-semibold bg-orange-100 text-orange-950 border border-orange-300">
-                    🥡 Para llevar
-                  </span>
+        <div *ngIf="order.items && order.items.length > 0" class="waiter-dish-cards-list">
+          <div *ngFor="let item of order.items" class="waiter-dish-card">
+            <!-- Header de la Card: Icono, Nombre, Badges y Precio -->
+            <div class="waiter-dish-header">
+              <div class="waiter-dish-title-group">
+                <div class="waiter-dish-icon-box">
+                  <i class="pi pi-bolt"></i>
                 </div>
-                <span class="order-detail-item-qty">x{{ item.cantidad }}</span>
-                <!-- Ícono con cuántas piezas salen aún (stock disponible) -->
-                <span
-                  *ngIf="getStockInfo(item) as stock"
-                  class="order-detail-stock-chip"
-                  [class.stock-low]="isCriticalStock(item)"
-                  [title]="stock.out ? 'Agotado' : (stock.stock <= 3 ? '¡Stock crítico! Quedan pocas piezas' : 'Piezas que aún salen (stock disponible)')"
-                >
-                  <i class="pi pi-box"></i>
-                  <span class="order-detail-stock-count">{{ getRemainingStock(item) }}</span>
-                </span>
-                <!-- Comentarios del producto -->
-                <div *ngIf="item.comentarios" class="text-xs mt-1" style="color: #7a5c51; font-style: italic; margin-top: 4px;">
-                  📝 {{ item.comentarios }}
+                <div class="waiter-dish-name-meta">
+                  <h4 class="waiter-dish-name">{{ getProductLabel(item) }}</h4>
+                  <div class="waiter-dish-badges">
+                    <span *ngIf="item.asientoAlias" class="waiter-badge waiter-badge-seat">
+                      👤 {{ item.asientoAlias }}
+                    </span>
+                    <span *ngIf="item.tiempo === 2"
+                          class="waiter-badge"
+                          [ngClass]="item.tiempoMarchado ? 'waiter-badge-marchado' : 'waiter-badge-espera'">
+                      {{ item.tiempoMarchado ? '🔥 2do Tiempo Marchado' : '⏱️ 2do Tiempo (En espera)' }}
+                    </span>
+                    <span *ngIf="item.tiempo === 3"
+                          class="waiter-badge"
+                          [ngClass]="item.tiempoMarchado ? 'waiter-badge-marchado' : 'waiter-badge-espera'">
+                      {{ item.tiempoMarchado ? '🔥 3er Tiempo Marchado' : '🍰 3er Tiempo (En espera)' }}
+                    </span>
+                    <span *ngIf="item.paraLlevar || (item.comentarios && item.comentarios.includes('PARA LLEVAR'))"
+                          class="waiter-badge waiter-badge-takeaway">
+                      🥡 Para llevar
+                    </span>
+                  </div>
                 </div>
               </div>
-              <span class="order-detail-item-price">
-                ${{ (getItemPrice(item) * item.cantidad) | number:'1.2-2' }}
-              </span>
+
+              <div class="waiter-dish-right-info">
+                <span class="waiter-dish-qty">x{{ item.cantidad }}</span>
+                <span class="waiter-dish-price">
+                  ${{ (getItemPrice(item) * item.cantidad) | number:'1.2-2' }}
+                </span>
+              </div>
             </div>
-            <!-- Card roja: últimas piezas / agotado -->
-            <div *ngIf="isLowStock(item)" class="order-detail-low-stock-card">
+
+            <!-- Stock chip / Alerta stock bajo -->
+            <div *ngIf="isLowStock(item)" class="order-detail-low-stock-card mt-2">
               <i class="pi pi-exclamation-triangle"></i>
               <span *ngIf="!isStockZero(item)">
                 ¡Son las últimas piezas! Quedan <b>{{ getRemainingStock(item) }}</b>
@@ -1395,6 +2505,61 @@
               <span *ngIf="isStockZero(item)">
                 ¡Agotado! Ya no quedan piezas de este artículo
               </span>
+            </div>
+
+            <!-- Comentarios del producto -->
+            <div *ngIf="item.comentarios" class="waiter-dish-comments">
+              <i class="pi pi-comment text-amber-600"></i>
+              <span>{{ item.comentarios }}</span>
+            </div>
+
+            <!-- Divider sutil -->
+            <div class="waiter-dish-divider"></div>
+
+            <!-- Insumos y preparación (Core includes format con tachados) -->
+            <div class="waiter-dish-specs">
+              <span class="waiter-specs-title">Insumos y preparación:</span>
+
+              <div *ngIf="hasRecipeInfo(item); else waiterNoRecipe" class="waiter-ing-list">
+                <!-- Base -->
+                <div class="waiter-ing-item" *ngFor="let ing of getItemBaseIngredients(item)">
+                  <i class="pi pi-check waiter-ing-icon icon-check"></i>
+                  <span class="waiter-ing-name">{{ ing.insumoName }}</span>
+                  <span *ngIf="ing.grupo" class="waiter-ing-group">{{ ing.grupo }}</span>
+                  <span class="waiter-ing-qty">{{ ingredientLabel(ing) }}</span>
+                </div>
+
+                <!-- Modificables que SÍ se mantienen -->
+                <div class="waiter-ing-item" *ngFor="let ing of getItemModifiableIngredients(item)">
+                  <i class="pi pi-check waiter-ing-icon icon-check"></i>
+                  <span class="waiter-ing-name">{{ ing.insumoName }}</span>
+                  <span *ngIf="ing.grupo" class="waiter-ing-group">{{ ing.grupo }}</span>
+                  <span class="waiter-ing-qty">{{ ingredientLabel(ing) }}</span>
+                </div>
+
+                <!-- Modificables TACHADOS (el cliente pidió SIN ESTE) -->
+                <div class="waiter-ing-item waiter-ing-removed" *ngFor="let ing of getItemRemovedIngredients(item)">
+                  <i class="pi pi-times-circle waiter-ing-icon icon-times"></i>
+                  <span class="waiter-ing-name waiter-ing-strikethrough">{{ ing.insumoName }}</span>
+                  <span *ngIf="ing.grupo" class="waiter-ing-group tag-removed">{{ ing.grupo }}</span>
+                  <span class="waiter-ing-strike-badge">🚫 NO AGREGAR / SIN ESTE</span>
+                </div>
+
+                <!-- Adicionales extra -->
+                <div class="waiter-ing-item waiter-ing-extra" *ngFor="let ing of getItemAdditionalIngredients(item)">
+                  <i class="pi pi-plus-circle waiter-ing-icon icon-plus"></i>
+                  <span class="waiter-ing-name font-semibold">{{ ing.insumoName }}</span>
+                  <span *ngIf="ing.grupo" class="waiter-ing-group tag-extra">{{ ing.grupo }}</span>
+                  <span class="waiter-ing-qty">{{ ingredientLabel(ing) }}</span>
+                  <span *ngIf="ing.precio" class="waiter-ing-price">+${{ ing.precio | number: '1.2-2' }}</span>
+                </div>
+              </div>
+
+              <ng-template #waiterNoRecipe>
+                <div class="waiter-no-recipe-hint">
+                  <i class="pi pi-info-circle mr-1"></i> Receta estándar sin modificaciones registradas.
+                </div>
+              </ng-template>
             </div>
           </div>
         </div>
@@ -1669,23 +2834,45 @@
         </div>
       </div>
 
-      <!-- Campo de razón - Simplificado -->
+      <!-- Selector de Categoría (Métrica para la Gráfica) -->
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display: block; margin-bottom: 0.5rem; color: #33211D; font-weight: 600; font-size: 0.9rem;">
+          <i class="pi pi-chart-pie mr-2" style="color: #dc3545;"></i>
+          Categoría de Cancelación *
+        </label>
+        <select
+          [(ngModel)]="cancellationCategory"
+          [disabled]="cancellingOrder()"
+          style="width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 0.75rem; font-family: inherit; color: #1f2937; font-size: 0.9rem; background: #fff; outline: none; cursor: pointer; font-weight: 500;"
+        >
+          <option *ngFor="let cat of categoriasCancelacion" [value]="cat.value">
+            {{ cat.label }}
+          </option>
+        </select>
+        <span style="display: block; font-size: 0.78rem; color: #7a5c51; margin-top: 0.35rem;">
+          Esta categoría clasifica la métrica en la gráfica y auditoría de tickets cancelados.
+        </span>
+      </div>
+
+      <!-- Comentarios / Observaciones Detalladas -->
       <div style="margin-bottom: 1.5rem;">
         <label style="display: block; margin-bottom: 0.5rem; color: #33211D; font-weight: 600; font-size: 0.9rem;">
           <i class="pi pi-comment mr-2" style="color: #dc3545;"></i>
-          ¿Por qué cancelas esta orden?
+          Comentarios / Observaciones Detalladas
         </label>
         <textarea
-          [(ngModel)]="cancellationReason"
+          [(ngModel)]="cancellationComment"
           rows="3"
-          placeholder="Describe brevemente la razón..."
+          placeholder="Ej: Cocina se tardó demasiado en la preparación de la comanda..."
           maxlength="500"
           [disabled]="cancellingOrder()"
-          style="width: 100%; resize: none; border: 1px solid #ddd; border-radius: 8px; padding: 0.75rem; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #33211D; font-size: 0.9rem; transition: all 0.2s ease;"
+          style="width: 100%; resize: none; border: 1px solid #d1d5db; border-radius: 8px; padding: 0.75rem; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #33211D; font-size: 0.9rem; transition: all 0.2s ease;"
         ></textarea>
         <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #b8997d; margin-top: 0.375rem;">
-          <span>{{ cancellationReason.length }} / 500 caracteres</span>
-          <span *ngIf="cancellationReason.trim().length === 0" style="color: #dc3545;">Requerido</span>
+          <span>{{ cancellationComment.length }} / 500 caracteres</span>
+          <span *ngIf="cancellationCategory === 'Otro motivo' && cancellationComment.trim().length === 0" style="color: #dc3545; font-weight: 600;">
+            Requerido para 'Otro motivo'
+          </span>
         </div>
       </div>
     </ng-container>
@@ -1708,8 +2895,8 @@
           severity="danger"
           styleClass="minimal-submit"
           [loading]="cancellingOrder()"
-          [disabled]="cancellingOrder() || cancellationReason.trim().length === 0"
-          (onClick)="onCancelOrderConfirmed(cancellationReason)"
+          [disabled]="cancellingOrder() || !cancellationCategory || (cancellationCategory === 'Otro motivo' && cancellationComment.trim().length === 0)"
+          (onClick)="onCancelOrderConfirmed(cancellationCategory, cancellationComment)"
         ></p-button>
       </div>
     </ng-template>
@@ -1788,51 +2975,92 @@
         />
       </div>
       <div class="cfg-panel-header">
-        <h3 class="cfg-product-name">{{ configProduct.name }}</h3>
+        <div class="min-w-0 flex-1">
+          <h3 class="cfg-product-name">{{ configProduct.name }}</h3>
+          <div *ngIf="configSelectedVariant" class="text-xs font-bold text-purple-700 flex items-center gap-1.5 mt-1">
+            <i class="pi pi-check-circle text-xs"></i>
+            <span>Variante: <strong>{{ configSelectedVariant.insumoName || configSelectedVariant.name }}</strong> <span *ngIf="configSelectedVariant.cantidad" class="text-slate-500 font-normal">({{ configSelectedVariant.cantidad }} {{ configSelectedVariant.unidad || 'ml' }})</span></span>
+          </div>
+        </div>
         <button type="button" class="cfg-close-btn" (click)="cancelIngredientConfig()" aria-label="Cerrar">
           <i class="pi pi-times"></i>
         </button>
       </div>
 
       <div class="cfg-panel-body">
-        <span class="cfg-product-base">Precio base: ${{ configProduct.price | number:'1.2-2' }}</span>
+        <span class="cfg-product-base" *ngIf="!configSelectedVariant">Precio base: ${{ configProduct.price | number:'1.2-2' }}</span>
+        <span class="cfg-product-base" *ngIf="configSelectedVariant">Precio variante: ${{ (configSelectedVariant.precio ?? configSelectedVariant.price ?? 0) | number:'1.2-2' }}</span>
 
         <div *ngIf="getConfigExtraPrice() > 0" class="cfg-total-line">
           <span>Total actualizado</span>
           <strong>${{ getConfigUnitPrice() | number:'1.2-2' }}</strong>
         </div>
 
-        <ng-container *ngIf="configModificables.length > 0">
-          <div class="cfg-section">
-            <span class="cfg-section-title">Modificables</span>
-            <span class="cfg-section-hint">Desmarca lo que NO quieras (sin costo)</span>
-            <label class="cfg-item" *ngFor="let m of configModificables">
-              <p-checkbox
-                [binary]="true"
-                [ngModel]="!isExcluded(m.insumoId)"
-                (ngModelChange)="toggleExcluded(m.insumoId, $event)"
-              ></p-checkbox>
-              <span class="cfg-item-name">{{ m.insumoName }}</span>
-              <span class="cfg-item-extra" *ngIf="m.cantidad">(×{{ m.cantidad }} {{ m.unidad || 'pieza' }})</span>
-            </label>
-          </div>
-        </ng-container>
+        <!-- Grupos de Opciones (Proteína, Salsas, Modificables, Adicionales, etc.) -->
+        <div class="cfg-groups-container">
+          <div class="cfg-group-card" *ngFor="let group of configOptionGroups(); trackBy: trackByGroupName">
+            <div class="cfg-group-header">
+              <div class="cfg-group-title-row">
+                <i [class]="group.icon" class="cfg-group-icon"></i>
+                <span class="cfg-group-name">{{ group.name }}</span>
+              </div>
+              <span class="cfg-group-hint" *ngIf="group.hint">{{ group.hint }}</span>
+            </div>
 
-        <ng-container *ngIf="configAdicionales.length > 0">
-          <div class="cfg-section">
-            <span class="cfg-section-title">Adicionales</span>
-            <span class="cfg-section-hint">Marca los que quieras agregar</span>
-            <label class="cfg-item" *ngFor="let a of configAdicionales">
-              <p-checkbox
-                [binary]="true"
-                [ngModel]="isAdditional(a.insumoId)"
-                (ngModelChange)="toggleAdditional(a.insumoId, $event)"
-              ></p-checkbox>
-              <span class="cfg-item-name">{{ a.insumoName }}</span>
-              <span class="cfg-item-price">+${{ a.precio || 0 }}</span>
-            </label>
+            <div class="cfg-group-items-grid">
+              <div
+                *ngFor="let item of group.items; trackBy: trackByOptionInsumoId"
+                class="cfg-item-card"
+                [class.item-card-excluded]="item.type === 'MODIFICABLE' && isExcluded(item.option.insumoId)"
+                [class.item-card-selected]="item.type === 'ADICIONAL' && isAdditional(item.option.insumoId)"
+              >
+                <!-- Si es modificable (base/opcional por defecto incluida) -->
+                <ng-container *ngIf="item.type === 'MODIFICABLE'">
+                  <label class="cfg-item-label">
+                    <p-checkbox
+                      [binary]="true"
+                      [ngModel]="!isExcluded(item.option.insumoId)"
+                      (ngModelChange)="toggleExcluded(item.option.insumoId, $event)"
+                    ></p-checkbox>
+                    <div class="cfg-item-info">
+                      <span class="cfg-item-name" [class.line-through]="isExcluded(item.option.insumoId)">
+                        {{ item.option.insumoName }}
+                      </span>
+                      <span class="cfg-item-detail" *ngIf="item.option.cantidad">
+                        ({{ item.option.cantidad }} {{ item.option.unidad || 'pza' }})
+                      </span>
+                    </div>
+                    <span *ngIf="isExcluded(item.option.insumoId)" class="cfg-excluded-badge">
+                      Sin este
+                    </span>
+                  </label>
+                </ng-container>
+
+                <!-- Si es adicional (con costo extra) -->
+                <ng-container *ngIf="item.type === 'ADICIONAL'">
+                  <label class="cfg-item-label">
+                    <p-checkbox
+                      [binary]="true"
+                      [ngModel]="isAdditional(item.option.insumoId)"
+                      (ngModelChange)="toggleAdditional(item.option.insumoId, $event)"
+                    ></p-checkbox>
+                    <div class="cfg-item-info">
+                      <span class="cfg-item-name font-semibold">
+                        {{ item.option.insumoName }}
+                      </span>
+                      <span class="cfg-item-detail" *ngIf="item.option.cantidad">
+                        ({{ item.option.cantidad }} {{ item.option.unidad || 'pza' }})
+                      </span>
+                    </div>
+                    <span class="cfg-item-price-badge">
+                      +${{ (item.option.precio || 0) | number: '1.2-2' }}
+                    </span>
+                  </label>
+                </ng-container>
+              </div>
+            </div>
           </div>
-        </ng-container>
+        </div>
       </div>
 
       <div class="cfg-actions">
@@ -1957,6 +3185,10 @@
             <i class="pi pi-sliders-h text-[10px] text-slate-500"></i>
             {{ selectedProductDetail()!.recipes!.length }} ingredientes
           </span>
+          <span *ngIf="selectedProductDetail()?.variants && selectedProductDetail()!.variants!.length > 0" class="px-3 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 text-xs font-extrabold flex items-center gap-1.5">
+            <i class="pi pi-th-large text-[10px] text-purple-600"></i>
+            {{ selectedProductDetail()!.variants!.length }} variantes
+          </span>
           <span *ngIf="selectedProductDetail()?.additionals && selectedProductDetail()!.additionals!.length > 0" class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold flex items-center gap-1.5">
             <i class="pi pi-plus-circle text-[10px] text-purple-600"></i>
             {{ selectedProductDetail()!.additionals!.length }} adicionales
@@ -1970,11 +3202,119 @@
             (click)="addProductFromDetail(selectedProductDetail()!)"
             class="w-full bg-[#2b211e] hover:bg-[#1a1412] active:scale-[0.98] text-white font-bold py-3.5 px-6 rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-md hover:shadow-lg cursor-pointer text-sm sm:text-base"
           >
-            <i class="pi pi-shopping-cart text-sm"></i>
-            <span>Agregar a la comanda</span>
+            <i class="pi" [ngClass]="selectedProductDetail()?.variants?.length ? 'pi-th-large' : 'pi-shopping-cart'" class="text-sm"></i>
+            <span>{{ selectedProductDetail()?.variants?.length ? 'Elegir variante' : 'Agregar a la comanda' }}</span>
           </button>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- ==================== MODAL SUBCOMANDA DE VARIANTES (CARDS EN DIÁLOGO) ==================== -->
+  <p-dialog
+    [visible]="showVariantModal()"
+    (visibleChange)="showVariantModal.set($event)"
+    [modal]="true"
+    [closable]="true"
+    [dismissableMask]="true"
+    [style]="{ width: '94%', maxWidth: '880px' }"
+    styleClass="variant-selection-dialog minimal-modal"
+    (onHide)="closeVariantSelection()"
+  >
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center text-xl font-bold shadow-xs">
+          <i class="pi pi-th-large"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-purple-800 bg-purple-100/80 px-2 py-0.5 rounded-md">
+              Subcomanda de Bebidas
+            </span>
+            <span class="text-xs text-slate-400">· Selecciona una presentación</span>
+          </div>
+          <h3 class="text-lg font-black text-slate-900 m-0 leading-tight">
+            {{ variantModalProduct()?.name }}
+          </h3>
+        </div>
+      </div>
+    </ng-template>
+
+    <div class="variant-modal-content py-2" *ngIf="variantModalProduct() as prod">
+      <div class="p-2.5 sm:p-3 bg-purple-50/70 border border-purple-200/80 rounded-xl mb-3 flex items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2 text-purple-900 font-medium">
+          <i class="pi pi-info-circle text-purple-600 text-sm"></i>
+          <span>Elige la opción para agregar a la comanda de: <strong class="text-purple-950 font-bold">{{ asientoActivo().alias }}</strong></span>
+        </div>
+        <span class="text-[11px] font-bold text-purple-700 bg-white px-2 py-0.5 rounded-full border border-purple-200">
+          {{ prod.variants?.length || 0 }} disponibles
+        </span>
+      </div>
+
+      <!-- Galería de Variantes Cuadradas en Filas de 3 Opciones -->
+      <div class="variant-gallery-grid custom-scrollbar">
+        <div
+          *ngFor="let v of prod.variants"
+          class="variant-square-card group"
+          (click)="onSelectVariantCard(v)"
+        >
+          <!-- Fila superior: Badge de grupo y Porción -->
+          <div class="w-full flex items-center justify-between gap-1.5 shrink-0 z-10">
+            <span *ngIf="v.grupo" class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200/80 truncate max-w-[110px]" [title]="v.grupo">
+              🏷️ {{ v.grupo }}
+            </span>
+            <span *ngIf="!v.grupo"></span>
+
+            <span *ngIf="v.cantidad || v.unidad" class="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200/80 shadow-2xs shrink-0">
+              {{ v.cantidad }} {{ v.unidad || 'pz' }}
+            </span>
+          </div>
+
+          <!-- Centro: Icono ilustrativo y Nombre destacado de galería -->
+          <div class="my-auto flex flex-col items-center justify-center gap-2 w-full px-1 py-1">
+            <div class="card-icon-container w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center shrink-0 transition-all duration-300 shadow-2xs">
+              <i class="pi pi-sparkles text-lg sm:text-xl"></i>
+            </div>
+
+            <h4 class="card-title font-black text-slate-800 text-xs sm:text-sm tracking-tight leading-snug line-clamp-2 uppercase m-0 transition-colors">
+              {{ v.insumoName || v.name }}
+            </h4>
+          </div>
+
+          <!-- Pie de tarjeta: Precio y Botón Elegir -->
+          <div class="w-full pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5 shrink-0 z-10">
+            <div class="text-left flex flex-col">
+              <span class="text-[9px] uppercase font-bold text-slate-400 leading-none">Precio</span>
+              <span class="text-sm sm:text-base font-black text-slate-900 leading-tight">
+                ${{ (v.precio ?? v.price ?? 0) | number:'1.2-2' }}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              class="card-btn px-2.5 py-1 rounded-xl bg-purple-50 text-purple-700 font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer border-0 shadow-2xs"
+            >
+              <span>Elegir</span>
+              <i class="pi pi-arrow-right text-[9px]"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex items-center justify-between w-full pt-2 border-t border-slate-100">
+        <span class="text-xs text-slate-500 font-medium">
+          * El servicio por botella incluye 5 mezcladores de 355ml.
+        </span>
+        <button
+          type="button"
+          (click)="closeVariantSelection()"
+          class="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer border-0"
+        >
+          Cerrar
+        </button>
+      </div>
+    </ng-template>
+  </p-dialog>
 </div>

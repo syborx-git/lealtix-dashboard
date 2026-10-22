@@ -472,11 +472,41 @@
     <!-- ==================== 3) CORTE DEL DÍA ==================== -->
     <!-- ================================================================ -->
     <ng-container *ngIf="seccionActiva() === 'dia'">
-      <div class="caja-tabs">
+      <div class="caja-tabs flex-wrap gap-2">
         <span class="caja-tab-note">
           <i class="pi pi-calendar text-purple-500"></i>
           {{ fechaCorteTexto }}
         </span>
+
+        <!-- Badge si el corte ya fue generado hoy -->
+        <div *ngIf="corteHoyYaGenerado()" class="flex items-center gap-2">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold">
+            <i class="pi pi-check-circle text-emerald-600"></i>
+            Corte cerrado hoy a las {{ corteHoy()?.fechaHoraRegistro | date:'HH:mm' }} por {{ corteHoy()?.cajeroNombre || 'Caja' }}
+          </span>
+          <button
+            type="button"
+            class="px-2.5 py-1 text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+            (click)="abrirModalVerCorteDia()"
+            title="Ver detalle del corte cerrado hoy"
+          >
+            <i class="pi pi-eye"></i>
+            <span>Ver corte</span>
+          </button>
+        </div>
+
+        <!-- Botón para generar corte si NO se ha generado hoy -->
+        <button
+          *ngIf="!corteHoyYaGenerado()"
+          type="button"
+          class="px-3 py-1.5 text-xs font-black text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-xl shadow-sm transition-all hover:scale-[1.02] cursor-pointer flex items-center gap-2"
+          (click)="abrirModalGenerarCorteDia()"
+          title="Generar corte de caja del día"
+        >
+          <i class="pi pi-calculator"></i>
+          <span>Generar Corte del Día</span>
+        </button>
+
         <button type="button" class="btn-refresh ml-auto" (click)="cargarResumenDia()" title="Actualizar">
           <i class="pi" [class.pi-refresh]="!loadingResumenDia()" [class.pi-spin]="loadingResumenDia()" [class.pi-spinner]="loadingResumenDia()"></i>
         </button>
@@ -749,6 +779,104 @@
         </div>
       </div>
 
+      <!-- Ajuste y Desglose de Liquidación de Propinas -->
+      <div class="bg-gradient-to-br from-amber-50/70 via-white to-purple-50/40 border border-amber-200 rounded-2xl p-4 shadow-xs space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-100 pb-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-amber-500 text-white grid place-items-center text-xs font-black shadow-xs">
+              <i class="pi pi-percentage"></i>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider m-0 flex items-center gap-1.5">
+                Liquidación de Propinas
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">
+                  Pool & Mesero
+                </span>
+              </h4>
+              <p class="text-[11px] text-slate-500 m-0">
+                Ajusta el porcentaje de retención para cocina/barra antes de entregar el efectivo al mesero.
+              </p>
+            </div>
+          </div>
+
+          <!-- Selector / Input interactivo de porcentaje -->
+          <div class="flex items-center gap-2 self-start sm:self-auto bg-amber-50/80 border border-amber-200 px-3 py-1.5 rounded-xl">
+            <span class="text-xs font-bold text-slate-700">Retención:</span>
+            <div class="relative flex items-center w-20">
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="5"
+                [(ngModel)]="retencionPropinasPorc"
+                class="w-full pr-5 pl-2 py-1 text-center font-black text-xs bg-white border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-slate-800"
+              />
+              <span class="absolute right-1.5 text-xs font-black text-amber-600 pointer-events-none">%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Presets rápidos de porcentaje -->
+        <div class="flex flex-wrap items-center gap-1.5">
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Rápido:</span>
+          <button
+            type="button"
+            *ngFor="let porc of [0, 15, 30, 50, 70, 100]"
+            (click)="retencionPropinasPorc = porc"
+            [class.bg-purple-600]="retencionPropinasPorc === porc"
+            [class.text-white]="retencionPropinasPorc === porc"
+            [class.border-purple-600]="retencionPropinasPorc === porc"
+            [class.bg-white]="retencionPropinasPorc !== porc"
+            [class.text-slate-700]="retencionPropinasPorc !== porc"
+            [class.border-slate-200]="retencionPropinasPorc !== porc"
+            class="px-2.5 py-1 rounded-lg text-xs font-bold border transition-all hover:border-purple-400 cursor-pointer shadow-2xs"
+          >
+            {{ porc }}%
+          </button>
+        </div>
+
+        <!-- Desglose de cálculo en tiempo real -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+          <div class="bg-white border border-slate-200 rounded-xl p-3 space-y-0.5">
+            <div class="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase">
+              <span>Propina Bruta</span>
+              <i class="pi pi-receipt text-slate-400"></i>
+            </div>
+            <p class="text-base font-black text-slate-800 m-0">
+              ${{ propinaBrutaMesero | number:'1.2-2' }}
+            </p>
+            <span class="text-[10px] text-slate-400 block truncate">Total generado en comandas</span>
+          </div>
+
+          <div class="bg-amber-50/90 border border-amber-200 rounded-xl p-3 space-y-0.5">
+            <div class="flex items-center justify-between text-[10px] font-bold text-amber-700 uppercase">
+              <span>Retención ({{ retencionPropinasPorc }}%)</span>
+              <i class="pi pi-percentage text-amber-500"></i>
+            </div>
+            <p class="text-base font-black text-amber-800 m-0">
+              -${{ retencionMontoMesero | number:'1.2-2' }}
+            </p>
+            <span class="text-[10px] text-amber-600 block truncate">Pool cocina / barra</span>
+          </div>
+
+          <div class="bg-emerald-50/90 border border-emerald-300 rounded-xl p-3 space-y-0.5">
+            <div class="flex items-center justify-between text-[10px] font-bold text-emerald-800 uppercase">
+              <span>A Entregar al Mesero</span>
+              <i class="pi pi-check-circle text-emerald-600"></i>
+            </div>
+            <p class="text-base font-black text-emerald-700 m-0">
+              ${{ propinaNetaMesero | number:'1.2-2' }}
+            </p>
+            <span class="text-[10px] text-emerald-600 font-semibold block truncate">Neto final a pagar</span>
+          </div>
+        </div>
+
+        <p *ngIf="propinaBrutaMesero <= 0" class="text-[11px] text-slate-400 italic m-0 pt-1 flex items-center gap-1">
+          <i class="pi pi-info-circle text-[11px]"></i>
+          No hay propinas pendientes de liquidar para este mesero en este turno.
+        </p>
+      </div>
+
       <!-- Tickets del mesero con montos, cliente, cantidad de platillos -->
       <div>
         <div class="flex items-center justify-between mb-2">
@@ -873,9 +1001,9 @@
         <button
           type="button"
           *ngIf="meseroSeleccionadoId()"
-          class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
+          class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
           (click)="liquidarPropinasMesero()"
-          [disabled]="procesando()"
+          [disabled]="procesando() || propinaBrutaMesero <= 0"
         >
           <i class="pi pi-gift"></i>
           <span>Liquidar propinas (${{ propinaNetaMesero | number:'1.2-2' }})</span>
@@ -963,6 +1091,28 @@
           <span class="text-[10px] font-bold text-purple-700 uppercase block">Total Original</span>
           <span class="text-base font-black text-purple-950">${{ c.total | number:'1.2-2' }}</span>
         </div>
+      </div>
+
+      <!-- Opción: Dividir Cuenta (Cobro por separado) -->
+      <div class="p-3 bg-gradient-to-r from-indigo-50/90 via-purple-50/70 to-indigo-50/90 rounded-2xl border border-indigo-200 flex items-center justify-between gap-3 shadow-2xs">
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-1.5 text-xs font-black text-indigo-950">
+            <i class="pi pi-clone text-indigo-600"></i>
+            <span>¿Desean dividir la cuenta?</span>
+          </div>
+          <p class="text-[11px] text-slate-600 m-0 mt-0.5 leading-snug">
+            Separa por persona, partes equitativas o por selección de artículos en sub-comandas.
+          </p>
+        </div>
+        <button
+          type="button"
+          (click)="dividirCuentaDesdeCobro()"
+          class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-xl text-xs font-extrabold shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer flex-shrink-0"
+          title="Dividir comanda en sub-comandas"
+        >
+          <i class="pi pi-users text-xs"></i>
+          <span>Dividir Cuenta</span>
+        </button>
       </div>
 
       <!-- Ingreso / Ajuste del Monto de la Cuenta -->
@@ -1132,23 +1282,35 @@
     </div>
 
     <ng-template pTemplate="footer">
-      <div class="flex justify-end gap-2">
+      <div class="flex items-center justify-between gap-2 w-full">
         <button
           type="button"
-          (click)="modalPagoVisible.set(false)"
-          class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+          (click)="dividirCuentaDesdeCobro()"
+          class="px-3.5 py-2 border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold cursor-pointer flex items-center gap-1.5 transition-colors"
+          title="Dividir en sub-comandas por persona, equitativamente o por platillo"
         >
-          Cancelar
+          <i class="pi pi-clone text-xs"></i>
+          <span>Dividir Cuenta</span>
         </button>
-        <button
-          type="button"
-          (click)="procesarCobro()"
-          [disabled]="procesando() || montoCuentaInput <= 0"
-          class="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl text-xs font-black shadow-md cursor-pointer flex items-center gap-1.5"
-        >
-          <i *ngIf="procesando()" class="pi pi-spin pi-spinner"></i>
-          <span>Cobrar y Liquidar</span>
-        </button>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            (click)="modalPagoVisible.set(false)"
+            class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            (click)="procesarCobro()"
+            [disabled]="procesando() || montoCuentaInput <= 0"
+            class="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-xl text-xs font-black shadow-md cursor-pointer flex items-center gap-1.5"
+          >
+            <i *ngIf="procesando()" class="pi pi-spin pi-spinner"></i>
+            <span>Cobrar y Liquidar</span>
+          </button>
+        </div>
       </div>
     </ng-template>
   </p-dialog>
@@ -1245,23 +1407,49 @@
     </div>
 
     <ng-template pTemplate="footer">
-      <div class="flex justify-end gap-2">
-        <button
-          type="button"
-          *ngIf="selectedOrderDetalle() as od"
-          (click)="imprimirTicket(od)"
-          class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
-        >
-          <i class="pi pi-print"></i>
-          <span>Imprimir Ticket</span>
-        </button>
-        <button
-          type="button"
-          (click)="cerrarDetalleOrden()"
-          class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
-        >
-          Cerrar
-        </button>
+      <div class="flex items-center justify-between gap-2 w-full">
+        <div>
+          <button
+            type="button"
+            *ngIf="selectedOrderDetalle() as od"
+            [disabled]="od.estado === 'PAGADA' || od.estado === 'CANCELADA'"
+            (click)="dividirCuentaDesdeDetalle(od)"
+            class="px-3.5 py-2 border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold cursor-pointer flex items-center gap-1.5 transition-colors disabled:opacity-50"
+            title="Dividir comanda por persona, equitativamente o por artículos"
+          >
+            <i class="pi pi-clone text-xs"></i>
+            <span>Dividir Cuenta</span>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            *ngIf="selectedOrderDetalle() as od"
+            (click)="imprimirTicket(od)"
+            class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
+          >
+            <i class="pi pi-print"></i>
+            <span>Imprimir Ticket</span>
+          </button>
+          <button
+            type="button"
+            *ngIf="selectedOrderDetalle() as od"
+            [disabled]="od.estado === 'PAGADA' || od.estado === 'CANCELADA'"
+            (click)="cerrarDetalleOrden(); abrirModalCobro(od)"
+            class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+          >
+            <i class="pi pi-check-circle"></i>
+            <span>Cobrar Comanda</span>
+          </button>
+          <button
+            type="button"
+            (click)="cerrarDetalleOrden()"
+            class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+          >
+            Cerrar
+          </button>
+        </div>
       </div>
     </ng-template>
   </p-dialog>
@@ -1296,17 +1484,44 @@
         </div>
       </div>
 
-      <!-- Motivo -->
+      <!-- Categoría de Cancelación -->
       <div>
         <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
-          Motivo de Cancelación *
+          Categoría de Cancelación *
+        </label>
+        <select
+          [(ngModel)]="categoriaCancelacion"
+          [disabled]="procesando()"
+          class="w-full text-xs p-3 rounded-xl border border-slate-300 focus:border-rose-500 bg-white cursor-pointer font-medium outline-none"
+        >
+          <option *ngFor="let cat of categoriasCancelacion" [value]="cat.value">
+            {{ cat.label }}
+          </option>
+        </select>
+        <span class="block text-[11px] text-slate-500 mt-1">
+          Esta categoría clasifica la métrica en la gráfica y auditoría de tickets cancelados.
+        </span>
+      </div>
+
+      <!-- Comentarios / Observaciones -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">
+          Comentarios / Observaciones
         </label>
         <textarea
-          [(ngModel)]="motivoCancelacion"
+          [(ngModel)]="comentarioCancelacion"
           rows="3"
-          placeholder="Describe la razón de la cancelación (error en mesa, cliente se retiró, etc.)..."
+          placeholder="Ej: Cocina se tardó demasiado en la preparación de la comanda..."
+          maxlength="500"
+          [disabled]="procesando()"
           class="w-full text-xs p-3 rounded-xl border border-slate-300 focus:border-rose-500 bg-white resize-none"
         ></textarea>
+        <div class="flex justify-between items-center text-[10px] text-slate-400 mt-1">
+          <span>{{ comentarioCancelacion.length }} / 500 caracteres</span>
+          <span *ngIf="categoriaCancelacion === 'Otro motivo' && !comentarioCancelacion.trim()" class="text-rose-600 font-bold">
+            Requerido para 'Otro motivo'
+          </span>
+        </div>
       </div>
     </div>
 
@@ -1323,8 +1538,8 @@
         <button
           type="button"
           (click)="confirmarCancelarComanda()"
-          [disabled]="procesando() || !motivoCancelacion.trim()"
-          class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
+          [disabled]="procesando() || !categoriaCancelacion || (categoriaCancelacion === 'Otro motivo' && !comentarioCancelacion.trim())"
+          class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <i *ngIf="procesando()" class="pi pi-spin pi-spinner"></i>
           <span>Confirmar Cancelación</span>
@@ -1526,6 +1741,382 @@
           Entendido, Cerrar
         </button>
       </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- ==================== MODAL: GENERAR CORTE DEL DÍA ==================== -->
+  <p-dialog
+    header="Generar Corte de Caja del Día — Conciliación de Arqueo"
+    [visible]="modalGenerarCorteDiaVisible()"
+    (visibleChange)="modalGenerarCorteDiaVisible.set($event)"
+    [modal]="true"
+    [style]="{ width: '92vw', maxWidth: '640px' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="!guardandoCorteDia()"
+  >
+    <div class="flex flex-col gap-4 py-1 text-xs">
+      <!-- Banner Informativo -->
+      <div class="p-3 bg-purple-50 rounded-xl border border-purple-200 text-purple-900 leading-relaxed">
+        <div class="flex items-start gap-2">
+          <i class="pi pi-info-circle text-purple-600 text-base mt-0.5 shrink-0"></i>
+          <div>
+            <strong class="block font-bold">Arqueo físico de caja:</strong>
+            Ingresa la cantidad real de dinero y comprobantes recaudados en el día por cada método de pago. El sistema comparará lo estipulado automáticamente para auditar sobrantes, faltantes y justificaciones operativas (ej. pago de salarios, compra de insumos).
+          </div>
+        </div>
+      </div>
+
+      <!-- Campos por Método de Pago -->
+      <div class="space-y-3">
+        <!-- 1. Efectivo -->
+        <div class="p-3 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="font-black text-slate-800 flex items-center gap-1.5">
+              <i class="pi pi-money-bill text-emerald-600"></i>
+              Efectivo Físico en Caja
+            </span>
+            <span class="text-[11px] text-slate-500 font-medium">
+              Esperado por sistema: <strong class="text-slate-800">${{ totalEfectivoDia() | number:'1.2-2' }}</strong>
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="flex-1">
+              <p-inputNumber
+                [ngModel]="inputRealEfectivo()"
+                (ngModelChange)="inputRealEfectivo.set($event)"
+                mode="currency"
+                currency="USD"
+                locale="en-US"
+                placeholder="$0.00"
+                styleClass="w-full text-xs"
+                [min]="0"
+              ></p-inputNumber>
+            </div>
+            <div class="w-36 text-right shrink-0">
+              <span
+                class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full"
+                [class.bg-emerald-50]="diferenciaEfectivoCorte() === 0"
+                [class.text-emerald-700]="diferenciaEfectivoCorte() === 0"
+                [class.bg-indigo-50]="diferenciaEfectivoCorte() > 0"
+                [class.text-indigo-700]="diferenciaEfectivoCorte() > 0"
+                [class.bg-rose-50]="diferenciaEfectivoCorte() < 0"
+                [class.text-rose-700]="diferenciaEfectivoCorte() < 0"
+              >
+                {{ diferenciaEfectivoCorte() > 0 ? 'Sobrante +' : (diferenciaEfectivoCorte() < 0 ? 'Faltante ' : 'Cuadrado ') }}${{ (diferenciaEfectivoCorte() >= 0 ? diferenciaEfectivoCorte() : -diferenciaEfectivoCorte()) | number:'1.2-2' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Tarjeta -->
+        <div class="p-3 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="font-black text-slate-800 flex items-center gap-1.5">
+              <i class="pi pi-credit-card text-purple-600"></i>
+              Tarjetas / Terminales (Vouchers)
+            </span>
+            <span class="text-[11px] text-slate-500 font-medium">
+              Esperado por sistema: <strong class="text-slate-800">${{ totalTarjetaDia() | number:'1.2-2' }}</strong>
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="flex-1">
+              <p-inputNumber
+                [ngModel]="inputRealTarjeta()"
+                (ngModelChange)="inputRealTarjeta.set($event)"
+                mode="currency"
+                currency="USD"
+                locale="en-US"
+                placeholder="$0.00"
+                styleClass="w-full text-xs"
+                [min]="0"
+              ></p-inputNumber>
+            </div>
+            <div class="w-36 text-right shrink-0">
+              <span
+                class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full"
+                [class.bg-emerald-50]="diferenciaTarjetaCorte() === 0"
+                [class.text-emerald-700]="diferenciaTarjetaCorte() === 0"
+                [class.bg-indigo-50]="diferenciaTarjetaCorte() > 0"
+                [class.text-indigo-700]="diferenciaTarjetaCorte() > 0"
+                [class.bg-rose-50]="diferenciaTarjetaCorte() < 0"
+                [class.text-rose-700]="diferenciaTarjetaCorte() < 0"
+              >
+                {{ diferenciaTarjetaCorte() > 0 ? 'Sobrante +' : (diferenciaTarjetaCorte() < 0 ? 'Faltante ' : 'Cuadrado ') }}${{ (diferenciaTarjetaCorte() >= 0 ? diferenciaTarjetaCorte() : -diferenciaTarjetaCorte()) | number:'1.2-2' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Transferencias -->
+        <div class="p-3 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="font-black text-slate-800 flex items-center gap-1.5">
+              <i class="pi pi-arrow-right-arrow-left text-sky-600"></i>
+              Transferencias / SPEI
+            </span>
+            <span class="text-[11px] text-slate-500 font-medium">
+              Esperado por sistema: <strong class="text-slate-800">${{ totalTransferenciaDia() | number:'1.2-2' }}</strong>
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="flex-1">
+              <p-inputNumber
+                [ngModel]="inputRealTransferencia()"
+                (ngModelChange)="inputRealTransferencia.set($event)"
+                mode="currency"
+                currency="USD"
+                locale="en-US"
+                placeholder="$0.00"
+                styleClass="w-full text-xs"
+                [min]="0"
+              ></p-inputNumber>
+            </div>
+            <div class="w-36 text-right shrink-0">
+              <span
+                class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full"
+                [class.bg-emerald-50]="diferenciaTransferenciaCorte() === 0"
+                [class.text-emerald-700]="diferenciaTransferenciaCorte() === 0"
+                [class.bg-indigo-50]="diferenciaTransferenciaCorte() > 0"
+                [class.text-indigo-700]="diferenciaTransferenciaCorte() > 0"
+                [class.bg-rose-50]="diferenciaTransferenciaCorte() < 0"
+                [class.text-rose-700]="diferenciaTransferenciaCorte() < 0"
+              >
+                {{ diferenciaTransferenciaCorte() > 0 ? 'Sobrante +' : (diferenciaTransferenciaCorte() < 0 ? 'Faltante ' : 'Cuadrado ') }}${{ (diferenciaTransferenciaCorte() >= 0 ? diferenciaTransferenciaCorte() : -diferenciaTransferenciaCorte()) | number:'1.2-2' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Otros Métodos -->
+        <div class="p-3 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="font-black text-slate-800 flex items-center gap-1.5">
+              <i class="pi pi-wallet text-amber-600"></i>
+              Otros Métodos / Vales
+            </span>
+            <span class="text-[11px] text-slate-500 font-medium">
+              Esperado por sistema: <strong class="text-slate-800">${{ totalOtrosMetodosDia() | number:'1.2-2' }}</strong>
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="flex-1">
+              <p-inputNumber
+                [ngModel]="inputRealOtros()"
+                (ngModelChange)="inputRealOtros.set($event)"
+                mode="currency"
+                currency="USD"
+                locale="en-US"
+                placeholder="$0.00"
+                styleClass="w-full text-xs"
+                [min]="0"
+              ></p-inputNumber>
+            </div>
+            <div class="w-36 text-right shrink-0">
+              <span
+                class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full"
+                [class.bg-emerald-50]="diferenciaOtrosCorte() === 0"
+                [class.text-emerald-700]="diferenciaOtrosCorte() === 0"
+                [class.bg-indigo-50]="diferenciaOtrosCorte() > 0"
+                [class.text-indigo-700]="diferenciaOtrosCorte() > 0"
+                [class.bg-rose-50]="diferenciaOtrosCorte() < 0"
+                [class.text-rose-700]="diferenciaOtrosCorte() < 0"
+              >
+                {{ diferenciaOtrosCorte() > 0 ? 'Sobrante +' : (diferenciaOtrosCorte() < 0 ? 'Faltante ' : 'Cuadrado ') }}${{ (diferenciaOtrosCorte() >= 0 ? diferenciaOtrosCorte() : -diferenciaOtrosCorte()) | number:'1.2-2' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumen comparativo en vivo de totales -->
+      <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Sistema</span>
+            <span class="text-base font-black text-slate-700">${{ diaVentas() | number:'1.2-2' }}</span>
+          </div>
+          <div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Declarado</span>
+            <span class="text-base font-black text-slate-900">${{ totalRealDeclarado() | number:'1.2-2' }}</span>
+          </div>
+          <div>
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Diferencia Neta</span>
+            <span
+              class="text-base font-black block"
+              [class.text-emerald-600]="diferenciaTotalCorte() === 0"
+              [class.text-indigo-600]="diferenciaTotalCorte() > 0"
+              [class.text-rose-600]="diferenciaTotalCorte() < 0"
+            >
+              {{ diferenciaTotalCorte() > 0 ? '+' : '' }}${{ diferenciaTotalCorte() | number:'1.2-2' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comentarios y Justificación Opcional -->
+      <div>
+        <label class="block font-black text-slate-700 mb-1 text-[11px] uppercase tracking-wider">
+          Comentario u Observaciones de Justificación (Opcional)
+        </label>
+        <textarea
+          pTextarea
+          [ngModel]="inputComentariosCorte()"
+          (ngModelChange)="inputComentariosCorte.set($event)"
+          rows="3"
+          class="w-full text-xs p-2 rounded-xl border border-slate-200 focus:border-purple-500"
+          placeholder="Ej: Se tomaron $500 en efectivo de la caja para pago de salarios; retiro de $150 para compra urgente de verduras..."
+        ></textarea>
+      </div>
+
+      <!-- Alerta de Inmutabilidad -->
+      <div class="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-[11px] flex items-start gap-2">
+        <i class="pi pi-exclamation-triangle text-amber-600 mt-0.5 shrink-0"></i>
+        <span>
+          <strong>Importante:</strong> Una vez confirmado, este corte de caja quedará registrado de forma definitiva y no podrá volver a generarse hasta el día siguiente. Este registro no podrá ser modificado.
+        </span>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex items-center justify-end gap-2 w-full pt-2">
+        <button
+          type="button"
+          (click)="cerrarModalGenerarCorteDia()"
+          [disabled]="guardandoCorteDia()"
+          class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          (click)="confirmarGenerarCorteDia()"
+          [disabled]="guardandoCorteDia()"
+          class="px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-black shadow-sm flex items-center gap-2 cursor-pointer disabled:opacity-50"
+        >
+          <i class="pi" [class.pi-check]="!guardandoCorteDia()" [class.pi-spin]="guardandoCorteDia()" [class.pi-spinner]="guardandoCorteDia()"></i>
+          <span>{{ guardandoCorteDia() ? 'Registrando...' : 'Confirmar y Generar Corte del Día' }}</span>
+        </button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- ==================== MODAL: VER CORTE DEL DÍA CERRADO ==================== -->
+  <p-dialog
+    header="Corte de Caja del Día — Resumen Cerrado"
+    [visible]="modalVerCorteDiaVisible()"
+    (visibleChange)="modalVerCorteDiaVisible.set($event)"
+    [modal]="true"
+    [style]="{ width: '90vw', maxWidth: '620px' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="true"
+  >
+    @if (corteHoy(); as c) {
+      <div class="flex flex-col gap-4 py-1 text-xs">
+        <!-- Header Info -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+          <div>
+            <span class="text-slate-400 block text-[10px] font-bold uppercase">Folio de Corte</span>
+            <span class="font-black text-purple-700">#CD-{{ c.idCorteDiario }}</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px] font-bold uppercase">Fecha y Hora</span>
+            <span class="font-bold text-slate-800">{{ c.fechaHoraRegistro | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px] font-bold uppercase">Responsable</span>
+            <span class="font-bold text-slate-800 truncate block">{{ c.cajeroNombre || c.cajeroEmail || 'Caja' }}</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px] font-bold uppercase">Total Sistema</span>
+            <span class="font-bold text-slate-700">${{ (c.sistemaTotal || 0) | number:'1.2-2' }}</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px] font-bold uppercase">Total Físico Declarado</span>
+            <span class="font-black text-slate-900">${{ (c.realTotal || 0) | number:'1.2-2' }}</span>
+          </div>
+          <div>
+            <span class="text-slate-400 block text-[10px] font-bold uppercase">Diferencia Final</span>
+            <span
+              class="font-black"
+              [class.text-emerald-600]="(c.diferenciaTotal || 0) == 0"
+              [class.text-indigo-600]="(c.diferenciaTotal || 0) > 0"
+              [class.text-rose-600]="(c.diferenciaTotal || 0) < 0"
+            >
+              {{ (c.diferenciaTotal || 0) > 0 ? '+' : '' }}${{ (c.diferenciaTotal || 0) | number:'1.2-2' }} ({{ c.estadoDiferencia }})
+            </span>
+          </div>
+        </div>
+
+        <!-- Tabla Desglose -->
+        <div class="border border-slate-200 rounded-xl overflow-hidden">
+          <table class="w-full text-xs">
+            <thead class="bg-slate-100 text-slate-600 font-bold">
+              <tr>
+                <th class="p-2 text-left">Método</th>
+                <th class="p-2 text-right">Sistema</th>
+                <th class="p-2 text-right">Físico</th>
+                <th class="p-2 text-right">Diferencia</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr>
+                <td class="p-2 font-medium">Efectivo Físico</td>
+                <td class="p-2 text-right text-slate-600">${{ (c.sistemaEfectivo || 0) | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-bold">${{ (c.realEfectivo || 0) | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-black" [class.text-emerald-600]="(c.diferenciaEfectivo || 0) == 0" [class.text-indigo-600]="(c.diferenciaEfectivo || 0) > 0" [class.text-rose-600]="(c.diferenciaEfectivo || 0) < 0">
+                  {{ (c.diferenciaEfectivo || 0) > 0 ? '+' : '' }}${{ (c.diferenciaEfectivo || 0) | number:'1.2-2' }}
+                </td>
+              </tr>
+              <tr>
+                <td class="p-2 font-medium">Tarjeta / Terminal</td>
+                <td class="p-2 text-right text-slate-600">${{ (c.sistemaTarjeta || 0) | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-bold">${{ (c.realTarjeta || 0) | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-black" [class.text-emerald-600]="(c.diferenciaTarjeta || 0) == 0" [class.text-indigo-600]="(c.diferenciaTarjeta || 0) > 0" [class.text-rose-600]="(c.diferenciaTarjeta || 0) < 0">
+                  {{ (c.diferenciaTarjeta || 0) > 0 ? '+' : '' }}${{ (c.diferenciaTarjeta || 0) | number:'1.2-2' }}
+                </td>
+              </tr>
+              <tr>
+                <td class="p-2 font-medium">Transferencia / SPEI</td>
+                <td class="p-2 text-right text-slate-600">${{ (c.sistemaTransferencia || 0) | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-bold">${{ (c.realTransferencia || 0) | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-black" [class.text-emerald-600]="(c.diferenciaTransferencia || 0) == 0" [class.text-indigo-600]="(c.diferenciaTransferencia || 0) > 0" [class.text-rose-600]="(c.diferenciaTransferencia || 0) < 0">
+                  {{ (c.diferenciaTransferencia || 0) > 0 ? '+' : '' }}${{ (c.diferenciaTransferencia || 0) | number:'1.2-2' }}
+                </td>
+              </tr>
+              <tr>
+                <td class="p-2 font-medium">Otros Métodos</td>
+                <td class="p-2 text-right text-slate-600">${{ (c.sistemaOtros || 0) | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-bold">${{ (c.realOtros || 0) | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-black" [class.text-emerald-600]="(c.diferenciaOtros || 0) == 0" [class.text-indigo-600]="(c.diferenciaOtros || 0) > 0" [class.text-rose-600]="(c.diferenciaOtros || 0) < 0">
+                  {{ (c.diferenciaOtros || 0) > 0 ? '+' : '' }}${{ (c.diferenciaOtros || 0) | number:'1.2-2' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Comentarios -->
+        <div>
+          <span class="text-slate-400 block text-[10px] font-bold uppercase mb-1">Comentarios / Justificación Registrada</span>
+          <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-slate-700 italic">
+            {{ c.comentarios || 'Sin observaciones registradas.' }}
+          </div>
+        </div>
+
+        <!-- Sello de Inmutabilidad -->
+        <div class="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800 text-[11px] flex items-center gap-2">
+          <i class="pi pi-lock text-emerald-600"></i>
+          <span>Este corte del día ya fue cerrado definitivamente y es inmutable.</span>
+        </div>
+      </div>
+    }
+
+    <ng-template pTemplate="footer">
+      <button pButton type="button" label="Cerrar" icon="pi pi-times" severity="secondary" (click)="cerrarModalVerCorteDia()"></button>
     </ng-template>
   </p-dialog>
 </div>

@@ -18,6 +18,12 @@ export class MesaService {
             .pipe(map(resp => resp.object || []));
     }
 
+    getMesasByArea(tenantId: number, area: string): Observable<MesaDTO[]> {
+        return this.http
+            .get<GenericResponse<MesaDTO[]>>(this.baseUrl, { params: { tenantId: tenantId.toString(), area } })
+            .pipe(map(resp => resp.object || []));
+    }
+
     createMesa(tenantId: number, request: MesaRequest): Observable<MesaDTO> {
         return this.http
             .post<GenericResponse<MesaDTO>>(this.baseUrl, request, { params: { tenantId: tenantId.toString() } })

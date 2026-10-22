@@ -13,7 +13,10 @@ import {
   ResumenTurnoCorte,
   PagoDTO,
   CorteMesero,
-  MeseroSimple
+  MeseroSimple,
+  CorteCajaDiarioDTO,
+  GenerarCorteDiarioRequest,
+  EstadoCorteDiarioHoyDTO
 } from '../models/caja.model';
 
 export interface ApiResponse<T> {
@@ -91,5 +94,16 @@ export class CajaService {
   getMeseros(tenantId: number): Observable<ApiResponse<MeseroSimple[]>> {
     const params = new HttpParams().set('tenantId', tenantId.toString());
     return this.http.get<ApiResponse<MeseroSimple[]>>(`${this.baseUrl}/meseros`, { params });
+  }
+
+  /** Consulta el estado del corte del día de hoy (si ya se generó o valores esperados). */
+  getEstadoCorteDiarioHoy(tenantId: number): Observable<ApiResponse<EstadoCorteDiarioHoyDTO>> {
+    const params = new HttpParams().set('tenantId', tenantId.toString());
+    return this.http.get<ApiResponse<EstadoCorteDiarioHoyDTO>>(`${this.baseUrl}/corte-diario/hoy`, { params });
+  }
+
+  /** Genera el corte de caja del día (inmutable, único por día). */
+  generarCorteDiario(req: GenerarCorteDiarioRequest): Observable<ApiResponse<CorteCajaDiarioDTO>> {
+    return this.http.post<ApiResponse<CorteCajaDiarioDTO>>(`${this.baseUrl}/corte-diario`, req);
   }
 }

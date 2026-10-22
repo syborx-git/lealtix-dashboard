@@ -51,96 +51,123 @@
                 <div *ngIf="pendingReviewOrderId() === order.id" class="pending-guidance">
                     Faltan items por marcar. Los pendientes están resaltados en rojo.
                 </div>
-                <div class="items-list">
+                <div class="prep-dish-cards-grid">
                     <div
                         *ngFor="let item of order.items; let itemIndex = index"
-                        class="item-detail"
-                        [class.item-delivered]="isItemDelivered(order, itemIndex)"
-                        [class.item-pending-attention]="shouldHighlightPendingItem(order, itemIndex)"
-                        [class.item-tappable]="order.status === 'EN_PREPARACION'"
+                        class="prep-dish-card"
+                        [class.dish-card-delivered]="isItemDelivered(order, itemIndex)"
+                        [class.dish-card-pending-attention]="shouldHighlightPendingItem(order, itemIndex)"
+                        [class.dish-card-tappable]="order.status === 'EN_PREPARACION'"
                         (click)="onItemRowTap(order, itemIndex)"
                     >
-                        <div class="item-header">
-                            <span class="item-quantity">{{ item.quantity }}x</span>
-                            <span class="item-name" [class.line-through]="isItemYaSalio(order, item)">{{ item.productName }}</span>
-                            <span *ngIf="isItemYaSalio(order, item)" class="kitchen-card-badge-salio font-bold text-slate-700 bg-slate-200 border border-slate-300 px-2 py-1 rounded">
-                                ✅ Ya salió
-                            </span>
-                            <span *ngIf="item.paraLlevar || item.comments?.includes('PARA LLEVAR')" class="px-2 py-0.5 rounded-md text-[11px] font-black bg-orange-100 text-orange-950 border border-orange-300 inline-flex items-center gap-1">
-                                🥡 PARA LLEVAR
-                            </span>
-                            <label *ngIf="order.status === 'EN_PREPARACION' && !isItemYaSalio(order, item)" class="item-check-control" (click)="$event.stopPropagation()">
-                                <input
-                                    type="checkbox"
-                                    [checked]="isItemDelivered(order, itemIndex)"
-                                    (click)="$event.stopPropagation()"
-                                    (change)="toggleItemDelivered(order, itemIndex, $any($event.target).checked)"
-                                />
-                                <span>Terminado</span>
-                            </label>
-                        </div>
-                        <div *ngIf="item.comments" class="item-comments-section">
-                            <span class="comments-label">📝 Comentarios:</span>
-                            <span class="comments-text">{{ item.comments }}</span>
-                        </div>
-
-                        <div *ngIf="recipeCatalogReady() && item.productId" class="item-recipe-groups">
-                            <div
-                                *ngIf="itemHasRecipeInfo(item); else itemWithoutRecipe"
-                                class="item-recipe-groups-inner"
-                            >
-                                <div *ngIf="getItemBaseIngredients(item).length > 0" class="recipe-group recipe-group-base">
-                                    <span class="recipe-group-label">
-                                        <i class="pi pi-database"></i>
-                                        Receta base
-                                    </span>
-                                    <div class="recipe-group-tags">
-                                        <span class="recipe-tag" *ngFor="let ing of getItemBaseIngredients(item)">
-                                            {{ ingredientLabel(ing) }}
-                                        </span>
-                                    </div>
+                        <!-- Top Header: Icon, Name & Quantity/Status -->
+                        <div class="prep-dish-header">
+                            <div class="prep-dish-title-group">
+                                <div class="prep-dish-icon-box" [class.icon-box-delivered]="isItemDelivered(order, itemIndex)">
+                                    <i class="pi pi-bolt"></i>
                                 </div>
-
-                                <div *ngIf="getItemModifiableIngredients(item).length > 0" class="recipe-group recipe-group-modifiable">
-                                    <span class="recipe-group-label">
-                                        <i class="pi pi-pencil"></i>
-                                        Modificables (se mantienen)
-                                    </span>
-                                    <div class="recipe-group-tags">
-                                        <span class="recipe-tag" *ngFor="let ing of getItemModifiableIngredients(item)">
-                                            {{ ingredientLabel(ing) }}
+                                <div class="prep-dish-name-meta">
+                                    <h4 class="prep-dish-name" [class.line-through]="isItemYaSalio(order, item)">
+                                        {{ item.productName }}
+                                    </h4>
+                                    <!-- Badges meta -->
+                                    <div class="prep-dish-badges">
+                                        <span *ngIf="item.asientoAlias" class="prep-badge prep-badge-seat">
+                                            👤 {{ item.asientoAlias }}
                                         </span>
-                                    </div>
-                                </div>
-
-                                <div *ngIf="getItemRemovedIngredients(item).length > 0" class="recipe-group recipe-group-removed">
-                                    <span class="recipe-group-label">
-                                        <i class="pi pi-times"></i>
-                                        Modificables que NO quiere
-                                    </span>
-                                    <div class="recipe-group-tags">
-                                        <span class="recipe-tag recipe-tag-removed" *ngFor="let ing of getItemRemovedIngredients(item)">
-                                            {{ ingredientLabel(ing) }}
+                                        <span *ngIf="item.tiempo === 2" class="prep-badge"
+                                              [ngClass]="item.tiempoMarchado ? 'prep-badge-marchado' : 'prep-badge-espera'">
+                                            {{ item.tiempoMarchado ? '🔥 2do Tiempo' : '⏱️ 2do Tiempo (Espera)' }}
                                         </span>
-                                    </div>
-                                </div>
-
-                                <div *ngIf="getItemAdditionalIngredients(item).length > 0" class="recipe-group recipe-group-extra">
-                                    <span class="recipe-group-label">
-                                        <i class="pi pi-plus"></i>
-                                        Adicionales
-                                    </span>
-                                    <div class="recipe-group-tags">
-                                        <span class="recipe-tag recipe-tag-extra" *ngFor="let ing of getItemAdditionalIngredients(item)">
-                                            {{ ingredientLabel(ing) }}
-                                            <span *ngIf="ing.precio" class="recipe-tag-price">+{{ ing.precio | number: '1.2-2' }}</span>
+                                        <span *ngIf="item.tiempo === 3" class="prep-badge"
+                                              [ngClass]="item.tiempoMarchado ? 'prep-badge-marchado' : 'prep-badge-espera'">
+                                            {{ item.tiempoMarchado ? '🔥 3er Tiempo' : '🍰 3er Tiempo (Espera)' }}
+                                        </span>
+                                        <span *ngIf="item.paraLlevar || item.comments?.includes('PARA LLEVAR')" class="prep-badge prep-badge-takeaway">
+                                            🥡 Para llevar
+                                        </span>
+                                        <span *ngIf="isItemYaSalio(order, item)" class="prep-badge prep-badge-salio">
+                                            ✅ Ya salió
                                         </span>
                                     </div>
                                 </div>
                             </div>
-                            <ng-template #itemWithoutRecipe>
-                                <div class="recipe-groups-empty">Sin receta configurada para este producto.</div>
-                            </ng-template>
+
+                            <div class="prep-dish-right-actions">
+                                <div class="prep-dish-qty-display">
+                                    {{ item.quantity }}x
+                                </div>
+                                <label *ngIf="order.status === 'EN_PREPARACION' && !isItemYaSalio(order, item)"
+                                       class="prep-dish-check-btn"
+                                       [class.check-btn-active]="isItemDelivered(order, itemIndex)"
+                                       (click)="$event.stopPropagation()">
+                                    <input
+                                        type="checkbox"
+                                        [checked]="isItemDelivered(order, itemIndex)"
+                                        (click)="$event.stopPropagation()"
+                                        (change)="toggleItemDelivered(order, itemIndex, $any($event.target).checked)"
+                                    />
+                                    <span>{{ isItemDelivered(order, itemIndex) ? 'Listo' : 'Marcar listo' }}</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Comentarios del cliente -->
+                        <div *ngIf="item.comments" class="prep-dish-comments">
+                            <i class="pi pi-comment text-amber-500"></i>
+                            <span class="prep-dish-comments-text">{{ item.comments }}</span>
+                        </div>
+
+                        <!-- Divider minimalista -->
+                        <div class="prep-dish-divider"></div>
+
+                        <!-- Sección de Lista de Insumos (Estilo "Core includes:") -->
+                        <div class="prep-dish-specs-section">
+                            <span class="prep-specs-label">
+                                Insumos y preparación:
+                            </span>
+
+                            <div *ngIf="recipeCatalogReady() && item.productId" class="prep-ingredients-list">
+                                <ng-container *ngIf="itemHasRecipeInfo(item); else itemNoRecipe">
+                                    <!-- Insumos Base (Siempre van) -->
+                                    <div class="prep-ing-item ing-item-base" *ngFor="let ing of getItemBaseIngredients(item)">
+                                        <i class="pi pi-check prep-ing-icon icon-check"></i>
+                                        <span class="prep-ing-name">{{ ing.insumoName }}</span>
+                                        <span *ngIf="ing.grupo" class="prep-ing-group-tag">{{ ing.grupo }}</span>
+                                        <span class="prep-ing-qty">{{ ingredientLabel(ing) }}</span>
+                                    </div>
+
+                                    <!-- Modificables que SÍ se mantienen -->
+                                    <div class="prep-ing-item ing-item-kept" *ngFor="let ing of getItemModifiableIngredients(item)">
+                                        <i class="pi pi-check prep-ing-icon icon-check"></i>
+                                        <span class="prep-ing-name">{{ ing.insumoName }}</span>
+                                        <span *ngIf="ing.grupo" class="prep-ing-group-tag">{{ ing.grupo }}</span>
+                                        <span class="prep-ing-qty">{{ ingredientLabel(ing) }}</span>
+                                    </div>
+
+                                    <!-- Modificables que NO quieren (TACHADOS) -->
+                                    <div class="prep-ing-item ing-item-removed" *ngFor="let ing of getItemRemovedIngredients(item)">
+                                        <i class="pi pi-times-circle prep-ing-icon icon-times"></i>
+                                        <span class="prep-ing-name ing-name-strikethrough">{{ ing.insumoName }}</span>
+                                        <span *ngIf="ing.grupo" class="prep-ing-group-tag tag-removed">{{ ing.grupo }}</span>
+                                        <span class="prep-ing-strike-badge">🚫 NO AGREGAR / SIN ESTE</span>
+                                    </div>
+
+                                    <!-- Adicionales extra -->
+                                    <div class="prep-ing-item ing-item-extra" *ngFor="let ing of getItemAdditionalIngredients(item)">
+                                        <i class="pi pi-plus-circle prep-ing-icon icon-plus"></i>
+                                        <span class="prep-ing-name font-semibold">{{ ing.insumoName }}</span>
+                                        <span *ngIf="ing.grupo" class="prep-ing-group-tag tag-extra">{{ ing.grupo }}</span>
+                                        <span class="prep-ing-qty">{{ ingredientLabel(ing) }}</span>
+                                        <span *ngIf="ing.precio" class="prep-ing-extra-price">+${{ ing.precio | number: '1.2-2' }}</span>
+                                    </div>
+                                </ng-container>
+                                <ng-template #itemNoRecipe>
+                                    <div class="prep-no-recipe-hint">
+                                        <i class="pi pi-info-circle mr-1"></i> Sin desglose de receta registrado.
+                                    </div>
+                                </ng-template>
+                            </div>
                         </div>
                     </div>
                 </div>

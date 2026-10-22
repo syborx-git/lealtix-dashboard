@@ -136,7 +136,9 @@ export class OrderService {
     orderId: string,
     status: string,
     userEmail?: string,
-    reason?: string
+    reason?: string,
+    cancellationCategory?: string,
+    cancellationComment?: string
   ): Observable<UpdateOrderStatusResponse> {
     let email = userEmail;
     let cancelReason = reason;
@@ -151,7 +153,9 @@ export class OrderService {
     const body: UpdateOrderStatusRequest = {
       estado: normalizedStatus,
       ...(email && { userEmail: email }),
-      ...(cancelReason && { reason: cancelReason })
+      ...(cancelReason && { reason: cancelReason }),
+      ...(cancellationCategory && { cancellationCategory }),
+      ...(cancellationComment && { cancellationComment })
     };
 
     return this.http

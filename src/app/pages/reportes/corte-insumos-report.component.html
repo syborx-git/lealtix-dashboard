@@ -1,0 +1,437 @@
+<!-- ============ REPORTE 2.1: CORTE DIARIO DE INSUMOS (COCINA / BARRA) ============ -->
+
+@if (loading() && !reporte()) {
+  <div class="reporte-panel">
+    <div class="kpi-grid">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="kpi-card">
+          <p-skeleton width="55%" height="0.8rem" />
+          <p-skeleton width="70%" height="1.6rem" styleClass="mt-3" />
+          <p-skeleton width="45%" height="0.75rem" styleClass="mt-2" />
+        </div>
+      }
+    </div>
+    <div class="panel">
+      <p-skeleton width="30%" height="1.1rem" />
+      <p-skeleton height="16rem" styleClass="mt-3" />
+    </div>
+  </div>
+} @else if (error() && !reporte()) {
+  <div class="panel panel--error">
+    <i class="pi pi-exclamation-triangle"></i>
+    <h3>No se pudo cargar el corte de insumos</h3>
+    <p>{{ error() }}</p>
+    <button pButton type="button" label="Reintentar" icon="pi pi-refresh" (click)="recargar()"></button>
+  </div>
+} @else if (reporte(); as datos) {
+  <div class="reporte-panel">
+    <!-- ============ SUBENCABEZADO ============ -->
+    <div class="reporte-subheader">
+      <div>
+        <h3>{{ datos.meta.nombre }}</h3>
+        <p class="reporte-subheader__rango">
+          {{ datos.meta.rangoActual.etiqueta }}
+          <i class="pi pi-arrow-right"></i>
+          comparado con {{ datos.meta.rangoAnterior.etiqueta }}
+        </p>
+      </div>
+
+      <div class="reporte-subheader__acciones">
+        <!-- Selector de Área Cocina / Barra / Todos -->
+        <div class="area-selector">
+          <button
+            type="button"
+            class="area-selector__btn"
+            [class.area-selector__btn--active]="areaFiltro() === 'TODOS'"
+            (click)="cambiarArea('TODOS')"
+          >
+            <i class="pi pi-th-large"></i>
+            Consolidado
+          </button>
+          <button
+            type="button"
+            class="area-selector__btn"
+            [class.area-selector__btn--active]="areaFiltro() === 'COCINA'"
+            (click)="cambiarArea('COCINA')"
+          >
+            <i class="pi pi-wrench"></i>
+            Cocina
+          </button>
+          <button
+            type="button"
+            class="area-selector__btn"
+            [class.area-selector__btn--active]="areaFiltro() === 'BARRA'"
+            (click)="cambiarArea('BARRA')"
+          >
+            <i class="pi pi-sparkles"></i>
+            Barra
+          </button>
+        </div>
+
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          severity="secondary"
+          [outlined]="true"
+          size="small"
+          [loading]="loading()"
+          (click)="recargar()"
+          pTooltip="Actualizar datos"
+          tooltipPosition="bottom"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-file-excel"
+          label="Exportar Excel"
+          size="small"
+          [loading]="exportando()"
+          (click)="exportar()"
+        ></button>
+      </div>
+    </div>
+
+    <!-- ============ AVISO METODOLÓGICO ============ -->
+    <div class="reporte-nota">
+      <i class="pi pi-info-circle"></i>
+      <div>
+        <strong>Corte y Conciliación de Insumos:</strong>
+        Este reporte deduce la materia prima consumida a través de las <em>recetas directas</em> y <em>subrecetas porcionadas</em>
+        de cada producto despachado en el periodo. Permite auditar el inventario remanente en Cocina y Barra para detectar mermas no registradas o faltantes al cierre del turno.
+      </div>
+    </div>
+
+    <!-- ============ KPIS COMPARATIVOS ============ -->
+    <app-kpi-grid [kpis]="datos.kpis" />
+
+    <!-- ============ COMPARATIVAS EN GRÁFICAS ============ -->
+    <div class="grid-2">
+      <!-- Gráfica 1: Top Platillos Más Desplazados -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Top Platillos Más Desplazados</h4>
+            <p class="panel__subtitulo">Productos con mayor volumen de salida en el periodo seleccionado</p>
+          </div>
+        </div>
+        @if (datos.topPlatillos?.length) {
+          <div class="panel__grafica panel__grafica--alta">
+            <p-chart type="bar" [data]="platillosChartData()" [options]="platillosChartOptions" />
+          </div>
+        } @else {
+          <div class="panel__vacio">
+            <i class="pi pi-inbox"></i>
+            <p>No hay ventas registradas en esta estación</p>
+          </div>
+        }
+      </div>
+
+      <!-- Gráfica 2: Top Insumos Más Movidos / Consumidos -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Top Insumos con Mayor Movimiento</h4>
+            <p class="panel__subtitulo">Materia prima de mayor impacto económico consumida en recetas</p>
+          </div>
+        </div>
+        @if (datos.topInsumos?.length) {
+          <div class="panel__grafica panel__grafica--alta">
+            <p-chart type="bar" [data]="insumosChartData()" [options]="insumosChartOptions" />
+          </div>
+        } @else {
+          <div class="panel__vacio">
+            <i class="pi pi-inbox"></i>
+            <p>No hay consumo de insumos registrado</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ============ TABLAS DETALLADAS CON PESTAÑAS ============ -->
+    <div class="panel">
+      <!-- Pestañas de Navegación -->
+      <div class="table-tabs">
+        <button
+          type="button"
+          class="table-tabs__tab"
+          [class.table-tabs__tab--active]="pestanaActiva() === 'platillos'"
+          (click)="pestanaActiva.set('platillos')"
+        >
+          <i class="pi pi-shopping-bag"></i>
+          Platillos Desplazados
+          <span class="badge-count">{{ datos.platillosVendidos?.filas?.length ?? 0 }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="table-tabs__tab"
+          [class.table-tabs__tab--active]="pestanaActiva() === 'insumos'"
+          (click)="pestanaActiva.set('insumos')"
+        >
+          <i class="pi pi-box"></i>
+          Insumos Consumidos (Salidas)
+          <span class="badge-count">{{ datos.insumosConsumidos?.filas?.length ?? 0 }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="table-tabs__tab"
+          [class.table-tabs__tab--active]="pestanaActiva() === 'stock'"
+          (click)="pestanaActiva.set('stock')"
+        >
+          <i class="pi pi-warehouse"></i>
+          Stock Disponible al Cierre
+          <span class="badge-count">{{ datos.stockDisponible?.filas?.length ?? 0 }}</span>
+        </button>
+      </div>
+
+      <!-- TAB 1: Platillos Desplazados -->
+      @if (pestanaActiva() === 'platillos') {
+        <div class="flex justify-between items-center mb-3">
+          <p class="panel__subtitulo">
+            Desglose de cada producto vendido, unidades despachadas y recaudación generada.
+          </p>
+          <p-iconField iconPosition="left">
+            <p-inputIcon styleClass="pi pi-search" />
+            <input
+              pInputText
+              type="text"
+              [(ngModel)]="searchPlatillos"
+              (input)="dtPlatillos.filterGlobal(searchPlatillos, 'contains')"
+              placeholder="Buscar platillo..."
+              class="p-inputtext-sm"
+            />
+          </p-iconField>
+        </div>
+
+        <p-table
+          #dtPlatillos
+          [value]="datos.platillosVendidos?.filas ?? []"
+          [globalFilterFields]="['platillo', 'categoria', 'area']"
+          [paginator]="true"
+          [rows]="10"
+          [rowsPerPageOptions]="[10, 25, 50]"
+          responsiveLayout="scroll"
+          styleClass="p-datatable-sm p-datatable-striped"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th pSortableColumn="platillo">Platillo / Bebida <p-sortIcon field="platillo" /></th>
+              <th pSortableColumn="categoria">Categoría <p-sortIcon field="categoria" /></th>
+              <th pSortableColumn="area" style="width: 110px">Estación <p-sortIcon field="area" /></th>
+              <th pSortableColumn="unidades" class="text-right" style="width: 140px">Desplazados <p-sortIcon field="unidades" /></th>
+              <th pSortableColumn="precioPromedio" class="text-right" style="width: 150px">Precio Unit. <p-sortIcon field="precioPromedio" /></th>
+              <th pSortableColumn="totalVenta" class="text-right" style="width: 160px">Total Venta <p-sortIcon field="totalVenta" /></th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td>
+                <span class="font-semibold text-slate-800">{{ row.platillo }}</span>
+              </td>
+              <td>
+                <span class="text-slate-500">{{ row.categoria }}</span>
+              </td>
+              <td>
+                <span
+                  class="area-tag"
+                  [class.area-tag--cocina]="row.area === 'COCINA'"
+                  [class.area-tag--barra]="row.area === 'BARRA'"
+                >
+                  <i class="pi" [class.pi-wrench]="row.area === 'COCINA'" [class.pi-sparkles]="row.area === 'BARRA'"></i>
+                  {{ row.area }}
+                </span>
+              </td>
+              <td class="text-right">
+                <span class="font-bold text-slate-800 font-mono">{{ numero(row.unidades ?? row.cantidad) }}</span>
+                <span class="text-xs text-slate-400 ml-1">pz</span>
+              </td>
+              <td class="text-right font-mono text-slate-600">
+                {{ moneda(row.precioPromedio ?? row.precioUnitario) }}
+              </td>
+              <td class="text-right font-mono font-bold text-slate-800">
+                {{ moneda(row.totalVenta) }}
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="6" class="text-center py-4 text-slate-400">
+                No se encontraron registros de platillos en este periodo.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      }
+
+      <!-- TAB 2: Insumos Consumidos -->
+      @if (pestanaActiva() === 'insumos') {
+        <div class="flex justify-between items-center mb-3">
+          <p class="panel__subtitulo">
+            Materia prima requerida y consumida para preparar las comandas, valorizada a costo promedio.
+          </p>
+          <p-iconField iconPosition="left">
+            <p-inputIcon styleClass="pi pi-search" />
+            <input
+              pInputText
+              type="text"
+              [(ngModel)]="searchInsumos"
+              (input)="dtInsumos.filterGlobal(searchInsumos, 'contains')"
+              placeholder="Buscar insumo..."
+              class="p-inputtext-sm"
+            />
+          </p-iconField>
+        </div>
+
+        <p-table
+          #dtInsumos
+          [value]="datos.insumosConsumidos?.filas ?? []"
+          [globalFilterFields]="['insumo', 'unidad', 'area']"
+          [paginator]="true"
+          [rows]="10"
+          [rowsPerPageOptions]="[10, 25, 50]"
+          responsiveLayout="scroll"
+          styleClass="p-datatable-sm p-datatable-striped"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th pSortableColumn="insumo">Insumo Utilizado <p-sortIcon field="insumo" /></th>
+              <th pSortableColumn="unidad" style="width: 100px">Unidad <p-sortIcon field="unidad" /></th>
+              <th pSortableColumn="area" style="width: 110px">Estación <p-sortIcon field="area" /></th>
+              <th pSortableColumn="consumoTotal" class="text-right" style="width: 160px">Consumo Total <p-sortIcon field="consumoTotal" /></th>
+              <th pSortableColumn="costoUnitario" class="text-right" style="width: 150px">Costo Prom. <p-sortIcon field="costoUnitario" /></th>
+              <th pSortableColumn="costoTotal" class="text-right" style="width: 160px">Costo Total ($) <p-sortIcon field="costoTotal" /></th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td>
+                <span class="font-semibold text-slate-800">{{ row.insumo }}</span>
+              </td>
+              <td>
+                <span class="font-mono text-slate-500 font-semibold">{{ row.unidad }}</span>
+              </td>
+              <td>
+                <span
+                  class="area-tag"
+                  [class.area-tag--cocina]="row.area === 'COCINA'"
+                  [class.area-tag--barra]="row.area === 'BARRA'"
+                >
+                  <i class="pi" [class.pi-wrench]="row.area === 'COCINA'" [class.pi-sparkles]="row.area === 'BARRA'"></i>
+                  {{ row.area }}
+                </span>
+              </td>
+              <td class="text-right font-mono font-bold text-slate-800">
+                {{ numero(row.consumoTotal ?? row.cantidadConsumida, 2) }}
+              </td>
+              <td class="text-right font-mono text-slate-600">
+                {{ moneda(row.costoUnitario) }}
+              </td>
+              <td class="text-right font-mono font-bold text-cyan-600">
+                {{ moneda(row.costoTotal) }}
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="6" class="text-center py-4 text-slate-400">
+                No se registraron insumos consumidos para este periodo o área.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      }
+
+      <!-- TAB 3: Stock Disponible al Cierre -->
+      @if (pestanaActiva() === 'stock') {
+        <div class="flex justify-between items-center mb-3">
+          <p class="panel__subtitulo">
+            Existencias remanentes en las estaciones de producción y bodega con semáforo de abastecimiento.
+          </p>
+          <p-iconField iconPosition="left">
+            <p-inputIcon styleClass="pi pi-search" />
+            <input
+              pInputText
+              type="text"
+              [(ngModel)]="searchStock"
+              (input)="dtStock.filterGlobal(searchStock, 'contains')"
+              placeholder="Buscar en inventario..."
+              class="p-inputtext-sm"
+            />
+          </p-iconField>
+        </div>
+
+        <p-table
+          #dtStock
+          [value]="datos.stockDisponible?.filas ?? []"
+          [globalFilterFields]="['insumo', 'unidad', 'estado']"
+          [paginator]="true"
+          [rows]="10"
+          [rowsPerPageOptions]="[10, 25, 50]"
+          responsiveLayout="scroll"
+          styleClass="p-datatable-sm p-datatable-striped"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th pSortableColumn="insumo">Insumo <p-sortIcon field="insumo" /></th>
+              <th pSortableColumn="unidad" style="width: 100px">Unidad <p-sortIcon field="unidad" /></th>
+              <th pSortableColumn="stockArea" class="text-right" style="width: 150px">Stock Estación <p-sortIcon field="stockArea" /></th>
+              <th pSortableColumn="stockBodega" class="text-right" style="width: 150px">Stock Bodega <p-sortIcon field="stockBodega" /></th>
+              <th pSortableColumn="stockMinimo" class="text-right" style="width: 140px">Stock Mínimo <p-sortIcon field="stockMinimo" /></th>
+              <th pSortableColumn="estado" class="text-center" style="width: 130px">Estado <p-sortIcon field="estado" /></th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td>
+                <span class="font-semibold text-slate-800">{{ row.insumo }}</span>
+              </td>
+              <td>
+                <span class="font-mono text-slate-500 font-semibold">{{ row.unidad }}</span>
+              </td>
+              <td class="text-right font-mono font-bold" [class.text-red-600]="row.stockArea <= 0" [class.text-slate-800]="row.stockArea > 0">
+                {{ numero(row.stockArea, 2) }}
+              </td>
+              <td class="text-right font-mono text-slate-600">
+                {{ numero(row.stockBodega, 2) }}
+              </td>
+              <td class="text-right font-mono text-slate-500">
+                {{ numero(row.stockMinimo, 2) }}
+              </td>
+              <td class="text-center">
+                <span
+                  class="estado-badge"
+                  [class.estado-badge--optimo]="row.estado === 'Óptimo'"
+                  [class.estado-badge--bajo]="row.estado === 'Bajo'"
+                  [class.estado-badge--agotado]="row.estado === 'Agotado'"
+                >
+                  <i
+                    class="pi text-xs"
+                    [class.pi-check-circle]="row.estado === 'Óptimo'"
+                    [class.pi-exclamation-triangle]="row.estado === 'Bajo'"
+                    [class.pi-times-circle]="row.estado === 'Agotado'"
+                  ></i>
+                  {{ row.estado }}
+                </span>
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="6" class="text-center py-4 text-slate-400">
+                No se encontraron insumos registrados en el inventario.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      }
+    </div>
+  </div>
+}

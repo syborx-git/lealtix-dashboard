@@ -95,6 +95,14 @@ import { TreeNode } from 'primeng/api';
                                 <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Si está activo, el producto se oculta automáticamente del menú cuando no hay insumos suficientes para prepararlo, y se vuelve a mostrar cuando se abastece. Desactívalo para controlar 'Activo' manualmente." tooltipPosition="top" appTouchTooltip></button>
                             </div>
                         </div>
+
+                        <div class="form-field" style="flex:1">
+                            <label for="esVariable" class="field-label">¿Es artículo variable?</label>
+                            <div class="flex align-items-center gap-2">
+                                <p-checkbox formControlName="esVariable" binary="true" inputId="esVariable"></p-checkbox>
+                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Marca esta opción si este platillo o bebida es una variante de otro producto (ej. Ojo de Tigre Joven como variante de Mezcal). Solo los artículos con esta casilla activada aparecerán en el selector de variables de las recetas." tooltipPosition="top" appTouchTooltip></button>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-field">
@@ -595,6 +603,15 @@ export class ProductDialogComponent implements OnChanges {
                 if (autoAvailabilityControl) {
                     try {
                         autoAvailabilityControl.setValue(this.product.autoAvailability, { emitEvent: false });
+                    } catch (e) {
+                        // ignore if unable to set
+                    }
+                }
+
+                const esVariableControl = this.productForm.get('esVariable');
+                if (esVariableControl) {
+                    try {
+                        esVariableControl.setValue(!!this.product.esVariable, { emitEvent: false });
                     } catch (e) {
                         // ignore if unable to set
                     }

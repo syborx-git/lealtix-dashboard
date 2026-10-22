@@ -95,115 +95,271 @@
         </div>
     </div>
 
-    <!-- Modal de merma: registro de insumos de la comanda -->
+    <!-- Modal de merma: desglose intuitivo de comanda e insumos -->
     <p-dialog
         [(visible)]="mermaDialogVisible"
         [modal]="true"
-        [style]="{ width: '42rem', maxWidth: '95vw' }"
-        styleClass="merma-dialog minimal-modal"
+        [style]="{ width: '56rem', maxWidth: '96vw' }"
+        styleClass="comanda-merma-dialog"
         [dismissableMask]="true"
         (onHide)="closeMermaModal()">
+        
         <ng-template pTemplate="header">
-            <div class="flex align-items-center gap-2">
-                <i class="pi pi-ticket"></i>
-                <span class="font-semibold">Mermas → {{ getTicket(mermaOrderId() ?? '') }}</span>
+            <div class="comanda-modal-header">
+                <div class="header-title-box">
+                    <div class="ticket-tag">
+                        <i class="pi pi-receipt"></i>
+                        <span>{{ comandaDetalle()?.ticket || getTicket(mermaOrderId() ?? '') }}</span>
+                    </div>
+                    <div class="header-titles">
+                        <h2 class="modal-main-title">Registrar Merma de Comanda</h2>
+                        <div class="modal-chips-row">
+                            <span class="info-pill" *ngIf="comandaDetalle()?.mesaNombre">
+                                <i class="pi pi-map-pin"></i>
+                                {{ comandaDetalle()?.mesaNombre }}
+                            </span>
+                            <span class="info-pill" *ngIf="comandaDetalle()?.customerName">
+                                <i class="pi pi-user"></i>
+                                {{ comandaDetalle()?.customerName }}
+                            </span>
+                            <span class="info-pill info-pill-total" *ngIf="comandaDetalle()?.totalFinal">
+                                <i class="pi pi-dollar"></i>
+                                Total: ${{ comandaDetalle()?.totalFinal | number:'1.2-2' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </ng-template>
 
-        <div class="flex flex-column gap-3">
-            <div *ngIf="loadingIngredients()" class="mermas-loading">
-                <p-progressSpinner strokeWidth="4" styleClass="w-2rem h-2rem"></p-progressSpinner>
-                <span>Cargando insumos…</span>
+        <div class="comanda-modal-body">
+            <!-- Spinner mientras carga -->
+            <div *ngIf="loadingIngredients()" class="mermas-loading-state">
+                <p-progressSpinner strokeWidth="4" styleClass="w-3rem h-3rem"></p-progressSpinner>
+                <span>Cargando platillos e insumos de la comanda…</span>
             </div>
 
-            <div *ngIf="!loadingIngredients() && orderIngredients().length === 0" class="no-ingredients">
-                No se encontraron insumos para esta comanda.
+            <!-- Estado sin datos -->
+            <div *ngIf="!loadingIngredients() && dishItems().length === 0" class="no-dish-state">
+                <i class="pi pi-inbox empty-icon"></i>
+                <p class="empty-title">Sin artículos disponibles</p>
+                <p class="empty-desc">No se encontraron platillos o insumos asociados a esta comanda.</p>
             </div>
 
-            <div *ngIf="!loadingIngredients() && orderIngredients().length > 0">
-                <div class="modal-busqueda">
-                    <p-iconfield>
-                        <p-inputicon styleClass="pi pi-search"></p-inputicon>
-                        <input
-                            pInputText
-                            type="text"
-                            placeholder="Buscar insumo o producto…"
-                            [value]="busquedaComanda()"
-                            (input)="onBusquedaInput($event)"
-                        />
-                    </p-iconfield>
+            <!-- Contenido principal -->
+            <div *ngIf="!loadingIngredients() && dishItems().length > 0" class="modal-main-content">
+                
+                <!-- Barra superior de controles -->
+                <div class="modal-top-toolbar">
+                    <div class="toolbar-search">
+                        <p-iconfield>
+                            <p-inputicon styleClass="pi pi-search"></p-inputicon>
+                            <input
+                                pInputText
+                                type="text"
+                                placeholder="Buscar platillo o ingrediente…"
+                                [value]="busquedaComanda()"
+                                (input)="onBusquedaInput($event)"
+                                class="search-input-field"
+                            />
+                        </p-iconfield>
+                    </div>
+
+                    <div class="toolbar-tipo">
+                        <label class="tipo-label">Tipo de merma:</label>
+                        <p-select
+                            [options]="tiposMerma"
+                            optionLabel="label"
+                            optionValue="codigo"
+                            [(ngModel)]="tipoMermaSeleccionado"
+                            styleClass="tipo-merma-dropdown"
+                            [appendTo]="'body'"
+                        ></p-select>
+                    </div>
+
+                    <div class="toolbar-quick-actions">
+                        <button type="button" class="action-link-btn" (click)="selectAllDishes()" title="Marcar todos los insumos">
+                            <i class="pi pi-check-square"></i>
+                            <span>Todo</span>
+                        </button>
+                        <button type="button" class="action-link-btn" (click)="deselectAllDishes()" title="Desmarcar todos los insumos">
+                            <i class="pi pi-stop"></i>
+                            <span>Ninguno</span>
+                        </button>
+                        <button type="button" class="action-link-btn" (click)="toggleAllExpanded()" [title]="areAllExpanded() ? 'Colapsar detalles' : 'Expandir todos los insumos'">
+                            <i [class]="areAllExpanded() ? 'pi pi-angle-double-up' : 'pi pi-angle-double-down'"></i>
+                            <span>{{ areAllExpanded() ? 'Colapsar' : 'Expandir' }}</span>
+                        </button>
+                    </div>
                 </div>
 
-                <div class="merma-tipo-row">
-                    <label class="text-sm font-medium">Tipo de merma:</label>
-                    <p-select
-                        [options]="tiposMerma"
-                        optionLabel="label"
-                        optionValue="codigo"
-                        [(ngModel)]="tipoMermaSeleccionado"
-                        styleClass="w-auto"
-                        [appendTo]="'body'"
-                    ></p-select>
+                <!-- Nota instructiva intuitiva -->
+                <div class="instruction-banner">
+                    <i class="pi pi-info-circle instruction-icon"></i>
+                    <span>Marca la casilla del <strong>platillo completo</strong> si se dañó todo el plato (ej. se cayó o contaminó), o <strong>despliega sus insumos</strong> para mermar solo ingredientes específicos.</span>
                 </div>
 
-                <div class="ingredients-list">
-                    <div *ngFor="let entry of getIngredientesFiltrados(); let pos = index" class="ingredient-row">
-                        <p-checkbox
-                            [binary]="true"
-                            [(ngModel)]="seleccionados[entry.i]"
-                            (ngModelChange)="onInsumoCheck(entry.i, $event)"
-                            inputId="insumo-{{ entry.i }}"
-                        ></p-checkbox>
-                        <div class="ingredient-info">
-                            <span class="ingredient-name">{{ getInsumoName(entry.insumo) }}</span>
-                            <span class="ingredient-meta">
-                                × {{ entry.insumo.cantidad }} {{ entry.insumo.unidad || 'pieza' }}
-                                <ng-container *ngIf="entry.insumo.costoUnitario">
-                                    · ${{ entry.insumo.costoUnitario | number:'1.2-2' }}/u
-                                </ng-container>
+                <!-- Lista jerárquica de platillos e insumos -->
+                <div class="dishes-list-scroll">
+                    <div
+                        *ngFor="let dish of getPlatillosFiltrados(); trackBy: trackByDishId"
+                        class="dish-item-card"
+                        [class.dish-fully-checked]="isDishFullyChecked(dish)"
+                        [class.dish-partially-checked]="isDishPartiallyChecked(dish)">
+                        
+                        <!-- Cabecera del platillo -->
+                        <div class="dish-card-header" (click)="toggleDish(dish, $event)">
+                            <div class="dish-checkbox-wrap" (click)="$event.stopPropagation()">
+                                <p-checkbox
+                                    [binary]="true"
+                                    [ngModel]="isDishFullyChecked(dish)"
+                                    [indeterminate]="isDishPartiallyChecked(dish)"
+                                    (ngModelChange)="toggleDish(dish)"
+                                    inputId="dish-chk-{{ dish.itemId }}"
+                                ></p-checkbox>
+                            </div>
+
+                            <div class="dish-title-group">
+                                <div class="dish-name-line">
+                                    <label [for]="'dish-chk-' + dish.itemId" class="dish-title-text" (click)="$event.stopPropagation(); toggleDish(dish)">
+                                        {{ dish.productoNombre }}
+                                    </label>
+                                    <span class="dish-qty-tag">× {{ dish.cantidad }}</span>
+                                    <span class="dish-category-tag" *ngIf="dish.categoria">{{ dish.categoria }}</span>
+                                </div>
+                                <div class="dish-financials-line">
+                                    <span class="dish-price-sub">Subtotal comanda: ${{ dish.subtotal | number:'1.2-2' }}</span>
+                                    <span class="dish-bullet" *ngIf="dish.costoEstimado > 0">·</span>
+                                    <span class="dish-estimated-cost" *ngIf="dish.costoEstimado > 0">
+                                        Costo insumos est.: <strong>${{ dish.costoEstimado | number:'1.2-2' }}</strong>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Botón desplegable de insumos -->
+                            <div class="dish-action-group" (click)="$event.stopPropagation()">
+                                <button
+                                    *ngIf="dish.tieneReceta && dish.insumos.length > 0"
+                                    type="button"
+                                    class="expand-recipe-btn"
+                                    [class.is-expanded]="dish.expanded"
+                                    (click)="toggleDishExpanded(dish)">
+                                    <span class="recipe-count">{{ dish.insumos.length }} insumos</span>
+                                    <i class="pi pi-chevron-down chevron-icon"></i>
+                                </button>
+                                <span *ngIf="!dish.tieneReceta" class="direct-product-pill">
+                                    <i class="pi pi-box"></i> Directo
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Desglose de insumos de la receta -->
+                        <div class="dish-recipe-drawer" *ngIf="dish.expanded && dish.tieneReceta">
+                            <div class="recipe-table">
+                                <div class="recipe-table-head">
+                                    <span class="th-chk"></span>
+                                    <span class="th-name">Insumo</span>
+                                    <span class="th-base-qty">Cant. Receta</span>
+                                    <span class="th-merma-qty">Cant. a mermar</span>
+                                    <span class="th-cost">Costo Pérdida</span>
+                                </div>
+
+                                <div *ngFor="let ins of dish.insumos; let idx = index" class="recipe-table-row" [class.is-checked]="ins.seleccionado">
+                                    <div class="td-chk" (click)="$event.stopPropagation()">
+                                        <p-checkbox
+                                            [binary]="true"
+                                            [(ngModel)]="ins.seleccionado"
+                                            (ngModelChange)="onInsumoCheckChanged(dish, ins)"
+                                            inputId="ins-chk-{{ dish.itemId }}-{{ idx }}"
+                                        ></p-checkbox>
+                                    </div>
+
+                                    <div class="td-name">
+                                        <label [for]="'ins-chk-' + dish.itemId + '-' + idx" class="insumo-label">
+                                            {{ ins.insumoNombre }}
+                                        </label>
+                                        <span class="insumo-unit-cost" *ngIf="ins.costoUnitario > 0">
+                                            ${{ ins.costoUnitario | number:'1.2-2' }} / {{ ins.unidad }}
+                                        </span>
+                                    </div>
+
+                                    <div class="td-base-qty">
+                                        <span class="base-qty-badge">{{ ins.cantidadMax }} {{ ins.unidad }}</span>
+                                    </div>
+
+                                    <div class="td-merma-qty" (click)="$event.stopPropagation()">
+                                        <div class="merma-input-container">
+                                            <input
+                                                type="number"
+                                                pInputText
+                                                min="0"
+                                                [max]="ins.cantidadMax"
+                                                [step]="ins.unidad === 'pieza' ? 1 : 0.05"
+                                                [(ngModel)]="ins.cantidadMerma"
+                                                (ngModelChange)="onInsumoCantidadChange(ins, $event)"
+                                                [disabled]="!ins.seleccionado"
+                                                class="merma-number-input"
+                                            />
+                                            <span class="merma-unit-text">{{ ins.unidad }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="td-cost">
+                                        <span class="cost-loss-value" *ngIf="ins.seleccionado">
+                                            ${{ ((ins.cantidadMerma || 0) * (ins.costoUnitario || 0)) | number:'1.2-2' }}
+                                        </span>
+                                        <span class="cost-loss-zero" *ngIf="!ins.seleccionado">—</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Footer resumen y confirmación de merma -->
+                <div class="comanda-merma-bottom-bar">
+                    <div class="bottom-stats-col">
+                        <div class="stat-pill-box">
+                            <i class="pi pi-check-circle check-icon"></i>
+                            <div class="stat-texts">
+                                <span class="stat-count-text">{{ getSeleccionTotal() }} insumos seleccionados</span>
+                                <span class="stat-dish-text" *ngIf="getPlatillosCompletosCount() > 0">
+                                    {{ getPlatillosCompletosCount() }} platillo(s) completo(s)
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bottom-loss-col">
+                        <div class="loss-display-card">
+                            <span class="loss-subtitle">PÉRDIDA ESTIMADA</span>
+                            <span class="loss-main-amount">
+                                ${{ getPerdidaTotal() | number:'1.2-2' }} <small>MXN</small>
                             </span>
                         </div>
-                        <div class="ingredient-qty">
-                            <label class="qty-label">Merma</label>
-                            <input
-                                type="number"
-                                pInputText
-                                min="0"
-                                [step]="0.01"
-                                [value]="cantidades[entry.i] ?? entry.insumo.cantidad ?? 0"
-                                (input)="onCantidadInput(entry.i, $event)"
-                                [disabled]="!seleccionados[entry.i]"
-                                class="qty-input"
-                            />
-                        </div>
-                        <div class="ingredient-subtotal" *ngIf="seleccionados[entry.i]">
-                            ${{ ((cantidades[entry.i] ?? 0) * (entry.insumo.costoUnitario ?? 0)) | number:'1.2-2' }}
-                        </div>
+                    </div>
+
+                    <div class="bottom-buttons-col">
+                        <p-button
+                            label="Cancelar"
+                            severity="secondary"
+                            [outlined]="true"
+                            (onClick)="closeMermaModal()"
+                            styleClass="btn-cancel-modal"
+                        ></p-button>
+                        <p-button
+                            label="Registrar Merma"
+                            icon="pi pi-save"
+                            severity="warn"
+                            [loading]="registeringMerma()"
+                            [disabled]="registeringMerma() || getSeleccionTotal() === 0"
+                            (onClick)="registerMerma()"
+                            styleClass="btn-confirm-merma"
+                        ></p-button>
                     </div>
                 </div>
 
-                <div class="merma-summary">
-                    <div class="summary-item">
-                        <span class="summary-label">Seleccionados</span>
-                        <span class="summary-value">{{ getSeleccionTotal() }}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Pérdida estimada</span>
-                        <span class="summary-value summary-perdida">${{ getPerdidaTotal() | number:'1.2-2' }}</span>
-                    </div>
-                </div>
-
-                <div class="merma-actions">
-                    <p-button
-                        label="Registrar Merma"
-                        icon="pi pi-save"
-                        severity="warn"
-                        styleClass="minimal-submit"
-                        [loading]="registeringMerma()"
-                        [disabled]="registeringMerma() || getSeleccionTotal() === 0"
-                        (onClick)="registerMerma()"
-                    ></p-button>
-                </div>
             </div>
         </div>
     </p-dialog>

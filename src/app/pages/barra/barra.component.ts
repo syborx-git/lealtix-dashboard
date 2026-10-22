@@ -236,6 +236,10 @@ export class BarraComponent implements OnInit, OnDestroy {
         return 'freshness-ok';
     }
 
+    isItemYaSalio(order: KitchenOrder, item: KitchenOrderItem): boolean {
+        return item.yaSalio === true;
+    }
+
     openOrderDetail(order: KitchenOrder): void {
         this.selectedOrderForDetail.set(order);
         this.reconcileDeliveredItems(order);

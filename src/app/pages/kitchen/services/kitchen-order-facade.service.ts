@@ -387,39 +387,162 @@ export class KitchenOrderFacadeService implements OnDestroy {
 
         const tickets: KitchenOrder[] = [];
 
-        // 1. TICKET DE BARRA (si la orden tiene bebidas)
+        // 1. TICKETS DE BARRA (si la orden tiene bebidas)
         if (barraItems.length > 0) {
-            const ticketId = `${parentOrderId}__BARRA`;
             const rawBarraStatus = order?.barraEstado ? this.normalizeStatus(order.barraEstado) : backendStatus;
-            const barraStatus = this.resolveTicketStatus(ticketId, rawBarraStatus);
 
-            tickets.push({
-                id: ticketId,
-                parentOrderId,
-                area: 'BARRA',
-                barraEstado: rawBarraStatus,
-                cocinaEstado: order?.cocinaEstado ? this.normalizeStatus(order.cocinaEstado) : undefined,
-                tiempo: 1,
-                tiempoLabel: 'Barra',
-                tenantId,
-                status: barraStatus,
-                customerId,
-                customerName,
-                mesaId,
-                mesaNombre,
-                mesaNumero,
-                source,
-                createdAt,
-                marchedAt: createdAt,
-                items: barraItems,
-                subtotal,
-                discount,
-                total,
-                recorrido: 1,
-                segundoTiempoMarchado: false,
-                tercerTiempoMarchado: false,
-                waitingTiemposLabels: []
-            });
+            const t1BarraItems = barraItems.filter((it) => !it.tiempo || it.tiempo === 1);
+            const t2BarraItems = barraItems.filter((it) => it.tiempo === 2);
+            const t3BarraItems = barraItems.filter((it) => it.tiempo === 3);
+
+            const hasT2Barra = t2BarraItems.length > 0;
+            const hasT3Barra = t3BarraItems.length > 0;
+            const t2BarraMarchado = t2BarraItems.some((it) => it.tiempoMarchado);
+            const t3BarraMarchado = t3BarraItems.some((it) => it.tiempoMarchado);
+
+            const waitingBarraLabels: string[] = [];
+            if (hasT2Barra && !t2BarraMarchado) {
+                waitingBarraLabels.push('2do Tiempo en espera');
+            }
+            if (hasT3Barra && !t3BarraMarchado) {
+                waitingBarraLabels.push('3er Tiempo en espera');
+            }
+
+            if (!hasT2Barra && !hasT3Barra) {
+                // Comanda de barra sencilla (todas las bebidas en 1er tiempo)
+                const ticketId = `${parentOrderId}__BARRA`;
+                const barraStatus = this.resolveTicketStatus(ticketId, rawBarraStatus, 1);
+                tickets.push({
+                    id: ticketId,
+                    parentOrderId,
+                    area: 'BARRA',
+                    barraEstado: rawBarraStatus,
+                    cocinaEstado: order?.cocinaEstado ? this.normalizeStatus(order.cocinaEstado) : undefined,
+                    tiempo: 1,
+                    tiempoLabel: 'Barra',
+                    tenantId,
+                    status: barraStatus,
+                    customerId,
+                    customerName,
+                    mesaId,
+                    mesaNombre,
+                    mesaNumero,
+                    source,
+                    createdAt,
+                    marchedAt: createdAt,
+                    items: barraItems,
+                    subtotal,
+                    discount,
+                    total,
+                    recorrido: 1,
+                    segundoTiempoMarchado: false,
+                    tercerTiempoMarchado: false,
+                    waitingTiemposLabels: []
+                });
+            } else {
+                // Comanda de barra con múltiples tiempos: generar tickets por tiempo
+                if (t1BarraItems.length > 0) {
+                    const ticketId = `${parentOrderId}__BARRA__T1`;
+                    const barraStatus = this.resolveTicketStatus(ticketId, rawBarraStatus, 1);
+                    tickets.push({
+                        id: ticketId,
+                        parentOrderId,
+                        area: 'BARRA',
+                        barraEstado: rawBarraStatus,
+                        cocinaEstado: order?.cocinaEstado ? this.normalizeStatus(order.cocinaEstado) : undefined,
+                        tiempo: 1,
+                        tiempoLabel: 'Barra - 1er Tiempo',
+                        tenantId,
+                        status: barraStatus,
+                        customerId,
+                        customerName,
+                        mesaId,
+                        mesaNombre,
+                        mesaNumero,
+                        source,
+                        createdAt,
+                        marchedAt: createdAt,
+                        items: t1BarraItems,
+                        subtotal,
+                        discount,
+                        total,
+                        recorrido: 1,
+                        segundoTiempoMarchado: t2BarraMarchado,
+                        tercerTiempoMarchado: t3BarraMarchado,
+                        waitingTiemposLabels: waitingBarraLabels
+                    });
+                }
+
+                if (hasT2Barra && t2BarraMarchado) {
+                    const ticketId = `${parentOrderId}__BARRA__T2`;
+                    const barraStatus = this.resolveTicketStatus(ticketId, rawBarraStatus, 2);
+                    const latestUpdate = t2BarraItems.find((it) => it.updatedAt)?.updatedAt || createdAt;
+                    const t2BarraWaiting: string[] = [];
+                    if (hasT3Barra && !t3BarraMarchado) {
+                        t2BarraWaiting.push('3er Tiempo en espera');
+                    }
+                    tickets.push({
+                        id: ticketId,
+                        parentOrderId,
+                        area: 'BARRA',
+                        barraEstado: rawBarraStatus,
+                        cocinaEstado: order?.cocinaEstado ? this.normalizeStatus(order.cocinaEstado) : undefined,
+                        tiempo: 2,
+                        tiempoLabel: 'Barra - 2do Tiempo',
+                        tenantId,
+                        status: barraStatus,
+                        customerId,
+                        customerName,
+                        mesaId,
+                        mesaNombre,
+                        mesaNumero,
+                        source,
+                        createdAt: latestUpdate,
+                        marchedAt: latestUpdate,
+                        items: t2BarraItems,
+                        subtotal,
+                        discount,
+                        total,
+                        recorrido: 2,
+                        segundoTiempoMarchado: true,
+                        tercerTiempoMarchado: t3BarraMarchado,
+                        waitingTiemposLabels: t2BarraWaiting
+                    });
+                }
+
+                if (hasT3Barra && t3BarraMarchado) {
+                    const ticketId = `${parentOrderId}__BARRA__T3`;
+                    const barraStatus = this.resolveTicketStatus(ticketId, rawBarraStatus, 3);
+                    const latestUpdate = t3BarraItems.find((it) => it.updatedAt)?.updatedAt || createdAt;
+                    tickets.push({
+                        id: ticketId,
+                        parentOrderId,
+                        area: 'BARRA',
+                        barraEstado: rawBarraStatus,
+                        cocinaEstado: order?.cocinaEstado ? this.normalizeStatus(order.cocinaEstado) : undefined,
+                        tiempo: 3,
+                        tiempoLabel: 'Barra - 3er Tiempo',
+                        tenantId,
+                        status: barraStatus,
+                        customerId,
+                        customerName,
+                        mesaId,
+                        mesaNombre,
+                        mesaNumero,
+                        source,
+                        createdAt: latestUpdate,
+                        marchedAt: latestUpdate,
+                        items: t3BarraItems,
+                        subtotal,
+                        discount,
+                        total,
+                        recorrido: 3,
+                        segundoTiempoMarchado: t2BarraMarchado,
+                        tercerTiempoMarchado: true,
+                        waitingTiemposLabels: []
+                    });
+                }
+            }
         }
 
         // 2. TICKETS DE COCINA (si la orden tiene platillos)
@@ -622,17 +745,25 @@ export class KitchenOrderFacadeService implements OnDestroy {
         if (backendStatus === 'CANCELADA') return 'CANCELADA';
         if (backendStatus === 'PAGADA') return 'PAGADA';
 
+        // Si el ticket ya tiene un estado persistido explícito para este ticketId específico
         if (this.ticketStatuses.has(ticketId)) {
             const persisted = this.ticketStatuses.get(ticketId)!;
+            // Para tiempos 2 y 3, respetar el estado individual del ticket (no contaminar con el status previo de la comanda)
+            if (tiempo === 2 || tiempo === 3) {
+                return persisted;
+            }
             if (backendStatus === 'LISTO') return 'LISTO';
             return persisted;
         }
 
-        if (backendStatus === 'LISTO') return 'LISTO';
-
+        // Para tickets de 2do y 3er tiempo recién creados o marchados:
+        // Deben empezar en CONFIRMADA y recorrer todo el flujo (CONFIRMADA -> EN_PREPARACION -> LISTO),
+        // sin heredar el estado LISTO del tiempo anterior.
         if (tiempo === 2 || tiempo === 3) {
             return 'CONFIRMADA';
         }
+
+        if (backendStatus === 'LISTO') return 'LISTO';
 
         return backendStatus;
     }
@@ -663,6 +794,8 @@ export class KitchenOrderFacadeService implements OnDestroy {
             quantity: Number(item?.cantidad ?? 0),
             unitPrice: Number(item?.precioUnitario ?? item?.precio ?? 0),
             comments: rawComments,
+            asientoId: item?.asientoId,
+            asientoAlias: item?.asientoAlias,
             tiempo,
             tiempoMarchado,
             paraLlevar,

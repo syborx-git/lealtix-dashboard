@@ -49,6 +49,17 @@ export class LoginComponent {
 
     constructor() {
         this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        const reason = this.route.snapshot.queryParamMap.get('reason');
+        if (reason === 'inactivity') {
+            setTimeout(() => {
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Sesión Cerrada',
+                    detail: 'Tu sesión se cerró automáticamente tras 3 minutos de inactividad.',
+                    life: 6000
+                });
+            }, 300);
+        }
     }
 
     submit() {

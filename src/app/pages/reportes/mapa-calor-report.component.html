@@ -1,0 +1,194 @@
+<!-- ============ REPORTE 4.5: MAPA DE CALOR DE AFLUENCIA ============ -->
+
+@if (loading() && !reporte()) {
+<div class="reporte-panel">
+  <div class="kpi-grid">
+    @for (i of [1, 2, 3, 4, 5]; track i) {
+    <div class="kpi-card">
+      <p-skeleton width="55%" height="0.8rem" />
+      <p-skeleton width="70%" height="1.6rem" styleClass="mt-3" />
+      <p-skeleton width="45%" height="0.75rem" styleClass="mt-2" />
+    </div>
+    }
+  </div>
+  <div class="panel">
+    <p-skeleton width="30%" height="1.1rem" />
+    <p-skeleton height="16rem" styleClass="mt-3" />
+  </div>
+</div>
+} @else if (error() && !reporte()) {
+<div class="panel panel--error">
+  <i class="pi pi-exclamation-triangle"></i>
+  <h3>No se pudo cargar el mapa de calor</h3>
+  <p>{{ error() }}</p>
+  <button pButton type="button" label="Reintentar" icon="pi pi-refresh" (click)="recargar()"></button>
+</div>
+} @else if (reporte(); as datos) {
+<div class="reporte-panel">
+  <!-- ============ SUBENCABEZADO ============ -->
+  <div class="reporte-subheader">
+    <div>
+      <h3>{{ datos.meta.nombre }}</h3>
+      <p class="reporte-subheader__rango">
+        {{ datos.meta.rangoActual.etiqueta }}
+        <i class="pi pi-arrow-right"></i>
+        comparado con {{ datos.meta.rangoAnterior.etiqueta }}
+      </p>
+    </div>
+    <div class="reporte-subheader__acciones">
+      <button pButton type="button" icon="pi pi-refresh" severity="secondary" [outlined]="true" size="small"
+        [loading]="loading()" (click)="recargar()"></button>
+      <button pButton type="button" icon="pi pi-file-excel" label="Exportar a Excel" size="small"
+        [loading]="exportando()" (click)="exportar()"></button>
+    </div>
+  </div>
+
+  <!-- ============ AVISO METODOLOGICO ============ -->
+  <div class="reporte-nota">
+    <i class="pi pi-info-circle"></i>
+    <div>
+      <strong>Análisis de Ocupación y Picos de Demanda:</strong> Cruza los días de la semana contra las franjas horarias
+      para identificar momentos críticos de alta concurrencia, facilitando la programación de meseros, compras y
+      producción previa.
+    </div>
+  </div>
+
+  <!-- ============ KPIs COMPARATIVOS ============ -->
+  <app-kpi-grid [kpis]="datos.kpis" />
+
+  <!-- ============ GRAFICAS DE APOYO ============ -->
+  <div class="grid-2">
+    <!-- Tendencia Horaria (Línea / Curva) -->
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <h4>Comandas por Franja Horaria</h4>
+          <p class="panel__subtitulo">Volumen acumulado de comandas por hora del día</p>
+        </div>
+      </div>
+      @if (datos.afluenciaPorHora.length) {
+      <div class="panel__grafica panel__grafica--alta">
+        <p-chart type="line" [data]="horasChartData()" [options]="horasChartOptions" />
+      </div>
+      } @else {
+      <div class="panel__vacio">
+        <i class="pi pi-clock"></i>
+        <p>Sin datos de afluencia por hora</p>
+      </div>
+      }
+    </div>
+
+    <!-- Afluencia por Día de la Semana -->
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <h4>Comandas por Día de la Semana</h4>
+          <p class="panel__subtitulo">Comparativa de volumen entre días hábiles y fin de semana</p>
+        </div>
+      </div>
+      @if (datos.afluenciaPorDia.length) {
+      <div class="panel__grafica panel__grafica--alta">
+        <p-chart type="bar" [data]="diasChartData()" [options]="diasChartOptions" />
+      </div>
+      } @else {
+      <div class="panel__vacio">
+        <i class="pi pi-calendar"></i>
+        <p>Sin datos de afluencia por día</p>
+      </div>
+      }
+    </div>
+  </div>
+
+  <!-- ============ TABLA 1: MATRIZ DE CALOR DÍA VS HORAS ============ -->
+  <div class="panel">
+    <div class="panel__header">
+      <div>
+        <h4>Matriz de Calor: Día vs Horas</h4>
+        <p class="panel__subtitulo">Densidad de comandas atendidas por combinación de día y hora</p>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <p-table [value]="datos.matrizAfluencia.filas" styleClass="p-datatable-sm tabla-reporte"
+        [tableStyle]="{ 'min-width': '100%' }">
+        <ng-template pTemplate="header">
+          <tr>
+            @for (col of datos.matrizAfluencia.columnas; track col.key) {
+            <th [style.text-align]="col.key === 'dia' ? 'left' : 'center'">{{ col.label }}</th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-fila>
+          <tr>
+            @for (col of datos.matrizAfluencia.columnas; track col.key) {
+            <td [style.text-align]="col.key === 'dia' ? 'left' : 'center'">
+              @if (col.key === 'dia') {
+              <span class="font-bold text-slate-800">{{ valorCelda(fila, col) }}</span>
+              } @else if (col.key === 'totalDia') {
+              <span class="font-bold text-slate-900 bg-slate-100 px-2 py-1 rounded">{{ valorCelda(fila, col) }}</span>
+              } @else {
+              <div [class]="claseCeldaCalor(fila[col.key])">
+                {{ fila[col.key] || 0 }}
+              </div>
+              }
+            </td>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td [attr.colspan]="datos.matrizAfluencia.columnas.length" class="text-center py-4 text-slate-400">
+              No hay datos para construir la matriz de afluencia.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+
+  <!-- ============ TABLA 2: DESGLOSE POR HORA ============ -->
+  <div class="panel">
+    <div class="panel__header">
+      <div>
+        <h4>Desglose Numérico por Hora</h4>
+        <p class="panel__subtitulo">Comandas, venta facturada, ticket promedio y porcentaje de concentración</p>
+      </div>
+    </div>
+
+    <p-table [value]="datos.desglosePorHora.filas" styleClass="p-datatable-sm tabla-reporte"
+      [tableStyle]="{ 'min-width': '100%' }">
+      <ng-template pTemplate="header">
+        <tr>
+          @for (col of datos.desglosePorHora.columnas; track col.key) {
+          <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+          }
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-fila>
+        <tr>
+          @for (col of datos.desglosePorHora.columnas; track col.key) {
+          <td [style.text-align]="alineacion(col)">
+            @if (col.key === 'hora') {
+            <span class="font-bold text-slate-800">{{ valorCelda(fila, col) }}</span>
+            } @else if (col.key === 'totalVenta') {
+            <span class="font-bold text-emerald-700">{{ valorCelda(fila, col) }}</span>
+            } @else if (col.key === 'ticketPromedio') {
+            <span class="font-semibold text-slate-900">{{ valorCelda(fila, col) }}</span>
+            } @else {
+            {{ valorCelda(fila, col) }}
+            }
+          </td>
+          }
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td [attr.colspan]="datos.desglosePorHora.columnas.length" class="text-center py-4 text-slate-400">
+            No se registraron horas en el periodo seleccionado.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+}
