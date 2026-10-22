@@ -237,86 +237,98 @@
     <div *ngIf="!loading" class="barra-grid">
         <section class="barra-column">
             <h3>Confirmada ({{ getPendingOrders().length }})</h3>
-            <article *ngFor="let order of getPendingOrders()" class="order-card" [ngClass]="freshnessClass(order)">
-                <p-card>
-                    <ng-template pTemplate="title">
-                        <div class="order-head">
-                            <span>#{{ shortId(order.id) }}</span>
-                            <span class="order-timer">{{ elapsedMinutes(order) }} min</span>
+            <div class="barra-column-body">
+                <div *ngIf="getPendingOrders().length === 0" class="barra-empty-state">
+                    <i class="pi pi-inbox text-2xl text-slate-300 mb-1"></i>
+                    <span>Sin órdenes por confirmar</span>
+                </div>
+                <article *ngFor="let order of getPendingOrders()" class="order-card" [ngClass]="freshnessClass(order)">
+                    <p-card>
+                        <ng-template pTemplate="title">
+                            <div class="order-head">
+                                <span>#{{ shortId(order.id) }}</span>
+                                <span class="order-timer">{{ elapsedMinutes(order) }} min</span>
+                            </div>
+                        </ng-template>
+                        <div class="order-customer">{{ order.customerName || 'Cliente General' }}</div>
+
+                        <ul class="order-items">
+                            <li *ngFor="let item of order.items">
+                                <span class="item-main">{{ item.quantity }}x {{ item.productName }}</span>
+                                <span *ngIf="item.comments" class="item-comments">{{ item.comments }}</span>
+                            </li>
+                        </ul>
+
+                        <div class="action-buttons">
+                            <button
+                                pButton
+                                type="button"
+                                label="Ver Detalle"
+                                icon="pi pi-eye"
+                                class="p-button-info detail-btn-large"
+                                (click)="openOrderDetail(order)"
+                            ></button>
+                            <button
+                                pButton
+                                type="button"
+                                label="Empezar"
+                                icon="pi pi-play"
+                                class="p-button-warning action-btn-small"
+                                [loading]="isProcessing(order.id)"
+                                (click)="startOrder(order)"
+                            ></button>
                         </div>
-                    </ng-template>
-                    <div class="order-customer">{{ order.customerName || 'Cliente General' }}</div>
-
-                    <ul class="order-items">
-                        <li *ngFor="let item of order.items">
-                            <span class="item-main">{{ item.quantity }}x {{ item.productName }}</span>
-                            <span *ngIf="item.comments" class="item-comments">{{ item.comments }}</span>
-                        </li>
-                    </ul>
-
-                    <div class="action-buttons">
-                        <button
-                            pButton
-                            type="button"
-                            label="Ver Detalle"
-                            icon="pi pi-eye"
-                            class="p-button-info detail-btn-large"
-                            (click)="openOrderDetail(order)"
-                        ></button>
-                        <button
-                            pButton
-                            type="button"
-                            label="Empezar"
-                            icon="pi pi-play"
-                            class="p-button-warning action-btn-small"
-                            [loading]="isProcessing(order.id)"
-                            (click)="startOrder(order)"
-                        ></button>
-                    </div>
-                </p-card>
-            </article>
+                    </p-card>
+                </article>
+            </div>
         </section>
 
         <section class="barra-column">
             <h3>En Preparacion ({{ getInProgressOrders().length }})</h3>
-            <article *ngFor="let order of getInProgressOrders()" class="order-card" [ngClass]="freshnessClass(order)">
-                <p-card>
-                    <ng-template pTemplate="title">
-                        <div class="order-head">
-                            <span>#{{ shortId(order.id) }}</span>
-                            <span class="order-timer">{{ elapsedMinutes(order) }} min</span>
+            <div class="barra-column-body">
+                <div *ngIf="getInProgressOrders().length === 0" class="barra-empty-state">
+                    <i class="pi pi-clock text-2xl text-slate-300 mb-1"></i>
+                    <span>Sin órdenes en preparación</span>
+                </div>
+                <article *ngFor="let order of getInProgressOrders()" class="order-card" [ngClass]="freshnessClass(order)">
+                    <p-card>
+                        <ng-template pTemplate="title">
+                            <div class="order-head">
+                                <span>#{{ shortId(order.id) }}</span>
+                                <span class="order-timer">{{ elapsedMinutes(order) }} min</span>
+                            </div>
+                        </ng-template>
+                        <div class="order-customer">{{ order.customerName || 'Cliente General' }}</div>
+
+                        <ul class="order-items">
+                            <li *ngFor="let item of order.items">
+                                <span class="item-main">{{ item.quantity }}x {{ item.productName }}</span>
+                                <span *ngIf="item.comments" class="item-comments">{{ item.comments }}</span>
+                            </li>
+                        </ul>
+
+                        <div class="action-buttons">
+                            <button
+                                pButton
+                                type="button"
+                                label="Ver Detalle"
+                                icon="pi pi-eye"
+                                class="p-button-info detail-btn-large"
+                                (click)="openOrderDetail(order)"
+                            ></button>
+                            <button
+                                pButton
+                                type="button"
+                                label="Terminar"
+                                icon="pi pi-check"
+                                class="p-button-success action-btn-small"
+                                [loading]="isProcessing(order.id)"
+                                (click)="finishOrder(order)"
+                            ></button>
                         </div>
-                    </ng-template>
-                    <div class="order-customer">{{ order.customerName || 'Cliente General' }}</div>
-
-                    <ul class="order-items">
-                        <li *ngFor="let item of order.items">
-                            <span class="item-main">{{ item.quantity }}x {{ item.productName }}</span>
-                            <span *ngIf="item.comments" class="item-comments">{{ item.comments }}</span>
-                        </li>
-                    </ul>
-
-                    <div class="action-buttons">
-                        <button
-                            pButton
-                            type="button"
-                            label="Ver Detalle"
-                            icon="pi pi-eye"
-                            class="p-button-info detail-btn-large"
-                            (click)="openOrderDetail(order)"
-                        ></button>
-                        <button
-                            pButton
-                            type="button"
-                            label="Terminar"
-                            icon="pi pi-check"
-                            class="p-button-success action-btn-small"
-                            [loading]="isProcessing(order.id)"
-                            (click)="finishOrder(order)"
-                        ></button>
-                    </div>
-                </p-card>
-            </article>
+                    </p-card>
+                </article>
+            </div>
         </section>
 
         <section class="barra-column">
@@ -324,28 +336,34 @@
                 Listo / Despachado
                 <span class="orders-counter">({{ getReadyOrdersCount().shown }} / {{ getReadyOrdersCount().total }})</span>
             </h3>
-            <article *ngFor="let order of getReadyOrders()" class="order-card ready-card">
-                <p-card>
-                    <ng-template pTemplate="title">
-                        <div class="order-head">
-                            <span>#{{ shortId(order.id) }}</span>
-                            <span class="order-timer">{{ elapsedMinutes(order) }} min</span>
-                        </div>
-                    </ng-template>
-                    <div class="order-customer">{{ order.customerName || 'Cliente General' }}</div>
-                    <p class="ready-note">Orden lista para despacho</p>
-                </p-card>
-            </article>
+            <div class="barra-column-body">
+                <div *ngIf="getReadyOrders().length === 0" class="barra-empty-state">
+                    <i class="pi pi-check-circle text-2xl text-slate-300 mb-1"></i>
+                    <span>Sin órdenes despachadas</span>
+                </div>
+                <article *ngFor="let order of getReadyOrders()" class="order-card ready-card">
+                    <p-card>
+                        <ng-template pTemplate="title">
+                            <div class="order-head">
+                                <span>#{{ shortId(order.id) }}</span>
+                                <span class="order-timer">{{ elapsedMinutes(order) }} min</span>
+                            </div>
+                        </ng-template>
+                        <div class="order-customer">{{ order.customerName || 'Cliente General' }}</div>
+                        <p class="ready-note">Orden lista para despacho</p>
+                    </p-card>
+                </article>
 
-            <!-- Botón expandir if hay más órdenes -->
-            <div *ngIf="getReadyOrdersCount().total > READY_ORDERS_LIMIT" class="expand-button-container">
-                <p-button
-                    [label]="showAllReadyOrders ? 'Ver menos' : 'Ver más (' + (getReadyOrdersCount().total - READY_ORDERS_LIMIT) + ')'"
-                    [text]="true"
-                    [outlined]="true"
-                    (onClick)="showAllReadyOrders = !showAllReadyOrders"
-                    styleClass="w-full"
-                ></p-button>
+                <!-- Botón expandir if hay más órdenes -->
+                <div *ngIf="getReadyOrdersCount().total > READY_ORDERS_LIMIT" class="expand-button-container">
+                    <p-button
+                        [label]="showAllReadyOrders ? 'Ver menos' : 'Ver más (' + (getReadyOrdersCount().total - READY_ORDERS_LIMIT) + ')'"
+                        [text]="true"
+                        [outlined]="true"
+                        (onClick)="showAllReadyOrders = !showAllReadyOrders"
+                        styleClass="w-full"
+                    ></p-button>
+                </div>
             </div>
         </section>
     </div>

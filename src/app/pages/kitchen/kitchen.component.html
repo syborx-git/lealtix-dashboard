@@ -241,171 +241,189 @@
     <div *ngIf="!loading" class="kitchen-grid">
         <section class="kitchen-column">
             <h3>Confirmada ({{ getPendingOrders().length }})</h3>
-            <article *ngFor="let order of getPendingOrders()" class="order-card" [ngClass]="freshnessClass(order)">
-                <p-card>
-                    <ng-template pTemplate="title">
-                        <div class="order-head">
-                            <div class="flex items-center gap-1.5 flex-wrap">
-                                <span>#{{ shortId(order.id) }}</span>
-                                <span *ngIf="order.tiempoLabel" class="kitchen-tiempo-pill" [ngClass]="'tiempo-pill-' + (order.tiempo || 1)">
-                                    {{ order.tiempoLabel }}
-                                </span>
+            <div class="kitchen-column-body">
+                <div *ngIf="getPendingOrders().length === 0" class="kitchen-empty-state">
+                    <i class="pi pi-inbox text-2xl text-slate-300 mb-1"></i>
+                    <span>Sin órdenes por confirmar</span>
+                </div>
+                <article *ngFor="let order of getPendingOrders()" class="order-card" [ngClass]="freshnessClass(order)">
+                    <p-card>
+                        <ng-template pTemplate="title">
+                            <div class="order-head">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span>#{{ shortId(order.id) }}</span>
+                                    <span *ngIf="order.tiempoLabel" class="kitchen-tiempo-pill" [ngClass]="'tiempo-pill-' + (order.tiempo || 1)">
+                                        {{ order.tiempoLabel }}
+                                    </span>
+                                </div>
+                                <span class="order-timer">{{ elapsedMinutes(order) }} min</span>
                             </div>
-                            <span class="order-timer">{{ elapsedMinutes(order) }} min</span>
+                        </ng-template>
+                        <div class="order-customer">
+                            <span *ngIf="order.mesaNombre" class="font-bold text-emerald-700 mr-1.5">{{ order.mesaNombre }} ·</span>
+                            <span>{{ order.customerName || 'Cliente General' }}</span>
                         </div>
-                    </ng-template>
-                    <div class="order-customer">
-                        <span *ngIf="order.mesaNombre" class="font-bold text-emerald-700 mr-1.5">{{ order.mesaNombre }} ·</span>
-                        <span>{{ order.customerName || 'Cliente General' }}</span>
-                    </div>
 
-                    <div *ngIf="order.waitingTiemposLabels && order.waitingTiemposLabels.length > 0" class="kitchen-waiting-strip">
-                        <span *ngFor="let wl of order.waitingTiemposLabels" class="kitchen-waiting-badge">
-                            <i class="pi pi-clock text-[10px]"></i> {{ wl }}
-                        </span>
-                    </div>
+                        <div *ngIf="order.waitingTiemposLabels && order.waitingTiemposLabels.length > 0" class="kitchen-waiting-strip">
+                            <span *ngFor="let wl of order.waitingTiemposLabels" class="kitchen-waiting-badge">
+                                <i class="pi pi-clock text-[10px]"></i> {{ wl }}
+                            </span>
+                        </div>
 
-                    <ul class="order-items">
-                        <li *ngFor="let item of order.items" [class.item-ya-salio]="isItemYaSalio(order, item)">
-                            <div class="flex items-center gap-1.5 flex-wrap">
-                                <span class="item-main" [class.line-through]="isItemYaSalio(order, item)">{{ item.quantity }}x {{ item.productName }}</span>
-                                <span *ngIf="isItemYaSalio(order, item)" class="kitchen-card-badge-salio">
-                                    ✅ Ya salió
-                                </span>
-                                <span *ngIf="item.paraLlevar || item.comments?.includes('PARA LLEVAR')" class="px-1.5 py-0.5 rounded text-[10px] font-black bg-orange-100 text-orange-950 border border-orange-300">
-                                    🥡 Llevar
-                                </span>
-                            </div>
-                            <span *ngIf="item.comments" class="item-comments">{{ item.comments }}</span>
-                        </li>
-                    </ul>
+                        <ul class="order-items">
+                            <li *ngFor="let item of order.items" [class.item-ya-salio]="isItemYaSalio(order, item)">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="item-main" [class.line-through]="isItemYaSalio(order, item)">{{ item.quantity }}x {{ item.productName }}</span>
+                                    <span *ngIf="isItemYaSalio(order, item)" class="kitchen-card-badge-salio">
+                                        ✅ Ya salió
+                                    </span>
+                                    <span *ngIf="item.paraLlevar || item.comments?.includes('PARA LLEVAR')" class="px-1.5 py-0.5 rounded text-[10px] font-black bg-orange-100 text-orange-950 border border-orange-300">
+                                        🥡 Llevar
+                                    </span>
+                                </div>
+                                <span *ngIf="item.comments" class="item-comments">{{ item.comments }}</span>
+                            </li>
+                        </ul>
 
-                    <div class="action-buttons">
-                        <button
-                            pButton
-                            type="button"
-                            label="Ver Detalle"
-                            icon="pi pi-eye"
-                            class="p-button-info detail-btn-large"
-                            (click)="openOrderDetail(order)"
-                        ></button>
-                        <button
-                            pButton
-                            type="button"
-                            label="Empezar"
-                            icon="pi pi-play"
-                            class="p-button-warning action-btn-small"
-                            [loading]="isProcessing(order.id)"
-                            (click)="startOrder(order)"
-                        ></button>
-                    </div>
-                </p-card>
-            </article>
+                        <div class="action-buttons">
+                            <button
+                                pButton
+                                type="button"
+                                label="Ver Detalle"
+                                icon="pi pi-eye"
+                                class="p-button-info detail-btn-large"
+                                (click)="openOrderDetail(order)"
+                            ></button>
+                            <button
+                                pButton
+                                type="button"
+                                label="Empezar"
+                                icon="pi pi-play"
+                                class="p-button-warning action-btn-small"
+                                [loading]="isProcessing(order.id)"
+                                (click)="startOrder(order)"
+                            ></button>
+                        </div>
+                    </p-card>
+                </article>
+            </div>
         </section>
 
         <section class="kitchen-column">
             <h3>En Preparacion ({{ getInProgressOrders().length }})</h3>
-            <article *ngFor="let order of getInProgressOrders()" class="order-card" [ngClass]="freshnessClass(order)">
-                <p-card>
-                    <ng-template pTemplate="title">
-                        <div class="order-head">
-                            <div class="flex items-center gap-1.5 flex-wrap">
-                                <span>#{{ shortId(order.id) }}</span>
-                                <span *ngIf="order.tiempoLabel" class="kitchen-tiempo-pill" [ngClass]="'tiempo-pill-' + (order.tiempo || 1)">
-                                    {{ order.tiempoLabel }}
-                                </span>
+            <div class="kitchen-column-body">
+                <div *ngIf="getInProgressOrders().length === 0" class="kitchen-empty-state">
+                    <i class="pi pi-clock text-2xl text-slate-300 mb-1"></i>
+                    <span>Sin órdenes en preparación</span>
+                </div>
+                <article *ngFor="let order of getInProgressOrders()" class="order-card" [ngClass]="freshnessClass(order)">
+                    <p-card>
+                        <ng-template pTemplate="title">
+                            <div class="order-head">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span>#{{ shortId(order.id) }}</span>
+                                    <span *ngIf="order.tiempoLabel" class="kitchen-tiempo-pill" [ngClass]="'tiempo-pill-' + (order.tiempo || 1)">
+                                        {{ order.tiempoLabel }}
+                                    </span>
+                                </div>
+                                <span class="order-timer">{{ elapsedMinutes(order) }} min</span>
                             </div>
-                            <span class="order-timer">{{ elapsedMinutes(order) }} min</span>
+                        </ng-template>
+                        <div class="order-customer">
+                            <span *ngIf="order.mesaNombre" class="font-bold text-emerald-700 mr-1.5">{{ order.mesaNombre }} ·</span>
+                            <span>{{ order.customerName || 'Cliente General' }}</span>
                         </div>
-                    </ng-template>
-                    <div class="order-customer">
-                        <span *ngIf="order.mesaNombre" class="font-bold text-emerald-700 mr-1.5">{{ order.mesaNombre }} ·</span>
-                        <span>{{ order.customerName || 'Cliente General' }}</span>
-                    </div>
 
-                    <div *ngIf="order.waitingTiemposLabels && order.waitingTiemposLabels.length > 0" class="kitchen-waiting-strip">
-                        <span *ngFor="let wl of order.waitingTiemposLabels" class="kitchen-waiting-badge">
-                            <i class="pi pi-clock text-[10px]"></i> {{ wl }}
-                        </span>
-                    </div>
+                        <div *ngIf="order.waitingTiemposLabels && order.waitingTiemposLabels.length > 0" class="kitchen-waiting-strip">
+                            <span *ngFor="let wl of order.waitingTiemposLabels" class="kitchen-waiting-badge">
+                                <i class="pi pi-clock text-[10px]"></i> {{ wl }}
+                            </span>
+                        </div>
 
-                    <ul class="order-items">
-                        <li *ngFor="let item of order.items" [class.item-ya-salio]="isItemYaSalio(order, item)">
-                            <div class="flex items-center gap-1.5 flex-wrap">
-                                <span class="item-main" [class.line-through]="isItemYaSalio(order, item)">{{ item.quantity }}x {{ item.productName }}</span>
-                                <span *ngIf="isItemYaSalio(order, item)" class="kitchen-card-badge-salio">
-                                    ✅ Ya salió
-                                </span>
-                                <span *ngIf="item.paraLlevar || item.comments?.includes('PARA LLEVAR')" class="px-1.5 py-0.5 rounded text-[10px] font-black bg-orange-100 text-orange-950 border border-orange-300">
-                                    🥡 Llevar
-                                </span>
-                            </div>
-                            <span *ngIf="item.comments" class="item-comments">{{ item.comments }}</span>
-                        </li>
-                    </ul>
+                        <ul class="order-items">
+                            <li *ngFor="let item of order.items" [class.item-ya-salio]="isItemYaSalio(order, item)">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="item-main" [class.line-through]="isItemYaSalio(order, item)">{{ item.quantity }}x {{ item.productName }}</span>
+                                    <span *ngIf="isItemYaSalio(order, item)" class="kitchen-card-badge-salio">
+                                        ✅ Ya salió
+                                    </span>
+                                    <span *ngIf="item.paraLlevar || item.comments?.includes('PARA LLEVAR')" class="px-1.5 py-0.5 rounded text-[10px] font-black bg-orange-100 text-orange-950 border border-orange-300">
+                                        🥡 Llevar
+                                    </span>
+                                </div>
+                                <span *ngIf="item.comments" class="item-comments">{{ item.comments }}</span>
+                            </li>
+                        </ul>
 
-                    <div class="action-buttons">
-                        <button
-                            pButton
-                            type="button"
-                            label="Ver Detalle"
-                            icon="pi pi-eye"
-                            class="p-button-info detail-btn-large"
-                            (click)="openOrderDetail(order)"
-                        ></button>
-                        <button
-                            pButton
-                            type="button"
-                            label="Terminar"
-                            icon="pi pi-check"
-                            class="p-button-success action-btn-small"
-                            [loading]="isProcessing(order.id)"
-                            (click)="finishOrder(order)"
-                        ></button>
-                    </div>
-                </p-card>
-            </article>
+                        <div class="action-buttons">
+                            <button
+                                pButton
+                                type="button"
+                                label="Ver Detalle"
+                                icon="pi pi-eye"
+                                class="p-button-info detail-btn-large"
+                                (click)="openOrderDetail(order)"
+                            ></button>
+                            <button
+                                pButton
+                                type="button"
+                                label="Terminar"
+                                icon="pi pi-check"
+                                class="p-button-success action-btn-small"
+                                [loading]="isProcessing(order.id)"
+                                (click)="finishOrder(order)"
+                            ></button>
+                        </div>
+                    </p-card>
+                </article>
+            </div>
         </section>
 
         <section class="kitchen-column">
             <h3>Listo / Historial del Día ({{ getReadyOrders().length }})</h3>
-            <article *ngFor="let order of getReadyOrders()" class="order-card ready-card">
-                <p-card>
-                    <ng-template pTemplate="title">
-                        <div class="order-head">
-                            <div class="flex items-center gap-1.5 flex-wrap">
-                                <span>#{{ shortId(order.id) }}</span>
-                                <span *ngIf="order.tiempoLabel" class="kitchen-tiempo-pill" [ngClass]="'tiempo-pill-' + (order.tiempo || 1)">
-                                    {{ order.tiempoLabel }}
-                                </span>
+            <div class="kitchen-column-body">
+                <div *ngIf="getReadyOrders().length === 0" class="kitchen-empty-state">
+                    <i class="pi pi-check-circle text-2xl text-slate-300 mb-1"></i>
+                    <span>Sin órdenes listas</span>
+                </div>
+                <article *ngFor="let order of getReadyOrders()" class="order-card ready-card">
+                    <p-card>
+                        <ng-template pTemplate="title">
+                            <div class="order-head">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span>#{{ shortId(order.id) }}</span>
+                                    <span *ngIf="order.tiempoLabel" class="kitchen-tiempo-pill" [ngClass]="'tiempo-pill-' + (order.tiempo || 1)">
+                                        {{ order.tiempoLabel }}
+                                    </span>
+                                </div>
+                                <span class="order-timer">{{ elapsedMinutes(order) }} min</span>
                             </div>
-                            <span class="order-timer">{{ elapsedMinutes(order) }} min</span>
+                        </ng-template>
+                        <div class="order-customer">
+                            <span *ngIf="order.mesaNombre" class="font-bold text-emerald-700 mr-1.5">{{ order.mesaNombre }} ·</span>
+                            <span>{{ order.customerName || 'Cliente General' }}</span>
                         </div>
-                    </ng-template>
-                    <div class="order-customer">
-                        <span *ngIf="order.mesaNombre" class="font-bold text-emerald-700 mr-1.5">{{ order.mesaNombre }} ·</span>
-                        <span>{{ order.customerName || 'Cliente General' }}</span>
-                    </div>
 
-                    <ul class="order-items">
-                        <li *ngFor="let item of order.items">
-                            <span class="item-main">{{ item.quantity }}x {{ item.productName }}</span>
-                        </li>
-                    </ul>
+                        <ul class="order-items">
+                            <li *ngFor="let item of order.items">
+                                <span class="item-main">{{ item.quantity }}x {{ item.productName }}</span>
+                            </li>
+                        </ul>
 
-                    <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-200">
-                        <span class="ready-note">✓ {{ order.status === 'PAGADA' ? 'Pagada / Despachada' : 'Lista para entrega' }}</span>
-                        <button
-                            pButton
-                            type="button"
-                            icon="pi pi-eye"
-                            label="Detalle"
-                            class="p-button-text p-button-sm"
-                            (click)="openOrderDetail(order)"
-                        ></button>
-                    </div>
-                </p-card>
-            </article>
+                        <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-200">
+                            <span class="ready-note">✓ {{ order.status === 'PAGADA' ? 'Pagada / Despachada' : 'Lista para entrega' }}</span>
+                            <button
+                                pButton
+                                type="button"
+                                icon="pi pi-eye"
+                                label="Detalle"
+                                class="p-button-text p-button-sm"
+                                (click)="openOrderDetail(order)"
+                            ></button>
+                        </div>
+                    </p-card>
+                </article>
+            </div>
         </section>
     </div>
 </section>
