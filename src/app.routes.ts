@@ -35,6 +35,8 @@ export const appRoutes: Routes = [
                     { path: 'logo-negocio', loadComponent: () => import('@/pages/logo-negocio/logo-negocio.component').then(m => m.LogoNegocioComponent), title: 'Logo del Negocio', canActivate: [PermissionGuard], data: { permission: 'view_dashboard' } },
                     { path: 'categoriesMenu', loadComponent: () => import('@/pages/categories-menu/categories-menu.component').then(m => m.CategoriesMenuComponent) },
                     { path: 'adminMenu', loadComponent: () => import('@/pages/products-menu/products-menu.component').then(m => m.ProductMenuComponent) },
+                    // Página de PRUEBAS de Mercado Pago Point (solo ADMIN, uso local).
+                    { path: 'mp-test', loadComponent: () => import('@/pages/mp-test/mp-point-test.component').then(m => m.MpPointTestComponent), canActivate: [RoleGuard], data: { roles: ['ADMIN'] } },
                     // Campaign routes
                     { path: 'campaigns', loadComponent: () => import('@/pages/campaigns/components/campaign-list/campaign-list.component').then(m => m.CampaignListComponent), title: 'Gestión de Campañas', canActivate: [PermissionGuard], data: { permission: 'manage_campaigns' } },
                     { path: 'campaigns/create', loadComponent: () => import('@/pages/campaigns/components/create-campaign/create-campaign.component').then(m => m.CreateCampaignComponent), title: 'Crear Campaña', canActivate: [PermissionGuard], data: { permission: 'manage_campaigns' } },
