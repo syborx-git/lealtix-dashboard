@@ -6,7 +6,8 @@ import { KitchenOrder, KitchenOrderItem, KitchenOrderStatus } from '../models/ki
 import { KitchenNotificationService } from './kitchen-notification.service';
 import { KitchenApiService } from './kitchen-api.service';
 import { InventoryService } from '@/pages/inventario/service/inventory.service';
-import { buildBeverageProductIds, isBeverageProduct } from './order-beverage-utils';
+import { ProductService } from '@/pages/products-menu/service/product.service';
+import { buildBeverageProductIds, isBeverageProduct, isBeverageItemData } from './order-beverage-utils';
 
 @Injectable({
     providedIn: 'root'
@@ -35,7 +36,8 @@ export class KitchenOrderFacadeService implements OnDestroy {
         private kitchenApiService: KitchenApiService,
         private orderSseService: OrderSseService,
         private kitchenNotificationService: KitchenNotificationService,
-        private inventoryService: InventoryService
+        private inventoryService: InventoryService,
+        private productService: ProductService
     ) {}
 
     async init(tenantId: number): Promise<void> {
@@ -349,17 +351,20 @@ export class KitchenOrderFacadeService implements OnDestroy {
     private async loadBeverageCatalog(tenantId: number): Promise<void> {
         this.beverageProductIds = new Set<number>();
         try {
-            const response = await firstValueFrom(this.inventoryService.getBebidas(tenantId));
-            this.beverageProductIds = buildBeverageProductIds(Array.isArray(response?.object) ? response.object : []);
+            const [bevResp, prodResp] = await Promise.all([
+                firstValueFrom(this.inventoryService.getBebidas(tenantId)).catch(() => null),
+                firstValueFrom(this.productService.getProductsByTenantId(tenantId)).catch(() => null)
+            ]);
+            const bevs = Array.isArray(bevResp?.object) ? bevResp.object : [];
+            const prods = Array.isArray(prodResp?.object) ? prodResp.object : (Array.isArray(prodResp) ? prodResp : []);
+            this.beverageProductIds = buildBeverageProductIds(bevs, prods);
         } catch (error) {
             console.warn('[KitchenFacade] Error cargando catálogo de bebidas:', error);
         }
     }
 
     private isBeverageItem(item: any): boolean {
-        if (item?.esBebida === true) return true;
-        const pid = item?.productId ?? item?.productoId;
-        return isBeverageProduct(pid, this.beverageProductIds);
+        return isBeverageItemData(item, this.beverageProductIds);
     }
 
     private mapBackendOrderToTickets(order: any): KitchenOrder[] {
