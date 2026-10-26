@@ -3,7 +3,7 @@
     "version": "20.0.0",
     "scripts": {
         "ng": "ng",
-        "start": "ng serve",
+        "start": "ng serve --host 0.0.0.0 --disable-host-check --port 4201",
         "start:lan": "ng serve --host 0.0.0.0 --disable-host-check --port 4201",
         "build": "ng build",
         "build:dev": "ng build lealtix_dashboard --configuration=dev",
