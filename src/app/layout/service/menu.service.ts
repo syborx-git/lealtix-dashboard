@@ -85,10 +85,10 @@ export class MenuService {
                 icon: 'pi pi-fw pi-wallet',
                 items: [
                     { label: 'Mesas', icon: 'pi pi-fw pi-table', routerLink: ['/dashboard/mesas'], roles: ['HOSTESS', 'ADMIN'], requiredPermissions: ['view_mesas'] },
-                    { label: 'Reservaciones', icon: 'pi pi-fw pi-calendar', routerLink: ['/dashboard/reservaciones'], roles: ['HOSTESS', 'ADMIN'], requiredPermissions: ['view_reservations'] },
+                    { label: 'Reservaciones', icon: 'pi pi-fw pi-calendar', routerLink: ['/dashboard/reservaciones'], roles: ['ADMIN'], requiredPermissions: ['view_reservations'] },
                     { label: 'Comanda', icon: 'pi pi-fw pi-shopping-cart', routerLink: ['/dashboard/comandix'], roles: ['ADMIN', 'MESERO'], requiredPermissions: ['create_order'] },
                     { label: 'Cocina', icon: 'pi pi-fw pi-box', routerLink: ['/dashboard/cocina'], roles: ['ADMIN', 'COCINA'], requiredPermissions: ['view_kitchen_orders', 'update_order_status'] },
-                    { label: 'Barra', icon: 'pi pi-fw pi-th-large', routerLink: ['/dashboard/barra'], roles: ['ADMIN', 'COCINA'], requiredPermissions: ['view_kitchen_orders', 'update_order_status'] },
+                    { label: 'Barra', icon: 'pi pi-fw pi-th-large', routerLink: ['/dashboard/barra'], roles: ['ADMIN', 'COCINA', 'BARRA'], requiredPermissions: ['view_kitchen_orders', 'update_order_status'] },
                     { label: 'Caja', icon: 'pi pi-fw pi-wallet', routerLink: ['/dashboard/caja'], roles: ['ADMIN', 'CAJA'], requiredPermissions: ['process_payment'] }
                 ]
             },
@@ -112,7 +112,7 @@ export class MenuService {
                 label: 'Gestión Administrativa',
                 icon: 'pi pi-fw pi-cog',
                 items: [
-                    { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/dashboard/kpis'], roles: ['ADMIN', 'MARKETING', 'CAJA'], requiredPermissions: ['view_dashboard'] },
+                    { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/dashboard/kpis'], roles: ['ADMIN', 'MARKETING'], requiredPermissions: ['view_dashboard'] },
                     { label: 'Facturación', icon: 'pi pi-fw pi-file', routerLink: ['/dashboard/facturacion'], roles: ['ADMIN'], requiredPermissions: ['view_dashboard'] },
                     { label: 'Admin Page', icon: 'pi pi-fw pi-globe', routerLink: ['/dashboard/adminPage'], roles: ['ADMIN'], requiredPermissions: ['manage_admin_page'] },
                     { label: 'Logo del Negocio', icon: 'pi pi-fw pi-image', routerLink: ['/dashboard/logo-negocio'], roles: ['ADMIN'], requiredPermissions: ['view_dashboard'] },
@@ -137,7 +137,7 @@ export class MenuService {
                 label: 'Reportes',
                 icon: 'pi pi-fw pi-chart-bar',
                 items: [
-                    { label: 'Analitica de Ventas', icon: 'pi pi-fw pi-chart-line', routerLink: ['/dashboard/reportes/analitica/ventas'], roles: ['ADMIN', 'CAJA'], requiredPermissions: ['view_dashboard', 'view_reports', 'view_sales'] },
+                    { label: 'Analitica de Ventas', icon: 'pi pi-fw pi-chart-line', routerLink: ['/dashboard/reportes/analitica/ventas'], roles: ['ADMIN'], requiredPermissions: ['view_dashboard', 'view_reports', 'view_sales'] },
                     { label: 'Transferencias de Bodega', icon: 'pi pi-fw pi-arrows-alt', routerLink: ['/dashboard/reportes/transferencias'], roles: ['ADMIN'], requiredPermissions: ['view_products'] }
                 ]
             },
@@ -148,7 +148,7 @@ export class MenuService {
                 items: [
                     { label: 'Campañas', icon: 'pi pi-fw pi-id-card', routerLink: ['/dashboard/campaigns'], roles: ['ADMIN', 'MARKETING'], requiredPermissions: ['manage_campaigns'] },
                     { label: 'Plantillas', icon: 'pi pi-fw pi-file', routerLink: ['/dashboard/campaign-templates'], roles: ['ADMIN', 'MARKETING'], requiredPermissions: ['manage_campaign_templates'] },
-                    { label: 'Redención', icon: 'pi pi-fw pi-ticket', routerLink: ['/dashboard/manual-redemption'], roles: ['ADMIN', 'MARKETING', 'CAJA'], requiredPermissions: ['process_redemption'] }
+                    { label: 'Redención', icon: 'pi pi-fw pi-ticket', routerLink: ['/dashboard/manual-redemption'], roles: ['ADMIN', 'MARKETING'], requiredPermissions: ['process_redemption'] }
                 ]
             }
         ];
@@ -164,6 +164,11 @@ export class MenuService {
 
     /** Re-evalúa los ítems que dependen de datos vivos (categorías, productos, cocina). */
     refreshDynamicItems(): void {
+        const user = this.authService.getCurrentUser();
+        const userRole = (user?.role || user?.rol || '').toUpperCase();
+        if (['BARRA', 'MESERO', 'HOSTESS', 'CAJA'].includes(userRole)) {
+            return;
+        }
         this.checkAndUpdateProductsMenu();
         this.checkAndUpdateMiPaginaMenu();
         this.checkAndUpdateKitchenMenu();
@@ -186,13 +191,29 @@ export class MenuService {
 
     private hasRequiredPermissions(item: any): boolean {
         const user = this.authService.getCurrentUser();
-        const userRole = user?.role || user?.rol;
+        const rawRole = user?.role || user?.rol;
+        const userRole = (rawRole || '').toUpperCase();
 
-        if (item.roles && item.roles.length > 0 && !item.roles.includes(userRole)) {
+        // Seccionamiento estricto por puesto/rol operativo:
+        // Cada rol operativo solo tiene acceso a su vista exclusiva dentro de Servicio
+        if (userRole === 'BARRA') {
+            return !!(item.routerLink && item.routerLink[0] === '/dashboard/barra');
+        }
+        if (userRole === 'MESERO') {
+            return !!(item.routerLink && item.routerLink[0] === '/dashboard/comandix');
+        }
+        if (userRole === 'HOSTESS') {
+            return !!(item.routerLink && item.routerLink[0] === '/dashboard/mesas');
+        }
+        if (userRole === 'CAJA') {
+            return !!(item.routerLink && item.routerLink[0] === '/dashboard/caja');
+        }
+
+        if (item.roles && item.roles.length > 0 && !item.roles.includes(rawRole) && !item.roles.includes(userRole)) {
             return false;
         }
 
-        if (item.requiredRole && item.requiredRole !== userRole) {
+        if (item.requiredRole && item.requiredRole !== rawRole && item.requiredRole !== userRole) {
             return false;
         }
 

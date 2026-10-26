@@ -26,10 +26,10 @@ export const appRoutes: Routes = [
                 path: '',
                 component: AppLayout,
                 canActivate: [AuthGuard],
-                canActivateChild: [AuthGuard],
+                canActivateChild: [AuthGuard, RoleGuard],
                 children: [
                     { path: '', loadComponent: () => import('@/pages/dashboard/dashboard.component').then(m => m.DashboardComponent), canActivate: [RoleHomeGuard], pathMatch: 'full' },
-                    { path: 'kpis', loadComponent: () => import('@/pages/dashboard/dashboard.component').then(m => m.DashboardComponent), canActivate: [RoleGuard], data: { roles: ['ADMIN', 'MARKETING', 'CAJA'] } },
+                    { path: 'kpis', loadComponent: () => import('@/pages/dashboard/dashboard.component').then(m => m.DashboardComponent), canActivate: [RoleGuard], data: { roles: ['ADMIN', 'MARKETING'] } },
                     { path: 'mesero', loadComponent: () => import('@/pages/waiter/waiter-dashboard.component').then(m => m.WaiterDashboardComponent), canActivate: [RoleGuard, WaiterGuard], data: { roles: ['MESERO'] }, title: 'Dashboard Mesero' },
                     { path: 'adminPage', loadComponent: () => import('@/pages/admin-page/landing-editor.component').then(m => m.LandingEditorComponent) },
                     { path: 'logo-negocio', loadComponent: () => import('@/pages/logo-negocio/logo-negocio.component').then(m => m.LogoNegocioComponent), title: 'Logo del Negocio', canActivate: [PermissionGuard], data: { permission: 'view_dashboard' } },
@@ -48,7 +48,7 @@ export const appRoutes: Routes = [
                     { path: 'bodega', loadComponent: () => import('@/pages/bodega/bodega.component').then(m => m.BodegaComponent), title: 'Bodega', canActivate: [PermissionGuard], data: { permission: 'view_products' } },
                     { path: 'reportes/transferencias', loadComponent: () => import('@/pages/reportes/transferencias-report.component').then(m => m.TransferenciasReportComponent), title: 'Reportes - Transferencias de Bodega', canActivate: [PermissionGuard], data: { permission: 'view_products' } },
                     { path: 'reportes/mermas', loadComponent: () => import('@/pages/reportes/mermas-report.component').then(m => m.MermasReportComponent), title: 'Reportes - Mermas', canActivate: [PermissionGuard], data: { permission: 'manage_mermas' } },
-                    { path: 'reportes/ventas', loadComponent: () => import('@/pages/caja/caja.component').then(m => m.CajaComponent), title: 'Reportes - Ventas y Comandas', canActivate: [RoleGuard], data: { roles: ['ADMIN', 'CAJA', 'MESERO'], initialView: 'reporte' } },
+                    { path: 'reportes/ventas', loadComponent: () => import('@/pages/caja/caja.component').then(m => m.CajaComponent), title: 'Reportes - Ventas y Comandas', canActivate: [RoleGuard], data: { roles: ['ADMIN'], initialView: 'reporte' } },
                     // Modulo maestro de Reportes y Analitica (12 reportes en 4 pilares).
                     // Ruta propia para no chocar con las vistas de reportes del POS.
                     {
@@ -56,7 +56,7 @@ export const appRoutes: Routes = [
                         loadComponent: () => import('@/pages/reportes/reportes-shell.component').then(m => m.ReportesShellComponent),
                         title: 'Reportes y Analitica',
                         canActivate: [RoleGuard],
-                        data: { roles: ['ADMIN', 'CAJA'] },
+                        data: { roles: ['ADMIN'] },
                         children: [
                             { path: '', pathMatch: 'full', redirectTo: 'ventas' },
                             { path: 'ventas', loadComponent: () => import('@/pages/reportes/ventas-tendencias-report.component').then(m => m.VentasTendenciasReportComponent), title: '1.1 Dashboard de Ventas y Tendencias' },
@@ -88,10 +88,10 @@ export const appRoutes: Routes = [
                     { path: 'facturacion', loadComponent: () => import('@/pages/facturacion/facturacion.component').then(m => m.FacturacionComponent), title: 'Facturación' },
                     { path: 'cocina-dashboard', loadComponent: () => import('@/pages/kitchen/kitchen-dashboard.component').then(m => m.KitchenDashboardComponent), title: 'Kitchndix - Dashboard Cocina', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'COCINA'], permission: 'dashboard_kitchen' } },
                     { path: 'cocina', loadComponent: () => import('@/pages/kitchen/kitchen.component').then(m => m.KitchenComponent), title: 'Kitchndix - Cocina', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'COCINA'], permission: 'view_kitchen_orders' } },
-                    { path: 'barra', loadComponent: () => import('@/pages/barra/barra.component').then(m => m.BarraComponent), title: 'Kitchndix - Barra', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'COCINA'], permission: 'view_kitchen_orders' } },
+                    { path: 'barra', loadComponent: () => import('@/pages/barra/barra.component').then(m => m.BarraComponent), title: 'Kitchndix - Barra', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'COCINA', 'BARRA'], permission: 'view_kitchen_orders' } },
                     // Hostess
                     { path: 'mesas', loadComponent: () => import('@/pages/hostess/mapeo-mesas/mapeo-mesas.component').then(m => m.MapeoMesasComponent), title: 'Mapeo de Mesas', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['HOSTESS', 'ADMIN'], permission: 'view_mesas' } },
-                    { path: 'reservaciones', loadComponent: () => import('@/pages/hostess/reservaciones/reservaciones.component').then(m => m.ReservacionesComponent), title: 'Reservaciones', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['HOSTESS', 'ADMIN'], permission: 'view_reservaciones' } },
+                    { path: 'reservaciones', loadComponent: () => import('@/pages/hostess/reservaciones/reservaciones.component').then(m => m.ReservacionesComponent), title: 'Reservaciones', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN'], permission: 'view_reservaciones' } },
                     // Ruta eliminada: menu-print
                     { path: 'menu-classic-print', loadComponent: () => import('@/pages/menu-classic-print/menu-classic-print.component').then(m => m.MenuClassicPrintComponent), title: 'Imprimir Menú Clásico' }
                 ]

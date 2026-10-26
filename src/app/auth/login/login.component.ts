@@ -109,11 +109,7 @@ export class LoginComponent {
 
                             // Redirigir
                             setTimeout(() => {
-                                if (this.returnUrl) {
-                                    this.router.navigateByUrl(this.returnUrl);
-                                } else {
-                                    this.router.navigateByUrl(this.resolveDefaultRoute());
-                                }
+                                this.navigateAfterLogin();
                             }, 500);
                         } catch (e) {
                             console.error('Error procesando login:', e);
@@ -135,11 +131,7 @@ export class LoginComponent {
 
                             // Redirigir
                             setTimeout(() => {
-                                if (this.returnUrl) {
-                                    this.router.navigateByUrl(this.returnUrl);
-                                } else {
-                                    this.router.navigateByUrl(this.resolveDefaultRoute());
-                                }
+                                this.navigateAfterLogin();
                             }, 500);
                         } catch (e) {
                             console.error('Error procesando login:', e);
@@ -192,9 +184,21 @@ export class LoginComponent {
         });
     }
 
-    private resolveDefaultRoute(): string {
+    private navigateAfterLogin(): void {
         const currentUser = this.authService.getCurrentUser();
-        const userRole = currentUser?.role || currentUser?.rol;
-        return homeRouteForRole(userRole);
+        const rawRole = currentUser?.role || currentUser?.rol || '';
+        const userRole = rawRole.toUpperCase();
+        const operationalRoles = ['BARRA', 'MESERO', 'HOSTESS', 'CAJA'];
+
+        if (operationalRoles.includes(userRole)) {
+            this.router.navigateByUrl(homeRouteForRole(userRole));
+            return;
+        }
+
+        if (this.returnUrl) {
+            this.router.navigateByUrl(this.returnUrl);
+        } else {
+            this.router.navigateByUrl(homeRouteForRole(userRole));
+        }
     }
 }

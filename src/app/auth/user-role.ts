@@ -1,4 +1,4 @@
-export type UserRoleName = 'ADMIN' | 'MESERO' | 'COCINA' | 'CAJA' | 'MARKETING' | 'HOSTESS';
+export type UserRoleName = 'ADMIN' | 'MESERO' | 'COCINA' | 'CAJA' | 'MARKETING' | 'HOSTESS' | 'BARRA';
 
 export const ROLE_HOME_ROUTES: Record<UserRoleName, string> = {
     ADMIN: '/dashboard/kpis',
@@ -6,7 +6,8 @@ export const ROLE_HOME_ROUTES: Record<UserRoleName, string> = {
     COCINA: '/dashboard/cocina',
     CAJA: '/dashboard/caja',
     MARKETING: '/dashboard/kpis',
-    HOSTESS: '/dashboard/mesas'
+    HOSTESS: '/dashboard/mesas',
+    BARRA: '/dashboard/barra'
 };
 
 export function getRoleName(role?: string | null): UserRoleName | null {
