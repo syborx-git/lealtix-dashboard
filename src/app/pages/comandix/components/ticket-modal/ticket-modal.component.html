@@ -2,10 +2,10 @@
   <div class="ticket-modal-root">
     <div class="ticket" *ngIf="order as currentOrder">
       <!-- Marca de Agua del Logotipo -->
-      <img *ngIf="businessLogo" [src]="businessLogo" class="ticket-watermark" alt="Logo Watermark" />
+      <img *ngIf="businessLogo && (ticketLogoMode === 'WATERMARK' || ticketLogoMode === 'BOTH')" [src]="businessLogo" class="ticket-watermark" alt="Logo Watermark" />
 
       <div class="ticket-header">
-        <div *ngIf="businessLogo" class="ticket-logo-box">
+        <div *ngIf="businessLogo && (ticketLogoMode === 'HEADER' || ticketLogoMode === 'BOTH')" class="ticket-logo-box">
           <img [src]="businessLogo" class="ticket-logo-header" alt="Logo Negocio" />
         </div>
         <div class="ticket-business">{{ businessName }}</div>

@@ -98,6 +98,7 @@ export class CajaComponent implements OnInit, OnDestroy {
   businessAddress = signal<string>('');
   businessPhone = signal<string>('');
   businessLogo = signal<string>('');
+  businessLogoMode = signal<string>('HEADER');
   qrFacturacionDataUrl = signal<string>('');
 
   getFacturaUrl(orderId: string): string {
@@ -1076,6 +1077,7 @@ export class CajaComponent implements OnInit, OnDestroy {
           this.businessAddress.set(t.direccion || '');
           this.businessPhone.set(t.telefono || '');
           this.businessLogo.set(t.logoUrl || '');
+          this.businessLogoMode.set(t.ticketLogoMode || 'HEADER');
         }
       },
       error: (e) => console.warn('[Caja] No se pudo obtener datos del negocio:', e)
@@ -1409,6 +1411,9 @@ export class CajaComponent implements OnInit, OnDestroy {
     const bAddress = this.businessAddress();
     const bPhone = this.businessPhone();
     const esPagada = (t as any).estado === 'PAGADA' || (t as any).isPaid === true;
+    const logoMode = (t as any).ticketLogoMode || this.businessLogoMode();
+    const showHeaderLogo = bLogo && (logoMode === 'HEADER' || logoMode === 'BOTH');
+    const showWatermark = bLogo && (logoMode === 'WATERMARK' || logoMode === 'BOTH');
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -1637,7 +1642,10 @@ export class CajaComponent implements OnInit, OnDestroy {
         </head>
         <body>
           <div class="ticket-container">
-            ${bLogo ? `
+            ${showWatermark ? `
+              <img src="${bLogo}" class="ticket-watermark" alt="Logo Watermark" />
+            ` : ''}
+            ${showHeaderLogo ? `
               <div class="business-logo-header">
                 <img src="${bLogo}" class="business-logo-img" alt="Logo" />
               </div>

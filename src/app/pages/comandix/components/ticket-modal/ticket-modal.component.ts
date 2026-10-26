@@ -21,6 +21,7 @@ export class TicketModalComponent {
   @Input() businessAddress = '';
   @Input() businessPhone = '';
   @Input() businessLogo = '';
+  @Input() ticketLogoMode = 'HEADER';
   @Input() invoiceBaseUrl = 'http://localhost:4200/facturar/';
   @Input() invoiceUuid = '';
   @Output() visibleChange = new EventEmitter<boolean>();

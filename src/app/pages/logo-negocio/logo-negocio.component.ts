@@ -30,6 +30,7 @@ export class LogoNegocioComponent implements OnInit {
   currentLogoUrl = signal<string>('');
   previewLogoUrl = signal<string>('');
   selectedFile = signal<File | null>(null);
+  ticketLogoMode = signal<'HEADER' | 'WATERMARK' | 'BOTH'>('HEADER');
 
   cargando = signal<boolean>(false);
   guardando = signal<boolean>(false);
@@ -78,6 +79,7 @@ export class LogoNegocioComponent implements OnInit {
           this.businessPhone.set(t.telefono || '');
           this.slogan.set(t.slogan || '');
           this.currentLogoUrl.set(t.logoUrl || '');
+          this.ticketLogoMode.set((t.ticketLogoMode as any) || 'HEADER');
           this.previewLogoUrl.set('');
           this.selectedFile.set(null);
         }
@@ -247,11 +249,48 @@ export class LogoNegocioComponent implements OnInit {
       next: (t: any) => {
         if (t) {
           t.logoUrl = url;
+          t.ticketLogoMode = this.ticketLogoMode();
           this.tenantService.updateTenant(this.tenantId(), t).subscribe({
             next: () => {
               if (this.userEmail()) {
                 this.tenantService.invalidateTenantByEmailCache(this.userEmail());
               }
+            }
+          });
+        }
+      }
+    });
+  }
+
+  cambiarModoLogo(modo: 'HEADER' | 'WATERMARK' | 'BOTH'): void {
+    this.ticketLogoMode.set(modo);
+    this.tenantService.getTenantById(this.tenantId()).subscribe({
+      next: (t: any) => {
+        if (t) {
+          t.ticketLogoMode = modo;
+          this.tenantService.updateTenant(this.tenantId(), t).subscribe({
+            next: () => {
+              const modoTexto = modo === 'HEADER'
+                ? 'Cabecera (bien marcado arriba)'
+                : (modo === 'WATERMARK' ? 'Marca de agua (detrás de todo el ticket)' : 'Cabecera y marca de agua');
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Modo Actualizado',
+                detail: `El logotipo se mostrará como: ${modoTexto}`,
+                life: 3500
+              });
+              if (this.userEmail()) {
+                this.tenantService.invalidateTenantByEmailCache(this.userEmail());
+              }
+            },
+            error: (err) => {
+              console.error('Error al guardar modo de ticket:', err);
+              this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'No se pudo guardar la preferencia en el servidor.',
+                life: 3000
+              });
             }
           });
         }

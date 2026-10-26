@@ -1023,11 +1023,11 @@
   >
     <div *ngIf="ticketActual() as t" class="ticket-thermal-preview bg-white p-3 rounded-lg border border-dashed border-black font-mono text-[11px] text-black space-y-2 relative overflow-hidden">
       <!-- Marca de agua del negocio -->
-      <img *ngIf="businessLogo()" [src]="businessLogo()" class="ticket-watermark" alt="Logo Watermark" />
+      <img *ngIf="businessLogo() && (t.ticketLogoMode === 'WATERMARK' || t.ticketLogoMode === 'BOTH' || (!t.ticketLogoMode && (businessLogoMode() === 'WATERMARK' || businessLogoMode() === 'BOTH')))" [src]="businessLogo()" class="ticket-watermark" alt="Logo Watermark" />
 
       <!-- Encabezado del negocio -->
       <div class="relative z-1 text-center pb-2 border-b border-dashed border-black">
-        <div *ngIf="businessLogo()" class="mb-2">
+        <div *ngIf="businessLogo() && (t.ticketLogoMode === 'HEADER' || t.ticketLogoMode === 'BOTH' || (!t.ticketLogoMode && (businessLogoMode() === 'HEADER' || businessLogoMode() === 'BOTH')))" class="mb-2">
           <img [src]="businessLogo()" class="h-12 max-w-[140px] mx-auto object-contain block" alt="Logo Negocio" />
         </div>
         <h3 class="font-black text-xs uppercase m-0 tracking-wider">{{ businessName() }}</h3>

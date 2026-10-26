@@ -97,6 +97,7 @@ export interface TicketPrecuenta {
   nombreImpresora?: string;
   logoUrl?: string;
   qrFacturacionUrl?: string;
+  ticketLogoMode?: 'HEADER' | 'WATERMARK' | 'BOTH';
 }
 
 export interface DesgloseMetodoPago {
