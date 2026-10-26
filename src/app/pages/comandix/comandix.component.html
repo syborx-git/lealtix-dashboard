@@ -147,6 +147,34 @@
 
   <!-- ==================== VISTA: MAPA DE MESAS (MESERO) ==================== -->
   <div *ngIf="activeView() === 'mesas'" class="comandix-mesas-view">
+    <!-- BARRA DE ÁREAS DEL LOCAL (Pizarrón por Área) -->
+    <div class="comandix-areas-bar">
+      <div class="areas-pills-container">
+        <span class="areas-label">
+          <i class="pi pi-map-marker text-emerald-600"></i>
+          <span>Áreas:</span>
+        </span>
+        <button
+          *ngFor="let a of areas()"
+          type="button"
+          class="area-pill-btn"
+          [class.active]="areaSeleccionada() === a"
+          (click)="seleccionarArea(a)"
+        >
+          <span class="area-dot"></span>
+          <span class="area-name">{{ a }}</span>
+          <span class="area-count-badge">{{ conteoMesasPorArea(a) }}</span>
+        </button>
+      </div>
+
+      <div class="text-xs text-slate-500 font-medium hidden sm:flex items-center gap-1.5">
+        <span>Área activa:</span>
+        <span class="font-bold text-slate-800">{{ areaSeleccionada() }}</span>
+        <span class="text-slate-300">·</span>
+        <span class="text-emerald-700 font-semibold">{{ conteoMesasLibresPorArea(areaSeleccionada()) }} libres</span>
+      </div>
+    </div>
+
     <!-- BARRA SUPERIOR DE ESTADO Y ACCIONES DE MESAS -->
     <div class="mesas-toolbar-card bg-white rounded-2xl p-3 md:p-4 mb-3 shadow-sm border border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-3">
       
