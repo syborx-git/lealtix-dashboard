@@ -252,14 +252,17 @@ export class MapeoMesasComponent implements OnInit {
                 const normalized = this.applyDefaultPositions(this.normalizeMesas(res || []));
                 this.mesas.set(normalized);
 
-                // Sincronizar lista de áreas con las presentes en las mesas
-                const uniqueAreas = new Set<string>(['Principal', ...this.areas()]);
+                // Sincronizar lista de áreas con las presentes en las mesas y localStorage
+                const storedAreas = this.loadStoredAreas();
+                const uniqueAreas = new Set<string>(['Principal', ...this.areas(), ...storedAreas]);
                 normalized.forEach(m => {
                     if (m.area && m.area.trim()) {
                         uniqueAreas.add(m.area.trim());
                     }
                 });
-                this.areas.set(Array.from(uniqueAreas));
+                const areasList = Array.from(uniqueAreas);
+                this.areas.set(areasList);
+                this.saveStoredAreas(areasList);
                 this.loading.set(false);
             },
             error: () => {
@@ -878,7 +881,9 @@ export class MapeoMesasComponent implements OnInit {
         }
 
         // Agregar la nueva área y seleccionarla de inmediato con pizarrón en blanco
-        this.areas.set([...actuales, nombre]);
+        const nuevasAreas = [...actuales, nombre];
+        this.areas.set(nuevasAreas);
+        this.saveStoredAreas(nuevasAreas);
         this.areaSeleccionada.set(nombre);
         this.nuevaAreaDialogVisible = false;
 
@@ -887,6 +892,31 @@ export class MapeoMesasComponent implements OnInit {
             summary: 'Nueva Área Creada',
             detail: `Pizarrón en blanco establecido para "${nombre}". Puedes comenzar a agregar sus mesas.`
         });
+    }
+
+    private getAreasStorageKey(): string {
+        return `lealtix_areas_${this.tenantId || 0}`;
+    }
+
+    private loadStoredAreas(): string[] {
+        try {
+            const raw = localStorage.getItem(this.getAreasStorageKey());
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) return parsed.filter((a: any) => typeof a === 'string' && a.trim().length > 0);
+            }
+        } catch {
+            // ignore
+        }
+        return [];
+    }
+
+    private saveStoredAreas(areas: string[]): void {
+        try {
+            localStorage.setItem(this.getAreasStorageKey(), JSON.stringify(areas));
+        } catch {
+            // ignore
+        }
     }
 
     conteoMesasPorArea(area: string): number {

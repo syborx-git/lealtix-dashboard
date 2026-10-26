@@ -341,6 +341,15 @@ export class ComandixComponent implements OnInit, OnDestroy {
   mesas = signal<MesaDTO[]>([]);
   selectedMesa = signal<MesaDTO | null>(null);
 
+  // ==================== ÁREAS DEL LOCAL (Pizarrón por Área) ====================
+  areas = signal<string[]>(['Principal']);
+  areaSeleccionada = signal<string>('Principal');
+
+  mesasDelArea = computed<MesaDTO[]>(() => {
+    const areaActual = this.areaSeleccionada() || 'Principal';
+    return this.mesas().filter(m => (m.area || 'Principal') === areaActual);
+  });
+
   // ==================== MAPA DE MESAS (Modo Mesero: Vista / Consulta / Unión) ====================
   readonly workspaceW = 1200;
   readonly workspaceH = 720;
@@ -368,13 +377,13 @@ export class ComandixComponent implements OnInit, OnDestroy {
     );
   });
 
-  mesasLibresCount = computed(() => this.mesas().filter(m => m.estado === 'LIBRE').length);
-  mesasOcupadasCount = computed(() => this.mesas().filter(m => m.estado === 'OCUPADA').length);
-  mesasReservadasCount = computed(() => this.mesas().filter(m => m.estado === 'RESERVADA').length);
+  mesasLibresCount = computed(() => this.mesasDelArea().filter(m => m.estado === 'LIBRE').length);
+  mesasOcupadasCount = computed(() => this.mesasDelArea().filter(m => m.estado === 'OCUPADA').length);
+  mesasReservadasCount = computed(() => this.mesasDelArea().filter(m => m.estado === 'RESERVADA').length);
 
   grupoTemporal = computed<MesaGrupo[]>(() => {
     const byGroup = new Map<string, MesaDTO[]>();
-    this.mesas().forEach(m => {
+    this.mesasDelArea().forEach(m => {
       if (m.idGrupoTemporal) {
         const list = byGroup.get(m.idGrupoTemporal) || [];
         list.push(m);
@@ -408,6 +417,46 @@ export class ComandixComponent implements OnInit, OnDestroy {
     });
     return grupos;
   });
+
+  seleccionarArea(area: string): void {
+    this.areaSeleccionada.set(area);
+    if (this.unirModeMesas()) {
+      this.selectedMesaIds.set(new Set());
+    }
+  }
+
+  conteoMesasPorArea(area: string): number {
+    return this.mesas().filter(m => (m.area || 'Principal') === area).length;
+  }
+
+  conteoMesasLibresPorArea(area: string): number {
+    return this.mesas().filter(m => (m.area || 'Principal') === area && m.estado === 'LIBRE').length;
+  }
+
+  private getAreasStorageKey(): string {
+    return `lealtix_areas_${this.tenantId || 0}`;
+  }
+
+  private loadStoredAreas(): string[] {
+    try {
+      const raw = localStorage.getItem(this.getAreasStorageKey());
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.filter((a: any) => typeof a === 'string' && a.trim().length > 0);
+      }
+    } catch {
+      // ignore
+    }
+    return [];
+  }
+
+  private saveStoredAreas(areas: string[]): void {
+    try {
+      localStorage.setItem(this.getAreasStorageKey(), JSON.stringify(areas));
+    } catch {
+      // ignore
+    }
+  }
 
   ordenesDeMesaConsultada = computed<PendingOrder[]>(() => {
     const mesa = this.mesaConsultada();
@@ -1157,6 +1206,20 @@ export class ComandixComponent implements OnInit, OnDestroy {
         if (mesas && mesas.length > 0) {
           const positioned = this.applyDefaultPositions(mesas);
           this.mesas.set(positioned);
+
+          // Extraer áreas únicas de las mesas y combinar con las guardadas en localStorage
+          const storedAreas = this.loadStoredAreas();
+          const mesaAreas = Array.from(new Set(mesas.map(m => (m.area || 'Principal').trim()).filter(a => a.length > 0)));
+          const allAreasSet = new Set<string>(['Principal', ...storedAreas, ...mesaAreas]);
+          const finalAreas = Array.from(allAreasSet);
+          this.areas.set(finalAreas);
+          this.saveStoredAreas(finalAreas);
+
+          // Si el área seleccionada no existe en la lista, reajustar a Principal
+          if (!finalAreas.includes(this.areaSeleccionada())) {
+            this.areaSeleccionada.set(finalAreas[0] || 'Principal');
+          }
+
           // Si ya teníamos una mesa seleccionada, mantenerla sincronizada
           if (this.selectedMesa()) {
             const current = positioned.find(m => m.id === this.selectedMesa()?.id);
@@ -1292,6 +1355,9 @@ export class ComandixComponent implements OnInit, OnDestroy {
   }
 
   volverAlMapa(): void {
+    if (this.selectedMesa()?.area) {
+      this.areaSeleccionada.set(this.selectedMesa()!.area!);
+    }
     this.switchView('mesas');
   }
 
