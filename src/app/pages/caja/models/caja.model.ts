@@ -95,6 +95,8 @@ export interface TicketPrecuenta {
   metodoPago?: string;
   impresoEnHardware?: boolean;
   nombreImpresora?: string;
+  logoUrl?: string;
+  qrFacturacionUrl?: string;
 }
 
 export interface DesgloseMetodoPago {

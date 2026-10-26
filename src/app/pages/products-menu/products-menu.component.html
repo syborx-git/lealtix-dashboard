@@ -427,17 +427,15 @@
                 Selecciona la opción para seccionar el artículo y asignarlo al área correspondiente:
             </p>
 
-            <!-- Tarjetas interactivas de selección -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <!-- Recuadros interactivos de selección en una sola fila -->
+            <div class="type-cards-row">
                 <!-- Opción Alimento -->
                 <div class="type-card"
                     [class.type-card-active]="manualTipo() === 'alimento'"
                     (click)="setManualTipo('alimento')">
-                    <div class="type-card-header">
-                        <span class="type-card-icon">🍽️</span>
-                        <span class="type-area-badge area-cocina">Cocina</span>
-                    </div>
+                    <span class="type-card-icon">🍽️</span>
                     <div class="type-card-title">Alimento</div>
+                    <span class="type-area-badge area-cocina">Cocina</span>
                     <div class="type-card-desc">Platillos y comidas del menú preparados en Cocina.</div>
                 </div>
 
@@ -445,11 +443,9 @@
                 <div class="type-card"
                     [class.type-card-active]="manualTipo() === 'bebida'"
                     (click)="setManualTipo('bebida')">
-                    <div class="type-card-header">
-                        <span class="type-card-icon">🍹</span>
-                        <span class="type-area-badge area-barra">Barra</span>
-                    </div>
+                    <span class="type-card-icon">🍹</span>
                     <div class="type-card-title">Bebida</div>
+                    <span class="type-area-badge area-barra">Barra</span>
                     <div class="type-card-desc">Bebidas y coctelería para venta en Barra y Comandix.</div>
                 </div>
 
@@ -457,11 +453,9 @@
                 <div class="type-card"
                     [class.type-card-active]="manualTipo() === 'insumo'"
                     (click)="setManualTipo('insumo')">
-                    <div class="type-card-header">
-                        <span class="type-card-icon">📦</span>
-                        <span class="type-area-badge area-almacen">Almacén</span>
-                    </div>
+                    <span class="type-card-icon">📦</span>
                     <div class="type-card-title">Insumo</div>
+                    <span class="type-area-badge area-almacen">Almacén</span>
                     <div class="type-card-desc">Materia prima almacenada para preparar recetas.</div>
                 </div>
             </div>

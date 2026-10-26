@@ -1281,9 +1281,13 @@ export class CajaComponent implements OnInit, OnDestroy {
     this.procesando.set(true);
 
     try {
-      const resp = await firstValueFrom(this.cajaService.imprimirTicket(comanda.id, this.tenantId));
+      const urlFactura = this.getFacturaUrl(comanda.id);
+      const resp = await firstValueFrom(this.cajaService.imprimirTicket(comanda.id, this.tenantId, true, urlFactura));
       const ticket = resp?.object || resp?.data;
       if (ticket) {
+        if (ticket.logoUrl && !this.businessLogo()) {
+          this.businessLogo.set(ticket.logoUrl);
+        }
         this.ticketActual.set(ticket);
         await this.generarQrFacturacion(ticket.idComanda || ticket.folioComanda || comanda.id);
       } else {
@@ -1458,6 +1462,18 @@ export class CajaComponent implements OnInit, OnDestroy {
               pointer-events: none;
               z-index: 0;
             }
+            .business-logo-header {
+              text-align: center;
+              margin-bottom: 6px;
+            }
+            .business-logo-img {
+              max-width: 38mm;
+              max-height: 22mm;
+              object-fit: contain;
+              margin: 0 auto;
+              display: block;
+              filter: contrast(130%);
+            }
             .business-title, .business-info, .ticket-type, .divider, .divider-double,
             .meta-section, .items-table, .totals-section, .propina-box, .ticket-qr-section, .footer {
               position: relative;
@@ -1621,7 +1637,11 @@ export class CajaComponent implements OnInit, OnDestroy {
         </head>
         <body>
           <div class="ticket-container">
-            ${bLogo ? `<img src="${bLogo}" class="ticket-watermark" alt="Logo Watermark" />` : ''}
+            ${bLogo ? `
+              <div class="business-logo-header">
+                <img src="${bLogo}" class="business-logo-img" alt="Logo" />
+              </div>
+            ` : ''}
             <div class="business-title">${bName}</div>
             ${bAddress ? `<div class="business-info">${bAddress}</div>` : ''}
             ${bPhone ? `<div class="business-info">Tel: ${bPhone}</div>` : ''}
@@ -1727,10 +1747,50 @@ export class CajaComponent implements OnInit, OnDestroy {
       doc.open();
       doc.write(htmlContent);
       doc.close();
-      setTimeout(() => {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-      }, 250);
+
+      const win = iframe.contentWindow;
+      if (win) {
+        const triggerPrint = () => {
+          win.focus();
+          win.print();
+        };
+
+        const images = doc.getElementsByTagName('img');
+        if (!images || images.length === 0) {
+          setTimeout(triggerPrint, 250);
+        } else {
+          let loaded = 0;
+          let printed = false;
+          const onAllDone = () => {
+            if (!printed) {
+              printed = true;
+              setTimeout(triggerPrint, 250);
+            }
+          };
+
+          for (let i = 0; i < images.length; i++) {
+            const img = images[i];
+            if (img.complete && img.naturalWidth !== 0) {
+              loaded++;
+            } else {
+              img.onload = () => {
+                loaded++;
+                if (loaded >= images.length) onAllDone();
+              };
+              img.onerror = () => {
+                loaded++;
+                if (loaded >= images.length) onAllDone();
+              };
+            }
+          }
+
+          if (loaded >= images.length) {
+            onAllDone();
+          }
+          // Timeout de seguridad en caso de que alguna imagen tarde en responder
+          setTimeout(onAllDone, 1200);
+        }
+      }
     }
   }
 

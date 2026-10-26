@@ -1027,6 +1027,9 @@
 
       <!-- Encabezado del negocio -->
       <div class="relative z-1 text-center pb-2 border-b border-dashed border-black">
+        <div *ngIf="businessLogo()" class="mb-2">
+          <img [src]="businessLogo()" class="h-12 max-w-[140px] mx-auto object-contain block" alt="Logo Negocio" />
+        </div>
         <h3 class="font-black text-xs uppercase m-0 tracking-wider">{{ businessName() }}</h3>
         <p *ngIf="businessAddress()" class="text-[10px] text-black font-semibold m-0 uppercase">{{ businessAddress() }}</p>
         <p *ngIf="businessPhone()" class="text-[10px] text-black font-semibold m-0">TEL: {{ businessPhone() }}</p>
