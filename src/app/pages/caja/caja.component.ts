@@ -1068,6 +1068,22 @@ export class CajaComponent implements OnInit, OnDestroy {
     }
   }
 
+  private normalizarUrlImagen(url: string): string {
+    if (!url) return '';
+    let res = url.trim();
+    if (res.startsWith('data:image')) return res;
+    if (res.startsWith('/api/')) {
+      const base = (environment.apiUrl || 'http://localhost:8080/api').replace(/\/api\/?$/, '');
+      return `${base}${res}`;
+    }
+    if (res.startsWith('https://localhost/api/') || (res.startsWith('http://localhost/api/') && !res.startsWith('http://localhost:8080/api/'))) {
+      const path = res.replace(/^https?:\/\/localhost/, '');
+      const base = (environment.apiUrl || 'http://localhost:8080/api').replace(/\/api\/?$/, '');
+      return `${base}${path}`;
+    }
+    return res;
+  }
+
   private cargarDatosNegocio(): void {
     if (this.tenantId <= 0) return;
     this.tenantService.getTenantById(this.tenantId).subscribe({
@@ -1076,7 +1092,7 @@ export class CajaComponent implements OnInit, OnDestroy {
           this.businessName.set(t.bussinessName || t.nombreNegocio || 'Restaurante');
           this.businessAddress.set(t.direccion || '');
           this.businessPhone.set(t.telefono || '');
-          this.businessLogo.set(t.logoUrl || '');
+          this.businessLogo.set(this.normalizarUrlImagen(t.logoUrl || ''));
           this.businessLogoMode.set(t.ticketLogoMode || 'HEADER');
         }
       },

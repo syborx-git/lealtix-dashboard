@@ -2548,6 +2548,22 @@ export class ComandixComponent implements OnInit, OnDestroy {
     }
   }
 
+  private normalizarUrlImagen(url: string): string {
+    if (!url) return '';
+    let res = url.trim();
+    if (res.startsWith('data:image')) return res;
+    if (res.startsWith('/api/')) {
+      const base = (environment.apiUrl || 'http://localhost:8080/api').replace(/\/api\/?$/, '');
+      return `${base}${res}`;
+    }
+    if (res.startsWith('https://localhost/api/') || (res.startsWith('http://localhost/api/') && !res.startsWith('http://localhost:8080/api/'))) {
+      const path = res.replace(/^https?:\/\/localhost/, '');
+      const base = (environment.apiUrl || 'http://localhost:8080/api').replace(/\/api\/?$/, '');
+      return `${base}${path}`;
+    }
+    return res;
+  }
+
   private loadTicketBusinessInfo(): void {
     if (!this.tenantId) {
       return;
@@ -2557,7 +2573,7 @@ export class ComandixComponent implements OnInit, OnDestroy {
         this.ticketBusinessName = t?.bussinessName || t?.nombreNegocio || 'Lealtix';
         this.ticketBusinessAddress = t?.direccion || '';
         this.ticketBusinessPhone = t?.telefono || '';
-        this.ticketBusinessLogo = t?.logoUrl || '';
+        this.ticketBusinessLogo = this.normalizarUrlImagen(t?.logoUrl || '');
         this.ticketLogoMode = t?.ticketLogoMode || 'HEADER';
       },
       error: () => {

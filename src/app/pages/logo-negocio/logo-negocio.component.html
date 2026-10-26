@@ -10,7 +10,7 @@
       <div>
         <h1 class="page-title">Logotipo del Establecimiento</h1>
         <p class="page-subtitle">
-          Configura el logotipo oficial de tu negocio. Se guardará en la base de datos y se imprimirá automáticamente como marca de agua en todos los tickets térmicos.
+          Configura el logotipo oficial de tu negocio para que se imprima automáticamente en los tickets.
         </p>
       </div>
     </div>
@@ -76,7 +76,7 @@
             [disabled]="guardando() || (!selectedFile() && !previewLogoUrl())"
           >
             <i class="pi" [class.pi-spin]="guardando()" [class.pi-spinner]="guardando()" [class.pi-check]="!guardando()"></i>
-            <span>{{ guardando() ? 'Guardando en BD...' : 'Guardar en Base de Datos' }}</span>
+            <span>{{ guardando() ? 'Guardando...' : 'Guardar' }}</span>
           </button>
 
           <button
@@ -210,7 +210,7 @@
         <div class="card-header">
           <h2 class="card-title">Logotipo Actual</h2>
           <span class="badge-tag" *ngIf="activeLogo">
-            {{ previewLogoUrl() ? 'Vista previa seleccionada' : 'Guardado en PostgreSQL' }}
+            {{ previewLogoUrl() ? 'Vista previa seleccionada' : 'Activo' }}
           </span>
         </div>
 
@@ -233,12 +233,8 @@
         <div class="logo-meta" *ngIf="activeLogo">
           <div class="meta-item">
             <span class="meta-label">Estado:</span>
-            <span class="meta-value text-emerald-600 font-bold" *ngIf="!previewLogoUrl()">Sincronizado con BD</span>
+            <span class="meta-value text-emerald-600 font-bold" *ngIf="!previewLogoUrl()">Guardado</span>
             <span class="meta-value text-amber-600 font-bold" *ngIf="previewLogoUrl()">Listo para guardar</span>
-          </div>
-          <div class="meta-item" *ngIf="currentLogoUrl()">
-            <span class="meta-label">Ruta / URL:</span>
-            <span class="meta-value text-slate-500 truncate max-w-xs" [title]="currentLogoUrl()">{{ currentLogoUrl() }}</span>
           </div>
         </div>
       </div>

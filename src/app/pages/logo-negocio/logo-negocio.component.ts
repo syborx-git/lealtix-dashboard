@@ -6,6 +6,7 @@ import { ToastModule } from 'primeng/toast';
 import { TenantService } from '@/pages/admin-page/service/tenant.service';
 import { ImageService } from '@/pages/service/image.service';
 import { QRCodeComponent } from 'angularx-qrcode';
+import { environment } from '@/pages/commons/environment';
 
 @Component({
   selector: 'app-logo-negocio',
@@ -48,6 +49,24 @@ export class LogoNegocioComponent implements OnInit {
     return `${this.invoiceBaseUrl}${this.simulatedOrderId}`;
   }
 
+  normalizarUrlImagen(url: string): string {
+    if (!url) return '';
+    let res = url.trim();
+    if (res.startsWith('data:image')) return res;
+    // Si viene como URL relativa (/api/...)
+    if (res.startsWith('/api/')) {
+      const base = (environment.apiUrl || 'http://localhost:8080/api').replace(/\/api\/?$/, '');
+      return `${base}${res}`;
+    }
+    // Si viene como https://localhost/api/ o http://localhost/api/ sin puerto 8080 en dev
+    if (res.startsWith('https://localhost/api/') || (res.startsWith('http://localhost/api/') && !res.startsWith('http://localhost:8080/api/'))) {
+      const path = res.replace(/^https?:\/\/localhost/, '');
+      const base = (environment.apiUrl || 'http://localhost:8080/api').replace(/\/api\/?$/, '');
+      return `${base}${path}`;
+    }
+    return res;
+  }
+
   ngOnInit(): void {
     this.resolverTenantId();
     this.cargarDatosNegocio();
@@ -78,7 +97,7 @@ export class LogoNegocioComponent implements OnInit {
           this.businessAddress.set(t.direccion || '');
           this.businessPhone.set(t.telefono || '');
           this.slogan.set(t.slogan || '');
-          this.currentLogoUrl.set(t.logoUrl || '');
+          this.currentLogoUrl.set(this.normalizarUrlImagen(t.logoUrl || ''));
           this.ticketLogoMode.set((t.ticketLogoMode as any) || 'HEADER');
           this.previewLogoUrl.set('');
           this.selectedFile.set(null);
@@ -182,7 +201,7 @@ export class LogoNegocioComponent implements OnInit {
       ).subscribe({
         next: (savedUrl: string) => {
           this.guardando.set(false);
-          const cleanUrl = String(savedUrl || '').trim();
+          const cleanUrl = this.normalizarUrlImagen(savedUrl);
           this.currentLogoUrl.set(cleanUrl);
           this.previewLogoUrl.set('');
           this.selectedFile.set(null);
@@ -193,7 +212,7 @@ export class LogoNegocioComponent implements OnInit {
           this.messageService.add({
             severity: 'success',
             summary: '¡Logo Guardado!',
-            detail: 'El logotipo fue guardado exitosamente en la base de datos y se mostrará en los tickets.',
+            detail: 'El logotipo fue guardado exitosamente y se mostrará en los tickets.',
             life: 4000
           });
         },
@@ -219,7 +238,7 @@ export class LogoNegocioComponent implements OnInit {
       ).subscribe({
         next: (savedUrl: string) => {
           this.guardando.set(false);
-          const cleanUrl = String(savedUrl || '').trim();
+          const cleanUrl = this.normalizarUrlImagen(savedUrl);
           this.currentLogoUrl.set(cleanUrl);
           this.previewLogoUrl.set('');
           this.actualizarTenantConLogo(cleanUrl);
@@ -227,7 +246,7 @@ export class LogoNegocioComponent implements OnInit {
           this.messageService.add({
             severity: 'success',
             summary: '¡Logo Guardado!',
-            detail: 'El logotipo fue guardado en la base de datos.',
+            detail: 'El logotipo fue guardado exitosamente.',
             life: 4000
           });
         },
@@ -236,7 +255,7 @@ export class LogoNegocioComponent implements OnInit {
           this.messageService.add({
             severity: 'error',
             summary: 'Error al guardar',
-            detail: 'Hubo un error al guardar la imagen en el servidor.',
+            detail: 'Hubo un error al guardar la imagen. Intenta de nuevo.',
             life: 5000
           });
         }
@@ -331,7 +350,7 @@ export class LogoNegocioComponent implements OnInit {
               this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
-                detail: 'No se pudo eliminar el logotipo en la base de datos.',
+                detail: 'No se pudo eliminar el logotipo. Intenta de nuevo.',
                 life: 4000
               });
             }
