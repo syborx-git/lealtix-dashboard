@@ -474,21 +474,31 @@
 
             <!-- Caso ALIMENTO -->
             <div *ngIf="manualTipo() === 'alimento'" class="flex flex-col gap-3">
+                <div class="flex align-items-center gap-2 mb-1">
+                    <p-checkbox [(ngModel)]="manualTieneVariantes" [binary]="true" inputId="chkManualAlimentoVariantes"></p-checkbox>
+                    <label for="chkManualAlimentoVariantes" class="text-sm font-semibold text-800 cursor-pointer">
+                        ¿Tiene opciones / variantes? (ej. sabores, tamaños, marcas)
+                    </label>
+                </div>
+                <small class="text-500 block -mt-2 ml-6 text-xs" *ngIf="manualTieneVariantes">
+                    Al activar variantes, no es obligatorio un precio base aquí; el precio se definirá individualmente por cada variante en Comandix.
+                </small>
+
                 <div>
                     <label class="block text-sm font-semibold mb-1 text-800">
-                        Precio de venta al público (MXN) <span class="text-red-500">*</span>
+                        Precio de venta al público (MXN) <span class="text-red-500" *ngIf="!manualTieneVariantes">*</span>
                     </label>
                     <p-inputnumber [(ngModel)]="manualAlimentoPrecio" [min]="0" [mode]="'currency'"
-                        currency="MXN" locale="es-MX" styleClass="w-full" placeholder="$0.00" />
-                    <small class="text-red-500 block mt-1" *ngIf="manualSubmitted && (manualAlimentoPrecio == null || manualAlimentoPrecio < 0)">
-                        El precio de venta es obligatorio.
+                        currency="MXN" locale="es-MX" styleClass="w-full" placeholder="$0.00" [disabled]="manualTieneVariantes" />
+                    <small class="text-red-500 block mt-1" *ngIf="manualSubmitted && !manualTieneVariantes && (manualAlimentoPrecio == null || manualAlimentoPrecio < 0)">
+                        El precio de venta es obligatorio si no tiene variantes.
                     </small>
                 </div>
 
                 <div class="flex align-items-center gap-2 mt-1">
                     <p-checkbox [(ngModel)]="manualAlimentoEsVariable" [binary]="true" inputId="chkManualVariable"></p-checkbox>
                     <label for="chkManualVariable" class="text-sm text-700 cursor-pointer">
-                        ¿Es artículo variable / variante? (Opcional, para recetas)
+                        ¿Es artículo variable / variante de otro platillo? (Opcional, para recetas)
                     </label>
                 </div>
                 <small class="text-500 block -mt-1 ml-6 text-xs" *ngIf="manualAlimentoEsVariable">
@@ -503,15 +513,25 @@
 
             <!-- Caso BEBIDA -->
             <div *ngIf="manualTipo() === 'bebida'" class="flex flex-col gap-3">
+                <div class="flex align-items-center gap-2 mb-1">
+                    <p-checkbox [(ngModel)]="manualTieneVariantes" [binary]="true" inputId="chkManualBebidaVariantes"></p-checkbox>
+                    <label for="chkManualBebidaVariantes" class="text-sm font-semibold text-800 cursor-pointer">
+                        ¿Tiene opciones / variantes? (ej. marcas como Ojo de Tigre, 400 Conejos)
+                    </label>
+                </div>
+                <small class="text-500 block -mt-2 ml-6 text-xs" *ngIf="manualTieneVariantes">
+                    Al activar variantes, no es obligatorio un precio base aquí; el precio se definirá individualmente por cada variante en Comandix.
+                </small>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-sm font-semibold mb-1 text-800">
-                            Precio de venta al público (MXN) <span class="text-red-500">*</span>
+                            Precio de venta al público (MXN) <span class="text-red-500" *ngIf="!manualTieneVariantes">*</span>
                         </label>
                         <p-inputnumber [(ngModel)]="manualBebidaPrecio" [min]="0" [mode]="'currency'"
-                            currency="MXN" locale="es-MX" styleClass="w-full" placeholder="$0.00" />
-                        <small class="text-red-500 block mt-1" *ngIf="manualSubmitted && (manualBebidaPrecio == null || manualBebidaPrecio < 0)">
-                            El precio de venta es obligatorio.
+                            currency="MXN" locale="es-MX" styleClass="w-full" placeholder="$0.00" [disabled]="manualTieneVariantes" />
+                        <small class="text-red-500 block mt-1" *ngIf="manualSubmitted && !manualTieneVariantes && (manualBebidaPrecio == null || manualBebidaPrecio < 0)">
+                            El precio de venta es obligatorio si no tiene variantes.
                         </small>
                     </div>
 
@@ -522,6 +542,16 @@
                         <p-select [options]="bebidaUnidades" [(ngModel)]="manualBebidaUnidad" styleClass="w-full" />
                     </div>
                 </div>
+
+                <div class="flex align-items-center gap-2 mt-1">
+                    <p-checkbox [(ngModel)]="manualBebidaEsVariable" [binary]="true" inputId="chkManualBebidaEsVariable"></p-checkbox>
+                    <label for="chkManualBebidaEsVariable" class="text-sm text-700 cursor-pointer">
+                        ¿Es artículo variable / variante de otra bebida? (ej. Botella para sub-variante)
+                    </label>
+                </div>
+                <small class="text-500 block -mt-1 ml-6 text-xs" *ngIf="manualBebidaEsVariable">
+                    Al activarse, este artículo funcionará como variante de marca/etiqueta y se integrará en el selector de variantes de Comandix.
+                </small>
 
                 <div class="info-alert p-3 border-round-lg flex align-items-center gap-2 bg-teal-50 text-teal-900 text-xs mt-2">
                     <i class="pi pi-info-circle text-base text-teal-600"></i>

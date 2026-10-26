@@ -13,4 +13,5 @@ export interface Product {
     categoryIds?: number[];
     categories?: { id: number; name: string }[];
     esVariable?: boolean;
+    tieneVariantes?: boolean;
 }

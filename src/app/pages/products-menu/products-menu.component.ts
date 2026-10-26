@@ -227,6 +227,8 @@ export class ProductMenuComponent implements OnInit {
     manualTipo = signal<'alimento' | 'bebida' | 'insumo' | null>(null);
 
     // Campos dinámicos por tipo
+    manualTieneVariantes: boolean = false;
+
     manualAlimentoPrecio: number | null = null;
     manualAlimentoEsVariable: boolean = false;
 
@@ -234,6 +236,7 @@ export class ProductMenuComponent implements OnInit {
     manualBebidaPrecio: number | null = null;
     manualBebidaStock: number = 0;
     manualBebidaStockMin: number = 0;
+    manualBebidaEsVariable: boolean = false;
 
     manualInsumoUnidad: string = 'pieza';
     manualInsumoStock: number = 0;
@@ -288,7 +291,8 @@ export class ProductMenuComponent implements OnInit {
             productImage: [null], // store actual File/Blob for upload
             isActive: [true],
             autoAvailability: [true],
-            esVariable: [false]
+            esVariable: [false],
+            tieneVariantes: [false]
         });
     }
 
@@ -962,6 +966,7 @@ export class ProductMenuComponent implements OnInit {
         this.manualCategoryPicker = null;
         this.manualTipo.set(null);
 
+        this.manualTieneVariantes = false;
         this.manualAlimentoPrecio = null;
         this.manualAlimentoEsVariable = false;
 
@@ -969,6 +974,7 @@ export class ProductMenuComponent implements OnInit {
         this.manualBebidaPrecio = null;
         this.manualBebidaStock = 0;
         this.manualBebidaStockMin = 3;
+        this.manualBebidaEsVariable = false;
 
         this.manualInsumoUnidad = 'pieza';
         this.manualInsumoStock = 0;
@@ -1046,7 +1052,7 @@ export class ProductMenuComponent implements OnInit {
         }
 
         if (tipo === 'alimento') {
-            if (this.manualAlimentoPrecio == null || this.manualAlimentoPrecio < 0) {
+            if (!this.manualTieneVariantes && (this.manualAlimentoPrecio == null || this.manualAlimentoPrecio < 0)) {
                 this.messageService.add({
                     severity: 'warn',
                     summary: 'Validación',
@@ -1062,10 +1068,11 @@ export class ProductMenuComponent implements OnInit {
                 tenantId: this.tenantId,
                 name: this.manualNombre.trim(),
                 description: this.manualDescripcion.trim(),
-                price: this.manualAlimentoPrecio,
+                price: this.manualTieneVariantes ? 0 : (this.manualAlimentoPrecio || 0),
                 isActive: true,
                 autoAvailability: true,
                 esVariable: !!this.manualAlimentoEsVariable,
+                tieneVariantes: !!this.manualTieneVariantes,
                 imageUrl: ''
             };
 
@@ -1095,7 +1102,7 @@ export class ProductMenuComponent implements OnInit {
             });
 
         } else if (tipo === 'bebida') {
-            if (this.manualBebidaPrecio == null || this.manualBebidaPrecio < 0) {
+            if (!this.manualTieneVariantes && (this.manualBebidaPrecio == null || this.manualBebidaPrecio < 0)) {
                 this.messageService.add({
                     severity: 'warn',
                     summary: 'Validación',
@@ -1112,8 +1119,10 @@ export class ProductMenuComponent implements OnInit {
                 this.manualBebidaUnidad || 'pieza',
                 0,
                 3,
-                this.manualBebidaPrecio,
-                this.manualCategoryIds
+                this.manualTieneVariantes ? 0 : (this.manualBebidaPrecio || 0),
+                this.manualCategoryIds,
+                !!this.manualBebidaEsVariable,
+                !!this.manualTieneVariantes
             ).subscribe({
                 next: () => {
                     this.messageService.add({
@@ -1783,7 +1792,7 @@ export class ProductMenuComponent implements OnInit {
         (this.product as any).categories = [];
         this.submitted = false;
         // reset product form (clear productImage as well)
-        this.productForm.reset({ id: null, name: '', description: '', price: null, img_url: '', productImage: null, isActive: true, autoAvailability: true, esVariable: false });
+        this.productForm.reset({ id: null, name: '', description: '', price: null, img_url: '', productImage: null, isActive: true, autoAvailability: true, esVariable: false, tieneVariantes: false });
         // ensure preview and internal file reference are cleared when creating new
         this.productImagePreview = null;
         this.productForm.get('productImage')?.setValue(null);
@@ -1808,7 +1817,8 @@ export class ProductMenuComponent implements OnInit {
             productImage: null,
             isActive: true,
             autoAvailability: true,
-            esVariable: false
+            esVariable: false,
+            tieneVariantes: false
         });
         // ensure preview and internal file reference are cleared when creating new
         this.productImagePreview = null;
@@ -1836,7 +1846,8 @@ export class ProductMenuComponent implements OnInit {
             img_url: product.imageUrl ?? '',
             isActive: product.isActive ?? true,
             autoAvailability: (product as any).autoAvailability ?? true,
-            esVariable: (product as any).esVariable ?? false
+            esVariable: (product as any).esVariable ?? false,
+            tieneVariantes: (product as any).tieneVariantes ?? false
         });
         this.productForm.get('productImage')?.setValue(null);
         this.productImagePreview = product.imageUrl ?? null;
@@ -2003,13 +2014,18 @@ export class ProductMenuComponent implements OnInit {
             return;
         }
 
+        const prod = this.productForm.value;
+        const tieneVariantes = !!prod.tieneVariantes;
+        if (tieneVariantes && (prod.price == null || prod.price < 0)) {
+            this.productForm.get('price')?.setValue(0);
+        }
+
         this.productForm.markAllAsTouched();
-        if (this.productForm.invalid) {
+        if (this.productForm.invalid && !tieneVariantes) {
             this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'Complete los campos requeridos del producto', life: 3000 });
             return;
         }
 
-        const prod = this.productForm.value;
         const imgFile: File | Blob | null = this.productForm.get('productImage')?.value || null;
 
         const selectedCategoryId = categoryIds[0];
@@ -2034,10 +2050,11 @@ export class ProductMenuComponent implements OnInit {
                 tenantId: this.tenantId,
                 name: prod.name,
                 description: prod.description,
-                price: prod.price,
+                price: tieneVariantes ? 0 : prod.price,
                 isActive: prod.isActive,
                 autoAvailability: prod.autoAvailability ?? true,
                 esVariable: !!prod.esVariable,
+                tieneVariantes: tieneVariantes,
                 imageUrl: imageUrl ?? prod.img_url
             } as any;
             this.startLoading();

@@ -59,12 +59,31 @@ export class InventoryService {
     return this.http.get<any>(`${this.baseUrl}/bebidas/tenant/${tenantId}`);
   }
 
-createBebida(tenantId: number, nombre: string, unidad: string, stock: number, stockMinimo: number, precioVenta: number, categoryIds?: number[]): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/bebidas`, { tenantId, nombre, unidad, stock, stockMinimo, precioVenta, categoryIds: categoryIds ?? [] });
+  createBebida(tenantId: number, nombre: string, unidad: string, stock: number, stockMinimo: number, precioVenta: number, categoryIds?: number[], esVariable?: boolean, tieneVariantes?: boolean): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/bebidas`, {
+      tenantId,
+      nombre,
+      unidad,
+      stock,
+      stockMinimo,
+      precioVenta,
+      categoryIds: categoryIds ?? [],
+      esVariable: !!esVariable,
+      tieneVariantes: !!tieneVariantes
+    });
   }
 
-  updateBebida(insumoId: number, nombre: string, unidad: string, stock: number, stockMinimo: number, precioVenta: number, categoryIds?: number[]): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/bebidas/${insumoId}`, { nombre, unidad, stock, stockMinimo, precioVenta, categoryIds: categoryIds ?? [] });
+  updateBebida(insumoId: number, nombre: string, unidad: string, stock: number, stockMinimo: number, precioVenta: number, categoryIds?: number[], esVariable?: boolean, tieneVariantes?: boolean): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/bebidas/${insumoId}`, {
+      nombre,
+      unidad,
+      stock,
+      stockMinimo,
+      precioVenta,
+      categoryIds: categoryIds ?? [],
+      esVariable: esVariable !== undefined ? !!esVariable : undefined,
+      tieneVariantes: tieneVariantes !== undefined ? !!tieneVariantes : undefined
+    });
   }
 
   deleteBebida(insumoId: number): Observable<any> {

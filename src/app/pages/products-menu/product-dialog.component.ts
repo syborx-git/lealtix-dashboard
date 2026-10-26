@@ -71,11 +71,11 @@ import { TreeNode } from 'primeng/api';
                     <div class="form-row">
                         <div class="form-col">
                             <div class="flex align-items-center justify-between mb-2">
-                                <label for="price" class="field-label">Precio</label>
-                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Ingresa el precio en pesos mexicanos. Si el producto tiene variaciones, define el precio base aquí." tooltipPosition="top" appTouchTooltip></button>
+                                <label for="price" class="field-label">Precio {{ productForm?.get('tieneVariantes')?.value ? '(Definido por variantes)' : '' }}</label>
+                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Ingresa el precio en pesos mexicanos. Si el producto tiene variantes activadas, cada variante establecerá su propio precio." tooltipPosition="top" appTouchTooltip></button>
                             </div>
-                            <p-inputnumber id="price" formControlName="price" mode="currency" currency="MXN" locale="en-US" class="w-full" />
-                            <p-message *ngIf="productForm?.get('price')?.invalid && (productForm.get('price')?.touched || submitted)" severity="error" [text]="'Precio es requerido'"></p-message>
+                            <p-inputnumber id="price" formControlName="price" mode="currency" currency="MXN" locale="en-US" class="w-full" [disabled]="productForm?.get('tieneVariantes')?.value" />
+                            <p-message *ngIf="!productForm?.get('tieneVariantes')?.value && productForm?.get('price')?.invalid && (productForm.get('price')?.touched || submitted)" severity="error" [text]="'Precio es requerido'"></p-message>
                         </div>
 
                         <div class="form-col form-col-narrow">
@@ -93,6 +93,14 @@ import { TreeNode } from 'primeng/api';
                             <div class="flex align-items-center gap-2">
                                 <p-checkbox formControlName="autoAvailability" binary="true" inputId="autoAvailability" (onChange)="onAutoAvailabilityChange($event.checked)"></p-checkbox>
                                 <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Si está activo, el producto se oculta automáticamente del menú cuando no hay insumos suficientes para prepararlo, y se vuelve a mostrar cuando se abastece. Desactívalo para controlar 'Activo' manualmente." tooltipPosition="top" appTouchTooltip></button>
+                            </div>
+                        </div>
+
+                        <div class="form-field" style="flex:1">
+                            <label for="tieneVariantes" class="field-label">¿Tiene variantes?</label>
+                            <div class="flex align-items-center gap-2">
+                                <p-checkbox formControlName="tieneVariantes" binary="true" inputId="tieneVariantes" (onChange)="onTieneVariantesChange($event.checked)"></p-checkbox>
+                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Marca si este producto se compone de variantes (ej. Mezcal con marcas/etiquetas como Ojo de Tigre, 400 Conejos). Al marcarlo no requiere precio base y desplegará selector de variantes en Comandix." tooltipPosition="top" appTouchTooltip></button>
                             </div>
                         </div>
 
@@ -616,6 +624,15 @@ export class ProductDialogComponent implements OnChanges {
                         // ignore if unable to set
                     }
                 }
+
+                const tieneVariantesControl = this.productForm.get('tieneVariantes');
+                if (tieneVariantesControl) {
+                    try {
+                        tieneVariantesControl.setValue(!!this.product.tieneVariantes, { emitEvent: false });
+                    } catch (e) {
+                        // ignore if unable to set
+                    }
+                }
             }
 
             this.resetCrossSellingDraft();
@@ -661,6 +678,25 @@ export class ProductDialogComponent implements OnChanges {
             this.product = this.product || {};
             this.product.autoAvailability = value;
             this.autoAvailabilityChange.emit(value);
+        }
+    }
+
+    onTieneVariantesChange(value: boolean) {
+        if (this.productForm && this.productForm.get && this.productForm.get('tieneVariantes')) {
+            try {
+                this.productForm.get('tieneVariantes').setValue(value);
+                if (value) {
+                    const priceCtrl = this.productForm.get('price');
+                    if (priceCtrl && (priceCtrl.value == null || priceCtrl.value === 0)) {
+                        priceCtrl.setValue(0);
+                    }
+                }
+            } catch (e) {
+                // ignore
+            }
+        } else {
+            this.product = this.product || {};
+            this.product.tieneVariantes = value;
         }
     }
 

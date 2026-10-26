@@ -2753,6 +2753,7 @@ export class ComandixComponent implements OnInit, OnDestroy {
         (r: any) => r.tipoIngrediente !== 'VARIANTE' && !r.isVariant && r.grupo !== 'VARIANTE'
       );
 
+      const hasVariantsFlag = !!product.tieneVariantes || allVariants.length > 0;
       const mappedProduct: Product = {
         id: Number(product.id ?? 0),
         name: product.name || product.productName || 'Producto',
@@ -2762,7 +2763,9 @@ export class ComandixComponent implements OnInit, OnDestroy {
         categoryName: categoryName,
         recipes: regularRecipes as IngredientOption[],
         additionals: regularAdditionals as IngredientOption[],
-        variants: allVariants
+        variants: allVariants,
+        tieneVariantes: hasVariantsFlag,
+        esVariable: !!product.esVariable
       };
 
       // Multicategoría: el producto aparece en TODAS sus categorías (principal + extras).

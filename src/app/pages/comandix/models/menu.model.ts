@@ -15,6 +15,8 @@ export interface Product {
   additionals?: IngredientOption[];
   /** Variantes del producto para selección en modal con cards */
   variants?: VariantOption[];
+  esVariable?: boolean;
+  tieneVariantes?: boolean;
 }
 
 export interface IngredientOption {
