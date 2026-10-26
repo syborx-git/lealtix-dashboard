@@ -5,6 +5,9 @@
       <img *ngIf="businessLogo" [src]="businessLogo" class="ticket-watermark" alt="Logo Watermark" />
 
       <div class="ticket-header">
+        <div *ngIf="businessLogo" class="ticket-logo-box">
+          <img [src]="businessLogo" class="ticket-logo-header" alt="Logo Negocio" />
+        </div>
         <div class="ticket-business">{{ businessName }}</div>
         <div class="ticket-line" *ngIf="businessAddress">{{ businessAddress }}</div>
         <div class="ticket-line" *ngIf="businessPhone">Tel: {{ businessPhone }}</div>

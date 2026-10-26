@@ -112,6 +112,18 @@ export class TicketModalComponent {
               position: relative;
               z-index: 1;
             }
+            .ticket-logo-box {
+              text-align: center;
+              margin-bottom: 6px;
+            }
+            .ticket-logo-header {
+              max-width: 38mm;
+              max-height: 22mm;
+              object-fit: contain;
+              margin: 0 auto;
+              display: block;
+              filter: contrast(130%);
+            }
             .ticket-business { font-size: 13.5px; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1.2; margin-bottom: 2px; }
             .ticket-line { font-size: 10px; font-weight: 700; line-height: 1.25; }
             .ticket-type { font-size: 11px; font-weight: 900; text-transform: uppercase; margin-top: 3px; letter-spacing: 1px; }
@@ -159,10 +171,38 @@ export class TicketModalComponent {
       doc.open();
       doc.write(htmlContent);
       doc.close();
-      setTimeout(() => {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-      }, 250);
+
+      const doPrint = () => {
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } catch (e) {
+          console.warn('Error al imprimir ticket:', e);
+        }
+      };
+
+      // Esperar a que las imágenes (logo y QR) terminen de cargarse antes de abrir la ventana de impresión
+      const imgs = Array.from(doc.images || []);
+      if (imgs.length > 0) {
+        let loadedCount = 0;
+        const checkReady = () => {
+          loadedCount++;
+          if (loadedCount >= imgs.length) {
+            setTimeout(doPrint, 100);
+          }
+        };
+        imgs.forEach((img: HTMLImageElement) => {
+          if (img.complete) {
+            checkReady();
+          } else {
+            img.onload = checkReady;
+            img.onerror = checkReady;
+          }
+        });
+        setTimeout(doPrint, 1800);
+      } else {
+        setTimeout(doPrint, 200);
+      }
     }
   }
 

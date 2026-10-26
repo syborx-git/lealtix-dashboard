@@ -488,9 +488,12 @@
                 <div class="flex align-items-center gap-2 mt-1">
                     <p-checkbox [(ngModel)]="manualAlimentoEsVariable" [binary]="true" inputId="chkManualVariable"></p-checkbox>
                     <label for="chkManualVariable" class="text-sm text-700 cursor-pointer">
-                        Precio variable (se ajusta al momento de ordenar en comanda)
+                        ¿Es artículo variable / variante? (Opcional, para recetas)
                     </label>
                 </div>
+                <small class="text-500 block -mt-1 ml-6 text-xs" *ngIf="manualAlimentoEsVariable">
+                    Al activarse, este artículo se usará como sub-variante en recetas y no aparecerá directamente en el catálogo principal de Comandix.
+                </small>
 
                 <div class="info-alert p-3 border-round-lg flex align-items-center gap-2 bg-indigo-50 text-indigo-900 text-xs mt-2">
                     <i class="pi pi-info-circle text-base text-indigo-600"></i>
@@ -520,20 +523,9 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-sm font-semibold mb-1 text-800">Stock inicial</label>
-                        <p-inputnumber [(ngModel)]="manualBebidaStock" [min]="0" [step]="1" styleClass="w-full" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold mb-1 text-800">Stock mínimo (alerta)</label>
-                        <p-inputnumber [(ngModel)]="manualBebidaStockMin" [min]="0" [step]="1" styleClass="w-full" />
-                    </div>
-                </div>
-
                 <div class="info-alert p-3 border-round-lg flex align-items-center gap-2 bg-teal-50 text-teal-900 text-xs mt-2">
                     <i class="pi pi-info-circle text-base text-teal-600"></i>
-                    <span>Esta bebida se ofrecerá en el menú / Comandix, descontará stock y sus órdenes se despacharán en <strong>Barra</strong>.</span>
+                    <span>Esta bebida se ofrecerá en el menú / Comandix (Barra). Se activará automáticamente el código <strong>8-5</strong> (crítico al quedar ≤ 3 piezas) y <strong>8-6</strong> (agotado al llegar a 0).</span>
                 </div>
             </div>
 

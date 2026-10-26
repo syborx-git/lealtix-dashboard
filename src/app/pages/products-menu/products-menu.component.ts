@@ -968,7 +968,7 @@ export class ProductMenuComponent implements OnInit {
         this.manualBebidaUnidad = 'pieza';
         this.manualBebidaPrecio = null;
         this.manualBebidaStock = 0;
-        this.manualBebidaStockMin = 0;
+        this.manualBebidaStockMin = 3;
 
         this.manualInsumoUnidad = 'pieza';
         this.manualInsumoStock = 0;
@@ -1110,8 +1110,8 @@ export class ProductMenuComponent implements OnInit {
                 this.tenantId,
                 this.manualNombre.trim(),
                 this.manualBebidaUnidad || 'pieza',
-                this.manualBebidaStock || 0,
-                this.manualBebidaStockMin || 0,
+                0,
+                3,
                 this.manualBebidaPrecio,
                 this.manualCategoryIds
             ).subscribe({
