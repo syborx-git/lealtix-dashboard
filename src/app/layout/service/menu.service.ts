@@ -103,8 +103,7 @@ export class MenuService {
                 label: 'Gestión de Equipo',
                 icon: 'pi pi-fw pi-users',
                 items: [
-                    { label: 'Gestión de Equipo', icon: 'pi pi-fw pi-id-card', routerLink: ['/dashboard/users'], roles: ['ADMIN'], requiredPermissions: ['view_users', 'manage_user_roles'] },
-                    { label: 'Horarios', icon: 'pi pi-fw pi-clock', routerLink: ['/dashboard/horarios'], roles: ['ADMIN'], requiredPermissions: ['manage_horarios'] }
+                    { label: 'Gestión de Equipo', icon: 'pi pi-fw pi-id-card', routerLink: ['/dashboard/users'], roles: ['ADMIN'], requiredPermissions: ['view_users', 'manage_user_roles'] }
                 ]
             },
             {
