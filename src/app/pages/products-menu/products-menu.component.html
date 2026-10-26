@@ -23,11 +23,9 @@
 
 <p-toolbar styleClass="mb-4">
     <ng-template pTemplate="start">
-        <div class="toolbar-actions">
-            <p-button label="Agregar Producto" icon="pi pi-plus" styleClass="add-btn" (onClick)="openNew()"></p-button>
-            <p-button label="Agregar Insumo" icon="pi pi-plus" styleClass="add-btn" (onClick)="openNewInsumo()"></p-button>
-            <p-button label="Agregar Bebida" icon="pi pi-plus" styleClass="add-btn" (onClick)="openNewBebida()"></p-button>
-            <p-button label="Cargar Menú" icon="pi pi-file-excel" styleClass="upload-btn" (onClick)="uploadMenu()"></p-button>
+        <div class="toolbar-actions-two">
+            <p-button label="Carga manual" icon="pi pi-plus" styleClass="manual-btn" (onClick)="openManualCreate()"></p-button>
+            <p-button label="Carga con Excel" icon="pi pi-file-excel" styleClass="upload-btn" (onClick)="uploadMenu()"></p-button>
         </div>
     </ng-template>
 </p-toolbar>
@@ -126,166 +124,467 @@
     <div class="global-loading-spinner">
         <p-progressSpinner strokeWidth="6" styleClass="custom-spinner"></p-progressSpinner>
     </div>
-</div>
+</div><div class="catalog-panel surface-card border-round-lg p-3">
+    <!-- BARRA DE FILTROS SUPERIOR Y BUSCADOR -->
+    <div class="catalog-filter-bar mb-3">
+        <div class="filter-controls-row flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="flex flex-wrap align-items-center gap-2 flex-1">
+                <!-- Dropdown selector de Tipo -->
+                <p-select
+                    [options]="availableTypeFilterOptions"
+                    [(ngModel)]="selectedTypeFilter"
+                    (ngModelChange)="addTypeFilter($event)"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Filtrar por tipo..."
+                    styleClass="filter-dropdown">
+                </p-select>
 
-<div class="catalog-panel surface-card border-round-lg p-3">
-    <div class="catalog-tabs mb-3">
-        <button type="button" class="catalog-tab"
-            [ngClass]="{ 'catalog-tab-active': activeTab() === 'products' }"
-            (click)="setActiveTab('products')">
-            <i class="pi pi-bars"></i>
-            <span>Productos</span>
-        </button>
-        <button type="button" class="catalog-tab"
-            [ngClass]="{ 'catalog-tab-active': activeTab() === 'insumos' }"
-            (click)="setActiveTab('insumos')">
-            <i class="pi pi-box"></i>
-            <span>Insumos</span>
-        </button>
-        <button type="button" class="catalog-tab"
-            [ngClass]="{ 'catalog-tab-active': activeTab() === 'bebidas' }"
-            (click)="setActiveTab('bebidas')">
-            <i class="pi pi-glass"></i>
-            <span>Bebidas</span>
-        </button>
-    </div>
+                <!-- Dropdown selector de Categorías -->
+                <p-select
+                    [options]="availableCategoryFilterOptions"
+                    [(ngModel)]="selectedCategoryFilter"
+                    (ngModelChange)="addCategoryFilter($event)"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Filtrar por categoría..."
+                    styleClass="filter-dropdown">
+                </p-select>
+            </div>
 
-    <p-table #dt [value]="activeTab() === 'products' ? products() : (activeTab() === 'bebidas' ? bebidas() : insumos())" [rows]="10" [first]="tableFirst"
-        (onPage)="onTablePage($event)" [columns]="cols" [paginator]="true"
-        [globalFilterFields]="activeTab() === 'products' ? ['name', 'description', 'categoryName'] : ['nombre', 'unidad']"
-        [tableStyle]="{ 'width': '100%', 'table-layout': 'fixed' }" [rowHover]="true" dataKey="id"
-        [showCurrentPageReport]="true"
-        [rowsPerPageOptions]="[10, 30, 50]" styleClass="p-datatable-sm catalog-table">
-        <ng-template #caption>
-            <div class="flex items-center justify-between">
-                <h5 class="m-0">{{ activeTab() === 'products' ? 'Productos del Menú' : (activeTab() === 'bebidas' ? 'Bebidas' : 'Insumos') }}</h5>
+            <!-- Buscador global por texto -->
+            <div class="filter-search-container">
                 <p-iconfield>
                     <p-inputicon styleClass="pi pi-search" />
-                    <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" />
+                    <input pInputText type="text" [value]="globalSearchText()" (input)="onSearchInputChange($event)"
+                        placeholder="Buscar por nombre o descripción..." class="search-input" />
                 </p-iconfield>
             </div>
-        </ng-template>
+        </div>
+
+        <!-- FILA DE PILLS ACTIVAS Y BOTÓN DE LIMPIAR -->
+        <div class="pills-container mt-3 pt-2 border-top-1 border-slate-200 flex flex-wrap align-items-center gap-2"
+            *ngIf="activePills().length > 0 || globalSearchText()">
+            <span class="pills-label text-xs font-bold text-600 uppercase tracking-wider mr-1">
+                <i class="pi pi-filter mr-1"></i>Filtros activos:
+            </span>
+
+            <!-- Pill de término de búsqueda -->
+            <span class="filter-pill pill-search" *ngIf="globalSearchText()">
+                <i class="pi pi-search"></i>
+                <span class="filter-pill-text">"{{ globalSearchText() }}"</span>
+                <button type="button" class="filter-pill-remove" (click)="globalSearchText.set('')" pTooltip="Quitar búsqueda" tooltipPosition="top">
+                    <i class="pi pi-times"></i>
+                </button>
+            </span>
+
+            <!-- Pills de filtros (tipo / categoría) -->
+            <span class="filter-pill" [ngClass]="'pill-' + pill.kind" *ngFor="let pill of activePills()">
+                <i [class]="pill.icon || 'pi pi-filter'"></i>
+                <span class="filter-pill-text">{{ pill.label }}</span>
+                <button type="button" class="filter-pill-remove" (click)="removePill(pill)" pTooltip="Quitar filtro" tooltipPosition="top">
+                    <i class="pi pi-times"></i>
+                </button>
+            </span>
+
+            <!-- Botón limpiar todos los filtros -->
+            <button type="button" class="filter-clear-all" (click)="clearAllFilters()" pTooltip="Quitar todos los filtros" tooltipPosition="top">
+                <i class="pi pi-times-circle"></i>
+                <span>Limpiar filtros</span>
+            </button>
+
+            <!-- Contador de resultados -->
+            <span class="filter-count-badge ml-auto">
+                {{ filteredCatalog().length }} artículo(s)
+            </span>
+        </div>
+    </div>
+
+    <!-- TABLA UNIFICADA DE ARTÍCULOS -->
+    <p-table #dt [value]="filteredCatalog()" [rows]="10" [first]="tableFirst"
+        (onPage)="onTablePage($event)" [paginator]="true"
+        [tableStyle]="{ 'width': '100%', 'table-layout': 'fixed' }" [rowHover]="true" dataKey="id"
+        [showCurrentPageReport]="true"
+        [rowsPerPageOptions]="[10, 25, 50]" styleClass="p-datatable-sm catalog-table">
+
         <ng-template #header>
             <tr>
-                <th [pSortableColumn]="activeTab() === 'products' ? 'name' : 'nombre'" style="width: 45%">
-                    {{ activeTab() === 'products' ? 'Producto' : (activeTab() === 'bebidas' ? 'Bebida' : 'Insumo') }}
-                    <p-sortIcon [field]="activeTab() === 'products' ? 'name' : 'nombre'" />
+                <th pSortableColumn="typeLabel" style="width: 22%">
+                    Tipo y Área <p-sortIcon field="typeLabel" />
                 </th>
-                <th style="width: 30%">
-                    Stock
+                <th pSortableColumn="name" style="width: 40%">
+                    Artículo y Categorías <p-sortIcon field="name" />
                 </th>
-                <th style="width: 25%">Acciones</th>
+                <th pSortableColumn="stock" style="width: 20%">
+                    Stock / Estado <p-sortIcon field="stock" />
+                </th>
+                <th style="width: 18%; text-align: center;">Acciones</th>
             </tr>
         </ng-template>
+
         <ng-template #body let-row>
-            <ng-container *ngIf="activeTab() === 'products'">
-                <tr class="fixed-row">
-                    <td style="width: 45%">
-                        <div class="font-medium text-900">{{ row.name }}</div>
-                        <div class="text-xs text-500">{{ row.price | currency: 'MXN' }}</div>
-                        <div class="flex flex-wrap gap-1 mt-1" *ngIf="rowCategories(row).length">
-                            <span class="cat-chip-mini" *ngFor="let c of visibleRowCategories(row)">{{ c.name }}</span>
-                            <button type="button" class="cat-chip-more" *ngIf="hiddenCategoryCount(row) > 0"
-                                (click)="toggleCategories(row)"
-                                [pTooltip]="isCategoryRowExpanded(row) ? 'Ocultar categorías' : 'Ver todas las categorías'"
-                                tooltipPosition="top">
-                                {{ isCategoryRowExpanded(row) ? 'ocultar' : '... +' + hiddenCategoryCount(row) }}
-                            </button>
-                        </div>
-                    </td>
-                    <td style="width: 30%">
-                        <span class="stock-badge" [ngClass]="stockBadgeClass(row)">{{ stockBadgeLabel(row) }}</span>
-                    </td>
-                    <td style="width: 25%">
-                        <p-button icon="pi pi-pencil" pTooltip="Editar" tooltipPosition="top" [rounded]="true"
-                            [outlined]="true" class="mr-2" (click)="editProduct(row)" />
-                        <p-button icon="pi pi-trash" severity="danger" pTooltip="Eliminar" tooltipPosition="top"
-                            [rounded]="true" [outlined]="true" (click)="deleteProduct(row)" />
-                    </td>
-                </tr>
-            </ng-container>
-            <ng-container *ngIf="activeTab() === 'bebidas'">
-                <tr class="fixed-row">
-                    <td style="width: 45%">
-                        <div class="font-medium text-900">{{ row.nombre }}</div>
-                        <div class="text-xs text-500">{{ row.unidad || 'pieza' }} · min {{ row.stockMinimo }} · {{ row.precioVenta | currency: 'MXN' }}</div>
-                        <div class="flex flex-wrap gap-1 mt-1" *ngIf="rowCategories(row).length">
-                            <span class="cat-chip-mini" *ngFor="let c of visibleRowCategories(row)">{{ c.name }}</span>
-                            <button type="button" class="cat-chip-more" *ngIf="hiddenCategoryCount(row) > 0"
-                                (click)="toggleCategories(row)"
-                                [pTooltip]="isCategoryRowExpanded(row) ? 'Ocultar categorías' : 'Ver todas las categorías'"
-                                tooltipPosition="top">
-                                {{ isCategoryRowExpanded(row) ? 'ocultar' : '... +' + hiddenCategoryCount(row) }}
-                            </button>
-                        </div>
-                    </td>
-                    <td style="width: 30%">
-                        <span class="stock-badge" [ngClass]="isLowStock(row) ? 'stock-low' : 'stock-ok'">
+            <tr class="fixed-row">
+                <!-- Columna 1: Tipo y Área -->
+                <td style="width: 22%">
+                    <span class="item-type-badge" [ngClass]="'type-' + row.itemType">
+                        <i class="pi" [ngClass]="row.itemType === 'alimento' ? 'pi-compass' : (row.itemType === 'bebida' ? 'pi-glass' : 'pi-box')"></i>
+                        <span>{{ row.typeLabel }} · {{ row.areaLabel }}</span>
+                    </span>
+                </td>
+
+                <!-- Columna 2: Artículo, Precio y Categorías -->
+                <td style="width: 40%">
+                    <div class="font-bold text-900 text-base">{{ row.name }}</div>
+                    <div class="text-sm font-semibold text-primary mt-1" *ngIf="row.price != null">
+                        {{ row.price | currency: 'MXN' }}
+                    </div>
+                    <div class="text-xs text-500 mt-1" *ngIf="row.price == null">
+                        Materia prima / Almacén
+                    </div>
+
+                    <!-- Chips de Categorías -->
+                    <div class="flex flex-wrap gap-1 mt-2" *ngIf="rowCategories(row).length">
+                        <span class="cat-chip-mini clickable-cat" *ngFor="let c of visibleRowCategories(row)"
+                            (click)="addCategoryFilter(c.id)"
+                            pTooltip="Clic para filtrar por esta categoría" tooltipPosition="top">
+                            <i class="pi pi-tag text-xs"></i> {{ c.name }}
+                        </span>
+                        <button type="button" class="cat-chip-more" *ngIf="hiddenCategoryCount(row) > 0"
+                            (click)="toggleCategories(row)"
+                            [pTooltip]="isCategoryRowExpanded(row) ? 'Ocultar categorías' : 'Ver todas las categorías'"
+                            tooltipPosition="top">
+                            {{ isCategoryRowExpanded(row) ? 'ocultar' : '... +' + hiddenCategoryCount(row) }}
+                        </button>
+                    </div>
+                </td>
+
+                <!-- Columna 3: Stock / Estado -->
+                <td style="width: 20%">
+                    <ng-container *ngIf="row.itemType === 'alimento'">
+                        <span class="stock-badge" *ngIf="row.stock != null" [ngClass]="stockBadgeClass(row.rawItem)">
+                            {{ stockBadgeLabel(row.rawItem) }}
+                        </span>
+                        <span class="stock-badge stock-kitchen" *ngIf="row.stock == null">
+                            <i class="pi pi-clock mr-1"></i>Bajo comanda
+                        </span>
+                    </ng-container>
+
+                    <ng-container *ngIf="row.itemType === 'bebida' || row.itemType === 'insumo'">
+                        <span class="stock-badge" [ngClass]="isLowStock(row.rawItem) ? 'stock-low' : 'stock-ok'">
                             {{ row.stock }} {{ row.unidad || 'pieza' }}
                         </span>
-                    </td>
-                    <td style="width: 25%">
-                        <p-button icon="pi pi-refresh" pTooltip="Reabastecer" tooltipPosition="top" [rounded]="true"
-                            [outlined]="true" class="mr-2" (click)="openBebidaRestock(row)"></p-button>
-                        <p-button icon="pi pi-pencil" pTooltip="Editar" tooltipPosition="top" [rounded]="true"
-                            [outlined]="true" class="mr-2" (click)="openEditBebida(row)"></p-button>
-                        <p-button icon="pi pi-trash" severity="danger" pTooltip="Eliminar" tooltipPosition="top"
-                            [rounded]="true" [outlined]="true" (click)="deleteBebida(row)"></p-button>
-                    </td>
-                </tr>
-            </ng-container>
-            <ng-container *ngIf="activeTab() === 'insumos'">
-                <tr class="fixed-row">
-                    <td style="width: 45%">
-                        <div class="font-medium text-900">{{ row.nombre }}</div>
-                        <div class="text-xs text-500">{{ row.unidad || 'pieza' }} · mín {{ row.stockMinimo }}</div>
-                        <div class="flex flex-wrap gap-1 mt-1" *ngIf="rowCategories(row).length">
-                            <span class="cat-chip-mini" *ngFor="let c of visibleRowCategories(row)">{{ c.name }}</span>
-                            <button type="button" class="cat-chip-more" *ngIf="hiddenCategoryCount(row) > 0"
-                                (click)="toggleCategories(row)"
-                                [pTooltip]="isCategoryRowExpanded(row) ? 'Ocultar categorías' : 'Ver todas las categorías'"
-                                tooltipPosition="top">
-                                {{ isCategoryRowExpanded(row) ? 'ocultar' : '... +' + hiddenCategoryCount(row) }}
-                            </button>
+                        <div class="text-xs text-500 mt-1" *ngIf="row.stockMinimo != null && row.stockMinimo > 0">
+                            Mínimo: {{ row.stockMinimo }} {{ row.unidad || 'pieza' }}
                         </div>
-                    </td>
-                    <td style="width: 30%">
-                        <span class="stock-badge" [ngClass]="isLowStock(row) ? 'stock-low' : 'stock-ok'">
-                            {{ row.stock }} {{ row.unidad || 'pieza' }}
-                        </span>
-                    </td>
-                    <td style="width: 25%">
-                        <p-button icon="pi pi-refresh" pTooltip="Reabastecer" tooltipPosition="top" [rounded]="true"
-                            [outlined]="true" class="mr-2" (click)="openInsumoRestock(row)"></p-button>
-                        <p-button icon="pi pi-pencil" pTooltip="Editar" tooltipPosition="top" [rounded]="true"
-                            [outlined]="true" class="mr-2" (click)="openEditInsumo(row)"></p-button>
-                        <p-button icon="pi pi-trash" severity="danger" pTooltip="Eliminar" tooltipPosition="top"
-                            [rounded]="true" [outlined]="true" (click)="deleteInsumo(row)"></p-button>
-                    </td>
-                </tr>
-            </ng-container>
+                    </ng-container>
+                </td>
+
+                <!-- Columna 4: Acciones -->
+                <td style="width: 18%; text-align: center;">
+                    <!-- Acciones para Alimento -->
+                    <ng-container *ngIf="row.itemType === 'alimento'">
+                        <p-button icon="pi pi-pencil" pTooltip="Editar platillo" tooltipPosition="top" [rounded]="true"
+                            [outlined]="true" class="mr-2" (onClick)="editProduct(row.rawItem)" />
+                        <p-button icon="pi pi-trash" severity="danger" pTooltip="Eliminar platillo" tooltipPosition="top"
+                            [rounded]="true" [outlined]="true" (onClick)="deleteProduct(row.rawItem)" />
+                    </ng-container>
+
+                    <!-- Acciones para Bebida -->
+                    <ng-container *ngIf="row.itemType === 'bebida'">
+                        <p-button icon="pi pi-refresh" pTooltip="Reabastecer stock" tooltipPosition="top" [rounded]="true"
+                            [outlined]="true" class="mr-2" (onClick)="openBebidaRestock(row.rawItem)" />
+                        <p-button icon="pi pi-pencil" pTooltip="Editar bebida" tooltipPosition="top" [rounded]="true"
+                            [outlined]="true" class="mr-2" (onClick)="openEditBebida(row.rawItem)" />
+                        <p-button icon="pi pi-trash" severity="danger" pTooltip="Eliminar bebida" tooltipPosition="top"
+                            [rounded]="true" [outlined]="true" (onClick)="deleteBebida(row.rawItem)" />
+                    </ng-container>
+
+                    <!-- Acciones para Insumo -->
+                    <ng-container *ngIf="row.itemType === 'insumo'">
+                        <p-button icon="pi pi-refresh" pTooltip="Reabastecer stock" tooltipPosition="top" [rounded]="true"
+                            [outlined]="true" class="mr-2" (onClick)="openInsumoRestock(row.rawItem)" />
+                        <p-button icon="pi pi-pencil" pTooltip="Editar insumo" tooltipPosition="top" [rounded]="true"
+                            [outlined]="true" class="mr-2" (onClick)="openEditInsumo(row.rawItem)" />
+                        <p-button icon="pi pi-trash" severity="danger" pTooltip="Eliminar insumo" tooltipPosition="top"
+                            [rounded]="true" [outlined]="true" (onClick)="deleteInsumo(row.rawItem)" />
+                    </ng-container>
+                </td>
+            </tr>
         </ng-template>
+
+        <!-- Estado vacío -->
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="3" class="text-center p-8">
+                <td colspan="4" class="text-center p-6">
                     <div class="empty-state">
-                        <i class="pi pi-box empty-state-icon"></i>
+                        <i class="pi empty-state-icon" [ngClass]="(activePills().length > 0 || globalSearchText()) ? 'pi-filter-slash' : 'pi-box'"></i>
                         <h3 class="empty-state-title">
-                            {{ activeTab() === 'products' ? 'No hay productos' : (activeTab() === 'bebidas' ? 'No hay bebidas' : 'No hay insumos') }}
+                            {{ (activePills().length > 0 || globalSearchText()) ? 'No se encontraron artículos con los filtros aplicados' : 'No hay artículos registrados aún' }}
                         </h3>
                         <p class="empty-state-description">
-                            {{ activeTab() === 'products'
-                                ? 'Agrega tu primer producto para empezar a mostrar tu menú.'
-                                : (activeTab() === 'bebidas'
-                                    ? 'Agrega bebidas para venderlas en tu carta y registrarlas en el inventario.'
-                                    : 'Agrega insumos para armar las recetas de tus productos.') }}
+                            {{ (activePills().length > 0 || globalSearchText())
+                                ? 'Prueba cancelando alguna de las etiquetas (pills) de búsqueda para ver más resultados.'
+                                : 'Usa el botón "Carga manual" para registrar tu primer platillo, bebida o insumo, o importa tu catálogo mediante Excel.' }}
                         </p>
+                        <div class="mt-3" *ngIf="activePills().length > 0 || globalSearchText()">
+                            <p-button label="Limpiar filtros" icon="pi pi-filter-slash" severity="secondary" [outlined]="true" (onClick)="clearAllFilters()"></p-button>
+                        </div>
                     </div>
                 </td>
             </tr>
         </ng-template>
     </p-table>
 </div>
+
+<!-- Diálogo de Carga Manual de Artículo -->
+<p-dialog
+    [(visible)]="manualDialogVisible"
+    [modal]="true"
+    [style]="{ width: '46rem', maxWidth: '95vw' }"
+    styleClass="manual-create-dialog minimal-modal"
+    [dismissableMask]="true"
+    (onHide)="closeManualDialog()">
+
+    <ng-template pTemplate="header">
+        <div class="flex align-items-center gap-3">
+            <div class="modal-header-icon flex align-items-center justify-content-center border-circle bg-indigo-50"
+                 style="width: 2.75rem; height: 2.75rem;">
+                <i class="pi pi-plus-circle text-2xl text-indigo-600"></i>
+            </div>
+            <div>
+                <h2 class="m-0 text-xl font-bold text-900">Carga manual de artículo</h2>
+                <p class="text-sm text-600 m-0 mt-1">Registra alimentos, bebidas o insumos y asígnalos a su área de operación</p>
+            </div>
+        </div>
+    </ng-template>
+
+    <div class="manual-form-body flex flex-col gap-4 p-2">
+        <!-- 1. Campos Comunes -->
+        <div class="manual-section-card p-4 border-round-xl surface-50 border-1 border-slate-200">
+            <div class="flex align-items-center gap-2 mb-3">
+                <i class="pi pi-info-circle text-indigo-600 text-lg"></i>
+                <span class="text-sm font-bold uppercase tracking-wider text-700">1. Datos generales</span>
+            </div>
+
+            <!-- Nombre -->
+            <div class="mb-3">
+                <label class="block text-sm font-semibold mb-1 text-800">
+                    Nombre del artículo <span class="text-red-500">*</span>
+                </label>
+                <input pInputText type="text" [(ngModel)]="manualNombre"
+                    placeholder="Ej. Tacos al Pastor, Mojito Cubano, Harina de Trigo..."
+                    class="w-full text-base" />
+                <small class="text-red-500 block mt-1" *ngIf="manualSubmitted && !manualNombre.trim()">
+                    El nombre es obligatorio.
+                </small>
+            </div>
+
+            <!-- Descripción -->
+            <div class="mb-3">
+                <label class="block text-sm font-semibold mb-1 text-800">
+                    Descripción (opcional)
+                </label>
+                <textarea pTextarea [(ngModel)]="manualDescripcion" [rows]="2" [autoResize]="true"
+                    placeholder="Breve descripción o notas para el menú o almacén..."
+                    class="w-full text-sm"></textarea>
+            </div>
+
+            <!-- Categorías -->
+            <div>
+                <div class="flex align-items-center justify-between mb-1">
+                    <label class="block text-sm font-semibold text-800">Categorías asociadas</label>
+                    <button type="button" class="text-xs text-primary font-semibold hover:underline bg-transparent border-none p-0 cursor-pointer"
+                        (click)="openNewCategory()">
+                        + Nueva categoría
+                    </button>
+                </div>
+                <p-select [options]="manualAvailableCategories()" [(ngModel)]="manualCategoryPicker"
+                    (ngModelChange)="addManualCategory($event)" optionLabel="label" optionValue="value"
+                    placeholder="+ Seleccionar categoría..." styleClass="w-full" />
+                
+                <div class="flex flex-wrap gap-2 mt-2" *ngIf="manualCategoryIds.length > 0">
+                    <span class="manual-cat-chip" *ngFor="let id of manualCategoryIds">
+                        <span>{{ getCategoryLabel(id) }}</span>
+                        <button type="button" class="manual-cat-chip-remove" (click)="removeManualCategory(id)">
+                            <i class="pi pi-times"></i>
+                        </button>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Selector OBLIGATORIO de Tipo y Área de Destino -->
+        <div class="manual-section-card p-4 border-round-xl border-2"
+            [ngClass]="manualSubmitted && !manualTipo() ? 'border-red-400 bg-red-50/20' : 'border-indigo-100 bg-indigo-50/20'">
+            <div class="flex align-items-center justify-between mb-2">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-sitemap text-indigo-600 text-lg"></i>
+                    <span class="text-sm font-bold uppercase tracking-wider text-800">2. Tipo de artículo y área de destino <span class="text-red-500">*</span></span>
+                </div>
+                <span class="text-xs font-semibold px-2 py-1 border-round bg-indigo-100 text-indigo-800">Obligatorio</span>
+            </div>
+            <p class="text-xs text-600 mb-3">
+                Selecciona la opción para seccionar el artículo y asignarlo al área correspondiente:
+            </p>
+
+            <!-- Tarjetas interactivas de selección -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <!-- Opción Alimento -->
+                <div class="type-card"
+                    [class.type-card-active]="manualTipo() === 'alimento'"
+                    (click)="setManualTipo('alimento')">
+                    <div class="type-card-header">
+                        <span class="type-card-icon">🍽️</span>
+                        <span class="type-area-badge area-cocina">Cocina</span>
+                    </div>
+                    <div class="type-card-title">Alimento</div>
+                    <div class="type-card-desc">Platillos y comidas del menú preparados en Cocina.</div>
+                </div>
+
+                <!-- Opción Bebida -->
+                <div class="type-card"
+                    [class.type-card-active]="manualTipo() === 'bebida'"
+                    (click)="setManualTipo('bebida')">
+                    <div class="type-card-header">
+                        <span class="type-card-icon">🍹</span>
+                        <span class="type-area-badge area-barra">Barra</span>
+                    </div>
+                    <div class="type-card-title">Bebida</div>
+                    <div class="type-card-desc">Bebidas y coctelería para venta en Barra y Comandix.</div>
+                </div>
+
+                <!-- Opción Insumo -->
+                <div class="type-card"
+                    [class.type-card-active]="manualTipo() === 'insumo'"
+                    (click)="setManualTipo('insumo')">
+                    <div class="type-card-header">
+                        <span class="type-card-icon">📦</span>
+                        <span class="type-area-badge area-almacen">Almacén</span>
+                    </div>
+                    <div class="type-card-title">Insumo</div>
+                    <div class="type-card-desc">Materia prima almacenada para preparar recetas.</div>
+                </div>
+            </div>
+
+            <small class="text-red-500 font-semibold block mt-2" *ngIf="manualSubmitted && !manualTipo()">
+                ⚠️ Debes seleccionar una opción (Alimento, Bebida o Insumo) para continuar.
+            </small>
+        </div>
+
+        <!-- 3. Campos específicos que se despliegan dinámicamente -->
+        <div class="manual-section-card p-4 border-round-xl surface-card border-1 border-slate-200" *ngIf="manualTipo()">
+            <div class="flex align-items-center gap-2 mb-3">
+                <i class="pi pi-sliders-h text-primary text-lg"></i>
+                <span class="text-sm font-bold uppercase tracking-wider text-700">3. Campos específicos para {{ manualTipoLabel() }}</span>
+            </div>
+
+            <!-- Caso ALIMENTO -->
+            <div *ngIf="manualTipo() === 'alimento'" class="flex flex-col gap-3">
+                <div>
+                    <label class="block text-sm font-semibold mb-1 text-800">
+                        Precio de venta al público (MXN) <span class="text-red-500">*</span>
+                    </label>
+                    <p-inputnumber [(ngModel)]="manualAlimentoPrecio" [min]="0" [mode]="'currency'"
+                        currency="MXN" locale="es-MX" styleClass="w-full" placeholder="$0.00" />
+                    <small class="text-red-500 block mt-1" *ngIf="manualSubmitted && (manualAlimentoPrecio == null || manualAlimentoPrecio < 0)">
+                        El precio de venta es obligatorio.
+                    </small>
+                </div>
+
+                <div class="flex align-items-center gap-2 mt-1">
+                    <p-checkbox [(ngModel)]="manualAlimentoEsVariable" [binary]="true" inputId="chkManualVariable"></p-checkbox>
+                    <label for="chkManualVariable" class="text-sm text-700 cursor-pointer">
+                        Precio variable (se ajusta al momento de ordenar en comanda)
+                    </label>
+                </div>
+
+                <div class="info-alert p-3 border-round-lg flex align-items-center gap-2 bg-indigo-50 text-indigo-900 text-xs mt-2">
+                    <i class="pi pi-info-circle text-base text-indigo-600"></i>
+                    <span>Este alimento se registrará en tu catálogo digital y las comandas se enviarán al área de <strong>Cocina</strong>.</span>
+                </div>
+            </div>
+
+            <!-- Caso BEBIDA -->
+            <div *ngIf="manualTipo() === 'bebida'" class="flex flex-col gap-3">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-semibold mb-1 text-800">
+                            Precio de venta al público (MXN) <span class="text-red-500">*</span>
+                        </label>
+                        <p-inputnumber [(ngModel)]="manualBebidaPrecio" [min]="0" [mode]="'currency'"
+                            currency="MXN" locale="es-MX" styleClass="w-full" placeholder="$0.00" />
+                        <small class="text-red-500 block mt-1" *ngIf="manualSubmitted && (manualBebidaPrecio == null || manualBebidaPrecio < 0)">
+                            El precio de venta es obligatorio.
+                        </small>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold mb-1 text-800">
+                            Unidad de medida <span class="text-red-500">*</span>
+                        </label>
+                        <p-select [options]="bebidaUnidades" [(ngModel)]="manualBebidaUnidad" styleClass="w-full" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-semibold mb-1 text-800">Stock inicial</label>
+                        <p-inputnumber [(ngModel)]="manualBebidaStock" [min]="0" [step]="1" styleClass="w-full" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1 text-800">Stock mínimo (alerta)</label>
+                        <p-inputnumber [(ngModel)]="manualBebidaStockMin" [min]="0" [step]="1" styleClass="w-full" />
+                    </div>
+                </div>
+
+                <div class="info-alert p-3 border-round-lg flex align-items-center gap-2 bg-teal-50 text-teal-900 text-xs mt-2">
+                    <i class="pi pi-info-circle text-base text-teal-600"></i>
+                    <span>Esta bebida se ofrecerá en el menú / Comandix, descontará stock y sus órdenes se despacharán en <strong>Barra</strong>.</span>
+                </div>
+            </div>
+
+            <!-- Caso INSUMO -->
+            <div *ngIf="manualTipo() === 'insumo'" class="flex flex-col gap-3">
+                <div>
+                    <label class="block text-sm font-semibold mb-1 text-800">
+                        Unidad de medida <span class="text-red-500">*</span>
+                    </label>
+                    <p-select [options]="unidades" [(ngModel)]="manualInsumoUnidad" styleClass="w-full" />
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-semibold mb-1 text-800">Stock inicial en almacén</label>
+                        <p-inputnumber [(ngModel)]="manualInsumoStock" [min]="0" [step]="1" styleClass="w-full" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1 text-800">Stock mínimo de reserva</label>
+                        <p-inputnumber [(ngModel)]="manualInsumoStockMin" [min]="0" [step]="1" styleClass="w-full" />
+                    </div>
+                </div>
+
+                <div class="info-alert p-3 border-round-lg flex align-items-center gap-2 bg-amber-50 text-amber-900 text-xs mt-2">
+                    <i class="pi pi-info-circle text-base text-amber-600"></i>
+                    <span>Este insumo se controlará en <strong>Almacén</strong> y servirá para descontar existencias en recetas de cocina y barra.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <ng-template #footer>
+        <div class="flex align-items-center justify-between w-full">
+            <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="closeManualDialog()"></p-button>
+            <p-button
+                label="Guardar artículo"
+                icon="pi pi-check"
+                severity="primary"
+                styleClass="px-4 py-2 font-bold"
+                [disabled]="!manualNombre.trim() || !manualTipo()"
+                (onClick)="saveManualItem()">
+            </p-button>
+        </div>
+    </ng-template>
+</p-dialog>
 
 <app-product-dialog
     [(visible)]="productDialog"
