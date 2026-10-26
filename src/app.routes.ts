@@ -32,6 +32,7 @@ export const appRoutes: Routes = [
                     { path: 'kpis', loadComponent: () => import('@/pages/dashboard/dashboard.component').then(m => m.DashboardComponent), canActivate: [RoleGuard], data: { roles: ['ADMIN', 'MARKETING', 'CAJA'] } },
                     { path: 'mesero', loadComponent: () => import('@/pages/waiter/waiter-dashboard.component').then(m => m.WaiterDashboardComponent), canActivate: [RoleGuard, WaiterGuard], data: { roles: ['MESERO'] }, title: 'Dashboard Mesero' },
                     { path: 'adminPage', loadComponent: () => import('@/pages/admin-page/landing-editor.component').then(m => m.LandingEditorComponent) },
+                    { path: 'logo-negocio', loadComponent: () => import('@/pages/logo-negocio/logo-negocio.component').then(m => m.LogoNegocioComponent), title: 'Logo del Negocio', canActivate: [PermissionGuard], data: { permission: 'view_dashboard' } },
                     { path: 'categoriesMenu', loadComponent: () => import('@/pages/categories-menu/categories-menu.component').then(m => m.CategoriesMenuComponent) },
                     { path: 'adminMenu', loadComponent: () => import('@/pages/products-menu/products-menu.component').then(m => m.ProductMenuComponent) },
                     // Campaign routes

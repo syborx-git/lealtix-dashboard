@@ -402,3 +402,22 @@
   scrollbar-width: thin;
 }
 
+.ticket-thermal-preview {
+  position: relative;
+  overflow: hidden;
+
+  .ticket-watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 70%;
+    max-height: 55%;
+    object-fit: contain;
+    opacity: 0.12;
+    filter: grayscale(100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+

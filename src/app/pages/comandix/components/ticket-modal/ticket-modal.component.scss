@@ -29,6 +29,33 @@
   line-height: 1.25;
   text-align: center;
   background: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+.ticket-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 75%;
+  max-height: 55%;
+  object-fit: contain;
+  opacity: 0.12;
+  filter: grayscale(100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ticket-header,
+.ticket-sep,
+.ticket-meta,
+.ticket-items,
+.ticket-totals,
+.ticket-qr-section,
+.ticket-footer {
+  position: relative;
+  z-index: 1;
 }
 
 .ticket-header {

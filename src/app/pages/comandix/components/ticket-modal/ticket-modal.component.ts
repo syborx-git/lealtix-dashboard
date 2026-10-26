@@ -20,6 +20,7 @@ export class TicketModalComponent {
   @Input() businessName = 'Lealtix';
   @Input() businessAddress = '';
   @Input() businessPhone = '';
+  @Input() businessLogo = '';
   @Input() invoiceBaseUrl = 'http://localhost:4200/facturar/';
   @Input() invoiceUuid = '';
   @Output() visibleChange = new EventEmitter<boolean>();
@@ -87,6 +88,29 @@ export class TicketModalComponent {
               padding: 2mm 0 14mm 0;
               box-sizing: border-box;
               text-align: center;
+              position: relative;
+              overflow: hidden;
+            }
+            .ticket {
+              position: relative;
+              overflow: hidden;
+            }
+            .ticket-watermark {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              width: 75%;
+              max-height: 55%;
+              object-fit: contain;
+              opacity: 0.12;
+              filter: grayscale(100%);
+              pointer-events: none;
+              z-index: 0;
+            }
+            .ticket-header, .ticket-sep, .ticket-meta, .ticket-items, .ticket-totals, .ticket-qr-section, .ticket-footer {
+              position: relative;
+              z-index: 1;
             }
             .ticket-business { font-size: 13.5px; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1.2; margin-bottom: 2px; }
             .ticket-line { font-size: 10px; font-weight: 700; line-height: 1.25; }
@@ -105,7 +129,7 @@ export class TicketModalComponent {
             .ticket-qr-section { margin-top: 6px; text-align: center; }
             .ticket-qr-label { font-weight: 900; margin-bottom: 4px; font-size: 10.5px; }
             .ticket-qr-help { font-size: 9.5px; font-weight: 700; margin-top: 2px; }
-            .ticket-qr-section canvas, .ticket-qr-section img { width: 28mm !important; height: 28mm !important; margin: 0 auto; }
+            .ticket-qr-section canvas, .ticket-qr-section img { width: 28mm !important; height: 28mm !important; margin: 0 auto; display: block; }
             .ticket-footer { margin-top: 6px; font-size: 10px; font-weight: 700; text-align: center; }
           </style>
         </head>

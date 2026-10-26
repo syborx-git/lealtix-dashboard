@@ -16,19 +16,23 @@ export class ImageService {
      * @param email Email
      * @param nombreNegocio Nombre del negocio
      * @param slogan Slogan
+     * @param tenantId ID del tenant (opcional)
      */
-    uploadImage(file: File, type: string, email: string, nombreNegocio: string, slogan: string): Observable<any> {
+    uploadImage(file: File, type: string, email: string, nombreNegocio: string, slogan: string, tenantId?: number): Observable<any> {
         return new Observable((observer) => {
             const reader = new FileReader();
             reader.onload = () => {
                 const base64File = (reader.result as string).split(',')[1];
-                const body = {
+                const body: any = {
                     email,
                     nombreNegocio,
                     slogan,
                     type,
                     base64File
                 };
+                if (tenantId) {
+                    body.tenantId = tenantId;
+                }
                 this.http
                     .post(`${this.baseUrl}/upload`, body, {
                         headers: { 'Content-Type': 'application/json' },
@@ -44,6 +48,21 @@ export class ImageService {
             };
             reader.onerror = (err) => observer.error(err);
             reader.readAsDataURL(file);
+        });
+    }
+
+    uploadLogoBase64(base64Data: string, tenantId: number, email?: string, nombreNegocio?: string, slogan?: string): Observable<string> {
+        const body: any = {
+            tenantId,
+            type: 'logo',
+            base64File: base64Data,
+            email: email || '',
+            nombreNegocio: nombreNegocio || '',
+            slogan: slogan || ''
+        };
+        return this.http.post(`${this.baseUrl}/upload`, body, {
+            headers: { 'Content-Type': 'application/json' },
+            responseType: 'text'
         });
     }
 

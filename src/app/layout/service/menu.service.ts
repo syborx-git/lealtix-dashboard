@@ -115,6 +115,7 @@ export class MenuService {
                     { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/dashboard/kpis'], roles: ['ADMIN', 'MARKETING', 'CAJA'], requiredPermissions: ['view_dashboard'] },
                     { label: 'Facturación', icon: 'pi pi-fw pi-file', routerLink: ['/dashboard/facturacion'], roles: ['ADMIN'], requiredPermissions: ['view_dashboard'] },
                     { label: 'Admin Page', icon: 'pi pi-fw pi-globe', routerLink: ['/dashboard/adminPage'], roles: ['ADMIN'], requiredPermissions: ['manage_admin_page'] },
+                    { label: 'Logo del Negocio', icon: 'pi pi-fw pi-image', routerLink: ['/dashboard/logo-negocio'], roles: ['ADMIN'], requiredPermissions: ['view_dashboard'] },
                     { label: 'Mi Página', icon: 'pi pi-fw pi-qrcode', routerLink: ['/dashboard/mi-pagina'], visible: false, roles: ['ADMIN'], requiredPermissions: ['view_products'] },
                     { label: 'Dashboard Cocina', icon: 'pi pi-fw pi-chart-line', routerLink: ['/dashboard/cocina-dashboard'], roles: ['ADMIN', 'COCINA'], requiredPermissions: ['dashboard_kitchen'] },
                     { label: 'Gestión de Clientes', icon: 'pi pi-fw pi-users', routerLink: ['/dashboard/clientes'], roles: ['ADMIN'], requiredPermissions: ['view_customers'] }

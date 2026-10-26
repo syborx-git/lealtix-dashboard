@@ -23,6 +23,8 @@ import { TextareaModule } from 'primeng/textarea';
 
 // Componentes
 import { SplitOrderModalComponent } from '@/pages/comandix/components/split-order-modal/split-order-modal.component';
+import { environment } from '@/pages/commons/environment';
+import * as QRCode from 'qrcode';
 
 // Servicios y Modelos
 import { CajaService } from './services/caja.service';
@@ -95,6 +97,34 @@ export class CajaComponent implements OnInit, OnDestroy {
   businessName = signal<string>('Restaurante');
   businessAddress = signal<string>('');
   businessPhone = signal<string>('');
+  businessLogo = signal<string>('');
+  qrFacturacionDataUrl = signal<string>('');
+
+  getFacturaUrl(orderId: string): string {
+    const base = ((environment.landingPageBaseUrl || '').replace(/\/landing-page\/?$/, '') || 'http://localhost:4200');
+    return `${base}/facturar/${orderId}`;
+  }
+
+  async generarQrFacturacion(orderId: string): Promise<string> {
+    if (!orderId) {
+      this.qrFacturacionDataUrl.set('');
+      return '';
+    }
+    try {
+      const url = this.getFacturaUrl(orderId);
+      const qr = await QRCode.toDataURL(url, {
+        margin: 1,
+        width: 120,
+        errorCorrectionLevel: 'M'
+      });
+      this.qrFacturacionDataUrl.set(qr);
+      return qr;
+    } catch (e) {
+      console.warn('Error generando QR facturación:', e);
+      this.qrFacturacionDataUrl.set('');
+      return '';
+    }
+  }
 
   private destroy$ = new Subject<void>();
   private pollingTimer: any = null;
@@ -1045,6 +1075,7 @@ export class CajaComponent implements OnInit, OnDestroy {
           this.businessName.set(t.bussinessName || t.nombreNegocio || 'Restaurante');
           this.businessAddress.set(t.direccion || '');
           this.businessPhone.set(t.telefono || '');
+          this.businessLogo.set(t.logoUrl || '');
         }
       },
       error: (e) => console.warn('[Caja] No se pudo obtener datos del negocio:', e)
@@ -1254,8 +1285,11 @@ export class CajaComponent implements OnInit, OnDestroy {
       const ticket = resp?.object || resp?.data;
       if (ticket) {
         this.ticketActual.set(ticket);
+        await this.generarQrFacturacion(ticket.idComanda || ticket.folioComanda || comanda.id);
       } else {
-        this.ticketActual.set(this.construirTicketLocal(comanda));
+        const local = this.construirTicketLocal(comanda);
+        this.ticketActual.set(local);
+        await this.generarQrFacturacion(local.idComanda || local.folioComanda || comanda.id);
       }
 
       if (mostrarModalPreview) {
@@ -1295,6 +1329,7 @@ export class CajaComponent implements OnInit, OnDestroy {
       // Fallback seguro: siempre generar el ticket local
       const ticket = this.construirTicketLocal(comanda);
       this.ticketActual.set(ticket);
+      await this.generarQrFacturacion(ticket.idComanda || ticket.folioComanda || comanda.id);
       if (mostrarModalPreview) {
         this.modalTicketVisible.set(true);
         this.messageService.add({
@@ -1337,10 +1372,20 @@ export class CajaComponent implements OnInit, OnDestroy {
   /**
    * Imprime el ticket térmico con formato estándar 58mm (área de impresión 48mm y margen de 5mm)
    * en un iframe aislado con tipografía monospaced de alto contraste (#000000) para máxima legibilidad.
+   * Incluye marca de agua del logo si existe y código QR para facturación electrónica.
    */
-  imprimirVentanaTicket(): void {
+  async imprimirVentanaTicket(): Promise<void> {
     const t = this.ticketActual();
     if (!t) return;
+
+    const bLogo = this.businessLogo();
+    const orderIdForFactura = t.idComanda || t.folioComanda || '';
+    let qrDataUrl = this.qrFacturacionDataUrl();
+    if (!qrDataUrl && orderIdForFactura) {
+      try {
+        qrDataUrl = await this.generarQrFacturacion(orderIdForFactura);
+      } catch (_) {}
+    }
 
     const fechaFormateada = t.fechaImpresion ? new Date(t.fechaImpresion).toLocaleString('es-MX') : new Date().toLocaleString('es-MX');
 
@@ -1397,6 +1442,26 @@ export class CajaComponent implements OnInit, OnDestroy {
               margin: 0 auto;
               padding: 2mm 0 14mm 0;
               box-sizing: border-box;
+              position: relative;
+              overflow: hidden;
+            }
+            .ticket-watermark {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              width: 75%;
+              max-height: 55%;
+              object-fit: contain;
+              opacity: 0.12;
+              filter: grayscale(100%);
+              pointer-events: none;
+              z-index: 0;
+            }
+            .business-title, .business-info, .ticket-type, .divider, .divider-double,
+            .meta-section, .items-table, .totals-section, .propina-box, .ticket-qr-section, .footer {
+              position: relative;
+              z-index: 1;
             }
             .text-center { text-align: center; }
             .text-right { text-align: right; }
@@ -1520,6 +1585,27 @@ export class CajaComponent implements OnInit, OnDestroy {
               padding: 1px 0;
             }
 
+            .ticket-qr-section {
+              margin-top: 6px;
+              text-align: center;
+            }
+            .ticket-qr-label {
+              font-weight: 900;
+              font-size: 10.5px;
+              margin-bottom: 4px;
+            }
+            .ticket-qr-help {
+              font-size: 9.5px;
+              font-weight: 700;
+              margin-top: 2px;
+            }
+            .ticket-qr-section img {
+              width: 28mm !important;
+              height: 28mm !important;
+              margin: 0 auto;
+              display: block;
+            }
+
             .footer {
               margin-top: 6px;
               text-align: center;
@@ -1535,6 +1621,7 @@ export class CajaComponent implements OnInit, OnDestroy {
         </head>
         <body>
           <div class="ticket-container">
+            ${bLogo ? `<img src="${bLogo}" class="ticket-watermark" alt="Logo Watermark" />` : ''}
             <div class="business-title">${bName}</div>
             ${bAddress ? `<div class="business-info">${bAddress}</div>` : ''}
             ${bPhone ? `<div class="business-info">Tel: ${bPhone}</div>` : ''}
@@ -1600,6 +1687,15 @@ export class CajaComponent implements OnInit, OnDestroy {
                 <div class="propina-row"><span>10%:</span> <strong>$${(t.propinaSugerida10 || (t.total * 0.10)).toFixed(2)}</strong></div>
                 <div class="propina-row"><span>15%:</span> <strong>$${(t.propinaSugerida15 || (t.total * 0.15)).toFixed(2)}</strong></div>
                 <div class="propina-row"><span>20%:</span> <strong>$${(t.propinaSugerida20 || (t.total * 0.20)).toFixed(2)}</strong></div>
+              </div>
+            ` : ''}
+
+            ${qrDataUrl ? `
+              <div class="divider"></div>
+              <div class="ticket-qr-section">
+                <div class="ticket-qr-label">¿NECESITAS FACTURA?</div>
+                <img src="${qrDataUrl}" alt="QR Facturación" />
+                <div class="ticket-qr-help">Escanea el código para facturar</div>
               </div>
             ` : ''}
 
@@ -2169,6 +2265,7 @@ export class CajaComponent implements OnInit, OnDestroy {
       metodoPago: (order as any).metodoPago || order.payment?.method || 'PAGADO'
     };
     this.ticketActual.set(ticket);
+    await this.generarQrFacturacion(order.id);
 
     try {
       const resp = await firstValueFrom(this.cajaService.imprimirTicketDirecto(order.id, this.tenantId));

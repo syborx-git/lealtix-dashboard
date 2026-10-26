@@ -1021,9 +1021,12 @@
     [header]="'Ticket Térmico (58mm)'"
     [style]="{ width: '100%', maxWidth: '380px' }"
   >
-    <div *ngIf="ticketActual() as t" class="ticket-thermal-preview bg-white p-3 rounded-lg border border-dashed border-black font-mono text-[11px] text-black space-y-2">
+    <div *ngIf="ticketActual() as t" class="ticket-thermal-preview bg-white p-3 rounded-lg border border-dashed border-black font-mono text-[11px] text-black space-y-2 relative overflow-hidden">
+      <!-- Marca de agua del negocio -->
+      <img *ngIf="businessLogo()" [src]="businessLogo()" class="ticket-watermark" alt="Logo Watermark" />
+
       <!-- Encabezado del negocio -->
-      <div class="text-center pb-2 border-b border-dashed border-black">
+      <div class="relative z-1 text-center pb-2 border-b border-dashed border-black">
         <h3 class="font-black text-xs uppercase m-0 tracking-wider">{{ businessName() }}</h3>
         <p *ngIf="businessAddress()" class="text-[10px] text-black font-semibold m-0 uppercase">{{ businessAddress() }}</p>
         <p *ngIf="businessPhone()" class="text-[10px] text-black font-semibold m-0">TEL: {{ businessPhone() }}</p>
@@ -1036,7 +1039,7 @@
       </div>
 
       <!-- Items -->
-      <div class="space-y-1 py-1 border-b border-dashed border-black">
+      <div class="relative z-1 space-y-1 py-1 border-b border-dashed border-black">
         <div *ngFor="let it of t.items" class="flex justify-between items-start text-[11px] leading-tight">
           <span class="font-bold flex-1 pr-1">{{ it.cantidad }}x {{ it.nombreProducto }}</span>
           <strong class="font-black">${{ it.totalLinea | number:'1.2-2' }}</strong>
@@ -1044,7 +1047,7 @@
       </div>
 
       <!-- Totales -->
-      <div class="space-y-1 pt-1 text-right text-black">
+      <div class="relative z-1 space-y-1 pt-1 text-right text-black">
         <div *ngIf="t.descuento && t.descuento > 0" class="flex justify-between text-[11px] font-bold">
           <span>DESCUENTO:</span>
           <span>-${{ t.descuento | number:'1.2-2' }}</span>
@@ -1056,15 +1059,22 @@
       </div>
 
       <!-- Propinas Sugeridas o Comprobante -->
-      <div *ngIf="t.estado !== 'PAGADA'" class="bg-gray-100 p-2 rounded border border-dashed border-black text-[10px] space-y-1 mt-2 font-bold text-black">
+      <div *ngIf="t.estado !== 'PAGADA'" class="relative z-1 bg-gray-100 p-2 rounded border border-dashed border-black text-[10px] space-y-1 mt-2 font-bold text-black">
         <span class="block text-center uppercase tracking-wider text-[10px] font-black">Propina Sugerida (Opcional)</span>
         <div class="flex justify-between"><span>10%:</span> <strong>${{ t.propinaSugerida10 | number:'1.2-2' }}</strong></div>
         <div class="flex justify-between"><span>15%:</span> <strong>${{ t.propinaSugerida15 | number:'1.2-2' }}</strong></div>
         <div class="flex justify-between"><span>20%:</span> <strong>${{ t.propinaSugerida20 | number:'1.2-2' }}</strong></div>
       </div>
-      <div *ngIf="t.estado === 'PAGADA'" class="bg-gray-100 p-2 rounded border border-dashed border-black text-center text-[10px] font-bold uppercase mt-2">
+      <div *ngIf="t.estado === 'PAGADA'" class="relative z-1 bg-gray-100 p-2 rounded border border-dashed border-black text-center text-[10px] font-bold uppercase mt-2">
         <span>¡GRACIAS POR SU PREFERENCIA!</span>
         <p *ngIf="t.metodoPago" class="m-0 mt-0.5 text-[9px]">PAGADO CON: {{ t.metodoPago }}</p>
+      </div>
+
+      <!-- QR Facturación -->
+      <div *ngIf="qrFacturacionDataUrl()" class="relative z-1 text-center pt-2 border-t border-dashed border-black">
+        <span class="block text-center uppercase tracking-wider text-[10px] font-black">¿Necesitas Factura?</span>
+        <img [src]="qrFacturacionDataUrl()" class="w-24 h-24 mx-auto block my-1" alt="QR Facturación" />
+        <p class="text-[9px] font-bold text-center m-0">Escanea el código para facturar</p>
       </div>
     </div>
 

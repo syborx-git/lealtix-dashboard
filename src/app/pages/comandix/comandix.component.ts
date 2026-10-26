@@ -303,6 +303,7 @@ export class ComandixComponent implements OnInit, OnDestroy {
   ticketBusinessName = '';
   ticketBusinessAddress = '';
   ticketBusinessPhone = '';
+  ticketBusinessLogo = '';
   ticketInvoiceBaseUrl = ((environment.landingPageBaseUrl || '').replace(/\/landing-page\/?$/, '') || 'http://localhost:4200') + '/facturar/';
   ticketInvoiceUuid = signal('');
 
@@ -2555,6 +2556,7 @@ export class ComandixComponent implements OnInit, OnDestroy {
         this.ticketBusinessName = t?.bussinessName || t?.nombreNegocio || 'Lealtix';
         this.ticketBusinessAddress = t?.direccion || '';
         this.ticketBusinessPhone = t?.telefono || '';
+        this.ticketBusinessLogo = t?.logoUrl || '';
       },
       error: () => {
         // noop

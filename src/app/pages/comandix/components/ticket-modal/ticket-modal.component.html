@@ -1,6 +1,9 @@
 <div class="ticket-overlay" *ngIf="visible && order">
   <div class="ticket-modal-root">
     <div class="ticket" *ngIf="order as currentOrder">
+      <!-- Marca de Agua del Logotipo -->
+      <img *ngIf="businessLogo" [src]="businessLogo" class="ticket-watermark" alt="Logo Watermark" />
+
       <div class="ticket-header">
         <div class="ticket-business">{{ businessName }}</div>
         <div class="ticket-line" *ngIf="businessAddress">{{ businessAddress }}</div>
@@ -60,7 +63,7 @@
           [width]="110"
           [margin]="1"
           errorCorrectionLevel="M"
-          elementType="canvas"
+          elementType="img"
         ></qrcode>
         <div class="ticket-qr-help">Escanea el código para facturar</div>
       </div>

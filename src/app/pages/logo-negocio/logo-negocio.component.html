@@ -1,0 +1,257 @@
+<p-toast position="top-right"></p-toast>
+
+<div class="logo-admin-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <i class="pi pi-image"></i>
+      </div>
+      <div>
+        <h1 class="page-title">Logotipo del Establecimiento</h1>
+        <p class="page-subtitle">
+          Configura el logotipo oficial de tu negocio. Se guardará en la base de datos y se imprimirá automáticamente como marca de agua en todos los tickets térmicos.
+        </p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="tenant-chip">
+        <i class="pi pi-building"></i>
+        <span>{{ businessName() }} (ID: {{ tenantId() }})</span>
+      </div>
+      <button class="btn-refresh" (click)="cargarDatosNegocio()" [disabled]="cargando()" title="Recargar datos">
+        <i class="pi pi-refresh" [class.pi-spin]="cargando()"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <!-- COLUMNA IZQUIERDA: Carga y Gestión -->
+    <div class="upload-column">
+      <!-- Tarjeta de Carga -->
+      <div class="card upload-card">
+        <div class="card-header">
+          <h2 class="card-title">Cargar Nueva Imagen</h2>
+          <span class="status-badge" [class.status-saved]="currentLogoUrl() && !previewLogoUrl()" [class.status-pending]="previewLogoUrl()">
+            <i class="pi" [class.pi-check-circle]="currentLogoUrl() && !previewLogoUrl()" [class.pi-clock]="previewLogoUrl()"></i>
+            {{ previewLogoUrl() ? 'Cambios pendientes' : (currentLogoUrl() ? 'Logotipo activo' : 'Sin logotipo') }}
+          </span>
+        </div>
+
+        <div
+          class="drop-zone"
+          [class.drag-over]="dragOver()"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)"
+          (click)="fileInput.click()"
+        >
+          <input
+            #fileInput
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            class="hidden-input"
+            (change)="onFileChange($event)"
+          />
+
+          <div class="drop-zone-content">
+            <div class="upload-icon-circle">
+              <i class="pi pi-cloud-upload"></i>
+            </div>
+            <div class="upload-text-main">
+              <strong>Haz clic para examinar</strong> o arrastra y suelta tu archivo aquí
+            </div>
+            <p class="upload-text-sub">
+              Formatos recomendados: PNG con fondo transparente, SVG o JPG (Máx. 5MB)
+            </p>
+          </div>
+        </div>
+
+        <!-- Acciones Principales -->
+        <div class="action-buttons">
+          <button
+            type="button"
+            class="btn-primary"
+            (click)="guardarLogo()"
+            [disabled]="guardando() || (!selectedFile() && !previewLogoUrl())"
+          >
+            <i class="pi" [class.pi-spin]="guardando()" [class.pi-spinner]="guardando()" [class.pi-check]="!guardando()"></i>
+            <span>{{ guardando() ? 'Guardando en BD...' : 'Guardar en Base de Datos' }}</span>
+          </button>
+
+          <button
+            *ngIf="previewLogoUrl()"
+            type="button"
+            class="btn-secondary"
+            (click)="cancelarSeleccion()"
+            [disabled]="guardando()"
+          >
+            <i class="pi pi-times"></i>
+            <span>Descartar cambios</span>
+          </button>
+
+          <button
+            *ngIf="currentLogoUrl()"
+            type="button"
+            class="btn-danger"
+            (click)="eliminarLogo()"
+            [disabled]="guardando()"
+          >
+            <i class="pi pi-trash"></i>
+            <span>Eliminar logotipo</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tarjeta de Consejos -->
+      <div class="card tips-card">
+        <h3 class="tips-title">
+          <i class="pi pi-lightbulb"></i>
+          Recomendaciones para Impresión Térmica
+        </h3>
+        <ul class="tips-list">
+          <li>
+            <strong>Fondo Transparente:</strong> Un archivo <code>.PNG</code> o <code>.SVG</code> transparente permite que la marca de agua se mezcle sutilmente detrás del texto del ticket sin tapar los datos.
+          </li>
+          <li>
+            <strong>Buen Contraste:</strong> Las impresoras térmicas imprimen en blanco y negro (escala de grises). Diseños limpios y definidos ofrecen el mejor resultado.
+          </li>
+          <li>
+            <strong>Resolución:</strong> Se recomienda una resolución mínima de 400x400 px para evitar pixelado en la impresión física.
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- COLUMNA DERECHA: Visualización y Previsualización del Ticket -->
+    <div class="preview-column">
+      <!-- Tarjeta de Logotipo Actual -->
+      <div class="card logo-display-card">
+        <div class="card-header">
+          <h2 class="card-title">Logotipo Actual</h2>
+          <span class="badge-tag" *ngIf="activeLogo">
+            {{ previewLogoUrl() ? 'Vista previa seleccionada' : 'Guardado en PostgreSQL' }}
+          </span>
+        </div>
+
+        <div class="logo-viewport-wrapper">
+          <div class="logo-viewport">
+            <img
+              *ngIf="activeLogo"
+              [src]="activeLogo"
+              alt="Logo del Establecimiento"
+              class="logo-preview-image"
+            />
+            <div *ngIf="!activeLogo" class="no-logo-placeholder">
+              <i class="pi pi-image text-3xl"></i>
+              <span>No hay logotipo registrado</span>
+              <p>Sube una imagen para activarla en tus tickets</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="logo-meta" *ngIf="activeLogo">
+          <div class="meta-item">
+            <span class="meta-label">Estado:</span>
+            <span class="meta-value text-emerald-600 font-bold" *ngIf="!previewLogoUrl()">Sincronizado con BD</span>
+            <span class="meta-value text-amber-600 font-bold" *ngIf="previewLogoUrl()">Listo para guardar</span>
+          </div>
+          <div class="meta-item" *ngIf="currentLogoUrl()">
+            <span class="meta-label">Ruta / URL:</span>
+            <span class="meta-value text-slate-500 truncate max-w-xs" [title]="currentLogoUrl()">{{ currentLogoUrl() }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Simulador de Ticket Térmico en Vivo -->
+      <div class="card simulator-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Previsualización de Ticket</h2>
+            <p class="simulator-desc">Así se visualizará e imprimirá con la marca de agua y el código QR de facturación.</p>
+          </div>
+          <span class="badge-paper">58mm Térmico</span>
+        </div>
+
+        <div class="ticket-stand">
+          <!-- Ticket Térmico Simulado -->
+          <div class="simulated-ticket">
+            <!-- MARCA DE AGUA DEL LOGOTIPO -->
+            <img
+              *ngIf="activeLogo"
+              [src]="activeLogo"
+              class="simulated-watermark"
+              alt="Marca de Agua"
+            />
+
+            <!-- Contenido del Ticket -->
+            <div class="ticket-header">
+              <div class="ticket-business">{{ businessName() }}</div>
+              <div class="ticket-line" *ngIf="businessAddress()">{{ businessAddress() }}</div>
+              <div class="ticket-line" *ngIf="businessPhone()">Tel: {{ businessPhone() }}</div>
+              <div class="ticket-type">*** TICKET DE CONSUMO ***</div>
+            </div>
+
+            <div class="ticket-sep"></div>
+
+            <div class="ticket-meta">
+              <div class="ticket-meta-row"><span>FOLIO:</span> <strong>#{{ simulatedOrderId }}</strong></div>
+              <div class="ticket-meta-row"><span>MESA:</span> <strong>Mesa 04 (Terraza)</strong></div>
+              <div class="ticket-meta-row"><span>MESERO:</span> <span>Carlos M.</span></div>
+              <div class="ticket-meta-row"><span>FECHA:</span> <span>25/10/2026 21:45</span></div>
+            </div>
+
+            <div class="ticket-sep"></div>
+
+            <div class="ticket-items">
+              <div class="ticket-item">
+                <span class="ticket-item-name">2x Hamburguesa Clásica</span>
+                <span class="ticket-item-price">$370.00</span>
+              </div>
+              <div class="ticket-item">
+                <span class="ticket-item-name">2x Cerveza Corona Extra</span>
+                <span class="ticket-item-price">$90.00</span>
+              </div>
+              <div class="ticket-item">
+                <span class="ticket-item-name">1x Papas a la Francesa</span>
+                <span class="ticket-item-price">$75.00</span>
+              </div>
+            </div>
+
+            <div class="ticket-sep"></div>
+
+            <div class="ticket-totals">
+              <div class="ticket-total-row"><span>SUBTOTAL:</span><span>$535.00</span></div>
+              <div class="ticket-total-row ticket-total-final">
+                <span>TOTAL:</span><span>$535.00</span>
+              </div>
+              <div class="ticket-total-row"><span>ESTADO:</span><span>PAGADO ✓</span></div>
+            </div>
+
+            <div class="ticket-sep"></div>
+
+            <!-- CÓDIGO QR DE FACTURACIÓN -->
+            <div class="ticket-qr-section">
+              <div class="ticket-qr-label">¿NECESITAS FACTURA?</div>
+              <qrcode
+                [qrdata]="invoiceUrl"
+                [width]="105"
+                [margin]="1"
+                errorCorrectionLevel="M"
+                elementType="img"
+              ></qrcode>
+              <div class="ticket-qr-help">Escanea el código para facturar</div>
+            </div>
+
+            <div class="ticket-sep"></div>
+
+            <div class="ticket-footer">
+              <div>¡GRACIAS POR SU PREFERENCIA!</div>
+              <div class="footer-note">Comprobante de consumo</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
