@@ -2343,26 +2343,6 @@ export class ComandixComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** True si la comanda aún puede editarse (estado pendiente/confirmada y dentro de la prórroga) */
-  canEditOrder(order: PendingOrder): boolean {
-    if (!order) return false;
-    if (!this.editableStates.includes(order.estado as OrderStatus)) return false;
-    if (!order.fechaCreacion) return false;
-    const created = new Date(order.fechaCreacion).getTime();
-    const now = this.nowTick();
-    const diffMs = now - created;
-    return diffMs >= 0 && diffMs < this.EDIT_WINDOW_SECONDS * 1000;
-  }
-
-  /** Segundos restantes de la prórroga para la orden (0 si venció) */
-  private getEditableRemainingSeconds(order: PendingOrder): number {
-    if (!order?.fechaCreacion) return 0;
-    const created = new Date(order.fechaCreacion).getTime();
-    const diffMs = this.nowTick() - created;
-    const remainingSec = Math.ceil((this.EDIT_WINDOW_SECONDS * 1000 - diffMs) / 1000);
-    return remainingSec > 0 ? remainingSec : 0;
-  }
-
   /**
    * La comanda puede editarse en cualquier momento mientras NO esté pagada ni
    * cancelada (permite agregar platillos si llega otro comensal o piden más).
@@ -2370,6 +2350,11 @@ export class ComandixComponent implements OnInit, OnDestroy {
   canEditOrder(order: PendingOrder): boolean {
     if (!order) return false;
     return this.editableStates.includes(order.estado as OrderStatus);
+  }
+
+  /** Solo el ADMIN puede cancelar/rechazar comandas (anti-robo). */
+  get isAdmin(): boolean {
+    return this.authService.getUserRole?.() === 'ADMIN';
   }
 
   /** Nombre legible del cliente para mostrar en la tarjeta */
