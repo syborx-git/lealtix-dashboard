@@ -41,7 +41,7 @@
             "production": {
               "budgets": [
                 { "type": "initial", "maximumWarning": "2mb", "maximumError": "5mb" },
-                { "type": "anyComponentStyle", "maximumWarning": "64kb", "maximumError": "100kb" }
+                { "type": "anyComponentStyle", "maximumWarning": "60kb", "maximumError": "100kb" }
               ],
               "fileReplacements": [
                 {
@@ -85,7 +85,8 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "port": 4201
+            "port": 4201,
+            "host": "0.0.0.0"
           },
           "configurations": {
             "production": {

@@ -222,114 +222,781 @@
   padding: 1rem;
 }
 
-.merma-tipo-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.9rem;
+/* ==================== Modal de Merma por Comanda (Desglose Intuitivo) ==================== */
+
+:host ::ng-deep .comanda-merma-dialog {
+  border-radius: 18px !important;
+  overflow: hidden !important;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+
+  .p-dialog-header {
+    background: var(--surface-card, #ffffff) !important;
+    border-bottom: 1px solid var(--surface-200, #e2e8f0) !important;
+    padding: 1.25rem 1.5rem !important;
+    color: var(--text-color, #1e293b) !important;
+
+    .p-dialog-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      button,
+      .p-dialog-close-button,
+      .p-dialog-header-close {
+        width: 2.25rem !important;
+        height: 2.25rem !important;
+        border-radius: 9999px !important;
+        background: #f1f5f9 !important;
+        color: #334155 !important;
+        border: 1px solid #e2e8f0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+
+        svg, i {
+          color: #334155 !important;
+          fill: #334155 !important;
+          stroke: #334155 !important;
+          width: 14px !important;
+          height: 14px !important;
+        }
+
+        &:hover {
+          background: #e2e8f0 !important;
+          color: #0f172a !important;
+          transform: scale(1.08) !important;
+
+          svg, i {
+            color: #0f172a !important;
+            fill: #0f172a !important;
+            stroke: #0f172a !important;
+            transform: rotate(90deg) scale(1.1) !important;
+          }
+        }
+      }
+    }
+  }
+
+  .p-dialog-content {
+    background: var(--surface-ground, #f8fafc) !important;
+    padding: 1.25rem 1.5rem 0.75rem 1.5rem !important;
+  }
 }
 
-.ingredients-list {
+.comanda-modal-header {
+  width: 100%;
+
+  .header-title-box {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .ticket-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(129, 140, 248, 0.2));
+    color: #4f46e5;
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+
+    i {
+      font-size: 0.9rem;
+    }
+  }
+
+  .header-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    .modal-main-title {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-color, #1e293b);
+      letter-spacing: -0.01em;
+    }
+
+    .modal-chips-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+
+      .info-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: var(--text-color-secondary, #64748b);
+        background: var(--surface-100, #f1f5f9);
+        padding: 0.18rem 0.55rem;
+        border-radius: 6px;
+
+        i {
+          font-size: 0.75rem;
+        }
+
+        &.info-pill-total {
+          background: rgba(16, 185, 129, 0.1);
+          color: #059669;
+          font-weight: 600;
+        }
+      }
+    }
+  }
+}
+
+.comanda-modal-body {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  max-height: 320px;
+  gap: 1rem;
+
+  .mermas-loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 3rem 1rem;
+    color: var(--text-color-secondary, #64748b);
+    font-weight: 500;
+  }
+
+  .no-dish-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    background: var(--surface-card, #ffffff);
+    border: 1px dashed var(--surface-300, #cbd5e1);
+    border-radius: 12px;
+
+    .empty-icon {
+      font-size: 2.5rem;
+      color: var(--surface-400, #94a3b8);
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 0 0 0.25rem 0;
+      color: var(--text-color, #1e293b);
+    }
+
+    .empty-desc {
+      font-size: 0.85rem;
+      color: var(--text-color-secondary, #64748b);
+      margin: 0;
+    }
+  }
+}
+
+.modal-main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+/* Toolbar de controles superiores */
+.modal-top-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--surface-card, #ffffff);
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--surface-200, #e2e8f0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  flex-wrap: wrap;
+
+  .toolbar-search {
+    flex: 1;
+    min-width: 220px;
+
+    :host ::ng-deep .p-iconfield {
+      width: 100%;
+
+      .p-inputtext {
+        width: 100%;
+        border-radius: 8px !important;
+        border: 1px solid var(--surface-300, #cbd5e1) !important;
+        padding: 0.5rem 0.75rem 0.5rem 2.25rem !important;
+        font-size: 0.88rem !important;
+        background: var(--surface-ground, #f8fafc) !important;
+
+        &:focus {
+          border-color: #6366f1 !important;
+          box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15) !important;
+          background: #ffffff !important;
+        }
+      }
+
+      .p-inputicon {
+        color: var(--text-color-secondary, #64748b) !important;
+      }
+    }
+  }
+
+  .toolbar-tipo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .tipo-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-color-secondary, #64748b);
+      white-space: nowrap;
+    }
+
+    :host ::ng-deep .tipo-merma-dropdown {
+      border-radius: 8px !important;
+      border: 1px solid var(--surface-300, #cbd5e1) !important;
+      font-size: 0.85rem !important;
+      min-width: 160px;
+
+      .p-select-label {
+        padding: 0.45rem 0.75rem !important;
+        font-size: 0.85rem !important;
+      }
+    }
+  }
+
+  .toolbar-quick-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+
+    .action-link-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: var(--surface-100, #f1f5f9);
+      border: 1px solid var(--surface-200, #e2e8f0);
+      color: var(--text-color-secondary, #475569);
+      padding: 0.4rem 0.65rem;
+      border-radius: 7px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      i {
+        font-size: 0.8rem;
+      }
+
+      &:hover {
+        background: #e2e8f0;
+        color: var(--text-color, #0f172a);
+        border-color: #cbd5e1;
+      }
+    }
+  }
+}
+
+/* Nota instructiva */
+.instruction-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 10px;
+  padding: 0.6rem 0.9rem;
+  color: #92400e;
+  font-size: 0.82rem;
+  line-height: 1.4;
+
+  .instruction-icon {
+    font-size: 1.05rem;
+    color: #d97706;
+    flex-shrink: 0;
+  }
+
+  strong {
+    font-weight: 700;
+    color: #78350f;
+  }
+}
+
+/* Lista con scroll de platillos */
+.dishes-list-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 48vh;
   overflow-y: auto;
-  padding-right: 0.25rem;
+  padding-right: 0.35rem;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
 }
 
-.ingredient-row {
+/* Tarjeta individual de platillo */
+.dish-item-card {
+  background: var(--surface-card, #ffffff);
+  border: 1.5px solid var(--surface-200, #e2e8f0);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+  overflow: hidden;
+
+  &:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  &.dish-fully-checked {
+    border-color: #f59e0b;
+    background: rgba(245, 158, 11, 0.02);
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.25);
+
+    .dish-card-header {
+      background: rgba(245, 158, 11, 0.04);
+    }
+  }
+
+  &.dish-partially-checked {
+    border-color: #6366f1;
+    background: rgba(99, 102, 241, 0.01);
+  }
+}
+
+.dish-card-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--surface-200);
-  border-radius: 8px;
-  background: var(--surface-a);
+  gap: 1rem;
+  padding: 0.9rem 1.15rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--surface-50, #f8fafc);
+  }
+
+  .dish-checkbox-wrap {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+
+    :host ::ng-deep .p-checkbox {
+      width: 22px;
+      height: 22px;
+
+      .p-checkbox-box {
+        border-radius: 6px;
+        width: 22px;
+        height: 22px;
+        transition: all 0.15s ease;
+
+        &.p-highlight {
+          background: #f59e0b !important;
+          border-color: #f59e0b !important;
+        }
+      }
+    }
+  }
+
+  .dish-title-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+
+    .dish-name-line {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+
+      .dish-title-text {
+        font-size: 0.98rem;
+        font-weight: 700;
+        color: var(--text-color, #1e293b);
+        cursor: pointer;
+        margin: 0;
+      }
+
+      .dish-qty-tag {
+        font-size: 0.78rem;
+        font-weight: 700;
+        background: #f1f5f9;
+        color: #475569;
+        padding: 0.15rem 0.45rem;
+        border-radius: 6px;
+      }
+
+      .dish-category-tag {
+        font-size: 0.72rem;
+        font-weight: 600;
+        background: rgba(99, 102, 241, 0.1);
+        color: #6366f1;
+        padding: 0.12rem 0.45rem;
+        border-radius: 6px;
+      }
+    }
+
+    .dish-financials-line {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.8rem;
+      color: var(--text-color-secondary, #64748b);
+
+      .dish-bullet {
+        color: #94a3b8;
+      }
+
+      .dish-estimated-cost {
+        color: #0f172a;
+
+        strong {
+          color: #dc2626;
+          font-weight: 700;
+        }
+      }
+    }
+  }
+
+  .dish-action-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+
+    .expand-recipe-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--surface-100, #f1f5f9);
+      border: 1px solid var(--surface-200, #e2e8f0);
+      color: var(--text-color, #334155);
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.35rem 0.75rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      .expand-chevron {
+        font-size: 0.75rem;
+        transition: transform 0.2s ease;
+      }
+
+      &.is-expanded {
+        background: #e0e7ff;
+        color: #4338ca;
+        border-color: #c7d2fe;
+
+        .expand-chevron {
+          transform: rotate(180deg);
+        }
+      }
+
+      &:hover:not(.is-expanded) {
+        background: #e2e8f0;
+      }
+    }
+
+    .direct-product-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--surface-100, #f1f5f9);
+      color: var(--text-color-secondary, #64748b);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+    }
+  }
 }
 
-.ingredient-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
+/* Desglose de insumos (Drawer desplegable) */
+.dish-recipe-drawer {
+  background: var(--surface-50, #f8fafc);
+  border-top: 1px solid var(--surface-200, #e2e8f0);
+  padding: 0.75rem 1rem;
+
+  .recipe-table {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+
+    .recipe-table-head {
+      display: grid;
+      grid-template-columns: 32px 1fr 130px 150px 110px;
+      align-items: center;
+      padding: 0.35rem 0.6rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-color-secondary, #64748b);
+      border-bottom: 1px solid var(--surface-200, #e2e8f0);
+      margin-bottom: 0.25rem;
+
+      .th-cost {
+        text-align: right;
+      }
+    }
+
+    .recipe-table-row {
+      display: grid;
+      grid-template-columns: 32px 1fr 130px 150px 110px;
+      align-items: center;
+      padding: 0.45rem 0.6rem;
+      border-radius: 8px;
+      background: var(--surface-card, #ffffff);
+      border: 1px solid var(--surface-200, #e2e8f0);
+      transition: all 0.15s ease;
+
+      &:hover {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+      }
+
+      &.is-checked {
+        border-color: #f59e0b;
+        background: rgba(245, 158, 11, 0.04);
+      }
+
+      .td-chk {
+        display: flex;
+        align-items: center;
+
+        :host ::ng-deep .p-checkbox {
+          width: 18px;
+          height: 18px;
+
+          .p-checkbox-box {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+
+            &.p-highlight {
+              background: #f59e0b !important;
+              border-color: #f59e0b !important;
+            }
+          }
+        }
+      }
+
+      .td-name {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        .insumo-label {
+          font-size: 0.88rem;
+          font-weight: 600;
+          color: var(--text-color, #1e293b);
+          cursor: pointer;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .insumo-unit-cost {
+          font-size: 0.75rem;
+          color: var(--text-color-secondary, #64748b);
+        }
+      }
+
+      .td-base-qty {
+        .base-qty-pill {
+          display: inline-block;
+          font-size: 0.78rem;
+          font-weight: 600;
+          color: #475569;
+          background: #f1f5f9;
+          padding: 0.2rem 0.5rem;
+          border-radius: 6px;
+        }
+      }
+
+      .td-merma-qty {
+        .merma-input-container {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+
+          .merma-number-input {
+            width: 72px;
+            text-align: right;
+            padding: 0.28rem 0.45rem !important;
+            font-size: 0.85rem !important;
+            border-radius: 6px !important;
+            border: 1px solid var(--surface-300, #cbd5e1) !important;
+            font-weight: 600;
+
+            &:focus {
+              border-color: #f59e0b !important;
+              box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2) !important;
+            }
+
+            &:disabled {
+              background: #f1f5f9 !important;
+              color: #94a3b8 !important;
+              border-color: #e2e8f0 !important;
+            }
+          }
+
+          .merma-unit-text {
+            font-size: 0.75rem;
+            color: var(--text-color-secondary, #64748b);
+            font-weight: 500;
+          }
+        }
+      }
+
+      .td-cost {
+        text-align: right;
+
+        .cost-loss-value {
+          font-size: 0.88rem;
+          font-weight: 700;
+          color: #dc2626;
+        }
+
+        .cost-loss-zero {
+          color: #94a3b8;
+          font-size: 0.88rem;
+        }
+      }
+    }
+  }
 }
 
-.ingredient-name {
-  font-weight: 600;
-  color: var(--text-color);
-  font-size: 0.9rem;
-}
-
-.ingredient-meta {
-  font-size: 0.78rem;
-  color: var(--text-color-secondary);
-}
-
-.ingredient-qty {
+/* Footer con resumen y acciones */
+.comanda-merma-bottom-bar {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-}
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--surface-card, #ffffff);
+  border: 1px solid var(--surface-200, #e2e8f0);
+  border-radius: 14px;
+  padding: 0.85rem 1.25rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  flex-wrap: wrap;
 
-.qty-label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: var(--text-color-secondary);
-  white-space: nowrap;
-}
+  .bottom-stats-col {
+    .stat-pill-box {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
 
-.qty-input {
-  width: 78px;
-  text-align: right;
-}
+      .check-icon {
+        font-size: 1.35rem;
+        color: #10b981;
+      }
 
-.ingredient-subtotal {
-  font-weight: 700;
-  font-size: 0.9rem;
-  color: var(--warning-color);
-  min-width: 90px;
-  text-align: right;
-}
+      .stat-texts {
+        display: flex;
+        flex-direction: column;
 
-.merma-summary {
-  display: flex;
-  gap: 1.5rem;
-  align-items: center;
-  margin-top: 1rem;
-  padding-top: 0.75rem;
-  border-top: 1px dashed var(--surface-300);
-}
+        .stat-count-text {
+          font-size: 0.92rem;
+          font-weight: 700;
+          color: var(--text-color, #1e293b);
+        }
 
-.summary-item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
+        .stat-dish-text {
+          font-size: 0.76rem;
+          color: #059669;
+          font-weight: 600;
+        }
+      }
+    }
+  }
 
-.summary-label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-color-secondary);
-}
+  .bottom-loss-col {
+    .loss-display-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: rgba(220, 38, 38, 0.05);
+      border: 1px solid rgba(220, 38, 38, 0.18);
+      border-radius: 10px;
+      padding: 0.35rem 1rem;
 
-.summary-value {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--text-color);
-}
+      .loss-subtitle {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #b91c1c;
+      }
 
-.summary-perdida {
-  color: var(--danger-color);
-}
+      .loss-main-amount {
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: #dc2626;
+        line-height: 1.2;
 
-.merma-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.9rem;
+        small {
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: #991b1b;
+        }
+      }
+    }
+  }
+
+  .bottom-buttons-col {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    :host ::ng-deep .btn-cancel-modal {
+      border-radius: 10px !important;
+      font-weight: 600 !important;
+      padding: 0.6rem 1.15rem !important;
+    }
+
+    :host ::ng-deep .btn-confirm-merma {
+      border-radius: 10px !important;
+      font-weight: 700 !important;
+      padding: 0.6rem 1.4rem !important;
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+      border: none !important;
+      color: #ffffff !important;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3) !important;
+      transition: all 0.2s ease !important;
+
+      &:hover:not(:disabled) {
+        filter: brightness(1.06);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4) !important;
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+    }
+  }
 }
 
 .ticket-chip {

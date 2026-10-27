@@ -231,6 +231,19 @@ export class SplitOrderModalComponent implements OnChanges, OnDestroy {
     });
   }
 
+  getSeatThemeClass(index: number): string {
+    const themes = [
+      'theme-blue',
+      'theme-emerald',
+      'theme-yellow',
+      'theme-pink',
+      'theme-purple',
+      'theme-teal',
+      'theme-orange'
+    ];
+    return themes[index % themes.length];
+  }
+
   // Aplica la propina seleccionada a los precios unitarios de los artículos
   private aplicarPropina(items: OrderItem[]): OrderItem[] {
     const tip = this.tip;

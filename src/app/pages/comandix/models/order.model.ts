@@ -16,6 +16,7 @@ export interface OrderItem {
   excludedIngredientIds?: number[];
   /** Insumos adicionales seleccionados por el cliente (se descuentan) */
   additionalIngredientIds?: number[];
+  ronda?: number;
 }
 
 export interface ComandaAsiento {
@@ -123,6 +124,7 @@ export interface PendingOrderItem {
   paraLlevar?: boolean;
   excludedIngredientIds?: number[];
   additionalIngredientIds?: number[];
+  ronda?: number;
 }
 
 export interface PendingOrder {
@@ -197,7 +199,18 @@ export interface UpdateOrderStatusRequest {
   estado: OrderStatus | string;
   userEmail?: string;
   reason?: string;
+  cancellationCategory?: string;
+  cancellationComment?: string;
 }
+
+export const CATEGORIAS_CANCELACION: { label: string; value: string; icon: string; descripcion: string }[] = [
+  { label: 'Alto tiempo de espera', value: 'Alto tiempo de espera', icon: 'pi-clock', descripcion: 'Cocina/barra tardó más de lo tolerable' },
+  { label: 'Error de captura / comanda duplicada', value: 'Error de captura / comanda duplicada', icon: 'pi-copy', descripcion: 'Captura errónea de mesa, mesero o duplicidad' },
+  { label: 'Cliente desistió / Cambio de opinión', value: 'Cliente desistió / Cambio de opinión', icon: 'pi-user-minus', descripcion: 'El comensal decidió retirarse o no consumir' },
+  { label: 'Platillo o bebida defectuosa', value: 'Platillo o bebida defectuosa', icon: 'pi-exclamation-circle', descripcion: 'Inconformidad con calidad, temperatura o preparación' },
+  { label: 'Falta de insumos / Producto agotado', value: 'Falta de insumos / Producto agotado', icon: 'pi-ban', descripcion: 'No hay existencias para preparar los artículos solicitados' },
+  { label: 'Otro motivo', value: 'Otro motivo', icon: 'pi-ellipsis-h', descripcion: 'Causa administrativa u operativa extraordinaria' }
+];
 
 // ==================== DIVISIÓN DE CUENTA (split) ====================
 

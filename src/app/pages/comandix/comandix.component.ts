@@ -38,6 +38,7 @@ import { ProductService } from '@/pages/products-menu/service/product.service';
 import { InventoryService } from '@/pages/inventario/service/inventory.service';
 import { MesaService } from '@/pages/hostess/services/mesa.service';
 import { environment } from '@/pages/commons/environment';
+import { isBeverageCategoryName, isBeverageProductName } from '@/pages/kitchen/services/order-beverage-utils';
 
 // Componentes
 import { ClienteDialogComponent } from '@/pages/clientes/components/cliente-dialog/cliente-dialog.component';
@@ -48,7 +49,7 @@ import { SplitOrderModalComponent } from './components/split-order-modal/split-o
 
 // Modelos
 import { MenuCategory, Product, IngredientOption } from './models/menu.model';
-import { MesaDTO } from '@/pages/hostess/models/mesa.model';
+import { MesaDTO, MesaEstado, MesaForma, MesaGrupo, mesaTamano, rotacionGrados, GrupoRequest } from '@/pages/hostess/models/mesa.model';
 import {
   OrderItem,
   TenantClientOrderCreateRequest,
@@ -59,7 +60,8 @@ import {
   PaymentMethod,
   TipInfo,
   ComandaAsiento,
-  ReporteVentaRow
+  ReporteVentaRow,
+  CATEGORIAS_CANCELACION
 } from './models/order.model';
 import { Cliente, GENERO_OPTIONS, CreateClienteRequest } from '@/models/cliente.model';
 import { RedemptionRequest, RedemptionChannel } from '@/pages/redeem/models/redemption-request.model';
@@ -77,6 +79,7 @@ interface CartItem {
   tiempo?: 1 | 2 | 3; // 1 = 1er Tiempo (Inmediato), 2 = 2do Tiempo (Por marchar), 3 = 3er Tiempo (Por marchar)
   tiempoMarchado?: boolean;
   paraLlevar?: boolean;
+  selectedVariant?: any;
 }
 
 interface StockInfo {
@@ -84,6 +87,22 @@ interface StockInfo {
   stockMinimo: number;
   low: boolean;
   out: boolean;
+}
+
+export interface DisponibilidadItem {
+  id: number;
+  nombre: string;
+  categoria: string;
+  area: 'Cocina' | 'Barra';
+  stock: number;
+  stockMinimo: number;
+  es86: boolean;
+  es85: boolean;
+  esDisponible: boolean;
+  salidasHoy: number;
+  precio: number;
+  imgUrl: string | null;
+  product: Product;
 }
 
 @Component({
@@ -229,23 +248,50 @@ export class ComandixComponent implements OnInit, OnDestroy {
   configModificables: IngredientOption[] = [];
   configAdicionales: IngredientOption[] = [];
   configExcludedIds = new Set<number>();
-configAdditionalIds = new Set<number>();
-configEditingItem: CartItem | null = null;
+  configAdditionalIds = new Set<number>();
+  configEditingItem: CartItem | null = null;
+  configOptionGroups = signal<Array<{
+    name: string;
+    icon: string;
+    hint?: string;
+    items: Array<{
+      option: IngredientOption;
+      type: 'MODIFICABLE' | 'ADICIONAL';
+    }>;
+  }>>([]);
+  configSelectedVariant: any = null;
+
+  // ==================== SUBCOMANDA DE VARIANTES (MODAL EN CARDS) ====================
+  showVariantModal = signal<boolean>(false);
+  variantModalProduct = signal<Product | null>(null);
+  selectedVariantForModal = signal<any | null>(null);
 
   // ==================== SIGNALS DASHBOARD DE ÓRDENES (nuevo) ====================
-  activeView = signal<'pos' | 'orders' | 'report'>('pos');
+  activeView = signal<'mesas' | 'pos' | 'orders' | 'report' | 'disponibilidad'>('mesas');
   ordersView = signal<'active' | 'closed' | 'cancelled'>('active');
+
+  // ==================== DISPONIBILIDAD DE PLATILLOS (8-5 y 8-6) ====================
+  disponibilidadBusqueda = signal<string>('');
+  disponibilidadAreaFiltro = signal<'TODOS' | 'COCINA' | 'BARRA'>('TODOS');
+  disponibilidadCategoriaFiltro = signal<string>('TODAS');
+  disponibilidadEstadoFiltro = signal<'TODOS' | '8-5' | '8-6' | 'DISPONIBLES'>('TODOS');
+  disponibilidadModoVista = signal<'grid' | 'list'>('grid');
+  beverageProductIds = signal<Set<number>>(new Set());
   pendingOrders = signal<PendingOrder[]>([]);
   loadingOrders = signal<boolean>(false);
   selectedOrder = signal<PendingOrder | null>(null);
   showOrderDetail = signal<boolean>(false);
   processingOrderAction = signal<boolean>(false);
   editingPendingOrder = signal<PendingOrder | null>(null);
+  appendingToOrder = signal<PendingOrder | null>(null);
   showCloseOrderModal = signal<boolean>(false);
   selectedOrderForPayment = signal<PendingOrder | null>(null);
   showCancelOrderDialog = signal<boolean>(false);
   selectedOrderForCancellation = signal<PendingOrder | null>(null);
   cancellingOrder = signal<boolean>(false);
+  categoriasCancelacion = CATEGORIAS_CANCELACION;
+  cancellationCategory: string = 'Alto tiempo de espera';
+  cancellationComment: string = '';
   cancellationReason: string = '';
 
   // ==================== DETALLE DE PLATILLO (MODAL) ====================
@@ -258,6 +304,8 @@ configEditingItem: CartItem | null = null;
   ticketBusinessName = '';
   ticketBusinessAddress = '';
   ticketBusinessPhone = '';
+  ticketBusinessLogo = '';
+  ticketLogoMode = 'HEADER';
   ticketInvoiceBaseUrl = ((environment.landingPageBaseUrl || '').replace(/\/landing-page\/?$/, '') || 'http://localhost:4200') + '/facturar/';
   ticketInvoiceUuid = signal('');
 
@@ -293,6 +341,153 @@ configEditingItem: CartItem | null = null;
   // ==================== TRAZABILIDAD (Mesa y Mesero) ====================
   mesas = signal<MesaDTO[]>([]);
   selectedMesa = signal<MesaDTO | null>(null);
+
+  // ==================== ÁREAS DEL LOCAL (Pizarrón por Área) ====================
+  areas = signal<string[]>(['Principal']);
+  areaSeleccionada = signal<string>('Principal');
+
+  mesasDelArea = computed<MesaDTO[]>(() => {
+    const areaActual = this.areaSeleccionada() || 'Principal';
+    return this.mesas().filter(m => (m.area || 'Principal') === areaActual);
+  });
+
+  // ==================== MAPA DE MESAS (Modo Mesero: Vista / Consulta / Unión) ====================
+  readonly workspaceW = 1200;
+  readonly workspaceH = 720;
+  private readonly DEFAULT_X = 100;
+  private readonly DEFAULT_Y = 100;
+  private readonly DEFAULT_STEP = 40;
+  private readonly GRUPO_PADDING = 7;
+
+  unirModeMesas = signal<boolean>(false);
+  selectedMesaIds = signal<Set<number>>(new Set());
+  modalMesaConsultadaVisible = signal<boolean>(false);
+  mesaConsultada = signal<MesaDTO | null>(null);
+
+  // Modal para mesas agrupadas (Separar mesas vs Abrir comanda)
+  modalOpcionesGrupoVisible = signal<boolean>(false);
+  grupoSeleccionado = signal<MesaGrupo | null>(null);
+  mesaDelGrupoSeleccionada = signal<MesaDTO | null>(null);
+
+  ordenesDeGrupoSeleccionado = computed<PendingOrder[]>(() => {
+    const grupo = this.grupoSeleccionado();
+    if (!grupo || !grupo.mesas) return [];
+    const mesaIds = new Set(grupo.mesas.map(m => m.id).filter(id => id != null));
+    return this.pendingOrders().filter(
+      o => o.mesaId != null && mesaIds.has(o.mesaId) && o.estado !== 'PAGADA' && o.estado !== 'CANCELADA'
+    );
+  });
+
+  mesasLibresCount = computed(() => this.mesasDelArea().filter(m => m.estado === 'LIBRE').length);
+  mesasOcupadasCount = computed(() => this.mesasDelArea().filter(m => m.estado === 'OCUPADA').length);
+  mesasReservadasCount = computed(() => this.mesasDelArea().filter(m => m.estado === 'RESERVADA').length);
+
+  grupoTemporal = computed<MesaGrupo[]>(() => {
+    const byGroup = new Map<string, MesaDTO[]>();
+    this.mesasDelArea().forEach(m => {
+      if (m.idGrupoTemporal) {
+        const list = byGroup.get(m.idGrupoTemporal) || [];
+        list.push(m);
+        byGroup.set(m.idGrupoTemporal, list);
+      }
+    });
+
+    const grupos: MesaGrupo[] = [];
+    byGroup.forEach((mesas, grupoId) => {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      mesas.forEach(m => {
+        const size = mesaTamano(m);
+        const cx = m.posicionX ?? 0;
+        const cy = m.posicionY ?? 0;
+        minX = Math.min(minX, cx - size.width / 2);
+        minY = Math.min(minY, cy - size.height / 2);
+        maxX = Math.max(maxX, cx + size.width / 2);
+        maxY = Math.max(maxY, cy + size.height / 2);
+      });
+      const ordenadas = [...mesas].sort((a, b) => (a.numero ?? 0) - (b.numero ?? 0));
+      grupos.push({
+        grupoId,
+        x: minX - this.GRUPO_PADDING,
+        y: minY - this.GRUPO_PADDING,
+        width: (maxX - minX) + this.GRUPO_PADDING * 2,
+        height: (maxY - minY) + this.GRUPO_PADDING * 2,
+        mesas: ordenadas,
+        capacidadTotal: mesas.reduce((acc, m) => acc + (m.capacidad || 0), 0),
+        etiqueta: ordenadas.map(m => m.numero ? `M${m.numero}` : m.nombre).join(' + ')
+      });
+    });
+    return grupos;
+  });
+
+  seleccionarArea(area: string): void {
+    this.areaSeleccionada.set(area);
+    this.saveSelectedArea(area);
+    if (this.unirModeMesas()) {
+      this.selectedMesaIds.set(new Set());
+    }
+  }
+
+  conteoMesasPorArea(area: string): number {
+    return this.mesas().filter(m => (m.area || 'Principal') === area).length;
+  }
+
+  conteoMesasLibresPorArea(area: string): number {
+    return this.mesas().filter(m => (m.area || 'Principal') === area && m.estado === 'LIBRE').length;
+  }
+
+  private getAreasStorageKey(): string {
+    return `lealtix_areas_${this.tenantId || 0}`;
+  }
+
+  private loadStoredAreas(): string[] {
+    try {
+      const raw = localStorage.getItem(this.getAreasStorageKey());
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.filter((a: any) => typeof a === 'string' && a.trim().length > 0);
+      }
+    } catch {
+      // ignore
+    }
+    return [];
+  }
+
+  private saveStoredAreas(areas: string[]): void {
+    try {
+      localStorage.setItem(this.getAreasStorageKey(), JSON.stringify(areas));
+    } catch {
+      // ignore
+    }
+  }
+
+  private getSelectedAreaStorageKey(): string {
+    return `lealtix_selected_area_${this.tenantId || 0}`;
+  }
+
+  private loadSelectedArea(): string | null {
+    try {
+      const val = localStorage.getItem(this.getSelectedAreaStorageKey());
+      return val && val.trim().length > 0 ? val.trim() : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private saveSelectedArea(area: string): void {
+    try {
+      localStorage.setItem(this.getSelectedAreaStorageKey(), area);
+    } catch {
+      // ignore
+    }
+  }
+
+  ordenesDeMesaConsultada = computed<PendingOrder[]>(() => {
+    const mesa = this.mesaConsultada();
+    if (!mesa?.id) return [];
+    return this.pendingOrders().filter(
+      o => o.mesaId === mesa.id && o.estado !== 'PAGADA' && o.estado !== 'CANCELADA'
+    );
+  });
 
   // ==================== REPORTE GENERAL DE VENTAS / COMANDAS ====================
   reporteFiltroFecha = signal<'hoy' | 'semana' | 'todos'>('hoy');
@@ -436,6 +631,216 @@ configEditingItem: CartItem | null = null;
     return pagadas.length > 0 ? this.reporteTotalVendido() / pagadas.length : 0;
   });
 
+  // ==================== DISPONIBILIDAD DE PLATILLOS (8-5 y 8-6) ====================
+
+  /** Mapa de cantidades de cada producto ordenadas / vendidas hoy por el mesero autenticado */
+  salidasMeseroHoyMap = computed<Map<number, number>>(() => {
+    const map = new Map<number, number>();
+    const orders = this.pendingOrders();
+    const currentUser = this.authService.getCurrentUser();
+    const currentUserId = currentUser?.id;
+    const currentEmail = (currentUser?.email || this.currentUserEmail || '').toLowerCase().trim();
+    const currentName = (currentUser?.nombre || currentUser?.userName || '').toLowerCase().trim();
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    for (const order of orders) {
+      if (order.estado === 'CANCELADA' || order.estado === 'RECHAZADO') continue;
+
+      // Validar si la comanda se creó hoy
+      const fechaStr = order.horaApertura || order.fechaCreacion || order.payment?.paidAt;
+      if (fechaStr) {
+        const d = new Date(fechaStr);
+        d.setHours(0, 0, 0, 0);
+        if (d.getTime() !== hoy.getTime()) continue;
+      }
+
+      // Validar si fue atendida por el mesero actual
+      const meseroEmail = (order.meseroEmail || '').toLowerCase().trim();
+      const paidBy = (order.payment?.paidBy ? String(order.payment.paidBy) : '').toLowerCase().trim();
+      const meseroNom = (order.meseroNombre || '').toLowerCase().trim();
+
+      const esDelMesero =
+        (currentEmail && (meseroEmail === currentEmail || paidBy === currentEmail)) ||
+        (currentUserId != null && order.meseroId === currentUserId) ||
+        (currentName && meseroNom.includes(currentName)) ||
+        (!order.meseroEmail && !order.meseroId && !order.payment?.paidBy);
+
+      if (!esDelMesero) continue;
+
+      for (const item of order.items || []) {
+        const pid = item.productId != null ? Number(item.productId) : null;
+        if (pid != null) {
+          const qty = item.cantidad != null ? Number(item.cantidad) : 1;
+          map.set(pid, (map.get(pid) || 0) + qty);
+        }
+      }
+    }
+    return map;
+  });
+
+  /** Todos los artículos de cocina y barra unificados con sus stocks y salidas */
+  todosLosArticulosDisponibilidad = computed<DisponibilidadItem[]>(() => {
+    const beverageIds = this.beverageProductIds();
+    const salidasMap = this.salidasMeseroHoyMap();
+    const categories = this.categories();
+    const stockMap = this.stockMap;
+
+    const seenIds = new Set<number>();
+    const result: DisponibilidadItem[] = [];
+
+    for (const cat of categories) {
+      for (const prod of cat.products || []) {
+        if (seenIds.has(prod.id)) continue;
+        seenIds.add(prod.id);
+
+        const catNameLower = (cat.name || '').toLowerCase();
+        const prodNameLower = prod.name.toLowerCase();
+
+        const isBeverage =
+          beverageIds.has(prod.id) ||
+          isBeverageCategoryName(cat.name) ||
+          isBeverageProductName(prod.name) ||
+          catNameLower.includes('bebida') ||
+          catNameLower.includes('coctel') ||
+          catNameLower.includes('cocktail') ||
+          catNameLower.includes('cerveza') ||
+          catNameLower.includes('vino') ||
+          catNameLower.includes('licor') ||
+          catNameLower.includes('cafeter') ||
+          catNameLower.includes('barra') ||
+          catNameLower.includes('trago') ||
+          catNameLower.includes('destilado') ||
+          catNameLower.includes('refresco') ||
+          catNameLower.includes('shot') ||
+          catNameLower.includes('botella') ||
+          prodNameLower.includes('tequila') ||
+          prodNameLower.includes('cerveza') ||
+          prodNameLower.includes('mezcal') ||
+          prodNameLower.includes('vodka') ||
+          prodNameLower.includes('whisky') ||
+          prodNameLower.includes('ron ') ||
+          prodNameLower.includes('cocktail') ||
+          prodNameLower.includes('refresco');
+
+        const area: 'Cocina' | 'Barra' = isBeverage ? 'Barra' : 'Cocina';
+
+        const stInfo = stockMap.get(prod.id);
+        const rawStock = stInfo ? stInfo.stock : (typeof (prod as any).stock === 'number' ? (prod as any).stock : 10);
+        const stock = Math.max(0, Math.floor(rawStock));
+
+        // 8-6: Agotado (stock <= 0)
+        // 8-5: Pocas existencias (stock <= 3 y > 0)
+        // Disponible: stock > 3
+        const es86 = stock <= 0 || !!stInfo?.out;
+        const es85 = !es86 && (stock <= 3 || !!stInfo?.low);
+        const esDisponible = !es86 && !es85;
+
+        const salidasHoy = salidasMap.get(prod.id) || 0;
+
+        result.push({
+          id: prod.id,
+          nombre: prod.name,
+          categoria: cat.name || 'General',
+          area,
+          stock: es86 ? 0 : stock,
+          stockMinimo: stInfo?.stockMinimo ?? 0,
+          es86,
+          es85,
+          esDisponible,
+          salidasHoy,
+          precio: Number(prod.price) || 0,
+          imgUrl: this.resolveImageUrlForRendering(prod.imageUrl),
+          product: prod
+        });
+      }
+    }
+
+    return result.sort((a, b) => {
+      // Priorizar 8-6 primero, luego 8-5, luego disponibles
+      if (a.es86 && !b.es86) return -1;
+      if (!a.es86 && b.es86) return 1;
+      if (a.es85 && !b.es85) return -1;
+      if (!a.es85 && b.es85) return 1;
+      return a.nombre.localeCompare(b.nombre);
+    });
+  });
+
+  /** Lista filtrada según búsqueda, área, categoría y código operativo (8-5/8-6) */
+  articulosDisponibilidadFiltrados = computed<DisponibilidadItem[]>(() => {
+    const list = this.todosLosArticulosDisponibilidad();
+    const busqueda = (this.disponibilidadBusqueda() || '').toLowerCase().trim();
+    const areaFiltro = this.disponibilidadAreaFiltro();
+    const catFiltro = this.disponibilidadCategoriaFiltro();
+    const estadoFiltro = this.disponibilidadEstadoFiltro();
+
+    return list.filter((item) => {
+      if (busqueda && !item.nombre.toLowerCase().includes(busqueda) && !item.categoria.toLowerCase().includes(busqueda)) {
+        return false;
+      }
+      if (areaFiltro === 'COCINA' && item.area !== 'Cocina') return false;
+      if (areaFiltro === 'BARRA' && item.area !== 'Barra') return false;
+
+      if (catFiltro !== 'TODAS' && item.categoria !== catFiltro) return false;
+
+      if (estadoFiltro === '8-5' && !item.es85) return false;
+      if (estadoFiltro === '8-6' && !item.es86) return false;
+      if (estadoFiltro === 'DISPONIBLES' && !item.esDisponible) return false;
+
+      return true;
+    });
+  });
+
+  /** Contadores para chips y badges */
+  items85Count = computed(() => this.todosLosArticulosDisponibilidad().filter((i) => i.es85).length);
+  items86Count = computed(() => this.todosLosArticulosDisponibilidad().filter((i) => i.es86).length);
+  itemsDisponiblesCount = computed(() => this.todosLosArticulosDisponibilidad().filter((i) => i.esDisponible).length);
+  totalSalidasHoyMesero = computed(() =>
+    Array.from(this.salidasMeseroHoyMap().values()).reduce((a, b) => a + b, 0)
+  );
+
+  categoriasDisponibilidad = computed<string[]>(() => {
+    const cats = new Set(this.todosLosArticulosDisponibilidad().map((i) => i.categoria));
+    return ['TODAS', ...Array.from(cats).sort()];
+  });
+
+  hayFiltrosDisponibilidadActivos = computed<boolean>(() => {
+    return (
+      !!this.disponibilidadBusqueda().trim() ||
+      this.disponibilidadAreaFiltro() !== 'TODOS' ||
+      this.disponibilidadCategoriaFiltro() !== 'TODAS' ||
+      this.disponibilidadEstadoFiltro() !== 'TODOS'
+    );
+  });
+
+  limpiarFiltrosDisponibilidad(): void {
+    this.disponibilidadBusqueda.set('');
+    this.disponibilidadAreaFiltro.set('TODOS');
+    this.disponibilidadCategoriaFiltro.set('TODAS');
+    this.disponibilidadEstadoFiltro.set('TODOS');
+  }
+
+  ordenarDesdeDisponibilidad(item: DisponibilidadItem): void {
+    if (item.es86) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Artículo Agotado (Código 8-6)',
+        detail: `No se puede agregar "${item.nombre}": actualmente se encuentra sin stock en existencia.`,
+        life: 3500
+      });
+      return;
+    }
+    this.switchView('pos');
+    this.addToCart(item.product);
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Agregado a la comanda',
+      detail: `"${item.nombre}" añadido al ticket actual`,
+      life: 2500
+    });
+  }
+
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
   private editCountdownTimer: ReturnType<typeof setInterval> | null = null;
   private knownOrderIds = new Set<string>();
@@ -446,8 +851,11 @@ configEditingItem: CartItem | null = null;
   // comandas canceladas aparezcan en su pestaña (no solo las activas).
   private readonly POLL_STATUSES: OrderStatus[] = ['PENDIENTE', 'CONFIRMADA', 'EN_PREPARACION', 'LISTO', 'PAGADA', 'CANCELADA'];
 
-  /** La comanda siempre puede editarse mientras no esté pagada/cancelada. */
-  private readonly editableStates: OrderStatus[] = ['PENDIENTE', 'CONFIRMADA', 'EN_PREPARACION', 'LISTO'];
+  /** Prórroga de edición de comandas enviadas (30 segundos) */
+  private readonly EDIT_WINDOW_SECONDS = 30;
+  /** Timestamp 'ahora' para refrescar el countdown de edición cada segundo */
+  nowTick = signal<number>(Date.now());
+  private readonly editableStates: OrderStatus[] = ['PENDIENTE', 'CONFIRMADA'];
 
   private destroy$ = new Subject<void>();
 
@@ -481,6 +889,7 @@ configEditingItem: CartItem | null = null;
     if (this.tenantId > 0) {
       this.loadCatalog();
       this.loadStockInfo();
+      this.loadBebidas();
       this.loadClientes();
       this.loadMesas();
       this.startPolling();
@@ -491,20 +900,24 @@ configEditingItem: CartItem | null = null;
     }
   }
 
-  /** Pausa el polling en segundo plano y refresca al volver a la pestaña. */
-  @HostListener('document:visibilitychange')
-  onVisibilityChange(): void {
-    if (typeof document === 'undefined' || this.tenantId <= 0) {
-      return;
-    }
-    if (document.visibilityState === 'visible') {
-      if (this.pollingInterval === null) {
-        this.startPolling();
-      }
-      void this.pollOrders();
-    } else {
-      this.stopPolling();
-    }
+  loadBebidas(): void {
+    if (this.tenantId <= 0) return;
+    this.inventoryService.getBebidas(this.tenantId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res) => {
+          const bebidas = res?.object || [];
+          const set = new Set<number>();
+          for (const b of bebidas) {
+            const pid = Number(b?.productoId);
+            if (Number.isFinite(pid) && pid > 0) set.add(pid);
+          }
+          this.beverageProductIds.set(set);
+        },
+        error: (err) => {
+          console.warn('[Comandix] No se pudieron cargar las bebidas:', err);
+        }
+      });
   }
 
   ngOnDestroy(): void {
@@ -522,10 +935,14 @@ configEditingItem: CartItem | null = null;
 
   // ==================== VISTA ACTIVA ====================
 
-  switchView(view: 'pos' | 'orders' | 'report'): void {
+  switchView(view: 'mesas' | 'pos' | 'orders' | 'report' | 'disponibilidad'): void {
     this.activeView.set(view);
     if (view === 'orders') {
       this.ordersView.set('active');
+    }
+    if (view === 'disponibilidad') {
+      this.loadStockInfo();
+      this.loadBebidas();
     }
   }
 
@@ -810,37 +1227,424 @@ configEditingItem: CartItem | null = null;
 
   // ==================== CARGA DE MESAS ====================
 
-  private loadMesas(): void {
+  loadMesas(): void {
     if (this.tenantId <= 0) return;
     this.mesaService.getMesas(this.tenantId).subscribe({
       next: (mesas) => {
         if (mesas && mesas.length > 0) {
-          this.mesas.set(mesas);
-          if (!this.selectedMesa()) {
-            this.selectedMesa.set(mesas[0]);
+          const positioned = this.applyDefaultPositions(mesas);
+          this.mesas.set(positioned);
+
+          // Extraer áreas únicas de las mesas y combinar con las guardadas en localStorage
+          const storedAreas = this.loadStoredAreas();
+          const mesaAreas = Array.from(new Set(mesas.map(m => (m.area || 'Principal').trim()).filter(a => a.length > 0)));
+          const allAreasSet = new Set<string>();
+          storedAreas.forEach(a => allAreasSet.add(a));
+          mesaAreas.forEach(a => allAreasSet.add(a));
+          if (allAreasSet.size === 0) {
+            allAreasSet.add('Principal');
+          }
+          const finalAreas = Array.from(allAreasSet);
+          this.areas.set(finalAreas);
+          this.saveStoredAreas(finalAreas);
+
+          // Si hay un área previamente seleccionada guardada en localStorage, usarla si aún existe
+          const lastSelectedArea = this.loadSelectedArea();
+          if (lastSelectedArea && finalAreas.includes(lastSelectedArea)) {
+            this.areaSeleccionada.set(lastSelectedArea);
+          } else if (!finalAreas.includes(this.areaSeleccionada())) {
+            // Priorizar primera área que tenga mesas
+            const firstWithMesas = finalAreas.find(a => mesas.some(m => (m.area || 'Principal') === a));
+            this.areaSeleccionada.set(firstWithMesas || finalAreas[0] || 'Principal');
+          } else if (this.areaSeleccionada() === 'Principal' && !mesas.some(m => (m.area || 'Principal') === 'Principal')) {
+            const firstWithMesas = finalAreas.find(a => mesas.some(m => (m.area || 'Principal') === a));
+            if (firstWithMesas) {
+              this.areaSeleccionada.set(firstWithMesas);
+            }
+          }
+
+          // Si ya teníamos una mesa seleccionada, mantenerla sincronizada
+          if (this.selectedMesa()) {
+            const current = positioned.find(m => m.id === this.selectedMesa()?.id);
+            if (current) {
+              this.selectedMesa.set(current);
+            }
           }
         } else {
-          const defaultMesas: MesaDTO[] = [
-            { id: 1, tenantId: this.tenantId, nombre: 'Mesa 1', numero: 1, capacidad: 4, estado: 'LIBRE' },
-            { id: 2, tenantId: this.tenantId, nombre: 'Mesa 2', numero: 2, capacidad: 4, estado: 'LIBRE' },
-            { id: 3, tenantId: this.tenantId, nombre: 'Mesa 3', numero: 3, capacidad: 4, estado: 'LIBRE' },
-            { id: 4, tenantId: this.tenantId, nombre: 'Barra', numero: 4, capacidad: 2, estado: 'LIBRE' }
-          ];
-          this.mesas.set(defaultMesas);
-          this.selectedMesa.set(defaultMesas[0]);
+          const storedAreas = this.loadStoredAreas();
+          const finalAreas = storedAreas.length > 0 ? storedAreas : ['Principal'];
+          this.areas.set(finalAreas);
+          this.mesas.set([]);
         }
       },
       error: () => {
         const defaultMesas: MesaDTO[] = [
-          { id: 1, tenantId: this.tenantId, nombre: 'Mesa 1', numero: 1, capacidad: 4, estado: 'LIBRE' },
-          { id: 2, tenantId: this.tenantId, nombre: 'Mesa 2', numero: 2, capacidad: 4, estado: 'LIBRE' },
-          { id: 3, tenantId: this.tenantId, nombre: 'Mesa 3', numero: 3, capacidad: 4, estado: 'LIBRE' },
-          { id: 4, tenantId: this.tenantId, nombre: 'Barra', numero: 4, capacidad: 2, estado: 'LIBRE' }
+          { id: 1, tenantId: this.tenantId, nombre: 'Mesa 1', numero: 1, capacidad: 4, estado: 'LIBRE', posicionX: 200, posicionY: 200 },
+          { id: 2, tenantId: this.tenantId, nombre: 'Mesa 2', numero: 2, capacidad: 4, estado: 'LIBRE', posicionX: 360, posicionY: 200 },
+          { id: 3, tenantId: this.tenantId, nombre: 'Mesa 3', numero: 3, capacidad: 4, estado: 'LIBRE', posicionX: 520, posicionY: 200 },
+          { id: 4, tenantId: this.tenantId, nombre: 'Barra', numero: 4, capacidad: 2, estado: 'LIBRE', posicionX: 680, posicionY: 200 }
         ];
         this.mesas.set(defaultMesas);
-        this.selectedMesa.set(defaultMesas[0]);
       }
     });
+  }
+
+  // ==================== ACCIONES DEL MAPA DE MESAS (MESERO) ====================
+
+  onMesaClick(mesa: MesaDTO): void {
+    if (mesa.id == null) return;
+
+    // Modo unión de mesas
+    if (this.unirModeMesas()) {
+      if (mesa.estado !== 'LIBRE') {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Mesa ocupada',
+          detail: `Solo puedes unir mesas libres. '${mesa.nombre}' está en estado ${mesa.estado}.`
+        });
+        return;
+      }
+      this.toggleMesaSelection(mesa);
+      return;
+    }
+
+    // Si la mesa pertenece a un grupo temporal, mostrar modal con opciones "Separar mesas" y "Abrir comanda"
+    if (mesa.idGrupoTemporal) {
+      this.abrirModalOpcionesGrupo(mesa.idGrupoTemporal, mesa);
+      return;
+    }
+
+    // Modo normal: si la mesa está libre, abrir comanda directamente y marcar como OCUPADA
+    if (mesa.estado === 'LIBRE') {
+      this.abrirComandaParaMesa(mesa);
+      return;
+    }
+
+    // Si la mesa está OCUPADA o RESERVADA, consultar la mesa
+    this.consultarMesa(mesa);
+  }
+
+  abrirComandaParaMesa(mesa: MesaDTO): void {
+    if (mesa.id == null) return;
+
+    // Si la mesa está libre, cambiar inmediatamente a OCUPADA
+    if (mesa.estado === 'LIBRE') {
+      this.patchMesaLocal(mesa.id, { estado: 'OCUPADA' });
+      this.mesaService.changeEstado(mesa.id, this.tenantId, 'OCUPADA').subscribe({
+        next: () => {
+          console.log(`[Comandix] Mesa #${mesa.id} marcada como OCUPADA en servidor`);
+        },
+        error: (err) => {
+          console.error('[Comandix] Error al cambiar estado de mesa a OCUPADA:', err);
+        }
+      });
+    }
+
+    const mesaActualizada: MesaDTO = { ...mesa, estado: 'OCUPADA' };
+    this.selectedMesa.set(mesaActualizada);
+
+    // Si la comanda previa en carrito era de otra mesa, resetear comanda
+    if (this.editingPendingOrder()?.mesaId !== mesa.id) {
+      this.resetForm();
+    }
+
+    this.modalMesaConsultadaVisible.set(false);
+    this.mesaConsultada.set(null);
+    this.switchView('pos');
+
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Mesa asignada',
+      detail: `Comanda iniciada para ${mesa.nombre} (#${mesa.id}). Mesa marcada como OCUPADA.`,
+      life: 3500
+    });
+  }
+
+  consultarMesa(mesa: MesaDTO): void {
+    this.mesaConsultada.set(mesa);
+    this.modalMesaConsultadaVisible.set(true);
+  }
+
+  cerrarConsultaMesa(): void {
+    this.modalMesaConsultadaVisible.set(false);
+    this.mesaConsultada.set(null);
+  }
+
+  liberarMesaManual(mesa: MesaDTO): void {
+    if (mesa.id == null) return;
+    this.patchMesaLocal(mesa.id, { estado: 'LIBRE' });
+    this.mesaService.changeEstado(mesa.id, this.tenantId, 'LIBRE').subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Mesa liberada',
+          detail: `La mesa '${mesa.nombre}' ahora está LIBRE.`,
+          life: 3000
+        });
+        this.cerrarConsultaMesa();
+        this.loadMesas();
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo liberar la mesa.'
+        });
+      }
+    });
+  }
+
+  volverAlMapa(): void {
+    if (this.selectedMesa()?.area) {
+      this.areaSeleccionada.set(this.selectedMesa()!.area!);
+    }
+    this.switchView('mesas');
+  }
+
+  // Unión y separación de mesas
+  activarUnionMode(): void {
+    this.unirModeMesas.set(true);
+    this.selectedMesaIds.set(new Set());
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Modo Unir Mesas',
+      detail: 'Toca dos o más mesas libres para seleccionarlas y unirlas.',
+      life: 4000
+    });
+  }
+
+  cancelarUnionMode(): void {
+    this.unirModeMesas.set(false);
+    this.selectedMesaIds.set(new Set());
+  }
+
+  toggleMesaSelection(mesa: MesaDTO): void {
+    if (mesa.id == null) return;
+    const current = new Set(this.selectedMesaIds());
+    if (current.has(mesa.id)) {
+      current.delete(mesa.id);
+    } else {
+      current.add(mesa.id);
+    }
+    this.selectedMesaIds.set(current);
+  }
+
+  isMesaSelected(mesaId?: number): boolean {
+    return mesaId != null && this.selectedMesaIds().has(mesaId);
+  }
+
+  ejecutarUnionMesas(): void {
+    const ids = Array.from(this.selectedMesaIds());
+    if (ids.length < 2) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Selección insuficiente',
+        detail: 'Debes seleccionar al menos 2 mesas libres para unirlas.',
+        life: 3000
+      });
+      return;
+    }
+
+    this.mesaService.unirMesas(this.tenantId, { mesaIds: ids }).subscribe({
+      next: (res) => {
+        const byId = new Map(res.map(m => [m.id as number, m]));
+        this.mesas.set(this.mesas().map(m => byId.get(m.id as number) || m));
+        this.cancelarUnionMode();
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Mesas unidas',
+          detail: `Se han unido ${ids.length} mesas exitosamente.`,
+          life: 4000
+        });
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error al unir mesas',
+          detail: err?.error?.message || 'No se pudieron unir las mesas seleccionadas.'
+        });
+      }
+    });
+  }
+
+  separarGrupoDeMesa(grupoId: string): void {
+    this.mesaService.separarGrupo(this.tenantId, grupoId).subscribe({
+      next: (res) => {
+        const byId = new Map(res.map(m => [m.id as number, m]));
+        this.mesas.set(this.mesas().map(m => {
+          const fromServer = byId.get(m.id as number);
+          if (fromServer) {
+            return { ...fromServer, estado: 'LIBRE' };
+          }
+          if (m.idGrupoTemporal === grupoId) {
+            return { ...m, idGrupoTemporal: null, estado: 'LIBRE' };
+          }
+          return m;
+        }));
+        if (this.selectedMesa() && this.selectedMesa()?.idGrupoTemporal === grupoId) {
+          const updated = byId.get(this.selectedMesa()!.id as number);
+          if (updated) {
+            this.selectedMesa.set({ ...updated, estado: 'LIBRE' });
+          } else {
+            this.selectedMesa.set({ ...this.selectedMesa()!, idGrupoTemporal: null, estado: 'LIBRE' });
+          }
+        }
+        this.cerrarConsultaMesa();
+        this.cerrarModalOpcionesGrupo();
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Mesas separadas',
+          detail: 'Las mesas han sido desagrupadas y su estado ahora es LIBRE.',
+          life: 3000
+        });
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error al separar grupo',
+          detail: err?.error?.message || 'No se pudieron separar las mesas.'
+        });
+      }
+    });
+  }
+
+  // ==================== ACCIONES PARA MODAL DE MESAS AGRUPADAS ====================
+
+  abrirModalOpcionesGrupo(grupoId: string, mesa?: MesaDTO): void {
+    const grupo = this.grupoTemporal().find(g => g.grupoId === grupoId);
+    if (!grupo) {
+      const mesasDelGrupo = this.mesas().filter(m => m.idGrupoTemporal === grupoId);
+      if (mesasDelGrupo.length === 0) return;
+      const ordenadas = [...mesasDelGrupo].sort((a, b) => (a.numero ?? 0) - (b.numero ?? 0));
+      const fallbackGrupo: MesaGrupo = {
+        grupoId,
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0,
+        mesas: ordenadas,
+        capacidadTotal: mesasDelGrupo.reduce((acc, m) => acc + (m.capacidad || 0), 0),
+        etiqueta: ordenadas.map(m => m.numero ? `M${m.numero}` : m.nombre).join(' + ')
+      };
+      this.grupoSeleccionado.set(fallbackGrupo);
+      this.mesaDelGrupoSeleccionada.set(mesa ?? ordenadas[0]);
+    } else {
+      this.grupoSeleccionado.set(grupo);
+      this.mesaDelGrupoSeleccionada.set(mesa ?? grupo.mesas[0]);
+    }
+    this.modalOpcionesGrupoVisible.set(true);
+  }
+
+  cerrarModalOpcionesGrupo(): void {
+    this.modalOpcionesGrupoVisible.set(false);
+    this.grupoSeleccionado.set(null);
+    this.mesaDelGrupoSeleccionada.set(null);
+  }
+
+  onGrupoClick(grupo: MesaGrupo, event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.abrirModalOpcionesGrupo(grupo.grupoId, grupo.mesas[0]);
+  }
+
+  onLegendGrupoClick(): void {
+    const grupos = this.grupoTemporal();
+    if (grupos.length > 0) {
+      this.abrirModalOpcionesGrupo(grupos[0].grupoId, grupos[0].mesas[0]);
+    }
+  }
+
+  separarGrupoActual(): void {
+    const grupo = this.grupoSeleccionado();
+    if (!grupo?.grupoId) return;
+    this.separarGrupoDeMesa(grupo.grupoId);
+  }
+
+  abrirComandaDesdeGrupo(): void {
+    const grupo = this.grupoSeleccionado();
+    const mesa = this.mesaDelGrupoSeleccionada() || grupo?.mesas?.[0];
+    this.cerrarModalOpcionesGrupo();
+    if (mesa) {
+      this.abrirComandaParaMesa(mesa);
+    }
+  }
+
+  patchMesaLocal(id: number, patch: Partial<MesaDTO>): void {
+    const target = this.mesas().find(m => m.id === id);
+    const grupoId = target?.idGrupoTemporal;
+    this.mesas.set(this.mesas().map(m => {
+      if (m.id === id || (grupoId && m.idGrupoTemporal === grupoId)) {
+        return { ...m, ...patch };
+      }
+      return m;
+    }));
+    if (this.selectedMesa()?.id === id) {
+      this.selectedMesa.set({ ...this.selectedMesa()!, ...patch });
+    }
+  }
+
+  // Auxiliares de Render Geométrico del Mapa
+  private applyDefaultPositions(mesas: MesaDTO[]): MesaDTO[] {
+    return mesas.map((m, i) => {
+      if (m.posicionX != null && m.posicionY != null) {
+        return m;
+      }
+      const col = i % 4;
+      const row = Math.floor(i / 4);
+      return {
+        ...m,
+        posicionX: m.posicionX ?? this.DEFAULT_X + col * this.DEFAULT_STEP,
+        posicionY: m.posicionY ?? this.DEFAULT_Y + row * this.DEFAULT_STEP
+      };
+    });
+  }
+
+  mesaLeft(mesa: MesaDTO): number {
+    return mesa.posicionX ?? this.DEFAULT_X;
+  }
+
+  mesaTop(mesa: MesaDTO): number {
+    return mesa.posicionY ?? this.DEFAULT_Y;
+  }
+
+  mesaWidth(mesa: MesaDTO): number {
+    return mesaTamano(mesa).width;
+  }
+
+  mesaHeight(mesa: MesaDTO): number {
+    return mesaTamano(mesa).height;
+  }
+
+  esVertical(mesa: MesaDTO): boolean {
+    return (mesa.forma ?? 'cuadrada') === 'rectangular' && rotacionGrados(mesa.rotacion) % 180 === 90;
+  }
+
+  mesaTransform(mesa: MesaDTO): string {
+    return 'translate(-50%, -50%)';
+  }
+
+  labelMesa(mesa: MesaDTO): string {
+    if (mesa.nombre && mesa.nombre.trim().length > 0) {
+      return mesa.nombre.trim();
+    }
+    if (mesa.identificador) {
+      return mesa.identificador;
+    }
+    if (mesa.numero != null) {
+      return `M${mesa.numero}`;
+    }
+    return mesa.id != null ? `#${mesa.id}` : 'Mesa';
+  }
+
+  tooltipMesa(mesa: MesaDTO): string {
+    const idPart = mesa.id != null ? `#${mesa.id} · ` : '';
+    const numero = mesa.numero != null ? `Mesa ${mesa.numero} · ` : '';
+    const areaPart = mesa.area ? `[${mesa.area}] · ` : '';
+    const estado = mesa.estado ? `[${mesa.estado}] · ` : '';
+    const cap = `${mesa.capacidad} personas`;
+    const grupo = mesa.idGrupoTemporal ? ' · (Mesa agrupada · Clic para opciones)' : '';
+    return `${idPart}${numero}${mesa.nombre} · ${areaPart}${estado}${cap}${grupo}`;
   }
 
   // ==================== POLLING DE ÓRDENES PENDIENTES ====================
@@ -936,6 +1740,7 @@ configEditingItem: CartItem | null = null;
     }
 
     this.loadStockInfo();
+    this.loadMesas();
   }
 
   private mapBackendOrder(order: any): PendingOrder {
@@ -1149,10 +1954,13 @@ configEditingItem: CartItem | null = null;
 
           // 2. Si la orden fue PAGADA
           if (normalizedState === 'PAGADA') {
+            this.loadMesas();
             const isEditingThis = this.editingPendingOrder()?.id === orderId;
+            const isAppendingThis = this.appendingToOrder()?.id === orderId;
 
-            if (isEditingThis) {
+            if (isEditingThis || isAppendingThis) {
               this.editingPendingOrder.set(null);
+              this.appendingToOrder.set(null);
               this.cart.set([]); // Bloquea y limpia el carrito inmediatamente
 
               this.messageService.add({
@@ -1311,6 +2119,7 @@ configEditingItem: CartItem | null = null;
     this.showTicketModal.set(true);
 
     this.closeCloseOrderModal();
+    this.loadMesas();
 
     this.messageService.add({
       severity: 'success',
@@ -1356,8 +2165,8 @@ configEditingItem: CartItem | null = null;
     if (!this.canEditOrder(order)) {
       this.messageService.add({
         severity: 'error',
-        summary: 'No se puede editar',
-        detail: 'Una comanda pagada o cancelada no puede editarse',
+        summary: 'Prórroga vencida',
+        detail: 'La comanda se envió hace más de 30 segundos y ya no puede editarse',
         life: 3000
       });
       return;
@@ -1370,6 +2179,22 @@ configEditingItem: CartItem | null = null;
     this.descuentoAplicado.set(Number(latestOrder.descuento ?? 0));
     this.cart.set(this.buildCartFromPendingOrder(latestOrder));
     this.editingPendingOrder.set(latestOrder);
+    this.appendingToOrder.set(null);
+    if (latestOrder.mesaId) {
+      const foundMesa = this.mesas().find(m => m.id === latestOrder.mesaId);
+      if (foundMesa) {
+        this.selectedMesa.set(foundMesa);
+      } else {
+        this.selectedMesa.set({
+          id: latestOrder.mesaId,
+          nombre: latestOrder.mesaNombre || `Mesa #${latestOrder.mesaId}`,
+          numero: latestOrder.mesaNumero,
+          tenantId: this.tenantId,
+          capacidad: 4,
+          estado: 'OCUPADA'
+        });
+      }
+    }
     this.closeOrderDetail();
     this.switchView('pos');
 
@@ -1384,6 +2209,7 @@ configEditingItem: CartItem | null = null;
   cancelPendingOrderEdition(): void {
     const currentOrder = this.editingPendingOrder();
     this.resetForm();
+    this.selectedMesa.set(null);
     this.switchView('orders');
 
     if (currentOrder) {
@@ -1394,6 +2220,95 @@ configEditingItem: CartItem | null = null;
         life: 3000
       });
     }
+  }
+
+  /**
+   * Abre una comanda abierta para agregar más platillos o bebidas (nueva ronda).
+   * Los nuevos artículos se enviarán a cocina y barra como una nueva orden/ticket
+   * pero pertenecerán a la misma comanda y aparecerán en la misma cuenta al cobrar.
+   */
+  abrirComandaParaAgregar(order: PendingOrder): void {
+    if (!order) return;
+    if (order.estado === 'PAGADA' || order.estado === 'CANCELADA') {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Comanda no disponible',
+        detail: `No se pueden agregar productos a una comanda en estado ${order.estado}`,
+        life: 3000
+      });
+      return;
+    }
+
+    const latestOrder = this.pendingOrders().find((o) => o.id === order.id) ?? order;
+
+    // Asignar contexto de adición a comanda
+    this.appendingToOrder.set(latestOrder);
+    this.editingPendingOrder.set(null);
+
+    // Resolver cliente de la orden
+    this.selectedCliente = this.resolveClienteFromOrder(latestOrder);
+
+    // Asignar mesa de la comanda
+    if (latestOrder.mesaId) {
+      const foundMesa = this.mesas().find(m => m.id === latestOrder.mesaId);
+      if (foundMesa) {
+        this.selectedMesa.set(foundMesa);
+      } else {
+        this.selectedMesa.set({
+          id: latestOrder.mesaId,
+          nombre: latestOrder.mesaNombre || `Mesa #${latestOrder.mesaId}`,
+          numero: latestOrder.mesaNumero,
+          tenantId: this.tenantId,
+          capacidad: 4,
+          estado: 'OCUPADA'
+        });
+      }
+    }
+
+    // El carrito empieza limpio para los NUEVOS platillos a agregar
+    this.cart.set([]);
+    this.clearCartDraft();
+    this.descuentoAplicado.set(0);
+    this.codigoCupon = '';
+
+    // Cerrar cualquier modal abierto
+    this.closeOrderDetail();
+    this.modalMesaConsultadaVisible.set(false);
+    this.modalOpcionesGrupoVisible.set(false);
+
+    // Cambiar al menú POS
+    this.switchView('pos');
+
+    const mesaTxt = latestOrder.mesaNombre ? ` (${latestOrder.mesaNombre})` : '';
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Comanda abierta',
+      detail: `Agregando productos a la comanda #${latestOrder.id.slice(0, 8).toUpperCase()}${mesaTxt}. Los nuevos artículos se sumarán a la misma cuenta.`,
+      life: 4000
+    });
+  }
+
+  cancelarAgregarAComanda(): void {
+    const currentOrder = this.appendingToOrder();
+    this.appendingToOrder.set(null);
+    this.resetForm();
+    this.selectedMesa.set(null);
+    this.switchView('orders');
+
+    if (currentOrder) {
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Operación cancelada',
+        detail: `No se agregaron productos a la comanda #${currentOrder.id.slice(0, 8).toUpperCase()}`,
+        life: 3000
+      });
+    }
+  }
+
+  canAbrirComanda(order: PendingOrder | null | undefined): boolean {
+    if (!order) return false;
+    const normalized = this.normalizeOrderStatus(order.estado);
+    return normalized !== 'PAGADA' && normalized !== 'CANCELADA' && normalized !== 'RECHAZADO';
   }
 
   private playNotificationSound(times = 1, delayMs = 500): void {
@@ -1428,9 +2343,24 @@ configEditingItem: CartItem | null = null;
     }
   }
 
-  /** Solo el ADMIN puede cancelar/rechazar comandas (anti-robo). */
-  get isAdmin(): boolean {
-    return this.authService.getUserRole() === 'ADMIN';
+  /** True si la comanda aún puede editarse (estado pendiente/confirmada y dentro de la prórroga) */
+  canEditOrder(order: PendingOrder): boolean {
+    if (!order) return false;
+    if (!this.editableStates.includes(order.estado as OrderStatus)) return false;
+    if (!order.fechaCreacion) return false;
+    const created = new Date(order.fechaCreacion).getTime();
+    const now = this.nowTick();
+    const diffMs = now - created;
+    return diffMs >= 0 && diffMs < this.EDIT_WINDOW_SECONDS * 1000;
+  }
+
+  /** Segundos restantes de la prórroga para la orden (0 si venció) */
+  private getEditableRemainingSeconds(order: PendingOrder): number {
+    if (!order?.fechaCreacion) return 0;
+    const created = new Date(order.fechaCreacion).getTime();
+    const diffMs = this.nowTick() - created;
+    const remainingSec = Math.ceil((this.EDIT_WINDOW_SECONDS * 1000 - diffMs) / 1000);
+    return remainingSec > 0 ? remainingSec : 0;
   }
 
   /**
@@ -1447,6 +2377,22 @@ configEditingItem: CartItem | null = null;
     return order.customerName ?? order.nombre ?? 'Cliente General';
   }
 
+  getElapsedTime(dateStr?: string): string {
+    if (!dateStr) return '';
+    try {
+      const diffMs = Date.now() - new Date(dateStr).getTime();
+      if (diffMs < 0) return 'Hace un momento';
+      const mins = Math.floor(diffMs / 60000);
+      if (mins < 1) return 'Hace < 1 min';
+      if (mins < 60) return `Hace ${mins} min`;
+      const hrs = Math.floor(mins / 60);
+      const remMins = mins % 60;
+      return `Hace ${hrs}h ${remMins}m`;
+    } catch {
+      return '';
+    }
+  }
+
   /** Nombre del producto del item (con fallback a productId) */
   getProductLabel(item: any): string {
     return item.productName ?? item.prod ?? `Producto #${item.productId}`;
@@ -1460,7 +2406,7 @@ configEditingItem: CartItem | null = null;
   // ==================== STOCK DISPONIBLE POR PRODUCTO ("cuántos salen aún") ====================
 
   /** Carga el stock actual de cada producto del menú (dinámico si tiene receta). */
-  private async loadStockInfo(): Promise<void> {
+  async loadStockInfo(): Promise<void> {
     if (this.tenantId <= 0) return;
     try {
       const resp = await firstValueFrom(this.inventoryService.getByTenant(this.tenantId));
@@ -1624,12 +2570,19 @@ configEditingItem: CartItem | null = null;
 
   async rechazarOrden(order: PendingOrder): Promise<void> {
     this.selectedOrderForCancellation.set(order);
+    this.cancellationCategory = 'Alto tiempo de espera';
+    this.cancellationComment = '';
+    this.cancellationReason = '';
     this.showCancelOrderDialog.set(true);
   }
 
-  async onCancelOrderConfirmed(reason: string): Promise<void> {
+  async onCancelOrderConfirmed(category?: string, comment?: string): Promise<void> {
     const order = this.selectedOrderForCancellation();
     if (!order || this.cancellingOrder()) return;
+
+    const cat = category || this.cancellationCategory || 'Otro motivo';
+    const comm = (comment !== undefined ? comment : this.cancellationComment).trim();
+    const compositeReason = comm ? `[${cat}] ${comm}` : cat;
 
     this.cancellingOrder.set(true);
     try {
@@ -1638,14 +2591,16 @@ configEditingItem: CartItem | null = null;
           order.id,
           'CANCELADA',
           this.currentUserEmail,
-          reason
+          compositeReason,
+          cat,
+          comm
         )
       );
 
       this.messageService.add({
         severity: 'info',
         summary: 'Orden cancelada',
-        detail: `Orden #${order.id.slice(0, 8)}… cancelada`,
+        detail: `Orden #${order.id.slice(0, 8)}… cancelada (${cat})`,
         life: 3000
       });
 
@@ -1653,7 +2608,9 @@ configEditingItem: CartItem | null = null;
       this.patchOrderStatus(order.id, 'CANCELADA' as OrderStatus);
       this.showCancelOrderDialog.set(false);
       this.selectedOrderForCancellation.set(null);
+      this.cancellationComment = '';
       this.closeOrderDetail();
+      this.loadMesas();
     } catch (error: any) {
       this.messageService.add({
         severity: 'error',
@@ -1669,6 +2626,7 @@ configEditingItem: CartItem | null = null;
   onCancelOrderDialogCancel(): void {
     this.showCancelOrderDialog.set(false);
     this.selectedOrderForCancellation.set(null);
+    this.cancellationComment = '';
   }
 
   private removeOrderFromList(orderId: string): void {
@@ -1703,6 +2661,22 @@ configEditingItem: CartItem | null = null;
     }
   }
 
+  private normalizarUrlImagen(url: string): string {
+    if (!url) return '';
+    let res = url.trim();
+    if (res.startsWith('data:image')) return res;
+    if (res.startsWith('/api/')) {
+      const base = (environment.apiUrl || 'http://localhost:8080/api').replace(/\/api\/?$/, '');
+      return `${base}${res}`;
+    }
+    if (res.startsWith('https://localhost/api/') || (res.startsWith('http://localhost/api/') && !res.startsWith('http://localhost:8080/api/'))) {
+      const path = res.replace(/^https?:\/\/localhost/, '');
+      const base = (environment.apiUrl || 'http://localhost:8080/api').replace(/\/api\/?$/, '');
+      return `${base}${path}`;
+    }
+    return res;
+  }
+
   private loadTicketBusinessInfo(): void {
     if (!this.tenantId) {
       return;
@@ -1712,6 +2686,8 @@ configEditingItem: CartItem | null = null;
         this.ticketBusinessName = t?.bussinessName || t?.nombreNegocio || 'Lealtix';
         this.ticketBusinessAddress = t?.direccion || '';
         this.ticketBusinessPhone = t?.telefono || '';
+        this.ticketBusinessLogo = this.normalizarUrlImagen(t?.logoUrl || '');
+        this.ticketLogoMode = t?.ticketLogoMode || 'HEADER';
       },
       error: () => {
         // noop
@@ -1825,7 +2801,7 @@ configEditingItem: CartItem | null = null;
   private mapProductsToCategories(products: any[]): MenuCategory[] {
     if (!products || products.length === 0) return [];
 
-    const activeProducts = products.filter((p) => p?.isActive !== false);
+    const activeProducts = products.filter((p) => p?.isActive !== false && p?.esVariable !== true);
     const categoriesMap = new Map<string, MenuCategory>();
     let autoId = 1;
 
@@ -1853,6 +2829,44 @@ configEditingItem: CartItem | null = null;
 
       const categoryName: string = product.categoryName || (Array.isArray(product.categories) && product.categories[0]?.name) || '';
 
+      const rawRecipes = Array.isArray(product.recipes) ? (product.recipes as any[]) : [];
+      const rawAdditionals = Array.isArray(product.additionals) ? (product.additionals as any[]) : [];
+      const backendVariants = Array.isArray(product.variants) ? (product.variants as any[]) : [];
+      const additionalsVariants = rawAdditionals.filter(
+        (a: any) => a.tipoIngrediente === 'VARIANTE' || a.isVariant || a.grupo === 'VARIANTE'
+      );
+      const recipeVariants = rawRecipes.filter(
+        (r: any) => r.tipoIngrediente === 'VARIANTE' || r.isVariant || r.grupo === 'VARIANTE'
+      );
+      const combinedVariants = [...backendVariants, ...additionalsVariants, ...recipeVariants];
+      const seenVariantInsumos = new Set<number>();
+      const allVariants: any[] = [];
+      for (const v of combinedVariants) {
+        const vid = v.insumoId || v.id;
+        if (vid && !seenVariantInsumos.has(vid)) {
+          seenVariantInsumos.add(vid);
+          allVariants.push({
+            id: v.id,
+            insumoId: v.insumoId || v.id,
+            insumoName: v.insumoName || v.nombre || v.name || 'Variante',
+            name: v.insumoName || v.nombre || v.name || 'Variante',
+            precio: Number(v.precio ?? v.price ?? 0),
+            price: Number(v.precio ?? v.price ?? 0),
+            cantidad: v.cantidad,
+            unidad: v.unidad,
+            isVariant: true,
+            tipoIngrediente: 'VARIANTE'
+          });
+        }
+      }
+      const regularAdditionals = rawAdditionals.filter(
+        (a: any) => a.tipoIngrediente !== 'VARIANTE' && !a.isVariant && a.grupo !== 'VARIANTE'
+      );
+      const regularRecipes = rawRecipes.filter(
+        (r: any) => r.tipoIngrediente !== 'VARIANTE' && !r.isVariant && r.grupo !== 'VARIANTE'
+      );
+
+      const hasVariantsFlag = !!product.tieneVariantes || allVariants.length > 0;
       const mappedProduct: Product = {
         id: Number(product.id ?? 0),
         name: product.name || product.productName || 'Producto',
@@ -1860,8 +2874,11 @@ configEditingItem: CartItem | null = null;
         imageUrl: imageUrl,
         description: description,
         categoryName: categoryName,
-        recipes: Array.isArray(product.recipes) ? product.recipes as IngredientOption[] : [],
-        additionals: Array.isArray(product.additionals) ? product.additionals as IngredientOption[] : []
+        recipes: regularRecipes as IngredientOption[],
+        additionals: regularAdditionals as IngredientOption[],
+        variants: allVariants,
+        tieneVariantes: hasVariantsFlag,
+        esVariable: !!product.esVariable
       };
 
       // Multicategoría: el producto aparece en TODAS sus categorías (principal + extras).
@@ -1991,6 +3008,12 @@ configEditingItem: CartItem | null = null;
   addToCart(product: Product): void {
     if (!product) return;
 
+    // Si el producto tiene variantes (ej. Tequila, Mezcal, etc.), abrir modal de variantes con cards (subcomanda)
+    if (product.variants && product.variants.length > 0) {
+      this.openVariantSelection(product);
+      return;
+    }
+
     const modificables = (product.recipes || []).filter((r) => r.modificable);
     const adicionales = product.additionals || [];
 
@@ -2001,6 +3024,58 @@ configEditingItem: CartItem | null = null;
     }
 
     this.addToCartWithAllergyCheck(product, [], [], 0);
+  }
+
+  // ==================== SUBCOMANDA DE VARIANTES (MODAL CON CARDS) ====================
+
+  openVariantSelection(product: Product): void {
+    this.variantModalProduct.set(product);
+    this.selectedVariantForModal.set(null);
+    this.showVariantModal.set(true);
+    this.cdr.detectChanges();
+  }
+
+  closeVariantSelection(): void {
+    this.showVariantModal.set(false);
+    this.variantModalProduct.set(null);
+    this.selectedVariantForModal.set(null);
+  }
+
+  onSelectVariantCard(variant: any): void {
+    const product = this.variantModalProduct();
+    if (!product) return;
+
+    this.selectedVariantForModal.set(variant);
+    this.showVariantModal.set(false);
+
+    const modificables = (product.recipes || []).filter((r) => r.modificable && r.tipoIngrediente !== 'VARIANTE' && !r.isVariant);
+    const adicionales = (product.additionals || []).filter((a) => a.tipoIngrediente !== 'VARIANTE' && !a.isVariant);
+
+    // Si el producto tiene modificables o adicionales (ej. los 5 mezcladores incluidos para botella)
+    if (modificables.length > 0 || adicionales.length > 0) {
+      this.openIngredientConfigWithVariant(product, variant, modificables, adicionales);
+    } else {
+      // Si no tiene adicionales, agregar directamente a la comanda con la variante seleccionada
+      this.addToCartWithVariant(product, variant, [], [], 0);
+    }
+  }
+
+  private openIngredientConfigWithVariant(
+    product: Product,
+    variant: any,
+    modificables: IngredientOption[],
+    adicionales: IngredientOption[]
+  ): void {
+    this.configProduct = product;
+    this.configSelectedVariant = variant;
+    this.configModificables = modificables;
+    this.configAdicionales = adicionales;
+    this.configExcludedIds = new Set();
+    this.configAdditionalIds = new Set();
+    this.configEditingItem = null;
+    this.configOptionGroups.set(this.buildOptionGroups(modificables, adicionales));
+    this.ingredientConfigVisible = true;
+    this.cdr.detectChanges();
   }
 
   /************************************************************************
@@ -2075,23 +3150,28 @@ configEditingItem: CartItem | null = null;
     this.configExcludedIds = new Set();
     this.configAdditionalIds = new Set();
     this.configEditingItem = null;
+    this.configOptionGroups.set(this.buildOptionGroups(modificables, adicionales));
     this.ingredientConfigVisible = true;
     this.cdr.detectChanges();
   }
 
   editCartItem(item: CartItem): void {
     const product = item.product;
-    const modificables = (product.recipes || []).filter((r) => r.modificable);
-    const adicionales = product.additionals || [];
+    const modificables = (product.recipes || []).filter((r) => r.modificable && r.tipoIngrediente !== 'VARIANTE' && !r.isVariant);
+    const adicionales = (product.additionals || []).filter((a) => a.tipoIngrediente !== 'VARIANTE' && !a.isVariant);
 
-    if (modificables.length === 0 && adicionales.length === 0) return;
+    if (modificables.length === 0 && adicionales.length === 0 && !item.selectedVariant) return;
 
     this.configProduct = product;
+    this.configSelectedVariant = item.selectedVariant || null;
     this.configModificables = modificables;
     this.configAdicionales = adicionales;
     this.configExcludedIds = new Set(item.excludedIngredientIds || []);
-    this.configAdditionalIds = new Set(item.additionalIngredientIds || []);
+    const variantInsumoId = item.selectedVariant?.insumoId;
+    const itemAdditionals = (item.additionalIngredientIds || []).filter(id => id !== variantInsumoId);
+    this.configAdditionalIds = new Set(itemAdditionals);
     this.configEditingItem = item;
+    this.configOptionGroups.set(this.buildOptionGroups(modificables, adicionales));
     this.ingredientConfigVisible = true;
     this.cdr.detectChanges();
   }
@@ -2128,7 +3208,12 @@ configEditingItem: CartItem | null = null;
   }
 
   getConfigUnitPrice(): number {
-    const base = this.configProduct ? Number(this.configProduct.price) || 0 : 0;
+    let base = 0;
+    if (this.configSelectedVariant) {
+      base = Number(this.configSelectedVariant.precio ?? this.configSelectedVariant.price ?? 0);
+    } else if (this.configProduct) {
+      base = Number(this.configProduct.price) || 0;
+    }
     return base + this.getConfigExtraPrice();
   }
 
@@ -2148,21 +3233,167 @@ configEditingItem: CartItem | null = null;
       .join(', ');
   }
 
+  getConfigOptionGroups(): Array<{
+    name: string;
+    icon: string;
+    hint?: string;
+    items: Array<{
+      option: IngredientOption;
+      type: 'MODIFICABLE' | 'ADICIONAL';
+    }>;
+  }> {
+    return this.configOptionGroups();
+  }
+
+  trackByGroupName(_index: number, group: any): string {
+    return group?.name ?? _index;
+  }
+
+  trackByOptionInsumoId(_index: number, item: any): number {
+    return item?.option?.insumoId ?? item?.option?.id ?? _index;
+  }
+
+  buildOptionGroups(modificables: IngredientOption[], adicionales: IngredientOption[]): Array<{
+    name: string;
+    icon: string;
+    hint?: string;
+    items: Array<{
+      option: IngredientOption;
+      type: 'MODIFICABLE' | 'ADICIONAL';
+    }>;
+  }> {
+    const groupsMap = new Map<string, {
+      name: string;
+      icon: string;
+      hint?: string;
+      items: Array<{
+        option: IngredientOption;
+        type: 'MODIFICABLE' | 'ADICIONAL';
+      }>;
+    }>();
+
+    const getIconForGroup = (name: string): string => {
+      const lower = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (lower.includes('proteina') || lower.includes('carne') || lower.includes('pollo') || lower.includes('res') || lower.includes('bistec')) return 'pi pi-bolt';
+      if (lower.includes('salsa') || lower.includes('picante') || lower.includes('chile')) return 'pi pi-sparkles';
+      if (lower.includes('guarnicion') || lower.includes('complemento') || lower.includes('acompanamiento')) return 'pi pi-box';
+      if (lower.includes('termino') || lower.includes('coccion')) return 'pi pi-clock';
+      if (lower.includes('queso') || lower.includes('lacteo')) return 'pi pi-star';
+      if (lower.includes('bebida') || lower.includes('refresco')) return 'pi pi-coffee';
+      if (lower.includes('topping') || lower.includes('extra')) return 'pi pi-plus-circle';
+      return 'pi pi-tag';
+    };
+
+    // 1. Modificables
+    for (const m of modificables) {
+      const groupName = m.grupo && m.grupo.trim() ? m.grupo.trim() : 'Ingredientes Modificables';
+      if (!groupsMap.has(groupName)) {
+        groupsMap.set(groupName, {
+          name: groupName,
+          icon: getIconForGroup(groupName),
+          hint: groupName === 'Ingredientes Modificables' ? 'Desmarca lo que NO quieras' : 'Personaliza tus opciones',
+          items: []
+        });
+      }
+      groupsMap.get(groupName)!.items.push({ option: m, type: 'MODIFICABLE' });
+    }
+
+    // 2. Adicionales
+    for (const a of adicionales) {
+      const groupName = a.grupo && a.grupo.trim() ? a.grupo.trim() : 'Adicionales Extra';
+      if (!groupsMap.has(groupName)) {
+        groupsMap.set(groupName, {
+          name: groupName,
+          icon: getIconForGroup(groupName),
+          hint: groupName === 'Adicionales Extra' ? 'Marca para agregar con costo' : 'Opciones con costo adicional',
+          items: []
+        });
+      }
+      groupsMap.get(groupName)!.items.push({ option: a, type: 'ADICIONAL' });
+    }
+
+    return Array.from(groupsMap.values());
+  }
+
+  getItemBaseIngredients(item: any): IngredientOption[] {
+    if (!item?.productId) return [];
+    const product = this.allProducts().find((p: Product) => p.id === item.productId);
+    if (!product?.recipes) return [];
+    return product.recipes.filter(
+      (r: IngredientOption) => r.tipoIngrediente === 'BASE' || (!r.modificable && r.tipoIngrediente !== 'ADICIONAL')
+    );
+  }
+
+  getItemModifiableIngredients(item: any): IngredientOption[] {
+    if (!item?.productId) return [];
+    const product = this.allProducts().find((p: Product) => p.id === item.productId);
+    if (!product?.recipes) return [];
+    const excluded = new Set(item.excludedIngredientIds || []);
+    return product.recipes.filter(
+      (r: IngredientOption) => (r.modificable || r.tipoIngrediente === 'MODIFICABLE') && !excluded.has(r.insumoId)
+    );
+  }
+
+  getItemRemovedIngredients(item: any): IngredientOption[] {
+    if (!item?.productId) return [];
+    const product = this.allProducts().find((p: Product) => p.id === item.productId);
+    if (!product?.recipes) return [];
+    const excluded = new Set(item.excludedIngredientIds || []);
+    return product.recipes.filter((r: IngredientOption) => excluded.has(r.insumoId));
+  }
+
+  getItemAdditionalIngredients(item: any): IngredientOption[] {
+    if (!item?.productId) return [];
+    const product = this.allProducts().find((p: Product) => p.id === item.productId);
+    if (!product) return [];
+    const additionalIds = new Set(item.additionalIngredientIds || []);
+    const fromAdditionals = (product.additionals || []).filter((a: IngredientOption) => additionalIds.has(a.insumoId));
+    if (fromAdditionals.length > 0) return fromAdditionals;
+    return (product.recipes || []).filter(
+      (r: IngredientOption) => r.tipoIngrediente === 'ADICIONAL' && additionalIds.has(r.insumoId)
+    );
+  }
+
+  hasRecipeInfo(item: any): boolean {
+    if (!item?.productId) return false;
+    return (
+      this.getItemBaseIngredients(item).length > 0 ||
+      this.getItemModifiableIngredients(item).length > 0 ||
+      this.getItemRemovedIngredients(item).length > 0 ||
+      this.getItemAdditionalIngredients(item).length > 0
+    );
+  }
+
+  ingredientLabel(ingredient: IngredientOption): string {
+    const quantity = ingredient.cantidad != null ? String(ingredient.cantidad) : '';
+    const unit = ingredient.unidad ?? '';
+    const amount = [quantity, unit].filter(Boolean).join(' ');
+    return amount ? `${ingredient.insumoName} (${amount})` : ingredient.insumoName;
+  }
+
   confirmIngredientConfig(): void {
     if (!this.configProduct) return;
     const product = this.configProduct;
+    const selectedVariant = this.configSelectedVariant;
 
     const excludedIds: number[] = Array.from(this.configExcludedIds);
-    const additionalIds: number[] = Array.from(this.configAdditionalIds);
+    let additionalIds: number[] = Array.from(this.configAdditionalIds);
+    if (selectedVariant && selectedVariant.insumoId) {
+      if (!additionalIds.includes(selectedVariant.insumoId)) {
+        additionalIds.push(selectedVariant.insumoId);
+      }
+    }
     const extraPrice = this.getConfigExtraPrice();
 
-const editingItem = this.configEditingItem;
+    const editingItem = this.configEditingItem;
 
     this.ingredientConfigVisible = false;
     this.cdr.detectChanges();
     try {
       if (editingItem) {
-        this.updateCartItemConfig(editingItem, excludedIds, additionalIds, extraPrice);
+        this.updateCartItemConfig(editingItem, excludedIds, additionalIds, extraPrice, selectedVariant);
+      } else if (selectedVariant) {
+        this.addToCartWithVariant(product, selectedVariant, excludedIds, additionalIds, extraPrice);
       } else {
         this.addToCartWithAllergyCheck(product, excludedIds, additionalIds, extraPrice);
       }
@@ -2182,6 +3413,7 @@ const editingItem = this.configEditingItem;
 
   private resetIngredientConfig(): void {
     this.configProduct = null;
+    this.configSelectedVariant = null;
     this.configModificables = [];
     this.configAdicionales = [];
     this.configExcludedIds = new Set();
@@ -2189,15 +3421,35 @@ const editingItem = this.configEditingItem;
     this.configEditingItem = null;
   }
 
-  private updateCartItemConfig(item: CartItem, excludedIds: number[], additionalIds: number[], extraPrice: number): void {
+  private updateCartItemConfig(
+    item: CartItem,
+    excludedIds: number[],
+    additionalIds: number[],
+    extraPrice: number,
+    selectedVariant?: any
+  ): void {
     const product = item.product;
-    const unitPrice = (Number(product.price) || 0) + extraPrice;
-    const configKey = JSON.stringify([[...excludedIds].sort((a, b) => a - b), [...additionalIds].sort((a, b) => a - b)]);
+    const variant = selectedVariant || item.selectedVariant;
+    const basePrice = variant ? Number(variant.precio ?? variant.price ?? 0) : (Number(product.price) || 0);
+    const unitPrice = basePrice + extraPrice;
+    const variantName = variant ? (variant.insumoName || variant.name || '') : '';
+    const configKey = JSON.stringify([
+      variant ? `var:${variant.insumoId || variantName}` : '',
+      [...excludedIds].sort((a, b) => a - b),
+      [...additionalIds].sort((a, b) => a - b)
+    ]);
 
     this.cart.update((items) =>
       items.map((i) =>
         i === item
-          ? { ...i, excludedIngredientIds: excludedIds, additionalIngredientIds: additionalIds, precioUnitario: unitPrice, configKey }
+          ? {
+              ...i,
+              excludedIngredientIds: excludedIds,
+              additionalIngredientIds: additionalIds,
+              precioUnitario: unitPrice,
+              configKey,
+              selectedVariant: variant
+            }
           : i
       )
     );
@@ -2207,8 +3459,88 @@ const editingItem = this.configEditingItem;
     this.messageService.add({
       severity: 'success',
       summary: 'Producto actualizado',
-      detail: `${product.name} actualizado ($${unitPrice.toFixed(2)})`,
+      detail: `${product.name}${variantName ? ' - ' + variantName : ''} actualizado ($${unitPrice.toFixed(2)})`,
       life: 2500
+    });
+
+    this.cdr.detectChanges();
+  }
+
+  addToCartWithVariant(
+    product: Product,
+    variant: any,
+    excludedIds: number[] = [],
+    additionalIds: number[] = [],
+    extraPrice: number = 0
+  ): void {
+    const variantPrice = Number(variant.precio ?? variant.price ?? product.price ?? 0);
+    const unitPrice = variantPrice + extraPrice;
+
+    // Asegurar que el insumoId de la variante esté en additionalIds para descuento de inventario
+    const finalAdditionalIds = [...additionalIds];
+    if (variant.insumoId && !finalAdditionalIds.includes(variant.insumoId)) {
+      finalAdditionalIds.push(variant.insumoId);
+    }
+
+    const variantName = variant.insumoName || variant.name || 'Variante';
+    const configKey = JSON.stringify([
+      `var:${variant.insumoId || variantName}`,
+      [...excludedIds].sort((a, b) => a - b),
+      [...finalAdditionalIds].sort((a, b) => a - b)
+    ]);
+
+    const currentSeat = this.asientoActivo();
+    const seatId = currentSeat.id;
+    const seatAlias = currentSeat.alias;
+    const tiempo = this.tiempoActivo();
+
+    const existingItem = this.cart().find(
+      (item) =>
+        item.product.id === product.id &&
+        item.configKey === configKey &&
+        item.asientoId === seatId &&
+        (item.tiempo || 1) === tiempo &&
+        !item.paraLlevar &&
+        item.selectedVariant?.insumoId === variant.insumoId
+    );
+
+    if (existingItem) {
+      this.cart.update((items) =>
+        items.map((item) =>
+          item === existingItem
+            ? { ...item, cantidad: item.cantidad + 1, precioUnitario: unitPrice }
+            : item
+        )
+      );
+    } else {
+      this.cart.update((items) => [
+        ...items,
+        {
+          product,
+          cantidad: 1,
+          comentarios: '',
+          precioUnitario: unitPrice,
+          excludedIngredientIds: excludedIds,
+          additionalIngredientIds: finalAdditionalIds,
+          configKey,
+          asientoId: seatId,
+          asientoAlias: seatAlias,
+          tiempo,
+          tiempoMarchado: false,
+          paraLlevar: false,
+          selectedVariant: variant
+        }
+      ]);
+    }
+
+    this.persistCartDraft();
+
+    const tiempoTag = tiempo === 3 ? ' (🍰 3er Tiempo)' : (tiempo === 2 ? ' (⏱️ 2do Tiempo)' : '');
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Variante añadida',
+      detail: `${product.name} - ${variantName} ($${unitPrice.toFixed(2)}) añadido a ${seatAlias}${tiempoTag}`,
+      life: 3000
     });
 
     this.cdr.detectChanges();
@@ -2299,7 +3631,8 @@ const editingItem = this.configEditingItem;
   }
 
   private cartItemKey(item: CartItem): string {
-    return `${item.product.id}::${item.configKey || ''}::${item.asientoId || 'seat-1'}::${item.tiempo || 1}::${item.paraLlevar ? 1 : 0}`;
+    const varKey = item.selectedVariant?.insumoId ? `::var-${item.selectedVariant.insumoId}` : '';
+    return `${item.product.id}${varKey}::${item.configKey || ''}::${item.asientoId || 'seat-1'}::${item.tiempo || 1}::${item.paraLlevar ? 1 : 0}`;
   }
 
   getCartItemUnitPrice(item: CartItem): number {
@@ -2485,6 +3818,16 @@ trackByProductId = (index: number, item: CartItem): string => {
       return;
     }
 
+    if (!this.selectedMesa()) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Mesa no seleccionada',
+        detail: 'Debes seleccionar una mesa en el Mapa de Mesas para enviar la comanda',
+        life: 4000
+      });
+      return;
+    }
+
     this.processingOrder.set(true);
     try {
       const orderItems: OrderItem[] = this.cart().map((item) => {
@@ -2498,8 +3841,9 @@ trackByProductId = (index: number, item: CartItem): string => {
         }
         const paraLlevarTag = item.paraLlevar ? '[PARA LLEVAR 🥡]' : '';
         const asientoTag = item.asientoAlias ? `[${item.asientoAlias}]` : '';
+        const variantTag = item.selectedVariant ? `[Variante: ${item.selectedVariant.insumoName || item.selectedVariant.name}]` : '';
         const rawNotes = (item.comentarios || '').trim();
-        const fullComment = [asientoTag, tiempoTag, paraLlevarTag, rawNotes].filter(Boolean).join(' ').trim();
+        const fullComment = [asientoTag, tiempoTag, paraLlevarTag, variantTag, rawNotes].filter(Boolean).join(' ').trim();
 
         return {
           productId: item.product.id,
@@ -2521,8 +3865,8 @@ trackByProductId = (index: number, item: CartItem): string => {
         if (!this.canEditOrder(editingOrder)) {
           this.messageService.add({
             severity: 'error',
-            summary: 'No se puede editar',
-            detail: 'Una comanda pagada o cancelada no puede editarse',
+            summary: 'Prórroga vencida',
+            detail: 'La comanda se envió hace más de 30 segundos y ya no puede editarse',
             life: 3000
           });
           this.processingOrder.set(false);
@@ -2576,7 +3920,56 @@ trackByProductId = (index: number, item: CartItem): string => {
         });
 
         this.resetForm();
+        this.selectedMesa.set(null);
         this.switchView('orders');
+        this.loadMesas();
+        return;
+      }
+
+      const appendingOrder = this.appendingToOrder();
+      if (appendingOrder) {
+        if (!this.canAbrirComanda(appendingOrder)) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Comanda cerrada',
+            detail: 'La comanda ya no se encuentra abierta para agregar productos',
+            life: 3000
+          });
+          this.processingOrder.set(false);
+          return;
+        }
+
+        const currentUser = this.authService.getCurrentUser();
+        const appendRequest: TenantClientOrderCreateRequest = {
+          customerId: this.selectedCliente?.id ?? appendingOrder.customerId ?? null,
+          tenantId: appendingOrder.tenantId,
+          items: orderItems,
+          subtotal: this.subtotal(),
+          descuento: this.descuentoAplicado(),
+          totalFinal: this.totalFinal(),
+          couponCode: this.codigoCupon.trim() || null,
+          redeemedBy: this.selectedCliente?.id ?? null,
+          redemptionChannel: 'COMANDIX',
+          source: 'POS',
+          mesaId: this.selectedMesa()?.id ?? appendingOrder.mesaId,
+          meseroId: currentUser?.id,
+          meseroEmail: currentUser?.email
+        };
+
+        await firstValueFrom(this.orderService.addItemsToOrder(appendingOrder.id, appendRequest));
+
+        this.messageService.add({
+          severity: 'success',
+          summary: '¡Platillos enviados a cocina/barra!',
+          detail: `Se agregaron ${orderItems.length} producto(s) a la comanda #${appendingOrder.id.slice(0, 8).toUpperCase()}`,
+          life: 4000
+        });
+
+        this.resetForm();
+        this.selectedMesa.set(null);
+        this.switchView('orders');
+        void this.pollOrders();
+        this.loadMesas();
         return;
       }
 
@@ -2613,7 +4006,7 @@ trackByProductId = (index: number, item: CartItem): string => {
         horaApertura: new Date().toISOString(),
         items: this.cart().map((item) => ({
           productId: item.product.id,
-          productName: item.product.name,
+          productName: item.selectedVariant ? `${item.product.name} (${item.selectedVariant.insumoName || item.selectedVariant.name})` : item.product.name,
           cantidad: item.cantidad,
           precioUnitario: this.getCartItemUnitPrice(item),
           comentarios: item.comentarios || undefined,
@@ -2645,8 +4038,10 @@ trackByProductId = (index: number, item: CartItem): string => {
       });
 
       this.resetForm();
-      this.switchView('orders');
+      this.selectedMesa.set(null);
+      this.switchView('mesas');
       void this.pollOrders();
+      this.loadMesas();
     } catch (error: any) {
       const detail = error?.error?.message || error?.error?.error || error?.message || 'Error al registrar la venta';
       this.messageService.add({
@@ -2667,6 +4062,7 @@ trackByProductId = (index: number, item: CartItem): string => {
     this.codigoCupon = '';
     this.descuentoAplicado.set(0);
     this.editingPendingOrder.set(null);
+    this.appendingToOrder.set(null);
   }
 
   limpiarCarrito(): void {
@@ -2739,7 +4135,19 @@ trackByProductId = (index: number, item: CartItem): string => {
 
     const excludedIngredientIds = Array.isArray(item.excludedIngredientIds) ? item.excludedIngredientIds.map(Number).filter((n) => !Number.isNaN(n)) : [];
     const additionalIngredientIds = Array.isArray(item.additionalIngredientIds) ? item.additionalIngredientIds.map(Number).filter((n) => !Number.isNaN(n)) : [];
-    const configKey = JSON.stringify([[...excludedIngredientIds].sort((a, b) => a - b), [...additionalIngredientIds].sort((a, b) => a - b)]);
+
+    let selectedVariant: any = undefined;
+    if (catalogProduct?.variants?.length) {
+      selectedVariant = catalogProduct.variants.find((v: any) => additionalIngredientIds.includes(v.insumoId));
+      if (!selectedVariant && item.comentarios) {
+        selectedVariant = catalogProduct.variants.find((v: any) =>
+          item.comentarios?.includes(v.insumoName) || item.comentarios?.includes(v.name)
+        );
+      }
+    }
+
+    const varKey = selectedVariant ? `var:${selectedVariant.insumoId || selectedVariant.name}` : '';
+    const configKey = JSON.stringify([varKey, [...excludedIngredientIds].sort((a, b) => a - b), [...additionalIngredientIds].sort((a, b) => a - b)]);
 
     return {
       product: catalogProduct ?? {
@@ -2759,7 +4167,8 @@ trackByProductId = (index: number, item: CartItem): string => {
       asientoAlias: item.asientoAlias,
       tiempo: (item.tiempo === 3 ? 3 : (item.tiempo === 2 ? 2 : 1)) as 1 | 2 | 3,
       tiempoMarchado: item.tiempoMarchado ?? false,
-      paraLlevar: item.paraLlevar ?? (item.comentarios?.includes('PARA LLEVAR') ?? false)
+      paraLlevar: item.paraLlevar ?? (item.comentarios?.includes('PARA LLEVAR') ?? false),
+      selectedVariant
     };
   }
 

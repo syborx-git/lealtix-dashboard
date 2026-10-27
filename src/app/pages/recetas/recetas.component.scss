@@ -58,10 +58,161 @@
 
 /* ===== Dialog de receta ===== */
 :host ::ng-deep {
-  .recetas-recipe-dialog,
+  /* ===== Modal Moderno de Receta ===== */
+  .recetas-recipe-dialog {
+    width: min(64rem, 95vw) !important;
+    max-height: 92vh;
+    border-radius: 1.25rem !important;
+    overflow: hidden;
+    background: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.18) !important;
+
+    .p-dialog-header {
+      background: #ffffff !important;
+      padding: 1.25rem 1.5rem 0.75rem !important;
+      border-bottom: 1px solid #f1f5f9 !important;
+      color: #0f172a !important;
+
+      .p-dialog-header-actions button,
+      .p-dialog-close-button,
+      .p-dialog-header-icon,
+      .p-dialog-header-close {
+        color: #334155 !important;
+        background: #f1f5f9 !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 9999px !important;
+        width: 2.25rem !important;
+        height: 2.25rem !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important;
+        transition: all 0.2s ease !important;
+
+        svg, i {
+          color: #334155 !important;
+          fill: #334155 !important;
+          stroke: #334155 !important;
+          width: 14px !important;
+          height: 14px !important;
+        }
+
+        &:hover {
+          color: #0f172a !important;
+          background: #e2e8f0 !important;
+          transform: scale(1.08) !important;
+
+          svg, i {
+            color: #0f172a !important;
+            fill: #0f172a !important;
+            stroke: #0f172a !important;
+            transform: rotate(90deg) scale(1.1) !important;
+          }
+        }
+      }
+    }
+
+    .p-dialog-content {
+      background: #ffffff !important;
+      padding: 1.25rem 1.5rem !important;
+      max-height: calc(88vh - 8rem);
+      overflow-y: auto;
+    }
+
+    /* Rediseño de Inputs (Estilo 'Caja' rellena) */
+    .p-select,
+    .custom-box-select {
+      background: #f8fafc !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 0.75rem !important;
+      transition: all 0.2s ease !important;
+      width: 100% !important;
+
+      &:hover {
+        border-color: #cbd5e1 !important;
+        background: #f1f5f9 !important;
+      }
+
+      &.p-focus,
+      &:focus-within {
+        background: #ffffff !important;
+        border-color: #9333ea !important;
+        box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.15) !important;
+        outline: none !important;
+      }
+
+      .p-select-label {
+        padding: 0.65rem 0.85rem !important;
+        font-size: 0.875rem !important;
+        color: #0f172a !important;
+        font-weight: 500;
+      }
+
+      .p-select-dropdown {
+        color: #64748b !important;
+        padding-right: 0.75rem !important;
+      }
+    }
+
+    .p-inputnumber,
+    .custom-box-input {
+      width: 100% !important;
+
+      input,
+      .p-inputnumber-input {
+        background: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 0.75rem !important;
+        padding: 0.65rem 0.85rem !important;
+        font-size: 0.875rem !important;
+        color: #0f172a !important;
+        width: 100% !important;
+        transition: all 0.2s ease !important;
+
+        &:hover {
+          border-color: #cbd5e1 !important;
+          background: #f1f5f9 !important;
+        }
+
+        &:focus {
+          background: #ffffff !important;
+          border-color: #9333ea !important;
+          box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.15) !important;
+          outline: none !important;
+        }
+      }
+    }
+
+    input.p-inputtext,
+    .p-inputtext {
+      background: #f8fafc !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 0.75rem !important;
+      padding: 0.65rem 0.85rem !important;
+      font-size: 0.875rem !important;
+      color: #0f172a !important;
+      width: 100% !important;
+      transition: all 0.2s ease !important;
+
+      &:hover {
+        border-color: #cbd5e1 !important;
+        background: #f1f5f9 !important;
+      }
+
+      &:focus {
+        background: #ffffff !important;
+        border-color: #9333ea !important;
+        box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.15) !important;
+        outline: none !important;
+      }
+    }
+  }
+
+  /* Diálogos secundarios */
   .recetas-picker-dialog,
   .recetas-subreceta-dialog {
-    width: min(60rem, 95vw) !important;
+    width: min(52rem, 95vw) !important;
     max-height: 90vh;
     overflow: hidden;
   }
@@ -70,29 +221,13 @@
     width: min(48rem, 95vw) !important;
   }
 
-  .recetas-subreceta-dialog {
-    width: min(52rem, 95vw) !important;
-  }
-
-  .recetas-recipe-dialog .p-dialog-content,
   .recetas-picker-dialog .p-dialog-content,
   .recetas-subreceta-dialog .p-dialog-content {
     padding: 1.5rem;
     overflow-y: auto;
-  }
-
-  .recetas-recipe-dialog .p-dialog-content {
-    max-height: calc(90vh - 9rem);
-    display: flex;
-    flex-direction: column;
-  }
-
-  .recetas-picker-dialog .p-dialog-content,
-  .recetas-subreceta-dialog .p-dialog-content {
     max-height: calc(90vh - 8rem);
   }
 
-  .recetas-recipe-dialog .p-dialog-header,
   .recetas-picker-dialog .p-dialog-header,
   .recetas-subreceta-dialog .p-dialog-header {
     padding: 1.25rem 1.5rem;
@@ -100,7 +235,6 @@
     background: linear-gradient(135deg, var(--primary-50), var(--surface-card));
   }
 
-  .recetas-recipe-dialog .p-dialog-footer,
   .recetas-picker-dialog .p-dialog-footer,
   .recetas-subreceta-dialog .p-dialog-footer {
     padding: 1rem 1.5rem;
@@ -206,6 +340,115 @@
   padding: 1rem;
   background: var(--surface-card);
   box-shadow: var(--shadow-1);
+}
+
+/* Wizard Stepper de 2 Pasos */
+.recipe-wizard-steps {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.25rem 0.25rem;
+  flex-wrap: wrap;
+}
+
+.recipe-step-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-card);
+  color: var(--text-color-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--surface-hover);
+    color: var(--text-color);
+  }
+
+  &.step-active {
+    background: #6366f1;
+    color: #ffffff;
+    border-color: #6366f1;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+
+    .step-num {
+      background: #ffffff;
+      color: #6366f1;
+    }
+
+    .step-counter {
+      background: rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+    }
+  }
+
+  &.step-completed {
+    border-color: #22c55e;
+    color: #166534;
+    background: #f0fdf4;
+
+    .step-num {
+      background: #22c55e;
+      color: #ffffff;
+    }
+  }
+
+  .step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.35rem;
+    height: 1.35rem;
+    border-radius: 999px;
+    background: var(--surface-200);
+    color: var(--text-color-secondary);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .step-counter {
+    font-size: 0.7rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    background: var(--surface-200);
+    color: var(--text-color-secondary);
+  }
+}
+
+.step-divider {
+  color: var(--text-color-secondary);
+  opacity: 0.5;
+}
+
+.recipe-step-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 1.25rem;
+  margin-top: 1.25rem;
+  border-top: 1px solid var(--surface-border);
+  flex-wrap: wrap;
+}
+
+.step-panel-fade {
+  animation: fadeInStep 0.25s ease-out;
+}
+
+@keyframes fadeInStep {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .recipe-line {

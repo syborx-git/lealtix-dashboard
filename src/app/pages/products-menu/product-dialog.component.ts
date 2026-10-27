@@ -71,11 +71,11 @@ import { TreeNode } from 'primeng/api';
                     <div class="form-row">
                         <div class="form-col">
                             <div class="flex align-items-center justify-between mb-2">
-                                <label for="price" class="field-label">Precio</label>
-                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Ingresa el precio en pesos mexicanos. Si el producto tiene variaciones, define el precio base aquí." tooltipPosition="top" appTouchTooltip></button>
+                                <label for="price" class="field-label">Precio {{ productForm?.get('tieneVariantes')?.value ? '(Definido por variantes)' : '' }}</label>
+                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Ingresa el precio en pesos mexicanos. Si el producto tiene variantes activadas, cada variante establecerá su propio precio." tooltipPosition="top" appTouchTooltip></button>
                             </div>
-                            <p-inputnumber id="price" formControlName="price" mode="currency" currency="MXN" locale="en-US" class="w-full" />
-                            <p-message *ngIf="productForm?.get('price')?.invalid && (productForm.get('price')?.touched || submitted)" severity="error" [text]="'Precio es requerido'"></p-message>
+                            <p-inputnumber id="price" formControlName="price" mode="currency" currency="MXN" locale="en-US" class="w-full" [disabled]="productForm?.get('tieneVariantes')?.value" />
+                            <p-message *ngIf="!productForm?.get('tieneVariantes')?.value && productForm?.get('price')?.invalid && (productForm.get('price')?.touched || submitted)" severity="error" [text]="'Precio es requerido'"></p-message>
                         </div>
 
                         <div class="form-col form-col-narrow">
@@ -93,6 +93,22 @@ import { TreeNode } from 'primeng/api';
                             <div class="flex align-items-center gap-2">
                                 <p-checkbox formControlName="autoAvailability" binary="true" inputId="autoAvailability" (onChange)="onAutoAvailabilityChange($event.checked)"></p-checkbox>
                                 <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Si está activo, el producto se oculta automáticamente del menú cuando no hay insumos suficientes para prepararlo, y se vuelve a mostrar cuando se abastece. Desactívalo para controlar 'Activo' manualmente." tooltipPosition="top" appTouchTooltip></button>
+                            </div>
+                        </div>
+
+                        <div class="form-field" style="flex:1">
+                            <label for="tieneVariantes" class="field-label">¿Tiene variantes?</label>
+                            <div class="flex align-items-center gap-2">
+                                <p-checkbox formControlName="tieneVariantes" binary="true" inputId="tieneVariantes" (onChange)="onTieneVariantesChange($event.checked)"></p-checkbox>
+                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Marca si este producto se compone de variantes (ej. Mezcal con marcas/etiquetas como Ojo de Tigre, 400 Conejos). Al marcarlo no requiere precio base y desplegará selector de variantes en Comandix." tooltipPosition="top" appTouchTooltip></button>
+                            </div>
+                        </div>
+
+                        <div class="form-field" style="flex:1">
+                            <label for="esVariable" class="field-label">¿Es artículo variable?</label>
+                            <div class="flex align-items-center gap-2">
+                                <p-checkbox formControlName="esVariable" binary="true" inputId="esVariable"></p-checkbox>
+                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Marca esta opción si este platillo o bebida es una variante de otro producto (ej. Ojo de Tigre Joven como variante de Mezcal). Solo los artículos con esta casilla activada aparecerán en el selector de variables de las recetas." tooltipPosition="top" appTouchTooltip></button>
                             </div>
                         </div>
                     </div>
@@ -233,6 +249,45 @@ import { TreeNode } from 'primeng/api';
         ::ng-deep .product-dialog .p-dialog-title {
             font-size: 1.25rem;
             font-weight: 700;
+            color: #ffffff !important;
+        }
+
+        ::ng-deep .product-dialog .p-dialog-header-actions button,
+        ::ng-deep .product-dialog .p-dialog-close-button,
+        ::ng-deep .product-dialog .p-dialog-header-close {
+            background: #ffffff !important;
+            color: #4f46e5 !important;
+            border: 1px solid rgba(255, 255, 255, 0.9) !important;
+            border-radius: 9999px !important;
+            width: 2.25rem !important;
+            height: 2.25rem !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18) !important;
+            cursor: pointer !important;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+            svg, i {
+                color: #4f46e5 !important;
+                fill: #4f46e5 !important;
+                stroke: #4f46e5 !important;
+                width: 14px !important;
+                height: 14px !important;
+            }
+
+            &:hover {
+                background: #f8fafc !important;
+                color: #3730a3 !important;
+                transform: scale(1.08) !important;
+
+                svg, i {
+                    color: #3730a3 !important;
+                    fill: #3730a3 !important;
+                    stroke: #3730a3 !important;
+                    transform: rotate(90deg) scale(1.1) !important;
+                }
+            }
         }
 
         .product-dialog-content { padding: 0 !important; }
@@ -599,6 +654,24 @@ export class ProductDialogComponent implements OnChanges {
                         // ignore if unable to set
                     }
                 }
+
+                const esVariableControl = this.productForm.get('esVariable');
+                if (esVariableControl) {
+                    try {
+                        esVariableControl.setValue(!!this.product.esVariable, { emitEvent: false });
+                    } catch (e) {
+                        // ignore if unable to set
+                    }
+                }
+
+                const tieneVariantesControl = this.productForm.get('tieneVariantes');
+                if (tieneVariantesControl) {
+                    try {
+                        tieneVariantesControl.setValue(!!this.product.tieneVariantes, { emitEvent: false });
+                    } catch (e) {
+                        // ignore if unable to set
+                    }
+                }
             }
 
             this.resetCrossSellingDraft();
@@ -644,6 +717,25 @@ export class ProductDialogComponent implements OnChanges {
             this.product = this.product || {};
             this.product.autoAvailability = value;
             this.autoAvailabilityChange.emit(value);
+        }
+    }
+
+    onTieneVariantesChange(value: boolean) {
+        if (this.productForm && this.productForm.get && this.productForm.get('tieneVariantes')) {
+            try {
+                this.productForm.get('tieneVariantes').setValue(value);
+                if (value) {
+                    const priceCtrl = this.productForm.get('price');
+                    if (priceCtrl && (priceCtrl.value == null || priceCtrl.value === 0)) {
+                        priceCtrl.setValue(0);
+                    }
+                }
+            } catch (e) {
+                // ignore
+            }
+        } else {
+            this.product = this.product || {};
+            this.product.tieneVariantes = value;
         }
     }
 

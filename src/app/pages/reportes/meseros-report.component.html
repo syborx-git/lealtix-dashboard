@@ -1,0 +1,228 @@
+<!-- ============ REPORTE 4.4: RENDIMIENTO POR MESERO ============ -->
+
+@if (loading() && !reporte()) {
+  <div class="reporte-panel">
+    <div class="kpi-grid">
+      @for (i of [1, 2, 3, 4, 5]; track i) {
+        <div class="kpi-card">
+          <p-skeleton width="55%" height="0.8rem" />
+          <p-skeleton width="70%" height="1.6rem" styleClass="mt-3" />
+          <p-skeleton width="45%" height="0.75rem" styleClass="mt-2" />
+        </div>
+      }
+    </div>
+    <div class="panel">
+      <p-skeleton width="30%" height="1.1rem" />
+      <p-skeleton height="16rem" styleClass="mt-3" />
+    </div>
+  </div>
+} @else if (error() && !reporte()) {
+  <div class="panel panel--error">
+    <i class="pi pi-exclamation-triangle"></i>
+    <h3>No se pudo cargar el rendimiento de meseros</h3>
+    <p>{{ error() }}</p>
+    <button pButton type="button" label="Reintentar" icon="pi pi-refresh" (click)="recargar()"></button>
+  </div>
+} @else if (reporte(); as datos) {
+  <div class="reporte-panel">
+    <!-- ============ SUBENCABEZADO ============ -->
+    <div class="reporte-subheader">
+      <div>
+        <h3>{{ datos.meta.nombre }}</h3>
+        <p class="reporte-subheader__rango">
+          {{ datos.meta.rangoActual.etiqueta }}
+          <i class="pi pi-arrow-right"></i>
+          comparado con {{ datos.meta.rangoAnterior.etiqueta }}
+        </p>
+      </div>
+      <div class="reporte-subheader__acciones">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          severity="secondary"
+          [outlined]="true"
+          size="small"
+          [loading]="loading()"
+          (click)="recargar()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-file-excel"
+          label="Exportar a Excel"
+          size="small"
+          [loading]="exportando()"
+          (click)="exportar()"
+        ></button>
+      </div>
+    </div>
+
+    <!-- ============ AVISO METODOLOGICO ============ -->
+    <div class="reporte-nota">
+      <i class="pi pi-info-circle"></i>
+      <div>
+        <strong>Medición del Personal de Sala:</strong> Evalúa el volumen de venta generado por mesero, su ticket promedio
+        y el total de propinas asociadas a sus comandas cerradas durante el turno o rango de fechas seleccionado.
+      </div>
+    </div>
+
+    <!-- ============ KPIs COMPARATIVOS ============ -->
+    <app-kpi-grid [kpis]="datos.kpis" />
+
+    <!-- ============ GRAFICAS DE APOYO ============ -->
+    <div class="grid-2">
+      <!-- Ranking de Ventas por Mesero -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Ventas Totales por Mesero</h4>
+            <p class="panel__subtitulo">Ingresos netos facturados por cada colaborador</p>
+          </div>
+        </div>
+        @if (datos.ventasPorMesero.length) {
+          <div class="panel__grafica panel__grafica--alta">
+            <p-chart type="bar" [data]="ventasChartData()" [options]="ventasChartOptions" />
+          </div>
+        } @else {
+          <div class="panel__vacio">
+            <i class="pi pi-chart-bar"></i>
+            <p>Sin ventas registradas en este periodo</p>
+          </div>
+        }
+      </div>
+
+      <!-- Distribución de Tickets Atendidos -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Comandas Atendidas</h4>
+            <p class="panel__subtitulo">Distribución porcentual de mesas y órdenes de servicio</p>
+          </div>
+        </div>
+        @if (datos.ticketsPorMesero.length) {
+          <div class="panel__grafica panel__grafica--alta">
+            <p-chart type="doughnut" [data]="ticketsChartData()" [options]="ticketsChartOptions" />
+          </div>
+        } @else {
+          <div class="panel__vacio">
+            <i class="pi pi-users"></i>
+            <p>Sin comandas atendidas en este periodo</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ============ TABLA 1: TABLA GENERAL DE MESEROS ============ -->
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <h4>Rendimiento Comercial del Personal</h4>
+          <p class="panel__subtitulo">Comandas, venta acumulada, ticket promedio, platillos y propinas</p>
+        </div>
+        <div class="filtro-busqueda">
+          <p-iconfield styleClass="w-full">
+            <p-inputicon styleClass="pi pi-search" />
+            <input
+              pInputText
+              type="text"
+              placeholder="Buscar mesero..."
+              [(ngModel)]="filtroMeseros"
+              (input)="dtMeseros.filterGlobal($any($event.target).value, 'contains')"
+              class="w-full p-inputtext-sm"
+            />
+          </p-iconfield>
+        </div>
+      </div>
+
+      <p-table
+        #dtMeseros
+        [value]="datos.tablaMeseros.filas"
+        [globalFilterFields]="['mesero']"
+        [paginator]="true"
+        [rows]="10"
+        [rowsPerPageOptions]="[10, 20, 50]"
+        styleClass="p-datatable-sm tabla-reporte"
+        [tableStyle]="{ 'min-width': '100%' }"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            @for (col of datos.tablaMeseros.columnas; track col.key) {
+              <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-fila>
+          <tr>
+            @for (col of datos.tablaMeseros.columnas; track col.key) {
+              <td [style.text-align]="alineacion(col)">
+                @if (col.key === 'mesero') {
+                  <span class="font-bold text-slate-800">{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'totalVenta') {
+                  <span class="font-bold text-emerald-700">{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'ticketPromedio') {
+                  <span class="font-semibold text-slate-900">{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'propinas') {
+                  <span class="font-semibold text-purple-700">{{ valorCelda(fila, col) }}</span>
+                } @else {
+                  {{ valorCelda(fila, col) }}
+                }
+              </td>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td [attr.colspan]="datos.tablaMeseros.columnas.length" class="text-center py-4 text-slate-400">
+              No se encontraron meseros en el periodo seleccionado.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- ============ TABLA 2: DESGLOSE POR METODOS DE PAGO ============ -->
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <h4>Cobros por Método de Pago</h4>
+          <p class="panel__subtitulo">Efectivo, tarjeta y transferencias conciliadas por cada mesero</p>
+        </div>
+      </div>
+
+      <p-table
+        [value]="datos.desgloseMetodosPago.filas"
+        styleClass="p-datatable-sm tabla-reporte"
+        [tableStyle]="{ 'min-width': '100%' }"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            @for (col of datos.desgloseMetodosPago.columnas; track col.key) {
+              <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-fila>
+          <tr>
+            @for (col of datos.desgloseMetodosPago.columnas; track col.key) {
+              <td [style.text-align]="alineacion(col)">
+                @if (col.key === 'mesero') {
+                  <span class="font-bold text-slate-800">{{ valorCelda(fila, col) }}</span>
+                } @else {
+                  {{ valorCelda(fila, col) }}
+                }
+              </td>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td [attr.colspan]="datos.desgloseMetodosPago.columnas.length" class="text-center py-4 text-slate-400">
+              No se registraron cobros por mesero en este periodo.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+}

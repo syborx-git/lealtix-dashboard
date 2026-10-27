@@ -413,7 +413,8 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       [UserRole.COCINA]: 'success',
       [UserRole.CAJA]: 'warn',
       [UserRole.MARKETING]: 'secondary',
-      [UserRole.HOSTESS]: 'contrast'
+      [UserRole.HOSTESS]: 'contrast',
+      [UserRole.BARRA]: 'info'
     };
     return colors[rol] || 'secondary';
   }
@@ -428,7 +429,8 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       [UserRole.COCINA]: 'Cocina',
       [UserRole.CAJA]: 'Caja',
       [UserRole.MARKETING]: 'Marketing',
-      [UserRole.HOSTESS]: 'Hostess'
+      [UserRole.HOSTESS]: 'Hostess',
+      [UserRole.BARRA]: 'Barra'
     };
     return roleNames[rol] || rol;
   }

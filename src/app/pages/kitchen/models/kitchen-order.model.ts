@@ -6,6 +6,8 @@ export interface KitchenOrderItem {
     quantity: number;
     unitPrice: number;
     comments?: string;
+    asientoId?: string | number;
+    asientoAlias?: string;
     tiempo?: 1 | 2 | 3;
     tiempoMarchado?: boolean;
     paraLlevar?: boolean;
@@ -15,6 +17,7 @@ export interface KitchenOrderItem {
     /** IDs de adicionales que el cliente pidió */
     additionalIngredientIds?: number[];
     esBebida?: boolean;
+    ronda?: number;
     updatedAt?: string;
 }
 
@@ -26,6 +29,7 @@ export interface KitchenOrder {
     cocinaEstado?: KitchenOrderStatus;
     tiempo?: 1 | 2 | 3;
     tiempoLabel?: string;
+    ronda?: number;
     tenantId: number;
     status: KitchenOrderStatus;
     customerId?: number | null;

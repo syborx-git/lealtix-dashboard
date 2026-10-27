@@ -18,14 +18,19 @@ import { InputTextModule } from 'primeng/inputtext';
 import { DividerModule } from 'primeng/divider';
 import { ChartModule } from 'primeng/chart';
 import { DatePickerModule } from 'primeng/datepicker';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { TextareaModule } from 'primeng/textarea';
 
 // Componentes
 import { SplitOrderModalComponent } from '@/pages/comandix/components/split-order-modal/split-order-modal.component';
+import { environment } from '@/pages/commons/environment';
+import * as QRCode from 'qrcode';
 
 // Servicios y Modelos
 import { CajaService } from './services/caja.service';
 import { OrderService } from '@/pages/comandix/services/order.service';
 import { AuthService } from '@/auth/auth.service';
+import { TenantService } from '@/pages/admin-page/service/tenant.service';
 import {
   TurnoDTO,
   ComandaCajaRow,
@@ -34,9 +39,12 @@ import {
   CorteMesero,
   DesgloseMetodoPago,
   ResumenTurnoCorte,
-  MeseroSimple
+  MeseroSimple,
+  CorteCajaDiarioDTO,
+  GenerarCorteDiarioRequest,
+  EstadoCorteDiarioHoyDTO
 } from './models/caja.model';
-import { PendingOrder, PendingOrderItem, OrderStatus, ReporteVentaRow, TipInfo } from '@/pages/comandix/models/order.model';
+import { PendingOrder, PendingOrderItem, OrderStatus, ReporteVentaRow, TipInfo, CATEGORIAS_CANCELACION } from '@/pages/comandix/models/order.model';
 
 /** Las tres categorías del slider principal de "Caja y Cortes". */
 export type SeccionCaja = 'tickets' | 'meseros' | 'dia';
@@ -70,6 +78,8 @@ export interface PresetCerradasOpcion {
     DividerModule,
     ChartModule,
     DatePickerModule,
+    InputNumberModule,
+    TextareaModule,
     SplitOrderModalComponent
   ],
   providers: [MessageService],
@@ -80,8 +90,42 @@ export class CajaComponent implements OnInit, OnDestroy {
   private cajaService = inject(CajaService);
   private orderService = inject(OrderService);
   private authService = inject(AuthService);
+  private tenantService = inject(TenantService);
   private messageService = inject(MessageService);
   private route = inject(ActivatedRoute);
+
+  businessName = signal<string>('Restaurante');
+  businessAddress = signal<string>('');
+  businessPhone = signal<string>('');
+  businessLogo = signal<string>('');
+  businessLogoMode = signal<string>('HEADER');
+  qrFacturacionDataUrl = signal<string>('');
+
+  getFacturaUrl(orderId: string): string {
+    const base = ((environment.landingPageBaseUrl || '').replace(/\/landing-page\/?$/, '') || 'http://localhost:4200');
+    return `${base}/facturar/${orderId}`;
+  }
+
+  async generarQrFacturacion(orderId: string): Promise<string> {
+    if (!orderId) {
+      this.qrFacturacionDataUrl.set('');
+      return '';
+    }
+    try {
+      const url = this.getFacturaUrl(orderId);
+      const qr = await QRCode.toDataURL(url, {
+        margin: 1,
+        width: 120,
+        errorCorrectionLevel: 'M'
+      });
+      this.qrFacturacionDataUrl.set(qr);
+      return qr;
+    } catch (e) {
+      console.warn('Error generando QR facturación:', e);
+      this.qrFacturacionDataUrl.set('');
+      return '';
+    }
+  }
 
   private destroy$ = new Subject<void>();
   private pollingTimer: any = null;
@@ -400,6 +444,9 @@ export class CajaComponent implements OnInit, OnDestroy {
   // Modal Cancelar Comanda
   modalCancelarVisible = signal<boolean>(false);
   comandaACancelar = signal<{ id: string; folio: string; mesaNombre?: string; total: number } | null>(null);
+  categoriasCancelacion = CATEGORIAS_CANCELACION;
+  categoriaCancelacion = 'Alto tiempo de espera';
+  comentarioCancelacion = '';
   motivoCancelacion = '';
 
   // Modal Dividir Comanda (Split)
@@ -413,7 +460,7 @@ export class CajaComponent implements OnInit, OnDestroy {
   meseroSeleccionado = signal<MeseroSimple | null>(null);
   corteMesero = signal<CorteMesero | null>(null);
   loadingCorte = signal<boolean>(false);
-  retencionPropinasPorc = 15; // 15% retención por defecto para cocina/barra
+  retencionPropinasPorc = 50; // 50% retención por defecto para cocina/barra/pool
   /** Modal con el corteamplio del mesero: tickets, dinero y platillos vendidos. */
   modalCorteMeseroVisible = signal<boolean>(false);
 
@@ -735,6 +782,144 @@ export class CajaComponent implements OnInit, OnDestroy {
     this.modalDesgloseVentasVisible.set(false);
   }
 
+  // ============ ARQUEO / GENERACIÓN DEL CORTE DEL DÍA ============
+  estadoCorteHoy = signal<EstadoCorteDiarioHoyDTO | null>(null);
+  corteHoyYaGenerado = computed(() => this.estadoCorteHoy()?.yaGenerado ?? false);
+  corteHoy = computed(() => this.estadoCorteHoy()?.corte ?? null);
+
+  modalGenerarCorteDiaVisible = signal<boolean>(false);
+  modalVerCorteDiaVisible = signal<boolean>(false);
+  guardandoCorteDia = signal<boolean>(false);
+
+  // Inputs ingresados en el modal de arqueo
+  inputRealEfectivo = signal<number | null>(null);
+  inputRealTarjeta = signal<number | null>(null);
+  inputRealTransferencia = signal<number | null>(null);
+  inputRealOtros = signal<number | null>(null);
+  inputComentariosCorte = signal<string>('');
+
+  // Comparativas en vivo en el modal
+  totalRealDeclarado = computed(() => {
+    const ef = Number(this.inputRealEfectivo() ?? 0);
+    const tar = Number(this.inputRealTarjeta() ?? 0);
+    const trans = Number(this.inputRealTransferencia() ?? 0);
+    const ot = Number(this.inputRealOtros() ?? 0);
+    return ef + tar + trans + ot;
+  });
+
+  diferenciaTotalCorte = computed(() => {
+    return this.totalRealDeclarado() - this.diaVentas();
+  });
+
+  diferenciaEfectivoCorte = computed(() => {
+    return Number(this.inputRealEfectivo() ?? 0) - this.totalEfectivoDia();
+  });
+
+  diferenciaTarjetaCorte = computed(() => {
+    return Number(this.inputRealTarjeta() ?? 0) - this.totalTarjetaDia();
+  });
+
+  diferenciaTransferenciaCorte = computed(() => {
+    return Number(this.inputRealTransferencia() ?? 0) - this.totalTransferenciaDia();
+  });
+
+  diferenciaOtrosCorte = computed(() => {
+    return Number(this.inputRealOtros() ?? 0) - this.totalOtrosMetodosDia();
+  });
+
+  async consultarEstadoCorteHoy(): Promise<void> {
+    if (this.tenantId <= 0) return;
+    try {
+      const resp = await firstValueFrom(this.cajaService.getEstadoCorteDiarioHoy(this.tenantId));
+      if (resp?.code === 200 && resp.object) {
+        this.estadoCorteHoy.set(resp.object);
+      }
+    } catch (e: any) {
+      console.warn('[Caja] No se pudo consultar estado del corte de hoy:', e);
+    }
+  }
+
+  abrirModalGenerarCorteDia(): void {
+    if (this.corteHoyYaGenerado()) {
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Corte del día ya realizado',
+        detail: 'El corte de hoy ya fue generado y no puede volverse a realizar hasta mañana.'
+      });
+      return;
+    }
+    this.inputRealEfectivo.set(null);
+    this.inputRealTarjeta.set(null);
+    this.inputRealTransferencia.set(null);
+    this.inputRealOtros.set(null);
+    this.inputComentariosCorte.set('');
+    this.modalGenerarCorteDiaVisible.set(true);
+  }
+
+  cerrarModalGenerarCorteDia(): void {
+    this.modalGenerarCorteDiaVisible.set(false);
+  }
+
+  abrirModalVerCorteDia(): void {
+    this.modalVerCorteDiaVisible.set(true);
+  }
+
+  cerrarModalVerCorteDia(): void {
+    this.modalVerCorteDiaVisible.set(false);
+  }
+
+  async confirmarGenerarCorteDia(): Promise<void> {
+    if (this.guardandoCorteDia()) return;
+    if (this.corteHoyYaGenerado()) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Operación bloqueada',
+        detail: 'El corte del día de hoy ya se encuentra registrado.'
+      });
+      return;
+    }
+
+    this.guardandoCorteDia.set(true);
+    try {
+      const req: GenerarCorteDiarioRequest = {
+        tenantId: this.tenantId,
+        realEfectivo: Number(this.inputRealEfectivo() ?? 0),
+        realTarjeta: Number(this.inputRealTarjeta() ?? 0),
+        realTransferencia: Number(this.inputRealTransferencia() ?? 0),
+        realOtros: Number(this.inputRealOtros() ?? 0),
+        comentarios: this.inputComentariosCorte().trim() || undefined
+      };
+
+      const resp = await firstValueFrom(this.cajaService.generarCorteDiario(req));
+      if (resp?.code === 201 || resp?.code === 200) {
+        const corte = resp.object || (resp as any).data;
+        this.estadoCorteHoy.set({
+          yaGenerado: true,
+          corte,
+          sistemaActual: null
+        });
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Corte del día generado',
+          detail: 'El corte de caja del día se registró y concilió exitosamente.'
+        });
+        this.modalGenerarCorteDiaVisible.set(false);
+        await this.cargarResumenDia(false);
+      } else {
+        throw new Error(resp?.message || 'Error al generar corte');
+      }
+    } catch (e: any) {
+      const msg = e?.error?.message || e?.message || 'No fue posible registrar el corte del día';
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: msg
+      });
+    } finally {
+      this.guardandoCorteDia.set(false);
+    }
+  }
+
   /** Datos de la gráfica: participación de cada método de pago en lo recaudado. */
   metodosPagoChartData = computed(() => {
     const metodos = this.metodosPagoDia();
@@ -879,7 +1064,40 @@ export class CajaComponent implements OnInit, OnDestroy {
     if (this.tenantId > 0) {
       this.cargarDatosIniciales();
       this.iniciarPolling();
+      this.cargarDatosNegocio();
     }
+  }
+
+  private normalizarUrlImagen(url: string): string {
+    if (!url) return '';
+    let res = url.trim();
+    if (res.startsWith('data:image')) return res;
+    if (res.startsWith('/api/')) {
+      const base = (environment.apiUrl || 'http://localhost:8080/api').replace(/\/api\/?$/, '');
+      return `${base}${res}`;
+    }
+    if (res.startsWith('https://localhost/api/') || (res.startsWith('http://localhost/api/') && !res.startsWith('http://localhost:8080/api/'))) {
+      const path = res.replace(/^https?:\/\/localhost/, '');
+      const base = (environment.apiUrl || 'http://localhost:8080/api').replace(/\/api\/?$/, '');
+      return `${base}${path}`;
+    }
+    return res;
+  }
+
+  private cargarDatosNegocio(): void {
+    if (this.tenantId <= 0) return;
+    this.tenantService.getTenantById(this.tenantId).subscribe({
+      next: (t: any) => {
+        if (t) {
+          this.businessName.set(t.bussinessName || t.nombreNegocio || 'Restaurante');
+          this.businessAddress.set(t.direccion || '');
+          this.businessPhone.set(t.telefono || '');
+          this.businessLogo.set(this.normalizarUrlImagen(t.logoUrl || ''));
+          this.businessLogoMode.set(t.ticketLogoMode || 'HEADER');
+        }
+      },
+      error: (e) => console.warn('[Caja] No se pudo obtener datos del negocio:', e)
+    });
   }
 
   ngOnDestroy(): void {
@@ -925,11 +1143,9 @@ export class CajaComponent implements OnInit, OnDestroy {
       await Promise.all([
         this.cargarTablero(false),
         this.cargarMeseros(),
-        this.cargarHistorialComandas(false)
+        this.cargarHistorialComandas(false),
+        this.consultarEstadoCorteHoy()
       ]);
-      if (this.seccionActiva() === 'dia') {
-        await this.cargarResumenDia(false);
-      }
       if (this.seccionActiva() === 'dia') {
         await this.cargarResumenDia(false);
       }
@@ -1072,24 +1288,35 @@ export class CajaComponent implements OnInit, OnDestroy {
         cantidad: 1,
         precioUnitario: total,
         totalLinea: total
-      }]
+      }],
+      estado: comanda.estado,
+      metodoPago: (comanda as any).metodoPago || (orden as any)?.metodoPago
     };
   }
 
-  async imprimirTicket(comanda: PendingOrder | ComandaCajaRow, autoPrint = true): Promise<void> {
+  async imprimirTicket(comanda: PendingOrder | ComandaCajaRow, autoPrint = true, mostrarModalPreview = true): Promise<void> {
     if (!comanda) return;
     this.procesando.set(true);
 
     try {
-      const resp = await firstValueFrom(this.cajaService.imprimirTicket(comanda.id, this.tenantId));
+      const urlFactura = this.getFacturaUrl(comanda.id);
+      const resp = await firstValueFrom(this.cajaService.imprimirTicket(comanda.id, this.tenantId, true, urlFactura));
       const ticket = resp?.object || resp?.data;
       if (ticket) {
+        if (ticket.logoUrl && !this.businessLogo()) {
+          this.businessLogo.set(ticket.logoUrl);
+        }
         this.ticketActual.set(ticket);
+        await this.generarQrFacturacion(ticket.idComanda || ticket.folioComanda || comanda.id);
       } else {
-        this.ticketActual.set(this.construirTicketLocal(comanda));
+        const local = this.construirTicketLocal(comanda);
+        this.ticketActual.set(local);
+        await this.generarQrFacturacion(local.idComanda || local.folioComanda || comanda.id);
       }
 
-      this.modalTicketVisible.set(true);
+      if (mostrarModalPreview) {
+        this.modalTicketVisible.set(true);
+      }
 
       // Actualizar estado local
       await Promise.all([
@@ -1097,26 +1324,42 @@ export class CajaComponent implements OnInit, OnDestroy {
         this.cargarHistorialComandas(false)
       ]);
 
-      this.messageService.add({
-        severity: 'info',
-        summary: 'Ticket en Mesa',
-        detail: `Pre-cuenta de ${comanda.mesaNombre || 'Mesa'} generada. La comanda pasó a "Por Cobrar".`
-      });
-      if (autoPrint) {
-        setTimeout(() => this.imprimirVentanaTicket(), 250);
+      const yaImpresoEnHardware = ticket?.impresoEnHardware === true;
+
+      if (yaImpresoEnHardware) {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Ticket Impreso',
+          detail: `Ticket de ${comanda.mesaNombre || 'Mesa'} impreso silenciosamente en ${ticket?.nombreImpresora || 'POS-58'}.`,
+          life: 3000
+        });
+      } else {
+        if (mostrarModalPreview) {
+          this.messageService.add({
+            severity: 'info',
+            summary: 'Ticket en Mesa',
+            detail: `Pre-cuenta de ${comanda.mesaNombre || 'Mesa'} generada. La comanda pasó a "Por Cobrar".`
+          });
+        }
+
+        if (autoPrint) {
+          setTimeout(() => this.imprimirVentanaTicket(), 250);
+        }
       }
     } catch (err: any) {
       console.warn('Fallback a pre-cuenta local para comanda:', comanda.id, err);
-      // Fallback seguro: siempre abrir el ticket para que el cajero pueda imprimir
+      // Fallback seguro: siempre generar el ticket local
       const ticket = this.construirTicketLocal(comanda);
       this.ticketActual.set(ticket);
-      this.modalTicketVisible.set(true);
-
-      this.messageService.add({
-        severity: 'info',
-        summary: 'Ticket Generado',
-        detail: `Pre-cuenta de ${comanda.mesaNombre || 'Mesa'} lista para imprimir.`
-      });
+      await this.generarQrFacturacion(ticket.idComanda || ticket.folioComanda || comanda.id);
+      if (mostrarModalPreview) {
+        this.modalTicketVisible.set(true);
+        this.messageService.add({
+          severity: 'info',
+          summary: 'Ticket Generado',
+          detail: `Pre-cuenta de ${comanda.mesaNombre || 'Mesa'} lista para imprimir.`
+        });
+      }
 
       if (autoPrint) {
         setTimeout(() => this.imprimirVentanaTicket(), 250);
@@ -1127,12 +1370,44 @@ export class CajaComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Imprime el ticket térmico con formato estándar 80mm en una ventana/iframe aislada.
-   * Evita problemas de estilos CSS globales y no altera la visualización del dashboard.
+   * Acción al dar clic en el botón "Marcar pagada":
+   * 1. Imprime de inmediato el ticket térmico de 58mm (área útil 48mm, margen de 5mm) para llevárselo a la mesa.
+   * 2. Abre el modal de cobro para ingresar el método de pago y liquidar la comanda.
    */
-  imprimirVentanaTicket(): void {
+  async clickMarcarPagada(comanda: PendingOrder | ComandaCajaRow): Promise<void> {
+    if (!comanda) return;
+
+    // Imprimir de inmediato el ticket en segundo plano para la mesa
+    void this.imprimirTicket(comanda, true, false);
+
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Imprimiendo ticket',
+      detail: `Imprimiendo ticket de ${comanda.mesaNombre || 'Mesa'} para llevar a la mesa...`,
+      life: 3000
+    });
+
+    // Abrir modal de cobro
+    await this.abrirModalCobro(comanda);
+  }
+
+  /**
+   * Imprime el ticket térmico con formato estándar 58mm (área de impresión 48mm y margen de 5mm)
+   * en un iframe aislado con tipografía monospaced de alto contraste (#000000) para máxima legibilidad.
+   * Incluye marca de agua del logo si existe y código QR para facturación electrónica.
+   */
+  async imprimirVentanaTicket(): Promise<void> {
     const t = this.ticketActual();
     if (!t) return;
+
+    const bLogo = this.businessLogo();
+    const orderIdForFactura = t.idComanda || t.folioComanda || '';
+    let qrDataUrl = this.qrFacturacionDataUrl();
+    if (!qrDataUrl && orderIdForFactura) {
+      try {
+        qrDataUrl = await this.generarQrFacturacion(orderIdForFactura);
+      } catch (_) {}
+    }
 
     const fechaFormateada = t.fechaImpresion ? new Date(t.fechaImpresion).toLocaleString('es-MX') : new Date().toLocaleString('es-MX');
 
@@ -1140,11 +1415,21 @@ export class CajaComponent implements OnInit, OnDestroy {
     for (const it of t.items || []) {
       itemsHtml += `
         <tr>
-          <td style="text-align: left; padding: 3px 0;">${it.cantidad}x ${it.nombreProducto}${it.asientoAlias ? ' (' + it.asientoAlias + ')' : ''}</td>
-          <td style="text-align: right; padding: 3px 0; font-weight: bold;">$${(it.totalLinea || 0).toFixed(2)}</td>
+          <td class="item-desc">
+            ${it.cantidad}x ${it.nombreProducto}${it.asientoAlias ? ' (' + it.asientoAlias + ')' : ''}
+          </td>
+          <td class="item-price">$${(it.totalLinea || 0).toFixed(2)}</td>
         </tr>
       `;
     }
+
+    const bName = (this.businessName() || 'RESTAURANTE').toUpperCase();
+    const bAddress = this.businessAddress();
+    const bPhone = this.businessPhone();
+    const esPagada = (t as any).estado === 'PAGADA' || (t as any).isPaid === true;
+    const logoMode = (t as any).ticketLogoMode || this.businessLogoMode();
+    const showHeaderLogo = bLogo && (logoMode === 'HEADER' || logoMode === 'BOTH');
+    const showWatermark = bLogo && (logoMode === 'WATERMARK' || logoMode === 'BOTH');
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -1154,75 +1439,316 @@ export class CajaComponent implements OnInit, OnDestroy {
           <title>Ticket - Comanda #${t.folioComanda}</title>
           <style>
             @page {
-              size: 80mm auto;
+              size: 58mm auto;
               margin: 0;
             }
-            body {
-              font-family: 'Courier New', Courier, monospace;
-              width: 72mm;
-              margin: 0 auto;
-              padding: 12px 0;
-              font-size: 12px;
-              color: #000;
+            * {
+              box-sizing: border-box;
+              margin: 0;
+              padding: 0;
+            }
+            html, body {
+              width: 58mm;
+              margin: 0;
+              padding: 0;
+              background: #ffffff;
+              color: #000000;
+              font-family: 'Courier New', Courier, 'Lucida Console', Monaco, monospace;
+              font-size: 11px;
               line-height: 1.25;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+              -webkit-font-smoothing: none;
+            }
+            .ticket-container {
+              width: 48mm;
+              max-width: 48mm;
+              min-width: 48mm;
+              margin: 0 auto;
+              padding: 2mm 0 14mm 0;
+              box-sizing: border-box;
+              position: relative;
+              overflow: hidden;
+            }
+            .ticket-watermark {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              width: 75%;
+              max-height: 55%;
+              object-fit: contain;
+              opacity: 0.12;
+              filter: grayscale(100%);
+              pointer-events: none;
+              z-index: 0;
+            }
+            .business-logo-header {
+              text-align: center;
+              margin-bottom: 6px;
+            }
+            .business-logo-img {
+              max-width: 38mm;
+              max-height: 22mm;
+              object-fit: contain;
+              margin: 0 auto;
+              display: block;
+              filter: contrast(130%);
+            }
+            .business-title, .business-info, .ticket-type, .divider, .divider-double,
+            .meta-section, .items-table, .totals-section, .propina-box, .ticket-qr-section, .footer {
+              position: relative;
+              z-index: 1;
             }
             .text-center { text-align: center; }
             .text-right { text-align: right; }
-            .bold { font-weight: bold; }
-            .divider { border-top: 1px dashed #000; margin: 6px 0; }
-            .double-divider { border-top: 2px dashed #000; margin: 8px 0; }
-            table { width: 100%; border-collapse: collapse; font-size: 11px; }
-            .title { font-size: 16px; font-weight: 900; margin: 0 0 2px 0; text-align: center; }
-            .subtitle { font-size: 11px; margin: 0 0 4px 0; text-align: center; }
-            .total-row { font-size: 15px; font-weight: 900; }
-            .propina-box { border: 1px dashed #444; padding: 6px; margin: 8px 0; font-size: 11px; }
+            .text-left { text-align: left; }
+            .bold { font-weight: 700; }
+            .extra-bold { font-weight: 900; }
+
+            .business-title {
+              font-size: 13.5px;
+              font-weight: 900;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              text-align: center;
+              line-height: 1.2;
+              margin-bottom: 2px;
+            }
+            .business-info {
+              font-size: 10px;
+              font-weight: 700;
+              text-align: center;
+              line-height: 1.25;
+            }
+            .ticket-type {
+              font-size: 11px;
+              font-weight: 900;
+              text-transform: uppercase;
+              text-align: center;
+              margin-top: 3px;
+              letter-spacing: 1px;
+            }
+
+            .divider {
+              border: none;
+              border-bottom: 1px dashed #000000;
+              margin: 5px 0;
+              width: 100%;
+            }
+            .divider-double {
+              border: none;
+              border-bottom: 2px solid #000000;
+              margin: 6px 0;
+              width: 100%;
+            }
+
+            .meta-section {
+              font-size: 10.5px;
+              font-weight: 700;
+              line-height: 1.35;
+              margin: 3px 0;
+            }
+            .meta-row {
+              display: flex;
+              justify-content: space-between;
+              gap: 2px;
+            }
+
+            .items-table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 10.5px;
+              margin: 2px 0;
+            }
+            .items-table th {
+              font-size: 10px;
+              font-weight: 900;
+              text-transform: uppercase;
+              border-bottom: 1px dashed #000000;
+              padding-bottom: 2px;
+            }
+            .items-table td {
+              padding: 2.5px 0;
+              vertical-align: top;
+            }
+            .item-desc {
+              text-align: left;
+              font-weight: 700;
+              word-break: break-word;
+              padding-right: 4px;
+            }
+            .item-price {
+              text-align: right;
+              font-weight: 900;
+              white-space: nowrap;
+            }
+
+            .totals-section {
+              margin-top: 2px;
+              font-size: 11px;
+            }
+            .total-row {
+              display: flex;
+              justify-content: space-between;
+              padding: 1.5px 0;
+              font-weight: 700;
+            }
+            .total-final {
+              font-size: 15px;
+              font-weight: 900;
+              border-top: 1px dashed #000000;
+              border-bottom: 1px dashed #000000;
+              padding: 4px 0;
+              margin: 4px 0;
+            }
+
+            .propina-box {
+              border: 1px dashed #000000;
+              padding: 4px;
+              margin: 6px 0;
+              font-size: 10px;
+              font-weight: 700;
+            }
+            .propina-title {
+              text-align: center;
+              font-weight: 900;
+              margin-bottom: 2px;
+              font-size: 10px;
+            }
+            .propina-row {
+              display: flex;
+              justify-content: space-between;
+              padding: 1px 0;
+            }
+
+            .ticket-qr-section {
+              margin-top: 6px;
+              text-align: center;
+            }
+            .ticket-qr-label {
+              font-weight: 900;
+              font-size: 10.5px;
+              margin-bottom: 4px;
+            }
+            .ticket-qr-help {
+              font-size: 9.5px;
+              font-weight: 700;
+              margin-top: 2px;
+            }
+            .ticket-qr-section img {
+              width: 28mm !important;
+              height: 28mm !important;
+              margin: 0 auto;
+              display: block;
+            }
+
+            .footer {
+              margin-top: 6px;
+              text-align: center;
+              font-size: 10px;
+              font-weight: 700;
+              line-height: 1.3;
+            }
+            .footer-note {
+              font-size: 9px;
+              margin-top: 2px;
+            }
           </style>
         </head>
         <body>
-          <div class="title">PRE-CUENTA</div>
-          <div class="subtitle">Comanda #${t.folioComanda}</div>
-          <div class="divider"></div>
-          <div><strong>Mesa:</strong> ${t.mesaNombre || 'Mesa General'}</div>
-          <div><strong>Mesero:</strong> ${t.meseroNombre || 'Sin asignar'}</div>
-          <div><strong>Cliente:</strong> ${t.clienteNombre || 'Venta General'}</div>
-          <div><strong>Fecha:</strong> ${fechaFormateada}</div>
-          <div class="divider"></div>
-          <table>
-            <thead>
-              <tr style="border-bottom: 1px dashed #000;">
-                <th style="text-align: left; padding: 2px 0;">Cant / Platillo</th>
-                <th style="text-align: right; padding: 2px 0;">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemsHtml}
-            </tbody>
-          </table>
-          <div class="divider"></div>
-          ${t.descuento && t.descuento > 0 ? `
-            <div style="display:flex; justify-content:space-between;">
-              <span>Subtotal:</span>
-              <span>$${(t.subtotal || t.total).toFixed(2)}</span>
+          <div class="ticket-container">
+            ${showWatermark ? `
+              <img src="${bLogo}" class="ticket-watermark" alt="Logo Watermark" />
+            ` : ''}
+            ${showHeaderLogo ? `
+              <div class="business-logo-header">
+                <img src="${bLogo}" class="business-logo-img" alt="Logo" />
+              </div>
+            ` : ''}
+            <div class="business-title">${bName}</div>
+            ${bAddress ? `<div class="business-info">${bAddress}</div>` : ''}
+            ${bPhone ? `<div class="business-info">Tel: ${bPhone}</div>` : ''}
+            <div class="ticket-type">*** ${esPagada ? 'TICKET DE VENTA' : 'PRE-CUENTA'} ***</div>
+            <div class="divider"></div>
+
+            <div class="meta-section">
+              <div class="meta-row"><span>FOLIO:</span> <strong>#${t.folioComanda}</strong></div>
+              <div class="meta-row"><span>MESA:</span> <strong>${t.mesaNombre || 'Mesa General'}</strong></div>
+              <div class="meta-row"><span>MESERO:</span> <span>${t.meseroNombre || 'Sin asignar'}</span></div>
+              <div class="meta-row"><span>CLIENTE:</span> <span>${t.clienteNombre || 'Venta General'}</span></div>
+              <div class="meta-row"><span>FECHA:</span> <span>${fechaFormateada}</span></div>
             </div>
-            <div style="display:flex; justify-content:space-between;">
-              <span>Descuento:</span>
-              <span>-$${(t.descuento).toFixed(2)}</span>
+
+            <div class="divider"></div>
+
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th class="text-left">Cant / Descripción</th>
+                  <th class="text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+              </tbody>
+            </table>
+
+            <div class="divider"></div>
+
+            <div class="totals-section">
+              ${t.descuento && t.descuento > 0 ? `
+                <div class="total-row">
+                  <span>SUBTOTAL:</span>
+                  <span>$${(t.subtotal || t.total).toFixed(2)}</span>
+                </div>
+                <div class="total-row">
+                  <span>DESCUENTO:</span>
+                  <span>-$${(t.descuento).toFixed(2)}</span>
+                </div>
+              ` : ''}
+              <div class="total-row total-final">
+                <span>TOTAL:</span>
+                <span>$${(t.total || 0).toFixed(2)}</span>
+              </div>
+              ${esPagada ? `
+                <div class="total-row">
+                  <span>ESTADO:</span>
+                  <span class="bold">PAGADO ✓</span>
+                </div>
+                ${(t as any).metodoPago ? `
+                  <div class="total-row">
+                    <span>MÉTODO:</span>
+                    <span class="bold">${(t as any).metodoPago}</span>
+                  </div>
+                ` : ''}
+              ` : ''}
             </div>
-          ` : ''}
-          <div style="display:flex; justify-content:space-between;" class="total-row">
-            <span>TOTAL:</span>
-            <span>$${(t.total || 0).toFixed(2)}</span>
+
+            ${!esPagada ? `
+              <div class="propina-box">
+                <div class="propina-title">PROPINA SUGERIDA</div>
+                <div class="propina-row"><span>10%:</span> <strong>$${(t.propinaSugerida10 || (t.total * 0.10)).toFixed(2)}</strong></div>
+                <div class="propina-row"><span>15%:</span> <strong>$${(t.propinaSugerida15 || (t.total * 0.15)).toFixed(2)}</strong></div>
+                <div class="propina-row"><span>20%:</span> <strong>$${(t.propinaSugerida20 || (t.total * 0.20)).toFixed(2)}</strong></div>
+              </div>
+            ` : ''}
+
+            ${qrDataUrl ? `
+              <div class="divider"></div>
+              <div class="ticket-qr-section">
+                <div class="ticket-qr-label">¿NECESITAS FACTURA?</div>
+                <img src="${qrDataUrl}" alt="QR Facturación" />
+                <div class="ticket-qr-help">Escanea el código para facturar</div>
+              </div>
+            ` : ''}
+
+            <div class="divider-double"></div>
+            <div class="footer">
+              <div>¡GRACIAS POR SU PREFERENCIA!</div>
+              <div class="footer-note">${esPagada ? 'Comprobante de Pago' : 'Este ticket no es un comprobante fiscal'}</div>
+            </div>
           </div>
-          <div class="divider"></div>
-          <div class="propina-box">
-            <div class="text-center bold" style="margin-bottom: 3px;">PROPINA SUGERIDA</div>
-            <div style="display:flex; justify-content:space-between;"><span>10%:</span> <strong>$${(t.propinaSugerida10 || (t.total * 0.10)).toFixed(2)}</strong></div>
-            <div style="display:flex; justify-content:space-between;"><span>15%:</span> <strong>$${(t.propinaSugerida15 || (t.total * 0.15)).toFixed(2)}</strong></div>
-            <div style="display:flex; justify-content:space-between;"><span>20%:</span> <strong>$${(t.propinaSugerida20 || (t.total * 0.20)).toFixed(2)}</strong></div>
-          </div>
-          <div class="double-divider"></div>
-          <div class="text-center" style="font-size: 10px;">¡Gracias por su visita!</div>
-          <div class="text-center" style="font-size: 9px; margin-top: 2px;">Este ticket no es un comprobante fiscal</div>
         </body>
       </html>
     `;
@@ -1245,10 +1771,50 @@ export class CajaComponent implements OnInit, OnDestroy {
       doc.open();
       doc.write(htmlContent);
       doc.close();
-      setTimeout(() => {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-      }, 250);
+
+      const win = iframe.contentWindow;
+      if (win) {
+        const triggerPrint = () => {
+          win.focus();
+          win.print();
+        };
+
+        const images = doc.getElementsByTagName('img');
+        if (!images || images.length === 0) {
+          setTimeout(triggerPrint, 250);
+        } else {
+          let loaded = 0;
+          let printed = false;
+          const onAllDone = () => {
+            if (!printed) {
+              printed = true;
+              setTimeout(triggerPrint, 250);
+            }
+          };
+
+          for (let i = 0; i < images.length; i++) {
+            const img = images[i];
+            if (img.complete && img.naturalWidth !== 0) {
+              loaded++;
+            } else {
+              img.onload = () => {
+                loaded++;
+                if (loaded >= images.length) onAllDone();
+              };
+              img.onerror = () => {
+                loaded++;
+                if (loaded >= images.length) onAllDone();
+              };
+            }
+          }
+
+          if (loaded >= images.length) {
+            onAllDone();
+          }
+          // Timeout de seguridad en caso de que alguna imagen tarde en responder
+          setTimeout(onAllDone, 1200);
+        }
+      }
     }
   }
 
@@ -1635,6 +2201,8 @@ export class CajaComponent implements OnInit, OnDestroy {
       mesaNombre: order.mesaNombre,
       total
     });
+    this.categoriaCancelacion = 'Alto tiempo de espera';
+    this.comentarioCancelacion = '';
     this.motivoCancelacion = '';
     this.modalCancelarVisible.set(true);
   }
@@ -1642,21 +2210,26 @@ export class CajaComponent implements OnInit, OnDestroy {
   cerrarModalCancelar(): void {
     this.modalCancelarVisible.set(false);
     this.comandaACancelar.set(null);
+    this.comentarioCancelacion = '';
   }
 
   async confirmarCancelarComanda(): Promise<void> {
     const target = this.comandaACancelar();
     if (!target) return;
 
-    if (!this.motivoCancelacion || this.motivoCancelacion.trim().length < 3) {
-      this.messageService.add({ severity: 'warn', summary: 'Motivo requerido', detail: 'Indica el motivo de la cancelación (mín. 3 caracteres)' });
+    const cat = this.categoriaCancelacion || 'Otro motivo';
+    const comm = this.comentarioCancelacion.trim();
+    if (cat === 'Otro motivo' && !comm) {
+      this.messageService.add({ severity: 'warn', summary: 'Comentario requerido', detail: 'Por favor indica la observación detallada para "Otro motivo"' });
       return;
     }
+
+    const compositeReason = comm ? `[${cat}] ${comm}` : cat;
 
     this.procesando.set(true);
     try {
       const email = this.authService.getCurrentUser()?.email || this.userName || undefined;
-      await firstValueFrom(this.orderService.updateOrderStatus(target.id, 'CANCELADA', email, this.motivoCancelacion.trim()));
+      await firstValueFrom(this.orderService.updateOrderStatus(target.id, 'CANCELADA', email, compositeReason, cat, comm));
       
       // Actualización optimista inmediata en la UI para desaparecer la comanda de Abiertas
       this.todasComandas.update(orders =>
@@ -1666,7 +2239,7 @@ export class CajaComponent implements OnInit, OnDestroy {
       this.messageService.add({
         severity: 'info',
         summary: 'Comanda Cancelada',
-        detail: `La comanda #${target.folio} fue cancelada correctamente`
+        detail: `La comanda #${target.folio} fue cancelada correctamente (${cat})`
       });
       this.cerrarModalCancelar();
       await Promise.all([
@@ -1684,8 +2257,9 @@ export class CajaComponent implements OnInit, OnDestroy {
   // ==================== DIVISIÓN DE COMANDA (SPLIT) ====================
 
   async abrirModalSplit(order: PendingOrder | ComandaCajaRow): Promise<void> {
-    if ('items' in order && Array.isArray((order as any).items)) {
-      this.orderParaSplit.set(order as PendingOrder);
+    const rawOrder = order as any;
+    if (rawOrder && Array.isArray(rawOrder.items) && rawOrder.items.length > 0) {
+      this.orderParaSplit.set(rawOrder as PendingOrder);
       this.modalSplitVisible.set(true);
       return;
     }
@@ -1705,6 +2279,8 @@ export class CajaComponent implements OnInit, OnDestroy {
         const mapped = this.mapBackendOrder(fullOrder);
         this.orderParaSplit.set(mapped);
         this.modalSplitVisible.set(true);
+      } else {
+        throw new Error('La orden no contiene datos');
       }
     } catch (e) {
       console.error('Error preparando orden para división:', e);
@@ -1714,28 +2290,52 @@ export class CajaComponent implements OnInit, OnDestroy {
     }
   }
 
+  dividirCuentaDesdeCobro(): void {
+    const comanda = this.comandaSeleccionada();
+    if (!comanda) return;
+    if (this.montoPropinaInput > 0) {
+      this.splitOrderTip.set({ amount: this.montoPropinaInput });
+    } else {
+      this.splitOrderTip.set(null);
+    }
+    this.modalPagoVisible.set(false);
+    this.abrirModalSplit(comanda);
+  }
+
+  dividirCuentaDesdeDetalle(order: PendingOrder): void {
+    this.cerrarDetalleOrden();
+    this.abrirModalSplit(order);
+  }
+
   onSplitModalVisibilityChange(visible: boolean): void {
     this.modalSplitVisible.set(visible);
     if (!visible) {
       this.orderParaSplit.set(null);
+      this.splitOrderTip.set(null);
     }
   }
 
   onCuentaCreadaEnCaja(event: any): void {
+    const totalComandas = event?.newOrderIds?.length ?? 1;
     this.messageService.add({
       severity: 'success',
-      summary: 'Cuenta Dividida',
-      detail: 'Se ha creado la nueva cuenta con los artículos seleccionados'
+      summary: totalComandas > 1 ? 'Cuenta dividida equitativamente' : 'Cuenta dividida',
+      detail:
+        totalComandas > 1
+          ? `La cuenta se dividió en ${totalComandas + 1} sub-comandas. Se han actualizado en caja para su cobro individual.`
+          : `Se ha creado una nueva sub-comanda. Las cuentas están listas para cobrarse por separado en caja.`,
+      life: 4500
     });
     this.modalSplitVisible.set(false);
     this.orderParaSplit.set(null);
+    this.splitOrderTip.set(null);
     this.cargarTablero(false);
     this.cargarHistorialComandas(false);
   }
 
   // ==================== REIMPRESIÓN Y FORMATEO ====================
 
-  reimprimirTicketCerrada(order: PendingOrder): void {
+  async reimprimirTicketCerrada(order: PendingOrder): Promise<void> {
     const total = order.totalFinal ?? order.subtotal ?? 0;
     const ticket: TicketPrecuenta = {
       idComanda: order.id,
@@ -1757,9 +2357,28 @@ export class CajaComponent implements OnInit, OnDestroy {
         precioUnitario: this.getItemPrice(it),
         totalLinea: this.getItemPrice(it) * it.cantidad,
         asientoAlias: it.asientoAlias
-      }))
+      })),
+      estado: 'PAGADA',
+      metodoPago: (order as any).metodoPago || order.payment?.method || 'PAGADO'
     };
     this.ticketActual.set(ticket);
+    await this.generarQrFacturacion(order.id);
+
+    try {
+      const resp = await firstValueFrom(this.cajaService.imprimirTicketDirecto(order.id, this.tenantId));
+      if (resp?.object?.impresoEnHardware) {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Ticket Reimpreso',
+          detail: `Comprobante de ${ticket.mesaNombre} impreso silenciosamente en ${resp.object.nombreImpresora || 'POS-58'}.`,
+          life: 3000
+        });
+        return;
+      }
+    } catch (e) {
+      console.warn('Fallback a impresión de ventana para comanda cerrada:', e);
+    }
+
     this.modalTicketVisible.set(true);
     setTimeout(() => this.imprimirVentanaTicket(), 250);
   }
@@ -1819,6 +2438,7 @@ export class CajaComponent implements OnInit, OnDestroy {
     }
     this.meseroSeleccionadoId.set(id);
     this.meseroSeleccionado.set(meseroObj);
+    this.retencionPropinasPorc = 50;
     this.modalCorteMeseroVisible.set(true);
     this.fechaCorte.set(new Date());
     await Promise.all([this.cargarCorteMesero(), this.cargarHistorialComandas(false)]);
@@ -1864,6 +2484,7 @@ export class CajaComponent implements OnInit, OnDestroy {
     if (this.tenantId <= 0) return;
     if (showLoading) this.loadingResumenDia.set(true);
     try {
+      await this.consultarEstadoCorteHoy();
       if (!this.turnoActivo()) await this.asegurarTurnoActivo();
       const turno = this.turnoActivo();
       if (!turno) {
@@ -1912,9 +2533,23 @@ export class CajaComponent implements OnInit, OnDestroy {
     }
   }
 
+  get propinaBrutaMesero(): number {
+    const corte = this.corteDelDia();
+    if (corte?.propinasPendientesLiquidar !== undefined && corte?.propinasPendientesLiquidar !== null) {
+      return corte.propinasPendientesLiquidar;
+    }
+    return this.totalPropinasMesero();
+  }
+
+  get retencionMontoMesero(): number {
+    const bruto = this.propinaBrutaMesero;
+    const porc = Math.min(100, Math.max(0, Number(this.retencionPropinasPorc) || 0));
+    return (bruto * (porc / 100));
+  }
+
   get propinaNetaMesero(): number {
-    const bruto = this.corteDelDia()?.propinasPendientesLiquidar ?? this.totalPropinasMesero();
-    const retencion = (bruto * (this.retencionPropinasPorc / 100));
+    const bruto = this.propinaBrutaMesero;
+    const retencion = this.retencionMontoMesero;
     return Math.max(0, bruto - retencion);
   }
 
@@ -1934,13 +2569,14 @@ export class CajaComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const propinas = (this.corteDelDia()?.propinasPendientesLiquidar && this.corteDelDia()!.propinasPendientesLiquidar > 0)
-      ? this.corteDelDia()!.propinasPendientesLiquidar
-      : this.totalPropinasMesero();
+    const propinas = this.propinaBrutaMesero;
     if (propinas <= 0) {
       this.messageService.add({ severity: 'info', summary: 'Sin saldo', detail: 'No hay propinas pendientes de liquidar' });
       return;
     }
+
+    const porc = Math.min(100, Math.max(0, Number(this.retencionPropinasPorc) || 0));
+    const montoNeto = this.propinaNetaMesero;
 
     this.procesando.set(true);
     try {
@@ -1949,13 +2585,13 @@ export class CajaComponent implements OnInit, OnDestroy {
         idTurno: turno.idTurno,
         idMesero: idMesero,
         idCajero: this.userId,
-        porcentajeRetencion: this.retencionPropinasPorc
+        porcentajeRetencion: porc
       }));
 
       this.messageService.add({
         severity: 'success',
         summary: 'Propinas Liquidadas',
-        detail: `Se entregó neto de $${this.propinaNetaMesero.toFixed(2)} a ${nombre}`
+        detail: `Se entregó neto de $${montoNeto.toFixed(2)} a ${nombre} (${porc}% de retención)`
       });
 
       await this.cargarCorteMesero();

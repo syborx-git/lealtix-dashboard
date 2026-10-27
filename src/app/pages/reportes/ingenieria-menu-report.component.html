@@ -1,0 +1,487 @@
+<!-- ============ REPORTE 2.2: INGENIERÍA DEL MENÚ (MATRIZ KASAVANA & SMITH) ============ -->
+
+@if (loading() && !reporte()) {
+  <div class="reporte-panel">
+    <div class="kpi-grid">
+      @for (i of [1, 2, 3, 4, 5]; track i) {
+        <div class="kpi-card">
+          <p-skeleton width="55%" height="0.8rem" />
+          <p-skeleton width="70%" height="1.6rem" styleClass="mt-3" />
+          <p-skeleton width="45%" height="0.75rem" styleClass="mt-2" />
+        </div>
+      }
+    </div>
+    <div class="panel">
+      <p-skeleton width="30%" height="1.1rem" />
+      <p-skeleton height="16rem" styleClass="mt-3" />
+    </div>
+  </div>
+} @else if (error() && !reporte()) {
+  <div class="panel panel--error">
+    <i class="pi pi-exclamation-triangle"></i>
+    <h3>No se pudo cargar la ingeniería del menú</h3>
+    <p>{{ error() }}</p>
+    <button pButton type="button" label="Reintentar" icon="pi pi-refresh" (click)="recargar()"></button>
+  </div>
+} @else if (reporte(); as datos) {
+  <div class="reporte-panel">
+    <!-- ============ SUBENCABEZADO ============ -->
+    <div class="reporte-subheader">
+      <div>
+        <h3>{{ datos.meta.nombre }}</h3>
+        <p class="reporte-subheader__rango">
+          {{ datos.meta.rangoActual.etiqueta }}
+          <i class="pi pi-arrow-right"></i>
+          comparado con {{ datos.meta.rangoAnterior.etiqueta }}
+        </p>
+      </div>
+
+      <div class="reporte-subheader__acciones">
+        <!-- Selector de Estación Cocina / Barra / Todos -->
+        <div class="area-selector">
+          <button
+            type="button"
+            class="area-selector__btn"
+            [class.area-selector__btn--active]="areaFiltro() === 'TODOS'"
+            (click)="cambiarArea('TODOS')"
+          >
+            <i class="pi pi-th-large"></i>
+            Consolidado
+          </button>
+          <button
+            type="button"
+            class="area-selector__btn"
+            [class.area-selector__btn--active]="areaFiltro() === 'COCINA'"
+            (click)="cambiarArea('COCINA')"
+          >
+            <i class="pi pi-wrench"></i>
+            Cocina
+          </button>
+          <button
+            type="button"
+            class="area-selector__btn"
+            [class.area-selector__btn--active]="areaFiltro() === 'BARRA'"
+            (click)="cambiarArea('BARRA')"
+          >
+            <i class="pi pi-sparkles"></i>
+            Barra
+          </button>
+        </div>
+
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          severity="secondary"
+          [outlined]="true"
+          size="small"
+          [loading]="loading()"
+          (click)="recargar()"
+          pTooltip="Actualizar matriz"
+          tooltipPosition="bottom"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-file-excel"
+          label="Exportar Excel"
+          size="small"
+          [loading]="exportando()"
+          (click)="exportar()"
+        ></button>
+      </div>
+    </div>
+
+    <!-- ============ AVISO METODOLÓGICO ============ -->
+    <div class="reporte-nota">
+      <i class="pi pi-chart-scatter"></i>
+      <div>
+        <strong>Metodología Kasavana & Smith:</strong>
+        Umbral de popularidad fijado en <strong>{{ numero(datos.umbralPopularidad, 1) }} unidades</strong> (regla del 70% de distribución equitativa de volumen)
+        y umbral de margen promedio en <strong>{{ moneda(datos.umbralMargen) }}</strong> por platillo.
+        Haz clic en cualquier cuadrante para filtrar la tabla de detalle.
+      </div>
+    </div>
+
+    <!-- ============ KPIS COMPARATIVOS ============ -->
+    <app-kpi-grid [kpis]="datos.kpis" />
+
+    <!-- ============ 4 TARJETAS DE CUADRANTES ============ -->
+    <div class="cuadrantes-grid">
+      @for (c of listaCuadrantes(); track c.cuadrante) {
+        <div
+          class="cuadrante-card cursor-pointer"
+          [class.cuadrante-card--estrella]="c.cuadrante === 'ESTRELLA'"
+          [class.cuadrante-card--caballo]="c.cuadrante === 'CABALLO_BATALLA'"
+          [class.cuadrante-card--rompecabezas]="c.cuadrante === 'ROMPECABEZAS'"
+          [class.cuadrante-card--perro]="c.cuadrante === 'PERRO'"
+          [class.cuadrante-card--selected]="cuadranteSeleccionado() === c.cuadrante"
+          (click)="abrirModalCuadrante(c)"
+          pTooltip="Haz clic para ver los platillos de este cuadrante"
+          tooltipPosition="top"
+        >
+          <div class="cuadrante-card__header">
+            <div class="cuadrante-card__title">
+              <span class="text-xl">
+                @if (c.cuadrante === 'ESTRELLA') { ⭐ }
+                @else if (c.cuadrante === 'CABALLO_BATALLA') { 🐎 }
+                @else if (c.cuadrante === 'ROMPECABEZAS') { 🧩 }
+                @else { 🐕 }
+              </span>
+              <span>{{ c.etiqueta }}</span>
+            </div>
+            <span
+              class="cuadrante-card__badge"
+              (click)="$event.stopPropagation(); abrirModalCuadrante(c)"
+              pTooltip="Ver desglose de platillos"
+              tooltipPosition="top"
+            >
+              {{ c.cantidadPlatillos }} {{ c.cantidadPlatillos === 1 ? 'platillo' : 'platillos' }}
+              <i class="pi pi-search ml-1 text-xs"></i>
+            </span>
+          </div>
+
+          <div class="cuadrante-card__kpis">
+            <div class="cuadrante-card__kpi-item">
+              <span class="label">Volumen Vendido</span>
+              <span class="value">{{ numero(c.unidadesVendidas) }} pz</span>
+            </div>
+            <div class="cuadrante-card__kpi-item">
+              <span class="label">Margen Total</span>
+              <span class="value text-emerald-600">{{ moneda(c.margenTotal) }}</span>
+            </div>
+          </div>
+
+          <div class="cuadrante-card__estrategia">
+            <strong>Estrategia:</strong> {{ c.estrategia }}
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- ============ COMPARATIVAS EN GRÁFICAS ============ -->
+    <div class="grid-2">
+      <!-- Gráfica 1: Top 10 Platillos Más Rentables -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Top Platillos con Mayor Margen ($)</h4>
+            <p class="panel__subtitulo">Productos que dejan mayor ganancia unitaria neta</p>
+          </div>
+        </div>
+        @if (datos.matrizProductos?.filas?.length) {
+          <div class="panel__grafica panel__grafica--alta">
+            <p-chart type="bar" [data]="rentablesChartData()" [options]="rentablesChartOptions" />
+          </div>
+        } @else {
+          <div class="panel__vacio">
+            <i class="pi pi-inbox"></i>
+            <p>No hay información de rentabilidad disponible</p>
+          </div>
+        }
+      </div>
+
+      <!-- Gráfica 2: Top 10 Platillos Más Populares -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Top Platillos Más Populares (Ventas)</h4>
+            <p class="panel__subtitulo">Artículos con mayor preferencia y volumen en comandas</p>
+          </div>
+        </div>
+        @if (datos.matrizProductos?.filas?.length) {
+          <div class="panel__grafica panel__grafica--alta">
+            <p-chart type="bar" [data]="popularesChartData()" [options]="popularesChartOptions" />
+          </div>
+        } @else {
+          <div class="panel__vacio">
+            <i class="pi pi-inbox"></i>
+            <p>No hay información de ventas disponible</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ============ TABLA DETALLADA DE LA MATRIZ ============ -->
+    <div class="panel">
+      <div class="panel__header flex justify-between items-center mb-3">
+        <div>
+          <h4>Matriz Detallada de Ingeniería del Menú</h4>
+          <p class="panel__subtitulo">
+            @if (cuadranteSeleccionado()) {
+              Filtrado por cuadrante: <span class="font-bold text-purple-600">{{ cuadranteSeleccionado() }}</span>
+              <button
+                type="button"
+                class="ml-2 text-xs text-purple-700 underline cursor-pointer bg-transparent border-none"
+                (click)="cuadranteSeleccionado.set(null)"
+              >
+                (Mostrar todos)
+              </button>
+            } @else {
+              Desglose completo de costo, margen de contribución y clasificación estratégica por platillo
+            }
+          </p>
+        </div>
+
+        <p-iconField iconPosition="left">
+          <p-inputIcon styleClass="pi pi-search" />
+          <input
+            pInputText
+            type="text"
+            [(ngModel)]="searchPlatillos"
+            (input)="dtMenu.filterGlobal(searchPlatillos, 'contains')"
+            placeholder="Buscar artículo..."
+            class="p-inputtext-sm"
+          />
+        </p-iconField>
+      </div>
+
+      <p-table
+        #dtMenu
+        [value]="productosFiltrados()"
+        [globalFilterFields]="['producto', 'categoria', 'area', 'cuadrante']"
+        [paginator]="true"
+        [rows]="10"
+        [rowsPerPageOptions]="[10, 25, 50]"
+        responsiveLayout="scroll"
+        styleClass="p-datatable-sm p-datatable-striped"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="producto">Platillo / Bebida <p-sortIcon field="producto" /></th>
+            <th pSortableColumn="categoria">Categoría <p-sortIcon field="categoria" /></th>
+            <th pSortableColumn="area" style="width: 100px">Estación <p-sortIcon field="area" /></th>
+            <th pSortableColumn="precioVenta" class="text-right" style="width: 120px">Precio <p-sortIcon field="precioVenta" /></th>
+            <th pSortableColumn="costoReceta" class="text-right" style="width: 120px">Food Cost <p-sortIcon field="costoReceta" /></th>
+            <th pSortableColumn="margenUnitario" class="text-right" style="width: 130px">Margen Unit. <p-sortIcon field="margenUnitario" /></th>
+            <th pSortableColumn="unidadesVendidas" class="text-right" style="width: 120px">Vendido <p-sortIcon field="unidadesVendidas" /></th>
+            <th pSortableColumn="mixVentasPct" class="text-right" style="width: 110px">Mix % <p-sortIcon field="mixVentasPct" /></th>
+            <th pSortableColumn="margenTotal" class="text-right" style="width: 140px">Margen Total <p-sortIcon field="margenTotal" /></th>
+            <th pSortableColumn="cuadrante" class="text-center" style="width: 160px">Clasificación <p-sortIcon field="cuadrante" /></th>
+            <th style="min-width: 200px">Estrategia Recomendada</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-row>
+          <tr>
+            <td>
+              <span class="font-semibold text-slate-800">{{ row.producto }}</span>
+            </td>
+            <td>
+              <span class="text-slate-500">{{ row.categoria }}</span>
+            </td>
+            <td>
+              <span
+                class="area-tag"
+                [class.area-tag--cocina]="row.area === 'COCINA'"
+                [class.area-tag--barra]="row.area === 'BARRA'"
+              >
+                <i class="pi" [class.pi-wrench]="row.area === 'COCINA'" [class.pi-sparkles]="row.area === 'BARRA'"></i>
+                {{ row.area }}
+              </span>
+            </td>
+            <td class="text-right font-mono text-slate-700">
+              {{ moneda(row.precioVenta) }}
+            </td>
+            <td class="text-right font-mono text-slate-500">
+              {{ moneda(row.costoReceta) }}
+              <div class="text-xs text-slate-400">({{ numero(row.margenPct > 0 ? (100 - row.margenPct) : 0, 1) }}%)</div>
+            </td>
+            <td class="text-right font-mono font-bold text-emerald-600">
+              {{ moneda(row.margenUnitario) }}
+            </td>
+            <td class="text-right font-mono font-bold text-slate-800">
+              {{ numero(row.unidadesVendidas) }} <span class="text-xs font-normal text-slate-400">pz</span>
+            </td>
+            <td class="text-right font-mono text-slate-600">
+              {{ numero(row.mixVentasPct, 1) }}%
+            </td>
+            <td class="text-right font-mono font-bold text-purple-700">
+              {{ moneda(row.margenTotal) }}
+            </td>
+            <td class="text-center">
+              <span
+                class="tag-cuadrante"
+                [class.tag-cuadrante--estrella]="row.cuadranteKey === 'ESTRELLA'"
+                [class.tag-cuadrante--caballo]="row.cuadranteKey === 'CABALLO_BATALLA'"
+                [class.tag-cuadrante--rompecabezas]="row.cuadranteKey === 'ROMPECABEZAS'"
+                [class.tag-cuadrante--perro]="row.cuadranteKey === 'PERRO'"
+              >
+                {{ row.cuadrante }}
+              </span>
+            </td>
+            <td class="text-xs text-slate-600 leading-snug">
+              {{ row.estrategia }}
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="11" class="text-center py-4 text-slate-400">
+              No hay artículos que coincidan con los filtros seleccionados.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- ============ MODAL DETALLE DE PLATILLOS POR CUADRANTE ============ -->
+    <p-dialog
+      [(visible)]="modalCuadranteVisible"
+      [modal]="true"
+      [dismissableMask]="true"
+      [draggable]="false"
+      [resizable]="false"
+      [style]="{ width: '94vw', 'max-width': '960px' }"
+      [breakpoints]="{ '960px': '95vw', '640px': '98vw' }"
+      styleClass="cuadrante-modal minimal-modal"
+    >
+      <ng-template pTemplate="header">
+        <div class="flex align-items-center gap-2" *ngIf="cuadranteParaModal() as c">
+          <span class="text-2xl">
+            @if (c.cuadrante === 'ESTRELLA') { ⭐ }
+            @else if (c.cuadrante === 'CABALLO_BATALLA') { 🐎 }
+            @else if (c.cuadrante === 'ROMPECABEZAS') { 🧩 }
+            @else { 🐕 }
+          </span>
+          <div class="flex flex-column">
+            <span class="font-bold text-lg text-white">{{ c.etiqueta }}</span>
+            <span class="text-xs text-white/85 font-normal">
+              {{ platillosDelCuadranteModal().length }} {{ platillosDelCuadranteModal().length === 1 ? 'platillo clasificado' : 'platillos clasificados' }} en esta categoría
+            </span>
+          </div>
+        </div>
+      </ng-template>
+
+      <ng-container *ngIf="cuadranteParaModal() as c">
+        <!-- BANNER DE ESTRATEGIA Y MÉTRICAS -->
+        <div
+          class="modal-cuadrante-banner mb-3 p-3 border-round-xl"
+          [class.modal-banner--estrella]="c.cuadrante === 'ESTRELLA'"
+          [class.modal-banner--caballo]="c.cuadrante === 'CABALLO_BATALLA'"
+          [class.modal-banner--rompecabezas]="c.cuadrante === 'ROMPECABEZAS'"
+          [class.modal-banner--perro]="c.cuadrante === 'PERRO'"
+        >
+          <div class="flex flex-column md:flex-row align-items-start md:align-items-center justify-content-between gap-3">
+            <div class="flex-1">
+              <span class="text-xs font-bold uppercase tracking-wide block mb-1">Estrategia Kasavana & Smith:</span>
+              <p class="m-0 text-sm font-medium leading-normal">{{ c.estrategia }}</p>
+            </div>
+            <div class="flex align-items-center gap-3 flex-shrink-0 bg-white-alpha-90 p-2 border-round-lg shadow-1">
+              <div class="text-center px-2">
+                <span class="text-xs text-slate-500 block">Volumen Total</span>
+                <span class="font-bold text-base text-slate-800">{{ numero(c.unidadesVendidas) }} pz</span>
+              </div>
+              <div class="border-right-1 surface-border h-2rem"></div>
+              <div class="text-center px-2">
+                <span class="text-xs text-slate-500 block">Margen Total</span>
+                <span class="font-bold text-base text-emerald-600">{{ moneda(c.margenTotal) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BUSCADOR DENTRO DEL MODAL -->
+        <div class="flex flex-column sm:flex-row align-items-start sm:align-items-center justify-content-between gap-2 mb-3">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            Platillos pertenecientes a {{ c.etiqueta }}
+          </span>
+          <p-iconField iconPosition="left">
+            <p-inputIcon styleClass="pi pi-search" />
+            <input
+              pInputText
+              type="text"
+              [(ngModel)]="searchPlatillosModal"
+              (input)="dtModal.filterGlobal(searchPlatillosModal, 'contains')"
+              placeholder="Buscar platillo en este cuadrante..."
+              class="p-inputtext-sm"
+            />
+          </p-iconField>
+        </div>
+
+        <!-- TABLA DE PLATILLOS DEL CUADRANTE -->
+        <p-table
+          #dtModal
+          [value]="platillosDelCuadranteModal()"
+          [globalFilterFields]="['producto', 'categoria', 'area']"
+          [paginator]="platillosDelCuadranteModal().length > 6"
+          [rows]="6"
+          responsiveLayout="scroll"
+          styleClass="p-datatable-sm p-datatable-striped"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th pSortableColumn="producto">Platillo / Bebida <p-sortIcon field="producto" /></th>
+              <th pSortableColumn="categoria">Categoría <p-sortIcon field="categoria" /></th>
+              <th pSortableColumn="area" style="width: 90px">Estación <p-sortIcon field="area" /></th>
+              <th pSortableColumn="precioVenta" class="text-right" style="width: 110px">Precio <p-sortIcon field="precioVenta" /></th>
+              <th pSortableColumn="costoReceta" class="text-right" style="width: 110px">Food Cost <p-sortIcon field="costoReceta" /></th>
+              <th pSortableColumn="margenUnitario" class="text-right" style="width: 120px">Margen Unit. <p-sortIcon field="margenUnitario" /></th>
+              <th pSortableColumn="unidadesVendidas" class="text-right" style="width: 100px">Vendido <p-sortIcon field="unidadesVendidas" /></th>
+              <th pSortableColumn="margenTotal" class="text-right" style="width: 130px">Margen Total <p-sortIcon field="margenTotal" /></th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-row>
+            <tr>
+              <td>
+                <span class="font-bold text-slate-800">{{ row.producto }}</span>
+              </td>
+              <td>
+                <span class="text-slate-500 text-xs">{{ row.categoria }}</span>
+              </td>
+              <td>
+                <span
+                  class="area-tag text-xs"
+                  [class.area-tag--cocina]="row.area === 'COCINA'"
+                  [class.area-tag--barra]="row.area === 'BARRA'"
+                >
+                  <i class="pi" [class.pi-wrench]="row.area === 'COCINA'" [class.pi-sparkles]="row.area === 'BARRA'"></i>
+                  {{ row.area }}
+                </span>
+              </td>
+              <td class="text-right font-mono text-slate-700 font-semibold">
+                {{ moneda(row.precioVenta) }}
+              </td>
+              <td class="text-right font-mono text-slate-500 text-xs">
+                {{ moneda(row.costoReceta) }}
+              </td>
+              <td class="text-right font-mono font-bold text-emerald-600">
+                {{ moneda(row.margenUnitario) }}
+              </td>
+              <td class="text-right font-mono font-bold text-slate-800">
+                {{ numero(row.unidadesVendidas) }} <span class="text-xs font-normal text-slate-400">pz</span>
+              </td>
+              <td class="text-right font-mono font-bold text-purple-700">
+                {{ moneda(row.margenTotal) }}
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="8" class="text-center py-4 text-slate-400">
+                No hay platillos clasificados en este cuadrante.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </ng-container>
+
+      <ng-template pTemplate="footer">
+        <div class="flex justify-content-end gap-2">
+          <button
+            pButton
+            type="button"
+            label="Cerrar"
+            icon="pi pi-times"
+            severity="secondary"
+            [outlined]="true"
+            (click)="modalCuadranteVisible.set(false)"
+          ></button>
+        </div>
+      </ng-template>
+    </p-dialog>
+  </div>
+}

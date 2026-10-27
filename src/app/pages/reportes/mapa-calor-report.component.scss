@@ -1,0 +1,63 @@
+@use './reportes-comun' as *;
+
+:host {
+  display: block;
+}
+
+:host ::ng-deep .tabla-reporte {
+  .p-datatable-thead > tr > th {
+    background: #f8fafc;
+    color: var(--lealtix-slate-600);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+
+  .p-datatable-tbody > tr > td {
+    font-size: 0.85rem;
+  }
+}
+
+:host-context(.app-dark) ::ng-deep .tabla-reporte {
+  .p-datatable-thead > tr > th {
+    background: #0f172a;
+    color: #94a3b8;
+  }
+}
+
+.celda-calor {
+  padding: 0.45rem 0.6rem;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.8rem;
+  transition: all 0.15s ease;
+
+  &--vacia {
+    color: #94a3b8;
+    background: transparent;
+  }
+
+  &--baja {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  &--media {
+    background: #fed7aa;
+    color: #9a3412;
+  }
+
+  &--alta {
+    background: #fdba74;
+    color: #7c2d12;
+  }
+
+  &--pico {
+    background: #f97316;
+    color: #ffffff;
+    box-shadow: 0 1px 2px rgba(249, 115, 22, 0.3);
+  }
+}

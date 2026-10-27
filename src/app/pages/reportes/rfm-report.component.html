@@ -1,0 +1,241 @@
+<!-- ============ REPORTE 3.1: ANALISIS RFM DE CLIENTES ============ -->
+
+@if (loading() && !reporte()) {
+  <div class="reporte-panel">
+    <div class="kpi-grid">
+      @for (i of [1, 2, 3, 4, 5]; track i) {
+        <div class="kpi-card">
+          <p-skeleton width="55%" height="0.8rem" />
+          <p-skeleton width="70%" height="1.6rem" styleClass="mt-3" />
+          <p-skeleton width="45%" height="0.75rem" styleClass="mt-2" />
+        </div>
+      }
+    </div>
+    <div class="panel">
+      <p-skeleton width="30%" height="1.1rem" />
+      <p-skeleton height="16rem" styleClass="mt-3" />
+    </div>
+  </div>
+} @else if (error() && !reporte()) {
+  <div class="panel panel--error">
+    <i class="pi pi-exclamation-triangle"></i>
+    <h3>No se pudo cargar el análisis RFM</h3>
+    <p>{{ error() }}</p>
+    <button pButton type="button" label="Reintentar" icon="pi pi-refresh" (click)="recargar()"></button>
+  </div>
+} @else if (reporte(); as datos) {
+  <div class="reporte-panel">
+    <!-- ============ SUBENCABEZADO ============ -->
+    <div class="reporte-subheader">
+      <div>
+        <h3>{{ datos.meta.nombre }}</h3>
+        <p class="reporte-subheader__rango">
+          {{ datos.meta.rangoActual.etiqueta }}
+          <i class="pi pi-arrow-right"></i>
+          comparado con {{ datos.meta.rangoAnterior.etiqueta }}
+        </p>
+      </div>
+      <div class="reporte-subheader__acciones">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          severity="secondary"
+          [outlined]="true"
+          size="small"
+          [loading]="loading()"
+          (click)="recargar()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-file-excel"
+          label="Exportar a Excel"
+          size="small"
+          [loading]="exportando()"
+          (click)="exportar()"
+        ></button>
+      </div>
+    </div>
+
+    <!-- ============ AVISO METODOLOGICO ============ -->
+    <div class="reporte-nota">
+      <i class="pi pi-info-circle"></i>
+      <div>
+        <strong>Metodología RFM:</strong> Clasifica a los clientes evaluando su <strong>Recencia</strong> (días desde su última orden),
+        <strong>Frecuencia</strong> (número de visitas o pedidos) y <strong>Valor Monetario</strong> (gasto acumulado en el restaurante).
+        Permite activar promociones dirigidas y fidelizar a los comensales clave.
+      </div>
+    </div>
+
+    <!-- ============ KPIs COMPARATIVOS ============ -->
+    <app-kpi-grid [kpis]="datos.kpis" />
+
+    <!-- ============ GRAFICAS DE APOYO ============ -->
+    <div class="grid-2">
+      <!-- Distribución de clientes por segmento -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Distribución de la Base de Clientes</h4>
+            <p class="panel__subtitulo">Porcentaje y número de comensales por segmento RFM</p>
+          </div>
+        </div>
+        @if (datos.distribucionSegmentos.length) {
+          <div class="panel__grafica panel__grafica--alta">
+            <p-chart type="doughnut" [data]="segmentosChartData()" [options]="segmentosChartOptions" />
+          </div>
+        } @else {
+          <div class="panel__vacio">
+            <i class="pi pi-users"></i>
+            <p>Sin clientes registrados en este periodo</p>
+          </div>
+        }
+      </div>
+
+      <!-- Ingresos generados por segmento -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Ingresos Generados por Segmento</h4>
+            <p class="panel__subtitulo">Volumen de ventas ($) aportado por cada grupo</p>
+          </div>
+        </div>
+        @if (datos.ingresosPorSegmento.length) {
+          <div class="panel__grafica panel__grafica--alta">
+            <p-chart type="bar" [data]="ingresosChartData()" [options]="ingresosChartOptions" />
+          </div>
+        } @else {
+          <div class="panel__vacio">
+            <i class="pi pi-chart-bar"></i>
+            <p>Sin ingresos registrados en este periodo</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ============ TABLA 1: RESUMEN DE SEGMENTOS ============ -->
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <h4>Estrategia por Segmento de Clientes</h4>
+          <p class="panel__subtitulo">Métricas consolidadas y sugerencias de activación CRM</p>
+        </div>
+      </div>
+
+      <p-table
+        [value]="datos.resumenSegmentos.filas"
+        styleClass="p-datatable-sm tabla-reporte"
+        [tableStyle]="{ 'min-width': '100%' }"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            @for (col of datos.resumenSegmentos.columnas; track col.key) {
+              <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-fila>
+          <tr>
+            @for (col of datos.resumenSegmentos.columnas; track col.key) {
+              <td [style.text-align]="alineacion(col)">
+                @if (col.key === 'segmento') {
+                  <p-tag
+                    [value]="segmentoTag(fila['segmento']).label"
+                    [severity]="segmentoTag(fila['segmento']).severity"
+                  />
+                } @else if (col.key === 'totalIngresos') {
+                  <span class="font-bold text-slate-900">{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'estrategia') {
+                  <span class="text-slate-600 text-xs italic">{{ valorCelda(fila, col) }}</span>
+                } @else {
+                  {{ valorCelda(fila, col) }}
+                }
+              </td>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td [attr.colspan]="datos.resumenSegmentos.columnas.length" class="text-center py-4 text-slate-400">
+              No hay segmentos disponibles.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- ============ TABLA 2: DETALLE DE CLIENTES ============ -->
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <h4>Detalle Individual de Clientes</h4>
+          <p class="panel__subtitulo">Score RFM, días desde última visita, visitas acumuladas y ticket promedio</p>
+        </div>
+        <div class="filtro-busqueda">
+          <p-iconfield styleClass="w-full">
+            <p-inputicon styleClass="pi pi-search" />
+            <input
+              pInputText
+              type="text"
+              placeholder="Buscar cliente o teléfono..."
+              [(ngModel)]="filtroClientes"
+              (input)="dtClientes.filterGlobal($any($event.target).value, 'contains')"
+              class="w-full p-inputtext-sm"
+            />
+          </p-iconfield>
+        </div>
+      </div>
+
+      <p-table
+        #dtClientes
+        [value]="datos.clientesDetalle.filas"
+        [globalFilterFields]="['cliente', 'telefono', 'segmento']"
+        [paginator]="true"
+        [rows]="15"
+        [rowsPerPageOptions]="[15, 30, 60]"
+        styleClass="p-datatable-sm tabla-reporte"
+        [tableStyle]="{ 'min-width': '100%' }"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            @for (col of datos.clientesDetalle.columnas; track col.key) {
+              <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-fila>
+          <tr>
+            @for (col of datos.clientesDetalle.columnas; track col.key) {
+              <td [style.text-align]="alineacion(col)">
+                @if (col.key === 'cliente') {
+                  <span class="font-medium text-slate-800">{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'segmento') {
+                  <p-tag
+                    [value]="segmentoTag(fila['segmento']).label"
+                    [severity]="segmentoTag(fila['segmento']).severity"
+                  />
+                } @else if (col.key === 'valorMonetario') {
+                  <span class="font-bold text-slate-900">{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'recenciaDias') {
+                  <span [class.text-amber-600]="fila['recenciaDias'] > 30" [class.text-red-600]="fila['recenciaDias'] > 60">
+                    {{ valorCelda(fila, col) }}
+                  </span>
+                } @else {
+                  {{ valorCelda(fila, col) }}
+                }
+              </td>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td [attr.colspan]="datos.clientesDetalle.columnas.length" class="text-center py-4 text-slate-400">
+              No se encontraron comensales en el periodo seleccionado.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+}

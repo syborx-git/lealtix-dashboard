@@ -4,7 +4,8 @@ export enum UserRole {
   COCINA = 'COCINA',
   CAJA = 'CAJA',
   MARKETING = 'MARKETING',
-  HOSTESS = 'HOSTESS'
+  HOSTESS = 'HOSTESS',
+  BARRA = 'BARRA'
 }
 
 export interface UserDTO {
@@ -93,6 +94,11 @@ export const ROLE_PERMISSIONS: { [key in UserRole]: string[] } = {
     'manage_mesas',
     'view_reservaciones',
     'manage_reservaciones'
+  ],
+  [UserRole.BARRA]: [
+    'view_kitchen_orders',
+    'update_order_status',
+    'view_pending_orders'
   ]
 };
 
@@ -103,5 +109,6 @@ export const ROLE_COLORS: { [key in UserRole]: string } = {
   [UserRole.COCINA]: 'success',
   [UserRole.CAJA]: 'warning',
   [UserRole.MARKETING]: 'secondary',
-  [UserRole.HOSTESS]: 'contrast'
+  [UserRole.HOSTESS]: 'contrast',
+  [UserRole.BARRA]: 'help'
 };

@@ -91,6 +91,13 @@ export interface TicketPrecuenta {
   propinaSugerida15: number;
   propinaSugerida20: number;
   items: ItemPrecuenta[];
+  estado?: string;
+  metodoPago?: string;
+  impresoEnHardware?: boolean;
+  nombreImpresora?: string;
+  logoUrl?: string;
+  qrFacturacionUrl?: string;
+  ticketLogoMode?: 'HEADER' | 'WATERMARK' | 'BOTH';
 }
 
 export interface DesgloseMetodoPago {
@@ -147,3 +154,65 @@ export interface MeseroSimple {
   nombre: string;
   email: string;
 }
+
+export interface CorteCajaDiarioDTO {
+  idCorteDiario: number;
+  tenantId: number;
+  cajeroId?: number;
+  cajeroNombre?: string;
+  cajeroEmail?: string;
+  fechaCorte: string;
+  fechaHoraRegistro: string;
+
+  sistemaEfectivo: number;
+  sistemaTarjeta: number;
+  sistemaTransferencia: number;
+  sistemaOtros: number;
+  sistemaTotal: number;
+
+  realEfectivo: number;
+  realTarjeta: number;
+  realTransferencia: number;
+  realOtros: number;
+  realTotal: number;
+
+  diferenciaEfectivo: number;
+  diferenciaTarjeta: number;
+  diferenciaTransferencia: number;
+  diferenciaOtros: number;
+  diferenciaTotal: number;
+
+  estadoDiferencia: 'CUADRADO' | 'SOBRANTE' | 'FALTANTE' | string;
+  comentarios?: string;
+  totalComandas?: number;
+  totalArticulos?: number;
+  totalPropinas?: number;
+}
+
+export interface GenerarCorteDiarioRequest {
+  tenantId: number;
+  realEfectivo: number;
+  realTarjeta: number;
+  realTransferencia: number;
+  realOtros: number;
+  comentarios?: string;
+}
+
+export interface ResumenCorteSistemaDTO {
+  fecha: string;
+  sistemaEfectivo: number;
+  sistemaTarjeta: number;
+  sistemaTransferencia: number;
+  sistemaOtros: number;
+  sistemaTotal: number;
+  totalComandas: number;
+  totalArticulos: number;
+  totalPropinas: number;
+}
+
+export interface EstadoCorteDiarioHoyDTO {
+  yaGenerado: boolean;
+  corte?: CorteCajaDiarioDTO | null;
+  sistemaActual?: ResumenCorteSistemaDTO | null;
+}
+

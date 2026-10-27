@@ -513,14 +513,14 @@ h6 { font-size: 1rem; }
   box-shadow: var(--lealtix-shadow-primary) !important;
 }
 
-/* Botón secundario */
-.p-button.p-button-secondary {
+/* Botón secundario (sólido) */
+.p-button.p-button-secondary:not(.p-button-text):not(.p-button-link) {
   background-color: var(--lealtix-slate-100) !important;
   border-color: var(--lealtix-slate-300) !important;
   color: var(--lealtix-slate-700) !important;
 }
 
-.p-button.p-button-secondary:hover {
+.p-button.p-button-secondary:not(.p-button-text):not(.p-button-link):hover {
   background-color: var(--lealtix-slate-200) !important;
   border-color: var(--lealtix-slate-400) !important;
 }
@@ -691,20 +691,80 @@ h6 { font-size: 1rem; }
   box-shadow: var(--lealtix-shadow-2xl) !important;
   overflow: hidden;
   animation: lealtix-scaleIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(0,0,0,0.05) !important;
+  border: 1px solid rgba(0,0,0,0.06) !important;
 }
 
 .p-dialog .p-dialog-header {
-  background-color: var(--surface-card) !important;
-  padding: 1.5rem 1.75rem !important;
-  border-bottom: 1px solid var(--surface-border) !important;
+  background-color: var(--surface-card, #ffffff) !important;
+  padding: 1.25rem 1.75rem !important;
+  border-bottom: 1px solid var(--surface-border, #f1f5f9) !important;
 }
 
 .p-dialog .p-dialog-title {
   font-size: 1.25rem !important;
   font-weight: 700 !important;
-  color: var(--text-color) !important;
+  color: var(--text-color, #0f172a) !important;
   letter-spacing: -0.01em;
+}
+
+/* Botón de cierre global para todos los diálogos estándar PrimeNG */
+.p-dialog .p-dialog-header-actions button,
+.p-dialog .p-dialog-header-actions .p-button,
+.p-dialog .p-dialog-close-button,
+.p-dialog .p-dialog-header-close,
+.p-dialog .p-dialog-header-icon {
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+  border-radius: 9999px !important;
+  background: var(--lealtix-slate-100, #f1f5f9) !important;
+  color: var(--lealtix-slate-700, #334155) !important;
+  border: 1px solid var(--lealtix-slate-200, #e2e8f0) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  padding: 0 !important;
+}
+
+.p-dialog .p-dialog-header-actions button svg,
+.p-dialog .p-dialog-header-actions button i,
+.p-dialog .p-dialog-close-button svg,
+.p-dialog .p-dialog-close-button i,
+.p-dialog .p-dialog-header-close svg,
+.p-dialog .p-dialog-header-close i,
+.p-dialog .p-dialog-header-icon svg,
+.p-dialog .p-dialog-header-icon i {
+  color: var(--lealtix-slate-700, #334155) !important;
+  fill: var(--lealtix-slate-700, #334155) !important;
+  stroke: var(--lealtix-slate-700, #334155) !important;
+  width: 14px !important;
+  height: 14px !important;
+  display: block !important;
+  transition: transform 0.2s ease !important;
+}
+
+.p-dialog .p-dialog-header-actions button:hover,
+.p-dialog .p-dialog-close-button:hover,
+.p-dialog .p-dialog-header-close:hover,
+.p-dialog .p-dialog-header-icon:hover {
+  background: var(--lealtix-slate-200, #e2e8f0) !important;
+  color: var(--lealtix-slate-900, #0f172a) !important;
+  transform: scale(1.08) !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15) !important;
+}
+
+.p-dialog .p-dialog-header-actions button:hover svg,
+.p-dialog .p-dialog-header-actions button:hover i,
+.p-dialog .p-dialog-close-button:hover svg,
+.p-dialog .p-dialog-close-button:hover i,
+.p-dialog .p-dialog-header-close:hover svg,
+.p-dialog .p-dialog-header-close:hover i {
+  color: var(--lealtix-slate-900, #0f172a) !important;
+  fill: var(--lealtix-slate-900, #0f172a) !important;
+  stroke: var(--lealtix-slate-900, #0f172a) !important;
+  transform: rotate(90deg) scale(1.1) !important;
 }
 
 .p-dialog .p-dialog-content {
@@ -1619,9 +1679,10 @@ body .p-dialog.minimal-modal .p-dialog-header {
 }
 
 body .p-dialog.minimal-modal .p-dialog-header .p-dialog-title,
-body .p-dialog.minimal-modal .p-dialog-header h2 {
-  font-size: 1.05rem !important;
-  font-weight: 600 !important;
+body .p-dialog.minimal-modal .p-dialog-header h2,
+body .p-dialog.minimal-modal .p-dialog-header h3 {
+  font-size: 1.15rem !important;
+  font-weight: 700 !important;
   color: #ffffff !important;
   letter-spacing: 0.01em;
   margin: 0;
@@ -1629,6 +1690,7 @@ body .p-dialog.minimal-modal .p-dialog-header h2 {
 }
 
 body .p-dialog.minimal-modal .p-dialog-header h2,
+body .p-dialog.minimal-modal .p-dialog-header h3,
 body .p-dialog.minimal-modal .p-dialog-header i,
 body .p-dialog.minimal-modal .p-dialog-header .flex,
 body .p-dialog.minimal-modal .p-dialog-header .inline-flex,
@@ -1638,24 +1700,212 @@ body .p-dialog.minimal-modal .p-dialog-header .font-bold {
   color: #ffffff;
 }
 
+body .p-dialog.minimal-modal .p-dialog-header p,
+body .p-dialog.minimal-modal .p-dialog-header .text-600,
+body .p-dialog.minimal-modal .p-dialog-header .text-slate-400,
+body .p-dialog.minimal-modal .p-dialog-header .text-slate-500,
+body .p-dialog.minimal-modal .p-dialog-header .text-500 {
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
 body .p-dialog.minimal-modal .p-dialog-header-actions,
 body .p-dialog.minimal-modal .p-dialog-header-icons {
   position: absolute;
-  right: 0.75rem;
+  right: 1rem;
   top: 50%;
   transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
+/* Botón de cierre en modal morado: botón blanco pill con ícono morado/índigo de alto contraste */
 body .p-dialog.minimal-modal .p-dialog-header .p-dialog-header-icon,
-body .p-dialog.minimal-modal .p-dialog-header-close,
-body .p-dialog.minimal-modal .p-dialog-header button {
-  color: #ffffff !important;
-  border-radius: 8px;
+body .p-dialog.minimal-modal .p-dialog-header .p-dialog-header-close,
+body .p-dialog.minimal-modal .p-dialog-header .p-dialog-close-button,
+body .p-dialog.minimal-modal .p-dialog-header .p-dialog-header-actions button,
+body .p-dialog.minimal-modal .p-dialog-header button.p-dialog-close-button,
+body .p-dialog.minimal-modal .p-dialog-header .p-button.p-button-secondary {
+  background: #ffffff !important;
+  color: #4f46e5 !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
+  border-radius: 9999px !important;
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18), 0 1px 3px rgba(15, 23, 42, 0.08) !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  opacity: 1 !important;
+  padding: 0 !important;
+}
+
+body .p-dialog.minimal-modal .p-dialog-header .p-dialog-header-icon svg,
+body .p-dialog.minimal-modal .p-dialog-header .p-dialog-header-close svg,
+body .p-dialog.minimal-modal .p-dialog-header .p-dialog-close-button svg,
+body .p-dialog.minimal-modal .p-dialog-header .p-dialog-header-actions button svg,
+body .p-dialog.minimal-modal .p-dialog-header .p-dialog-header-actions svg,
+body .p-dialog.minimal-modal .p-dialog-header .p-dialog-header-icon i,
+body .p-dialog.minimal-modal .p-dialog-header .p-dialog-header-close i,
+body .p-dialog.minimal-modal .p-dialog-header .p-dialog-header-actions button i {
+  color: #4f46e5 !important;
+  fill: #4f46e5 !important;
+  stroke: #4f46e5 !important;
+  font-size: 0.95rem !important;
+  font-weight: 800 !important;
+  width: 1rem !important;
+  height: 1rem !important;
+  display: block !important;
+  transition: transform 0.25s ease, color 0.2s ease !important;
 }
 
 body .p-dialog.minimal-modal .p-dialog-header .p-dialog-header-icon:hover,
-body .p-dialog.minimal-modal .p-dialog-header-close:hover {
-  background: rgba(255, 255, 255, 0.14) !important;
+body .p-dialog.minimal-modal .p-dialog-header .p-dialog-header-close:hover,
+body .p-dialog.minimal-modal .p-dialog-header .p-dialog-close-button:hover,
+body .p-dialog.minimal-modal .p-dialog-header .p-dialog-header-actions button:hover {
+  background: #f8fafc !important;
+  color: #3730a3 !important;
+  transform: scale(1.08) !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.26) !important;
+}
+
+body .p-dialog.minimal-modal .p-dialog-header .p-dialog-header-actions button:hover svg,
+body .p-dialog.minimal-modal .p-dialog-header .p-dialog-header-actions button:hover i {
+  color: #3730a3 !important;
+  fill: #3730a3 !important;
+  stroke: #3730a3 !important;
+  transform: rotate(90deg) scale(1.1) !important;
+}
+
+/* --- Excepciones de encabezado claro / temático en minimal-modal --- */
+
+/* 1. Modal Cancelar Orden (fondo rojo suave) */
+body .p-dialog.cancel-order-dialog .p-dialog-header {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%) !important;
+  border-bottom: 2px solid rgba(220, 53, 69, 0.25) !important;
+  color: #dc2626 !important;
+}
+body .p-dialog.cancel-order-dialog .p-dialog-header .p-dialog-title,
+body .p-dialog.cancel-order-dialog .p-dialog-header h2,
+body .p-dialog.cancel-order-dialog .p-dialog-header h3,
+body .p-dialog.cancel-order-dialog .p-dialog-header span {
+  color: #dc2626 !important;
+  font-weight: 700 !important;
+}
+body .p-dialog.cancel-order-dialog .p-dialog-header .p-dialog-header-actions button,
+body .p-dialog.cancel-order-dialog .p-dialog-header .p-dialog-close-button {
+  background: #ffffff !important;
+  color: #dc2626 !important;
+  border: 1px solid rgba(220, 53, 69, 0.25) !important;
+  box-shadow: 0 2px 6px rgba(220, 53, 69, 0.15) !important;
+}
+body .p-dialog.cancel-order-dialog .p-dialog-header .p-dialog-header-actions button svg,
+body .p-dialog.cancel-order-dialog .p-dialog-header .p-dialog-header-actions button i {
+  color: #dc2626 !important;
+  fill: #dc2626 !important;
+  stroke: #dc2626 !important;
+}
+body .p-dialog.cancel-order-dialog .p-dialog-header .p-dialog-header-actions button:hover {
+  background: #fef2f2 !important;
+  color: #991b1b !important;
+}
+body .p-dialog.cancel-order-dialog .p-dialog-header .p-dialog-header-actions button:hover svg {
+  color: #991b1b !important;
+  fill: #991b1b !important;
+  stroke: #991b1b !important;
+}
+
+/* 2. Modal Cerrar Comanda (fondo crema/cálido) */
+body .p-dialog.close-order-dialog .p-dialog-header {
+  background: linear-gradient(135deg, #fff8ed 0%, #fffbf2 100%) !important;
+  border-bottom: 1px solid rgba(218, 159, 91, 0.25) !important;
+  color: #33211d !important;
+}
+body .p-dialog.close-order-dialog .p-dialog-header .p-dialog-title,
+body .p-dialog.close-order-dialog .p-dialog-header h2,
+body .p-dialog.close-order-dialog .p-dialog-header h3,
+body .p-dialog.close-order-dialog .p-dialog-header span {
+  color: #33211d !important;
+  font-weight: 700 !important;
+}
+body .p-dialog.close-order-dialog .p-dialog-header .p-dialog-header-actions button,
+body .p-dialog.close-order-dialog .p-dialog-header .p-dialog-close-button {
+  background: #ffffff !important;
+  color: #78350f !important;
+  border: 1px solid rgba(218, 159, 91, 0.35) !important;
+  box-shadow: 0 2px 6px rgba(120, 53, 15, 0.12) !important;
+}
+body .p-dialog.close-order-dialog .p-dialog-header .p-dialog-header-actions button svg,
+body .p-dialog.close-order-dialog .p-dialog-header .p-dialog-header-actions button i {
+  color: #78350f !important;
+  fill: #78350f !important;
+  stroke: #78350f !important;
+}
+body .p-dialog.close-order-dialog .p-dialog-header .p-dialog-header-actions button:hover {
+  background: #fef3c7 !important;
+  color: #451a03 !important;
+}
+body .p-dialog.close-order-dialog .p-dialog-header .p-dialog-header-actions button:hover svg {
+  color: #451a03 !important;
+  fill: #451a03 !important;
+  stroke: #451a03 !important;
+}
+
+/* 3. Selector de recetas y sub-recetas (fondo blanco/lavanda suave) */
+body .p-dialog.recetas-picker-dialog .p-dialog-header,
+body .p-dialog.recetas-subreceta-dialog .p-dialog-header {
+  background: linear-gradient(135deg, #f5f3ff 0%, #ffffff 100%) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+body .p-dialog.recetas-picker-dialog .p-dialog-header .p-dialog-title,
+body .p-dialog.recetas-subreceta-dialog .p-dialog-header .p-dialog-title,
+body .p-dialog.recetas-picker-dialog .p-dialog-header span,
+body .p-dialog.recetas-subreceta-dialog .p-dialog-header span,
+body .p-dialog.recetas-picker-dialog .p-dialog-header div,
+body .p-dialog.recetas-subreceta-dialog .p-dialog-header div {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+body .p-dialog.recetas-picker-dialog .p-dialog-header i,
+body .p-dialog.recetas-subreceta-dialog .p-dialog-header i {
+  color: #4f46e5 !important;
+}
+body .p-dialog.recetas-picker-dialog .p-dialog-header .p-dialog-header-actions button,
+body .p-dialog.recetas-subreceta-dialog .p-dialog-header .p-dialog-header-actions button {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+body .p-dialog.recetas-picker-dialog .p-dialog-header .p-dialog-header-actions button svg,
+body .p-dialog.recetas-subreceta-dialog .p-dialog-header .p-dialog-header-actions button svg {
+  color: #334155 !important;
+  fill: #334155 !important;
+  stroke: #334155 !important;
+}
+
+/* 4. Modal Recetas Moderno (.recetas-recipe-dialog con header blanco) */
+body .p-dialog.recetas-recipe-dialog .p-dialog-header {
+  background: #ffffff !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  color: #0f172a !important;
+}
+body .p-dialog.recetas-recipe-dialog .p-dialog-header .p-dialog-title,
+body .p-dialog.recetas-recipe-dialog .p-dialog-header h3,
+body .p-dialog.recetas-recipe-dialog .p-dialog-header span:not(.text-purple-700):not(.text-amber-700) {
+  color: #0f172a !important;
+}
+body .p-dialog.recetas-recipe-dialog .p-dialog-header .p-dialog-header-actions button {
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+body .p-dialog.recetas-recipe-dialog .p-dialog-header .p-dialog-header-actions button svg {
+  color: #334155 !important;
+  fill: #334155 !important;
+  stroke: #334155 !important;
 }
 
 /* --- Contenido blanco, color de texto oscuro --- */
@@ -2038,11 +2288,11 @@ body.modulo-fullscreen-active .app-content {
   padding-left: 0 !important;
 }
 
-/* ===== Ticket de compra (impresión térmica 80 mm) ===== */
+/* ===== Ticket de compra (impresión térmica 58 mm / área imprimible 48 mm / margen 5 mm) ===== */
 @media print {
-  /* Papel térmico de 80 mm de ancho; alto continuo */
+  /* Papel térmico de 58 mm de ancho; alto continuo */
   @page {
-    size: 80mm auto;
+    size: 58mm auto;
     margin: 0;
   }
 
@@ -2061,10 +2311,10 @@ body.modulo-fullscreen-active .app-content {
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
-    width: 80mm !important;
-    max-width: 80mm !important;
+    width: 58mm !important;
+    max-width: 58mm !important;
     margin: 0 !important;
-    padding: 0 2mm !important;
+    padding: 0 !important;
     box-shadow: none !important;
     max-height: none !important;
     overflow: visible !important;
@@ -2072,17 +2322,28 @@ body.modulo-fullscreen-active .app-content {
     background: #fff !important;
   }
 
-  /* El ticket ocupa todo el ancho imprimible del papel */
+  /* El ticket centrado a 48mm dentro del papel de 58mm (margen de 5mm en cada lado) */
   body.ticket-print-mode .ticket {
-    width: 100% !important;
-    font-size: 12px !important;
+    width: 48mm !important;
+    max-width: 48mm !important;
+    min-width: 48mm !important;
+    margin: 0 auto !important;
+    padding: 2mm 0 14mm 0 !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: #000000 !important;
+    font-family: 'Courier New', Courier, 'Lucida Console', Monaco, monospace !important;
+    line-height: 1.25 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
-  /* El QR en tamaño legible (aprox. 20 mm) */
+  /* El QR en tamaño legible para 48mm */
   body.ticket-print-mode .ticket-qr-section canvas,
   body.ticket-print-mode .ticket-qr-section img {
-    width: 30mm !important;
-    height: 30mm !important;
+    width: 28mm !important;
+    height: 28mm !important;
+    margin: 0 auto !important;
   }
 
   body.ticket-print-mode .ticket-actions { display: none !important; }

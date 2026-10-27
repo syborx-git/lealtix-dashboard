@@ -16,7 +16,7 @@ import { InventoryService } from '@/pages/inventario/service/inventory.service';
 import { IngredientOption } from '@/pages/comandix/models/menu.model';
 import { KitchenOrder, KitchenOrderItem } from './models/kitchen-order.model';
 import { KitchenOrderFacadeService } from './services/kitchen-order-facade.service';
-import { buildBeverageProductIds, isBeverageProduct } from './services/order-beverage-utils';
+import { buildBeverageProductIds, isBeverageProduct, isBeverageItemData } from './services/order-beverage-utils';
 
 @Component({
     selector: 'app-kitchen',
@@ -81,7 +81,7 @@ export class KitchenComponent implements OnInit, OnDestroy {
                 .filter((order) => order.area !== 'BARRA')
                 .map((order) => ({
                     ...order,
-                    items: order.items.filter((item) => !this.isBeverageItem(item.productId))
+                    items: order.items.filter((item) => !item.esBebida && !this.isBeverageItem(item))
                 }))
                 .filter((order) => order.items.length > 0);
 
@@ -375,15 +375,23 @@ export class KitchenComponent implements OnInit, OnDestroy {
     /** IDs de productos de menú que son bebidas (para ocultarlas del tablero de Cocina) */
     private beverageProductIds = new Set<number>();
 
-    private isBeverageItem(productId: number | undefined): boolean {
-        return isBeverageProduct(productId, this.beverageProductIds);
+    private isBeverageItem(itemOrProductId: KitchenOrderItem | number | undefined): boolean {
+        if (typeof itemOrProductId === 'object') {
+            return isBeverageItemData(itemOrProductId, this.beverageProductIds);
+        }
+        return isBeverageProduct(itemOrProductId, this.beverageProductIds);
     }
 
     private async loadBeverageCatalog(tenantId: number): Promise<void> {
         this.beverageProductIds = new Set<number>();
         try {
-            const response = await firstValueFrom(this.inventoryService.getBebidas(tenantId));
-            this.beverageProductIds = buildBeverageProductIds(Array.isArray(response?.object) ? response.object : []);
+            const [bevResp, prodResp] = await Promise.all([
+                firstValueFrom(this.inventoryService.getBebidas(tenantId)).catch(() => null),
+                firstValueFrom(this.productService.getProductsByTenantId(tenantId)).catch(() => null)
+            ]);
+            const bevs = Array.isArray(bevResp?.object) ? bevResp.object : [];
+            const prods = Array.isArray(prodResp?.object) ? prodResp.object : (Array.isArray(prodResp) ? prodResp : []);
+            this.beverageProductIds = buildBeverageProductIds(bevs, prods);
         } catch (error) {
             console.warn('Cocina: no se pudo cargar el catálogo de bebidas:', error);
         }

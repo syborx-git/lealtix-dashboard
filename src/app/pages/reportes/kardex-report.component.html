@@ -1,0 +1,330 @@
+<!-- ============ REPORTE 2.2: KARDEX DE INSUMOS ============ -->
+
+@if (loading() && !reporte()) {
+  <div class="reporte-panel">
+    <div class="kpi-grid">
+      @for (i of [1, 2, 3, 4, 5]; track i) {
+        <div class="kpi-card">
+          <p-skeleton width="55%" height="0.8rem" />
+          <p-skeleton width="70%" height="1.6rem" styleClass="mt-3" />
+          <p-skeleton width="45%" height="0.75rem" styleClass="mt-2" />
+        </div>
+      }
+    </div>
+    <div class="panel">
+      <p-skeleton width="30%" height="1.1rem" />
+      <p-skeleton height="16rem" styleClass="mt-3" />
+    </div>
+  </div>
+} @else if (error() && !reporte()) {
+  <div class="panel panel--error">
+    <i class="pi pi-exclamation-triangle"></i>
+    <h3>No se pudo cargar el Kardex de insumos</h3>
+    <p>{{ error() }}</p>
+    <button pButton type="button" label="Reintentar" icon="pi pi-refresh" (click)="recargar()"></button>
+  </div>
+} @else if (reporte(); as datos) {
+  <div class="reporte-panel">
+    <!-- ============ SUBENCABEZADO ============ -->
+    <div class="reporte-subheader">
+      <div>
+        <h3>{{ datos.meta.nombre }}</h3>
+        <p class="reporte-subheader__rango">
+          {{ datos.meta.rangoActual.etiqueta }}
+          <i class="pi pi-arrow-right"></i>
+          comparado con {{ datos.meta.rangoAnterior.etiqueta }}
+        </p>
+      </div>
+      <div class="reporte-subheader__acciones">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          severity="secondary"
+          [outlined]="true"
+          size="small"
+          [loading]="loading()"
+          (click)="recargar()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-file-excel"
+          label="Exportar a Excel"
+          size="small"
+          [loading]="exportando()"
+          (click)="exportar()"
+        ></button>
+      </div>
+    </div>
+
+    <!-- ============ AVISO METODOLOGICO ============ -->
+    <div class="reporte-nota">
+      <i class="pi pi-info-circle"></i>
+      <div>
+        <strong>Control de Inventario y Movimientos:</strong> El Kardex registra cronológicamente cada ingreso de mercancía (compras/recepciones),
+        salidas operativas calculadas por las recetas de platillos completados y mermas directas, garantizando la trazabilidad del saldo final.
+      </div>
+    </div>
+
+    <!-- ============ KPIs COMPARATIVOS ============ -->
+    <app-kpi-grid [kpis]="datos.kpis" />
+
+    <!-- ============ GRAFICAS DE APOYO ============ -->
+    <div class="grid-2">
+      <!-- Gráfica de distribución por tipo de movimiento -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Distribución de Movimientos</h4>
+            <p class="panel__subtitulo">Valor económico ($) según tipo de flujo de inventario</p>
+          </div>
+        </div>
+        @if (datos.distribucionMovimientos.length) {
+          <div class="panel__grafica panel__grafica--alta">
+            <p-chart type="doughnut" [data]="distribucionChartData()" [options]="distribucionChartOptions" />
+          </div>
+        } @else {
+          <div class="panel__vacio">
+            <i class="pi pi-inbox"></i>
+            <p>Sin movimientos registrados en este periodo</p>
+          </div>
+        }
+      </div>
+
+      <!-- Gráfica top insumos rotación -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Insumos con Mayor Movimiento</h4>
+            <p class="panel__subtitulo">Top insumos con más flujo económico acumulado</p>
+          </div>
+        </div>
+        @if (datos.topInsumosRotacion.length) {
+          <div class="panel__grafica panel__grafica--alta">
+            <p-chart type="bar" [data]="topInsumosChartData()" [options]="topInsumosChartOptions" />
+          </div>
+        } @else {
+          <div class="panel__vacio">
+            <i class="pi pi-chart-bar"></i>
+            <p>Sin insumos rotados en el periodo</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ============ TABLA 1: RESUMEN DE INSUMOS ============ -->
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <h4>Balance de Insumos</h4>
+          <p class="panel__subtitulo">Stock inicial, entradas, consumos, mermas y saldo final valorizado</p>
+        </div>
+        <div class="filtro-busqueda">
+          <p-iconfield styleClass="w-full">
+            <p-inputicon styleClass="pi pi-search" />
+            <input
+              pInputText
+              type="text"
+              placeholder="Buscar insumo..."
+              [(ngModel)]="filtroInsumos"
+              (input)="dtInsumos.filterGlobal($any($event.target).value, 'contains')"
+              class="w-full p-inputtext-sm"
+            />
+          </p-iconfield>
+        </div>
+      </div>
+
+      <p-table
+        #dtInsumos
+        [value]="datos.resumenInsumos.filas"
+        [globalFilterFields]="['insumo', 'unidad']"
+        [paginator]="true"
+        [rows]="10"
+        [rowsPerPageOptions]="[10, 25, 50]"
+        styleClass="p-datatable-sm tabla-reporte"
+        [tableStyle]="{ 'min-width': '100%' }"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            @for (col of datos.resumenInsumos.columnas; track col.key) {
+              <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-fila>
+          <tr>
+            @for (col of datos.resumenInsumos.columnas; track col.key) {
+              <td [style.text-align]="alineacion(col)">
+                @if (col.key === 'insumo') {
+                  <span class="font-bold text-slate-800">{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'entradas') {
+                  <span class="font-semibold text-emerald-600">{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'salidasVenta') {
+                  <span class="font-semibold text-blue-600">{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'mermas') {
+                  <span class="font-semibold text-red-600">{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'final') {
+                  <span class="font-bold text-slate-900">{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'valorFinal') {
+                  <span class="font-bold text-indigo-700">{{ valorCelda(fila, col) }}</span>
+                } @else {
+                  {{ valorCelda(fila, col) }}
+                }
+              </td>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td [attr.colspan]="datos.resumenInsumos.columnas.length" class="text-center py-4 text-slate-400">
+              No se encontraron registros de insumos.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- ============ TABLA 2: HISTORIAL CRONOLOGICO DE MOVIMIENTOS ============ -->
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <h4>Detalle Cronológico de Movimientos</h4>
+          <p class="panel__subtitulo">Trazabilidad individual con folio, responsable y costeo unitario</p>
+        </div>
+        <div class="filtro-busqueda">
+          <p-iconfield styleClass="w-full">
+            <p-inputicon styleClass="pi pi-search" />
+            <input
+              pInputText
+              type="text"
+              placeholder="Buscar movimiento o insumo..."
+              [(ngModel)]="filtroDetalle"
+              (input)="dtMovs.filterGlobal($any($event.target).value, 'contains')"
+              class="w-full p-inputtext-sm"
+            />
+          </p-iconfield>
+        </div>
+      </div>
+
+      <p-table
+        #dtMovs
+        [value]="datos.movimientosDetalle.filas"
+        [globalFilterFields]="['fecha', 'tipo', 'insumo', 'referencia', 'usuario']"
+        [paginator]="true"
+        [rows]="15"
+        [rowsPerPageOptions]="[15, 30, 60]"
+        styleClass="p-datatable-sm tabla-reporte"
+        [tableStyle]="{ 'min-width': '100%' }"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            @for (col of datos.movimientosDetalle.columnas; track col.key) {
+              <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-fila>
+          <tr>
+            @for (col of datos.movimientosDetalle.columnas; track col.key) {
+              <td [style.text-align]="alineacion(col)">
+                @if (col.key === 'tipo') {
+                  <p-tag
+                    [value]="tipoMovimientoBadge(fila['tipo']).label"
+                    [severity]="tipoMovimientoBadge(fila['tipo']).severity"
+                  />
+                } @else if (col.key === 'insumo') {
+                  <span class="font-medium text-slate-800">{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'costoTotal') {
+                  <span class="font-bold text-slate-900">{{ valorCelda(fila, col) }}</span>
+                } @else {
+                  {{ valorCelda(fila, col) }}
+                }
+              </td>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td [attr.colspan]="datos.movimientosDetalle.columnas.length" class="text-center py-4 text-slate-400">
+              No se encontraron movimientos registrados en este periodo.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- ============ TABLA 3: TRANSFERENCIAS DE INSUMOS A ÁREAS ============ -->
+    @if (datos.transferenciasAreas) {
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Transferencias de Insumos a Áreas (Cocina / Barra)</h4>
+            <p class="panel__subtitulo">Historial de traslados desde bodega central hacia subalmacenes operativos con saldo remanente</p>
+          </div>
+          <div class="filtro-busqueda">
+            <p-iconfield styleClass="w-full">
+              <p-inputicon styleClass="pi pi-search" />
+              <input
+                pInputText
+                type="text"
+                placeholder="Buscar transferencia o insumo..."
+                [(ngModel)]="filtroTransferencias"
+                (input)="dtTransfers.filterGlobal($any($event.target).value, 'contains')"
+                class="w-full p-inputtext-sm"
+              />
+            </p-iconfield>
+          </div>
+        </div>
+
+        <p-table
+          #dtTransfers
+          [value]="datos.transferenciasAreas.filas"
+          [globalFilterFields]="['fecha', 'insumo', 'origen', 'destino']"
+          [paginator]="true"
+          [rows]="10"
+          [rowsPerPageOptions]="[10, 25, 50]"
+          styleClass="p-datatable-sm tabla-reporte"
+          [tableStyle]="{ 'min-width': '100%' }"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              @for (col of datos.transferenciasAreas.columnas; track col.key) {
+                <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-fila>
+            <tr>
+              @for (col of datos.transferenciasAreas.columnas; track col.key) {
+                <td [style.text-align]="alineacion(col)">
+                  @if (col.key === 'insumo') {
+                    <span class="font-bold text-slate-800">{{ valorCelda(fila, col) }}</span>
+                  } @else if (col.key === 'cantidad') {
+                    <span class="font-semibold text-blue-600">{{ valorCelda(fila, col) }}</span>
+                  } @else if (col.key === 'destino') {
+                    <p-tag
+                      [value]="areaTransferenciaBadge(fila['destino']).label"
+                      [severity]="areaTransferenciaBadge(fila['destino']).severity"
+                    />
+                  } @else if (col.key === 'stockBodegaRemanente') {
+                    <span class="font-bold text-slate-900">{{ valorCelda(fila, col) }}</span>
+                  } @else {
+                    {{ valorCelda(fila, col) }}
+                  }
+                </td>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td [attr.colspan]="datos.transferenciasAreas.columnas.length" class="text-center py-4 text-slate-400">
+                No se encontraron transferencias registradas en este periodo.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    }
+  </div>
+}

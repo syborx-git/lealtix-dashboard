@@ -113,10 +113,12 @@
             <ng-template pTemplate="header">
                 <tr>
                     <th>{{ activeTab() === 'subrecetas' ? 'Preparación' : 'Producto' }}</th>
-                    <th>Categoría</th>
-                    <th>Precio</th>
-                    <th>Ingredientes en receta</th>
-                    <th style="width: 170px;">Acciones</th>
+                    <th *ngIf="activeTab() !== 'subrecetas'">Categoría</th>
+                    <th *ngIf="activeTab() !== 'subrecetas'">Precio</th>
+                    <th *ngIf="activeTab() === 'subrecetas'">Rendimiento Lote</th>
+                    <th *ngIf="activeTab() === 'subrecetas'">Stock Preparado</th>
+                    <th>{{ activeTab() === 'subrecetas' ? 'Insumos base' : 'Ingredientes en receta' }}</th>
+                    <th [style.width]="activeTab() === 'subrecetas' ? '250px' : '170px'">Acciones</th>
                 </tr>
             </ng-template>
             <ng-template pTemplate="body" let-product>
@@ -124,15 +126,12 @@
                     <td>
                         <div class="flex align-items-center gap-2">
                             <div class="receta-product-icon">
-                                <i class="pi" [ngClass]="activeTab() === 'bebidas' ? 'pi-glass' : 'pi-hamburger'"></i>
+                                <i class="pi" [ngClass]="activeTab() === 'bebidas' ? 'pi-glass' : (activeTab() === 'subrecetas' ? 'pi-palette' : 'pi-hamburger')"></i>
                             </div>
                             <span class="font-semibold">{{ product.name }}</span>
                         </div>
                     </td>
-                    <td>
-                        <span class="cat-chip-mini" *ngIf="activeTab() === 'subrecetas'">
-                            <i class="pi pi-palette"></i> preparación
-                        </span>
+                    <td *ngIf="activeTab() !== 'subrecetas'">
                         <p-tag
                             *ngIf="product.categoryName"
                             [value]="product.categoryName"
@@ -141,23 +140,58 @@
                         ></p-tag>
                         <span *ngIf="!product.categoryName" class="text-500">—</span>
                     </td>
-                    <td *ngIf="activeTab() !== 'subrecetas'"><span class="font-semibold">${{ product.price ?? 0 | number:'1.2-2' }}</span></td>
-                    <td *ngIf="activeTab() === 'subrecetas'" class="text-500">—</td>
+                    <td *ngIf="activeTab() !== 'subrecetas'">
+                        <span class="font-semibold">${{ product.price ?? 0 | number:'1.2-2' }}</span>
+                    </td>
+                    <td *ngIf="activeTab() === 'subrecetas'">
+                        <span class="font-semibold text-purple-700">
+                            {{ product.tamanoLote || 1000 | number:'1.0-2' }} {{ product.unidad || 'mililitros' }}
+                        </span>
+                    </td>
+                    <td *ngIf="activeTab() === 'subrecetas'">
+                        <span
+                            *ngIf="(product.stock || 0) > 0"
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200"
+                        >
+                            <i class="pi pi-check-circle text-[11px]"></i>
+                            {{ product.stock || 0 | number:'1.0-2' }} {{ product.unidad || 'mililitros' }}
+                        </span>
+                        <span
+                            *ngIf="!(product.stock > 0)"
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200"
+                        >
+                            <i class="pi pi-exclamation-circle text-[11px]"></i>
+                            0 {{ product.unidad || 'mililitros' }} (Agotado)
+                        </span>
+                    </td>
                     <td>
                         <p-tag
-                            [value]="recipeIngredientCount(product) + ' ingrediente(s)'"
+                            [value]="recipeIngredientCount(product) + ' insumo(s)'"
                             [severity]="recipeIngredientCount(product) > 0 ? 'success' : 'secondary'"
                         ></p-tag>
                     </td>
                     <td>
-                        <p-button
-                            icon="pi pi-book"
-                            label="Ver receta"
-                            severity="secondary"
-                            size="small"
-                            [outlined]="true"
-                            (onClick)="openRecipe(product)"
-                        ></p-button>
+                        <div class="flex items-center gap-2">
+                            <button
+                                *ngIf="activeTab() === 'subrecetas'"
+                                type="button"
+                                (click)="openRestockModal(product)"
+                                class="bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-medium text-xs rounded-lg px-2.5 py-1.5 transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                                pTooltip="Preparar lote y reabastecer stock"
+                                tooltipPosition="top"
+                            >
+                                <i class="pi pi-sync text-[11px]"></i>
+                                <span>Restock</span>
+                            </button>
+                            <p-button
+                                icon="pi pi-book"
+                                [label]="activeTab() === 'subrecetas' ? 'Receta' : 'Ver receta'"
+                                severity="secondary"
+                                size="small"
+                                [outlined]="true"
+                                (onClick)="openRecipe(product)"
+                            ></p-button>
+                        </div>
                     </td>
                 </tr>
             </ng-template>
@@ -181,199 +215,975 @@
 <p-dialog
     [(visible)]="recipeVisible"
     [modal]="true"
-    [style]="{ width: '60rem', maxWidth: '95vw' }"
-    styleClass="recipe-dialog recetas-recipe-dialog minimal-modal"
+    [style]="{ width: '64rem', maxWidth: '95vw' }"
+    styleClass="recipe-dialog recetas-recipe-dialog bg-white"
     [dismissableMask]="false"
     (onHide)="recipeVisible = false">
     <ng-template pTemplate="header">
-        <div class="flex align-items-center gap-2">
-            <i class="pi pi-book text-primary"></i>
-            <span class="font-semibold text-lg">Receta → {{ recipeItem?.name }}</span>
+        <div class="w-full pr-4 sm:pr-6 flex flex-col gap-3">
+            <!-- Título y Badge superior -->
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold border border-purple-100 shadow-2xs">
+                        <i class="pi pi-book text-base text-purple-600"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h3 class="text-lg md:text-xl font-bold text-gray-900 m-0 tracking-tight">
+                                Receta: <span class="text-purple-700">{{ recipeItem?.name }}</span>
+                            </h3>
+                            <span *ngIf="recipeItem?.esSubReceta" class="text-xs px-2.5 py-0.5 rounded-full font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                                Sub-receta
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-400 m-0 mt-0.5 font-normal">
+                            Configuración de insumos base, modificables y sub-recetas
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stepper Horizontal (Indicador de Progreso de 3 Pasos) -->
+            <div *ngIf="!recipeItem?.esSubReceta" class="w-full pt-2">
+                <div class="flex items-center justify-between max-w-xl mx-auto relative px-2">
+                    <!-- Paso 1: Insumos -->
+                    <button
+                        type="button"
+                        (click)="goToRecipeStep1()"
+                        class="flex items-center gap-2 bg-transparent border-0 p-0 cursor-pointer text-left focus:outline-none transition-all group shrink-0"
+                    >
+                        <div
+                            [ngClass]="recipeStep() === 1
+                                ? 'bg-purple-600 text-white ring-4 ring-purple-100 shadow-md shadow-purple-200'
+                                : 'bg-purple-600 text-white'"
+                            class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all shrink-0"
+                        >
+                            <i *ngIf="recipeStep() > 1" class="pi pi-check text-[10px]"></i>
+                            <span *ngIf="recipeStep() <= 1">1</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span
+                                [ngClass]="recipeStep() === 1 ? 'text-gray-900 font-bold' : 'text-gray-600 font-semibold'"
+                                class="text-xs sm:text-sm tracking-tight transition-colors"
+                            >
+                                1. Insumos
+                            </span>
+                            <span class="text-[10px] sm:text-[11px] text-gray-400">
+                                {{ recipeIngredients().length }} insumo(s)
+                            </span>
+                        </div>
+                    </button>
+
+                    <!-- Línea conectora 1 -> 2 -->
+                    <div class="flex-1 mx-2 sm:mx-3 relative">
+                        <div class="border-t-2 border-gray-200 w-full"></div>
+                        <div
+                            class="border-t-2 border-purple-600 absolute top-0 left-0 transition-all duration-300"
+                            [style.width]="recipeStep() >= 2 ? '100%' : '0%'"
+                        ></div>
+                    </div>
+
+                    <!-- Paso 2: Sub-receta -->
+                    <button
+                        type="button"
+                        (click)="goToRecipeStep2()"
+                        class="flex items-center gap-2 bg-transparent border-0 p-0 cursor-pointer text-left focus:outline-none transition-all group shrink-0"
+                    >
+                        <div
+                            [ngClass]="recipeStep() === 2
+                                ? 'bg-purple-600 text-white ring-4 ring-purple-100 shadow-md shadow-purple-200'
+                                : recipeStep() > 2
+                                    ? 'bg-purple-600 text-white'
+                                    : 'bg-gray-100 text-gray-400 border border-gray-300'"
+                            class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all shrink-0"
+                        >
+                            <i *ngIf="recipeStep() > 2" class="pi pi-check text-[10px]"></i>
+                            <span *ngIf="recipeStep() <= 2">2</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span
+                                [ngClass]="recipeStep() === 2 ? 'text-gray-900 font-bold' : recipeStep() > 2 ? 'text-gray-600 font-semibold' : 'text-gray-400 font-medium'"
+                                class="text-xs sm:text-sm tracking-tight transition-colors"
+                            >
+                                2. Sub-receta
+                            </span>
+                            <span class="text-[10px] sm:text-[11px] text-gray-400">
+                                {{ assignedSubRecetas().length }} asignada(s)
+                            </span>
+                        </div>
+                    </button>
+
+                    <!-- Línea conectora 2 -> 3 -->
+                    <div class="flex-1 mx-2 sm:mx-3 relative">
+                        <div class="border-t-2 border-gray-200 w-full"></div>
+                        <div
+                            class="border-t-2 border-purple-600 absolute top-0 left-0 transition-all duration-300"
+                            [style.width]="recipeStep() === 3 ? '100%' : '0%'"
+                        ></div>
+                    </div>
+
+                    <!-- Paso 3: Variables -->
+                    <button
+                        type="button"
+                        (click)="goToRecipeStep3()"
+                        class="flex items-center gap-2 bg-transparent border-0 p-0 cursor-pointer text-left focus:outline-none transition-all group shrink-0"
+                    >
+                        <div
+                            [ngClass]="recipeStep() === 3
+                                ? 'bg-purple-600 text-white ring-4 ring-purple-100 shadow-md shadow-purple-200'
+                                : 'bg-gray-100 text-gray-400 border border-gray-300'"
+                            class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all shrink-0"
+                        >
+                            3
+                        </div>
+                        <div class="flex flex-col">
+                            <span
+                                [ngClass]="recipeStep() === 3 ? 'text-gray-900 font-bold' : 'text-gray-400 font-medium'"
+                                class="text-xs sm:text-sm tracking-tight transition-colors"
+                            >
+                                3. Variables
+                            </span>
+                            <span class="text-[10px] sm:text-[11px] text-gray-400">
+                                {{ assignedVariantDishes().length }} variable(s)
+                            </span>
+                        </div>
+                    </button>
+                </div>
+            </div>
         </div>
     </ng-template>
 
-    <div class="recipe-dialog-sections">
-        <!-- APARTADO 1: Ingredientes (insumos) -->
-        <div class="apartado">
-            <div class="apartado-header">
-                <div class="flex align-items-center gap-2">
-                    <i class="pi pi-box text-primary"></i>
-                    <span class="font-semibold">Ingredientes (insumos)</span>
+    <div class="flex flex-col w-full min-w-0 bg-white">
+        <!-- ================= PASO 1: Ingredientes (Insumos) ================= -->
+        <div *ngIf="recipeStep() === 1 || recipeItem?.esSubReceta" class="step-panel-fade flex flex-col w-full">
+            <!-- Formulario con CSS Grid (Inputs estilo caja rellena) -->
+            <div class="bg-gray-50/80 rounded-2xl border border-gray-200/90 p-4 sm:p-5 mb-5 shadow-2xs">
+                <div class="flex items-center justify-between mb-3.5">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-purple-600"></span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-gray-600">Agregar Insumo</span>
+                    </div>
+                    <span class="text-xs text-gray-400 font-medium hidden sm:inline">Define insumos para descontar stock</span>
                 </div>
-                <p-tag
-                    [value]="recipeIngredients().length + ' insumo(s)'"
-                    [severity]="recipeIngredients().length > 0 ? 'info' : 'secondary'"
-                ></p-tag>
-            </div>
 
-            <div class="recipe-add-form">
-                <div class="flex flex-column gap-3">
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Insumo</label>
-                        <p-select [options]="insumos()" optionLabel="nombre" optionValue="id"
-                            [(ngModel)]="recipeInsumoId" placeholder="Selecciona el insumo" styleClass="w-full" appendTo="body" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Cantidad</label>
-                        <p-inputnumber [(ngModel)]="recipeCantidad" [min]="0" [step]="1" styleClass="w-full" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Importancia en la receta</label>
-                        <p-select [options]="importanciaOptions" optionLabel="label" optionValue="value"
-                            [(ngModel)]="recipeTipoIngrediente" styleClass="w-full" appendTo="body" />
-                    </div>
-                    <div *ngIf="recipeTipoIngrediente === 'ADICIONAL'">
-                        <label class="block text-sm font-medium mb-1">Precio extra ($)</label>
-                        <p-inputnumber [(ngModel)]="recipePrecio" [min]="0" [step]="0.5" mode="currency" currency="MXN"
-                            locale="en-US" styleClass="w-full" />
-                    </div>
-                    <div>
-                        <p-button label="Agregar a la receta" icon="pi pi-plus" severity="primary" styleClass="w-full minimal-submit"
-                            [loading]="recipeAddLoading()" [disabled]="!recipeInsumoId || recipeCantidad <= 0"
-                            (onClick)="addRecipeIngredient()"></p-button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="recipe-lines" *ngIf="loadingRecipes()">
-                <div class="flex align-items-center justify-content-center p-4">
-                    <p-progressSpinner strokeWidth="4" styleClass="w-2rem h-2rem"></p-progressSpinner>
-                </div>
-            </div>
-
-            <div class="recipe-lines" *ngIf="!loadingRecipes()">
-                <div class="recipe-line" *ngFor="let ing of recipeIngredients(); let i = index">
-                    <ng-container *ngIf="editingRecipe !== ing; else editRow">
-                        <div class="recipe-line-info">
-                            <span class="recipe-line-name">{{ ing.insumoName }}</span>
-                            <span class="recipe-line-detail">
-                                ×{{ ing.cantidad }}
-                                <ng-container *ngIf="ing.tipoIngrediente === 'ADICIONAL'; else tipoMod">
-                                    <span class="ing-type-badge badge-adicional">+${{ ing.precio ?? 0 }}</span>
-                                </ng-container>
-                                <ng-template #tipoMod>
-                                    <span class="ing-type-badge" [ngClass]="ing.tipoIngrediente === 'MODIFICABLE' ? 'badge-modificable' : 'badge-base'">
-                                        {{ ing.tipoIngrediente === 'MODIFICABLE' ? 'modificable' : 'base' }}
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Fila 1: INSUMO ocupando todo el ancho (col-span-full) -->
+                    <div class="col-span-full">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
+                            Insumo
+                        </label>
+                        <p-select
+                            [options]="availableInsumos()"
+                            optionLabel="nombre"
+                            optionValue="id"
+                            [(ngModel)]="recipeInsumoId"
+                            placeholder="Selecciona el insumo..."
+                            styleClass="w-full custom-box-select"
+                            appendTo="body"
+                            [filter]="true"
+                            filterBy="nombre"
+                        >
+                            <ng-template #selectedItem let-selectedOption>
+                                <div *ngIf="selectedOption" class="flex items-center gap-2">
+                                    <span *ngIf="selectedOption.esSubReceta" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                        🍳 PREPARACIÓN
                                     </span>
-                                </ng-template>
-                            </span>
-                        </div>
-                        <div class="recipe-line-actions">
-                            <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" pTooltip="Editar"
-                                tooltipPosition="top" (onClick)="startEditIngredient(ing)"></p-button>
-                            <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [text]="true"
-                                pTooltip="Quitar" tooltipPosition="top" (onClick)="removeRecipeIngredient(ing)"></p-button>
-                        </div>
-                    </ng-container>
-                    <ng-template #editRow>
-                        <div class="recipe-line-edit recipe-line-edit-full">
-                            <div class="recipe-edit-row-1">
-                                <span class="recipe-line-name">{{ ing.insumoName }}</span>
-                                <p-inputnumber [(ngModel)]="editRecipeCantidad" [min]="0" [step]="1" styleClass="recipe-edit-qty" />
-                                <p-select [options]="importanciaOptions" optionLabel="label" optionValue="value"
-                                    [(ngModel)]="editRecipeImportancia" styleClass="recipe-edit-importancia" appendTo="body" />
-                            </div>
-                            <div class="recipe-edit-row-2">
-                                <p-inputnumber *ngIf="editRecipeImportancia === 'ADICIONAL'"
-                                    [(ngModel)]="editRecipePrecio" [min]="0" [step]="0.5" mode="currency"
-                                    currency="MXN" locale="en-US" styleClass="recipe-edit-qty" placeholder="Precio extra" />
-                                <span *ngIf="editRecipeImportancia === 'ADICIONAL'" class="text-sm text-500">Precio extra ($) a cobrar al cliente</span>
-                                <p-button icon="pi pi-check" severity="success" [rounded]="true" [text]="true"
-                                    pTooltip="Guardar" tooltipPosition="top" [disabled]="editRecipeCantidad <= 0"
-                                    (onClick)="saveEditIngredient()"></p-button>
-                                <p-button icon="pi pi-times" severity="secondary" [rounded]="true" [text]="true"
-                                    pTooltip="Cancelar" tooltipPosition="top" (onClick)="cancelEditIngredient()"></p-button>
-                            </div>
-                        </div>
-                    </ng-template>
+                                    <span *ngIf="!selectedOption.esSubReceta" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-300">
+                                        📦 INSUMO
+                                    </span>
+                                    <span class="font-medium text-gray-900">{{ selectedOption.nombre }}</span>
+                                    <span class="text-xs text-gray-400">({{ selectedOption.stock ?? 0 }} {{ selectedOption.unidad }})</span>
+                                </div>
+                            </ng-template>
+                            <ng-template #item let-item>
+                                <div class="flex items-center justify-between w-full py-1">
+                                    <div class="flex items-center gap-2">
+                                        <span *ngIf="item.esSubReceta" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                            🍳 PREPARACIÓN
+                                        </span>
+                                        <span *ngIf="!item.esSubReceta" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-300">
+                                            📦 INSUMO
+                                        </span>
+                                        <span class="font-medium text-gray-800">{{ item.nombre }}</span>
+                                    </div>
+                                    <span class="text-xs text-gray-500 font-semibold ml-2">
+                                        Stock: {{ item.stock ?? 0 }} {{ item.unidad }}
+                                    </span>
+                                </div>
+                            </ng-template>
+                        </p-select>
+                    </div>
+
+                    <!-- Fila 2: CANTIDAD -->
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
+                            Cantidad
+                        </label>
+                        <p-inputnumber
+                            [(ngModel)]="recipeCantidad"
+                            [min]="0"
+                            [step]="1"
+                            styleClass="w-full custom-box-input"
+                            placeholder="0"
+                        ></p-inputnumber>
+                    </div>
+
+                    <!-- Fila 2: IMPORTANCIA -->
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
+                            Importancia
+                        </label>
+                        <p-select
+                            [options]="importanciaOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            [(ngModel)]="recipeTipoIngrediente"
+                            styleClass="w-full custom-box-select"
+                            appendTo="body"
+                        ></p-select>
+                    </div>
+
+                    <!-- Fila 2: GRUPO / SECCIÓN -->
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
+                            Grupo / Sección <span class="text-gray-400 font-normal lowercase">(opcional)</span>
+                        </label>
+                        <input
+                            type="text"
+                            pInputText
+                            [(ngModel)]="recipeGrupo"
+                            placeholder="Ej. Proteína, Salsa, Guarnición"
+                            list="grupoSuggestions"
+                            class="w-full custom-box-input"
+                        />
+                        <datalist id="grupoSuggestions">
+                            <option *ngFor="let g of suggestedGroups" [value]="g"></option>
+                        </datalist>
+                    </div>
+
+                    <!-- Fila condicional ADICIONAL / VARIANTE: PRECIO -->
+                    <div *ngIf="recipeTipoIngrediente === 'ADICIONAL' || recipeTipoIngrediente === 'VARIANTE'" class="col-span-full md:col-span-1">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-purple-700 mb-1.5">
+                            {{ recipeTipoIngrediente === 'VARIANTE' ? 'Precio variante ($)' : 'Precio extra al cliente ($)' }}
+                        </label>
+                        <p-inputnumber
+                            [(ngModel)]="recipePrecio"
+                            [min]="0"
+                            [step]="0.5"
+                            mode="currency"
+                            currency="MXN"
+                            locale="en-US"
+                            styleClass="w-full custom-box-input"
+                            placeholder="$0.00"
+                        ></p-inputnumber>
+                    </div>
                 </div>
-                <div class="text-center p-4 text-500 text-sm" *ngIf="!recipeIngredients().length">
-                    Esta receta aún no tiene ingredientes. Agrégalos arriba.
+
+                <!-- Botón Agregar a la receta (contorno morado, alineado a la derecha debajo de los inputs) -->
+                <div class="mt-4 pt-3.5 border-t border-gray-200/80 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <span class="text-xs text-gray-400 hidden sm:inline">
+                        <i class="pi pi-info-circle mr-1 text-gray-400"></i>Los insumos base forman el escandallo estándar.
+                    </span>
+                    <button
+                        type="button"
+                        (click)="addRecipeIngredient()"
+                        [disabled]="!recipeInsumoId || recipeCantidad <= 0 || recipeAddLoading()"
+                        class="w-full sm:w-auto px-6 py-2.5 rounded-xl border-2 border-purple-600 text-purple-700 hover:bg-purple-50 active:bg-purple-100 font-semibold text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    >
+                        <i *ngIf="!recipeAddLoading()" class="pi pi-plus text-xs"></i>
+                        <i *ngIf="recipeAddLoading()" class="pi pi-spin pi-spinner text-xs"></i>
+                        <span>Agregar a la receta</span>
+                    </button>
                 </div>
+            </div>
+
+            <!-- Lista de Insumos Agregados (Tarjetas Horizontales Limpias) -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between pb-1">
+                    <div class="flex items-center gap-2">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 m-0">Insumos Agregados</h4>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                            {{ recipeIngredients().length }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Spinner cargando -->
+                <div *ngIf="loadingRecipes()" class="flex items-center justify-center py-8">
+                    <p-progressSpinner strokeWidth="4" styleClass="w-8 h-8"></p-progressSpinner>
+                </div>
+
+                <!-- Empty state -->
+                <div
+                    *ngIf="!loadingRecipes() && !recipeIngredients().length"
+                    class="text-center py-8 px-4 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/50"
+                >
+                    <div class="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-2">
+                        <i class="pi pi-box text-lg"></i>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-700 m-0">Esta receta aún no tiene insumos agregados</p>
+                    <p class="text-xs text-gray-400 m-0 mt-1">Selecciona un insumo y su cantidad arriba para agregarlo.</p>
+                </div>
+
+                <!-- Lista de tarjetas -->
+                <div *ngIf="!loadingRecipes() && recipeIngredients().length" class="flex flex-col gap-2.5">
+                    <div
+                        *ngFor="let ing of recipeIngredients(); let i = index; trackBy: trackByIngredient"
+                        class="bg-gray-50/90 hover:bg-gray-100/80 border border-gray-200/90 rounded-xl p-3.5 transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs"
+                    >
+                        <ng-container *ngIf="editingRecipe !== ing; else editRow">
+                            <!-- Info Insumo -->
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="w-9 h-9 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-purple-600 shrink-0 shadow-2xs">
+                                    <i class="pi pi-box text-sm"></i>
+                                </div>
+                                <div class="flex flex-col min-w-0">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <span class="font-bold text-gray-900 text-sm truncate">{{ ing.insumoName }}</span>
+                                        <span *ngIf="ing.esSubReceta" class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            🍳 Preparación
+                                        </span>
+                                        <span *ngIf="ing.grupo" class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/70">
+                                            🏷️ {{ ing.grupo }}
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-xs text-gray-500 mt-0.5 flex-wrap">
+                                        <span class="font-semibold text-gray-700">×{{ ing.cantidad }} {{ ing.insumoUnit || ing.unidad || 'pieza' }}</span>
+                                        <span class="text-gray-300">•</span>
+                                        <span
+                                            *ngIf="ing.tipoIngrediente === 'VARIANTE'"
+                                            class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-100 text-purple-800 border border-purple-300 flex items-center gap-1"
+                                        >
+                                            <i class="pi pi-clone text-[10px]"></i> Variante (${{ ing.precio ?? 0 }})
+                                        </span>
+                                        <span
+                                            *ngIf="ing.tipoIngrediente === 'ADICIONAL'"
+                                            class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200"
+                                        >
+                                            +${{ ing.precio ?? 0 }} extra
+                                        </span>
+                                        <span
+                                            *ngIf="ing.tipoIngrediente !== 'ADICIONAL' && ing.tipoIngrediente !== 'VARIANTE'"
+                                            [ngClass]="ing.tipoIngrediente === 'MODIFICABLE' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-600 border-gray-200'"
+                                            class="px-2 py-0.5 rounded-full text-[11px] font-medium border"
+                                        >
+                                            {{ ing.tipoIngrediente === 'MODIFICABLE' ? 'Modificable' : 'Base' }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Acciones alineadas a la derecha -->
+                            <div class="flex items-center gap-1 self-end md:self-auto shrink-0">
+                                <button
+                                    type="button"
+                                    (click)="startEditIngredient(ing)"
+                                    pTooltip="Editar"
+                                    tooltipPosition="top"
+                                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-white border border-transparent hover:border-gray-200 transition-colors cursor-pointer"
+                                >
+                                    <i class="pi pi-pencil text-xs"></i>
+                                </button>
+                                <button
+                                    type="button"
+                                    (click)="removeRecipeIngredient(ing)"
+                                    pTooltip="Eliminar"
+                                    tooltipPosition="top"
+                                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100 transition-colors cursor-pointer"
+                                >
+                                    <i class="pi pi-trash text-xs"></i>
+                                </button>
+                            </div>
+                        </ng-container>
+
+                        <!-- Modo Edición Inline -->
+                        <ng-template #editRow>
+                            <div class="w-full flex flex-col gap-3 p-1">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-gray-900 text-sm flex items-center gap-2">
+                                        <i class="pi pi-pencil text-purple-600 text-xs"></i>
+                                        Editando: {{ ing.insumoName }}
+                                    </span>
+                                    <span class="text-xs text-gray-400 font-medium">Modifica los valores</span>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                                    <div>
+                                        <label class="block text-[11px] font-semibold uppercase text-gray-500 mb-1">Cantidad</label>
+                                        <p-inputnumber [(ngModel)]="editRecipeCantidad" [min]="0" [step]="1" styleClass="w-full custom-box-input" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-semibold uppercase text-gray-500 mb-1">Importancia</label>
+                                        <p-select [options]="importanciaOptions" optionLabel="label" optionValue="value"
+                                            [(ngModel)]="editRecipeImportancia" styleClass="w-full custom-box-select" appendTo="body" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-semibold uppercase text-gray-500 mb-1">Grupo</label>
+                                        <input type="text" pInputText [(ngModel)]="editRecipeGrupo" placeholder="Grupo (opcional)" class="w-full custom-box-input" />
+                                    </div>
+                                    <div *ngIf="editRecipeImportancia === 'ADICIONAL' || editRecipeImportancia === 'VARIANTE'">
+                                        <label class="block text-[11px] font-semibold uppercase text-purple-700 mb-1">
+                                            {{ editRecipeImportancia === 'VARIANTE' ? 'Precio de la variante ($)' : 'Precio extra ($)' }}
+                                        </label>
+                                        <p-inputnumber [(ngModel)]="editRecipePrecio" [min]="0" [step]="0.5" mode="currency"
+                                            currency="MXN" locale="en-US" styleClass="w-full custom-box-input" placeholder="$0.00" />
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-200">
+                                    <button
+                                        type="button"
+                                        (click)="cancelEditIngredient()"
+                                        class="px-4 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 text-xs font-semibold cursor-pointer transition-colors"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        (click)="saveEditIngredient()"
+                                        [disabled]="editRecipeCantidad <= 0"
+                                        class="px-4 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                                    >
+                                        <i class="pi pi-check text-xs"></i>
+                                        <span>Guardar cambios</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </ng-template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de Acción Final (Footer del Paso 1) -->
+            <div class="pt-6 mt-6 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <button
+                    type="button"
+                    (click)="saveRecipeStep1AndClose()"
+                    class="w-full sm:w-auto px-5 py-2.5 rounded-full border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 active:bg-gray-100 text-sm font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                >
+                    <i class="pi pi-check text-green-600 text-xs font-bold"></i>
+                    <span>Guardar receta (sin sub-receta ni variables)</span>
+                </button>
+
+                <button
+                    *ngIf="!recipeItem?.esSubReceta"
+                    type="button"
+                    (click)="goToRecipeStep2()"
+                    class="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-semibold text-sm rounded-full px-6 py-2 transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                >
+                    <span>Siguiente: Sub-recetas</span>
+                    <i class="pi pi-arrow-right text-xs"></i>
+                </button>
             </div>
         </div>
 
-        <!-- APARTADO 2: Sub-recetas asignadas a este producto -->
-        <ng-container *ngIf="!recipeItem?.esSubReceta">
-            <p-divider></p-divider>
-            <div class="apartado">
-                <div class="apartado-header">
-                    <div class="flex align-items-center gap-2">
-                        <i class="pi pi-palette text-primary"></i>
-                        <span class="font-semibold">Sub-recetas incluidas (preparaciones)</span>
+        <!-- ================= PASO 2: Sub-recetas asignadas ================= -->
+        <div *ngIf="recipeStep() === 2 && !recipeItem?.esSubReceta" class="step-panel-fade flex flex-col w-full">
+            <!-- Aviso informativo -->
+            <div class="p-3.5 bg-purple-50/60 border border-purple-200/70 rounded-xl mb-5 flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                    <i class="pi pi-info-circle text-sm"></i>
+                </div>
+                <span class="text-xs sm:text-sm text-purple-900 leading-relaxed">
+                    Las sub-recetas (salsas, masas, preparaciones) suman automáticamente sus insumos a este platillo para el control de inventario, stock y mermas.
+                </span>
+            </div>
+
+            <!-- Formulario de asignación de sub-recetas (CSS Grid & Inputs estilo caja) -->
+            <div class="bg-gray-50/80 rounded-2xl border border-gray-200/90 p-4 sm:p-5 mb-5 shadow-2xs">
+                <div class="flex items-center justify-between mb-3.5">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-purple-600"></span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-gray-600">Asignar Preparación (Sub-receta)</span>
+                    </div>
+                    <span class="text-xs text-gray-400 font-medium hidden sm:inline">Vincula una preparación intermedia</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
+                            Sub-receta / Preparación
+                        </label>
+                        <p-select
+                            [options]="subRecetas()"
+                            optionLabel="name"
+                            optionValue="id"
+                            [(ngModel)]="selectedSubRecetaId"
+                            (onChange)="onSelectedSubRecetaChange($event.value)"
+                            placeholder="Selecciona una sub-receta…"
+                            styleClass="w-full custom-box-select"
+                            appendTo="body"
+                        ></p-select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-purple-700 mb-1.5">
+                            Porción por platillo
+                        </label>
+                        <p-inputnumber
+                            [(ngModel)]="selectedSubCantidad"
+                            [min]="0.01"
+                            [step]="10"
+                            styleClass="w-full custom-box-input"
+                            placeholder="Ej. 120"
+                        ></p-inputnumber>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
+                            Unidad de medida
+                        </label>
+                        <p-select
+                            [options]="unidadMedidaOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            [(ngModel)]="selectedSubUnidad"
+                            styleClass="w-full custom-box-select"
+                            appendTo="body"
+                        ></p-select>
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
+                            Importancia
+                        </label>
+                        <p-select
+                            [options]="importanciaOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            [(ngModel)]="selectedSubImportancia"
+                            styleClass="w-full custom-box-select"
+                            appendTo="body"
+                        ></p-select>
+                    </div>
+
+                    <div *ngIf="selectedSubImportancia === 'ADICIONAL'" class="sm:col-span-2">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-purple-700 mb-1.5">
+                            Precio extra al cliente ($)
+                        </label>
+                        <p-inputnumber
+                            [(ngModel)]="selectedSubPrecio"
+                            [min]="0"
+                            [step]="0.5"
+                            mode="currency"
+                            currency="MXN"
+                            locale="en-US"
+                            styleClass="w-full custom-box-input"
+                            placeholder="$0.00"
+                        ></p-inputnumber>
                     </div>
                 </div>
 
-                <div class="subrecetas-section">
-                    <p class="text-sm text-500 m-0 mb-2">
-                        Las sub-recetas suman sus insumos a este producto para el cálculo de stock y mermas.
-                    </p>
+                <!-- Botón Asignar sub-receta -->
+                <div class="mt-4 pt-3.5 border-t border-gray-200/80 flex justify-end">
+                    <button
+                        type="button"
+                        (click)="assignSubRecetaToCurrent()"
+                        [disabled]="!selectedSubRecetaId || subRecetas().length === 0 || subRecetaAssignLoading()"
+                        class="w-full md:w-auto px-6 py-2.5 rounded-xl border-2 border-purple-600 text-purple-700 hover:bg-purple-50 active:bg-purple-100 font-semibold text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    >
+                        <i *ngIf="!subRecetaAssignLoading()" class="pi pi-plus text-xs"></i>
+                        <i *ngIf="subRecetaAssignLoading()" class="pi pi-spin pi-spinner text-xs"></i>
+                        <span>Asignar sub-receta</span>
+                    </button>
+                </div>
+            </div>
 
-                    <div class="subrecetas-assign-form">
-                        <div class="flex align-items-center gap-2 mb-2">
-                            <p-select
-                                [options]="subRecetas()"
-                                optionLabel="name"
-                                optionValue="id"
-                                [(ngModel)]="selectedSubRecetaId"
-                                placeholder="Selecciona una sub-receta…"
-                                styleClass="w-full"
-                                appendTo="body"
-                            ></p-select>
-                        </div>
-                        <div class="flex align-items-center gap-2">
-                            <p-select
-                                [options]="importanciaOptions"
-                                optionLabel="label"
-                                optionValue="value"
-                                [(ngModel)]="selectedSubImportancia"
-                                styleClass="subreceta-importancia-select"
-                                appendTo="body"
-                            ></p-select>
-                            <p-inputnumber *ngIf="selectedSubImportancia === 'ADICIONAL'"
-                                [(ngModel)]="selectedSubPrecio" [min]="0" [step]="0.5" mode="currency"
-                                currency="MXN" locale="en-US" styleClass="subreceta-precio" placeholder="Precio extra" />
-                            <span *ngIf="selectedSubImportancia === 'ADICIONAL'" class="text-sm text-500">costo extra al cliente</span>
-                            <p-button
-                                icon="pi pi-plus"
-                                label="Asignar"
-                                [loading]="subRecetaAssignLoading()"
-                                [disabled]="!selectedSubRecetaId || subRecetas().length === 0"
-                                (onClick)="assignSubRecetaToCurrent()"
-                            ></p-button>
-                        </div>
+            <!-- Lista de sub-recetas asignadas (Tarjetas) -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between pb-1">
+                    <div class="flex items-center gap-2">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 m-0">Sub-recetas Asignadas</h4>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                            {{ assignedSubRecetas().length }}
+                        </span>
                     </div>
+                </div>
 
-                    <div class="subreceta-assigned" *ngFor="let sr of assignedSubRecetas()">
-                        <div class="subreceta-assigned-info">
-                            <span class="font-medium">{{ sr.name }}</span>
-                            <span class="text-sm text-500">{{ sr.insumos?.length || 0 }} insumo(s)</span>
-                            <span class="ing-type-badge" [ngClass]="sr.importancia === 'ADICIONAL' ? 'badge-adicional' : (sr.importancia === 'MODIFICABLE' ? 'badge-modificable' : 'badge-base')">
-                                {{ sr.importancia === 'ADICIONAL' ? ('+$' + (sr.precio ?? 0)) : (sr.importancia === 'MODIFICABLE' ? 'modificable' : 'base') }}
-                            </span>
+                <div
+                    *ngIf="!assignedSubRecetas().length"
+                    class="text-center py-8 px-4 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/50"
+                >
+                    <div class="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-2">
+                        <i class="pi pi-palette text-lg"></i>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-700 m-0">Sin sub-recetas asignadas</p>
+                    <p class="text-xs text-gray-400 m-0 mt-1">Este producto no cuenta con preparaciones intermedias asignadas.</p>
+                </div>
+
+                <div *ngIf="assignedSubRecetas().length" class="flex flex-col gap-2.5">
+                    <div
+                        *ngFor="let sr of assignedSubRecetas(); trackBy: trackBySubReceta"
+                        class="bg-gray-50/90 hover:bg-gray-100/80 border border-gray-200/90 rounded-xl p-3.5 transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs"
+                    >
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-9 h-9 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-purple-600 shrink-0 shadow-2xs">
+                                <i class="pi pi-palette text-sm"></i>
+                            </div>
+                            <div class="flex flex-col min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="font-bold text-gray-900 text-sm truncate">{{ sr.name }}</span>
+                                    <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                                        Porción: {{ sr.cantidad || 1 }} {{ sr.unidad || 'mililitros' }}
+                                    </span>
+                                    <span *ngIf="sr.stock !== undefined" class="px-2 py-0.5 rounded-md text-[11px] font-medium"
+                                          [ngClass]="(sr.stock || 0) > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'">
+                                        Stock prep: {{ sr.stock ?? 0 }} {{ sr.unidad || 'mililitros' }}
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-2 text-xs text-gray-500 mt-1 flex-wrap">
+                                    <span
+                                        *ngIf="sr.importancia === 'ADICIONAL'"
+                                        class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200"
+                                    >
+                                        +${{ sr.precio ?? 0 }} extra
+                                    </span>
+                                    <span
+                                        *ngIf="sr.importancia !== 'ADICIONAL'"
+                                        [ngClass]="sr.importancia === 'MODIFICABLE' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-600 border-gray-200'"
+                                        class="px-2 py-0.5 rounded-full text-[11px] font-medium border"
+                                    >
+                                        {{ sr.importancia === 'MODIFICABLE' ? 'Modificable' : 'Base' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Edición rápida y Eliminar alineados a la derecha -->
+                        <div class="flex items-center gap-2 self-end md:self-auto shrink-0 flex-wrap">
+                            <div class="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-gray-200 shadow-2xs">
+                                <span class="text-[11px] font-semibold text-gray-500 uppercase">Porción:</span>
+                                <p-inputnumber
+                                    [(ngModel)]="sr.cantidad"
+                                    [min]="0.01"
+                                    [step]="10"
+                                    styleClass="w-20 text-xs custom-box-input"
+                                    placeholder="Cant."
+                                    (onBlur)="saveAssignedSubImportancia(sr)"
+                                ></p-inputnumber>
+                                <span class="text-xs text-purple-700 font-semibold">{{ sr.unidad || 'ml' }}</span>
+                            </div>
                             <p-select
                                 [options]="importanciaOptions"
                                 optionLabel="label"
                                 optionValue="value"
                                 [(ngModel)]="sr.importancia"
-                                (onChange)="saveAssignedSubImportancia(sr)"
-                                styleClass="subreceta-edit-importancia"
+                                (onChange)="saveAssignedSubImportancia(sr, $event)"
+                                styleClass="w-36 text-xs custom-box-select"
                                 appendTo="body"
                             ></p-select>
-                            <p-inputnumber *ngIf="sr.importancia === 'ADICIONAL'"
-                                [(ngModel)]="sr.precio" [min]="0" [step]="0.5" mode="currency"
-                                currency="MXN" locale="en-US" styleClass="subreceta-edit-precio"
-                                placeholder="Precio extra" (onBlur)="saveAssignedSubImportancia(sr)" />
-                            <p-button icon="pi pi-trash" severity="danger" [rounded]="true" [text]="true"
-                                pTooltip="Quitar sub-receta" tooltipPosition="top" (onClick)="removeAssignedSubReceta(sr)"></p-button>
+                            <p-inputnumber
+                                *ngIf="sr.importancia === 'ADICIONAL'"
+                                [(ngModel)]="sr.precio"
+                                [min]="0"
+                                [step]="0.5"
+                                mode="currency"
+                                currency="MXN"
+                                locale="en-US"
+                                styleClass="w-28 text-xs custom-box-input"
+                                placeholder="Extra"
+                                (onBlur)="saveAssignedSubImportancia(sr)"
+                            ></p-inputnumber>
+                            <button
+                                type="button"
+                                (click)="removeAssignedSubReceta(sr)"
+                                pTooltip="Quitar sub-receta"
+                                tooltipPosition="top"
+                                class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100 transition-colors cursor-pointer"
+                            >
+                                <i class="pi pi-trash text-xs"></i>
+                            </button>
                         </div>
-                    </div>
-                    <div class="text-sm text-500" *ngIf="!assignedSubRecetas().length">
-                        Sin sub-recetas asignadas a este producto.
                     </div>
                 </div>
             </div>
-        </ng-container>
+
+            <!-- Botones de Acción Final (Footer del Paso 2) -->
+            <div class="pt-6 mt-6 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <button
+                    type="button"
+                    (click)="goToRecipeStep1()"
+                    class="w-full sm:w-auto px-5 py-2.5 rounded-full border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 active:bg-gray-100 text-sm font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                >
+                    <i class="pi pi-arrow-left text-xs"></i>
+                    <span>Volver a Insumos</span>
+                </button>
+
+                <div class="flex items-center gap-2 w-full sm:w-auto flex-wrap justify-end">
+                    <button
+                        type="button"
+                        (click)="finishRecipeStep2()"
+                        class="w-full sm:w-auto px-5 py-2.5 rounded-full border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 active:bg-gray-100 text-sm font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                    >
+                        <i class="pi pi-check text-green-600 text-xs font-bold"></i>
+                        <span>Guardar (sin variables)</span>
+                    </button>
+                    <button
+                        type="button"
+                        (click)="goToRecipeStep3()"
+                        class="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-semibold text-sm rounded-full px-6 py-2 transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                        <span>Siguiente: Variables</span>
+                        <i class="pi pi-arrow-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= PASO 3: Variables / Variantes asignadas ================= -->
+        <div *ngIf="recipeStep() === 3 && !recipeItem?.esSubReceta" class="step-panel-fade flex flex-col w-full">
+            <!-- Aviso informativo -->
+            <div class="p-3.5 bg-purple-50/60 border border-purple-200/70 rounded-xl mb-5 flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                    <i class="pi pi-clone text-sm"></i>
+                </div>
+                <div class="flex flex-col text-xs sm:text-sm text-purple-900 leading-relaxed">
+                    <span>
+                        Las <strong>variables</strong> vinculan otros platillos o bebidas de tu catálogo (por ejemplo, marcas de mezcal/tequila, estilos o sabores) como opciones elegibles al ordenar este producto en comanda.
+                    </span>
+                    <span class="text-xs text-purple-700 mt-0.5">
+                        <i class="pi pi-info-circle mr-1"></i>Sólo aparecen los productos marcados con la casilla <strong>"¿Es artículo variable?"</strong> al registrarlos o editarlos en el menú.
+                    </span>
+                </div>
+            </div>
+
+            <!-- Formulario de asignación de variables (CSS Grid & Inputs estilo caja) -->
+            <div class="bg-gray-50/80 rounded-2xl border border-gray-200/90 p-4 sm:p-5 mb-5 shadow-2xs">
+                <div class="flex items-center justify-between mb-3.5">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-purple-600"></span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-gray-600">Vincular Platillo o Bebida Variable</span>
+                    </div>
+                    <span class="text-xs text-gray-400 font-medium hidden sm:inline">Selecciona un producto marcado como variable</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                    <!-- Selector de platillo / bebida variable -->
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
+                            Platillo o Bebida Variable
+                        </label>
+                        <p-select
+                            [options]="availableVariableProducts()"
+                            optionLabel="displayName"
+                            optionValue="id"
+                            [(ngModel)]="selectedVariantDishId"
+                            (onChange)="onSelectedVariantDishChange($event.value)"
+                            placeholder="Selecciona platillo o bebida..."
+                            styleClass="w-full custom-box-select"
+                            appendTo="body"
+                            [filter]="true"
+                            filterBy="name,categoryName"
+                            filterPlaceholder="Buscar platillo o bebida variable..."
+                        ></p-select>
+                        <span *ngIf="availableVariableProducts().length === 0" class="block text-[11px] text-amber-600 mt-1 font-medium">
+                            <i class="pi pi-exclamation-triangle mr-1"></i>No hay artículos marcados como variable. Activa "¿Es artículo variable?" en Menú de Productos.
+                        </span>
+                    </div>
+
+                    <!-- Precio variante -->
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-purple-700 mb-1.5">
+                            Precio de la variante ($)
+                        </label>
+                        <p-inputnumber
+                            [(ngModel)]="selectedVariantPrecio"
+                            [min]="0"
+                            [step]="1"
+                            mode="currency"
+                            currency="MXN"
+                            locale="en-US"
+                            styleClass="w-full custom-box-input"
+                            placeholder="$0.00"
+                        ></p-inputnumber>
+                    </div>
+
+                    <!-- Grupo / Sección -->
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
+                            Grupo / Sección <span class="text-gray-400 font-normal lowercase">(opcional)</span>
+                        </label>
+                        <input
+                            type="text"
+                            pInputText
+                            [(ngModel)]="selectedVariantGrupo"
+                            placeholder="Ej. Mezcal, Marca, Estilo"
+                            list="grupoSuggestionsVariant"
+                            class="w-full custom-box-input"
+                        />
+                        <datalist id="grupoSuggestionsVariant">
+                            <option *ngFor="let g of suggestedGroups" [value]="g"></option>
+                            <option value="Marca"></option>
+                            <option value="Destilado"></option>
+                            <option value="Sabor"></option>
+                            <option value="Tamaño"></option>
+                        </datalist>
+                    </div>
+
+                    <!-- Porción / Cantidad -->
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
+                            Porción / Cantidad
+                        </label>
+                        <p-inputnumber
+                            [(ngModel)]="selectedVariantCantidad"
+                            [min]="0.01"
+                            [step]="1"
+                            styleClass="w-full custom-box-input"
+                            placeholder="1"
+                        ></p-inputnumber>
+                    </div>
+
+                    <!-- Unidad de medida -->
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
+                            Unidad de medida
+                        </label>
+                        <p-select
+                            [options]="unidadMedidaOptions"
+                            optionLabel="label"
+                            optionValue="value"
+                            [(ngModel)]="selectedVariantUnidad"
+                            styleClass="w-full custom-box-select"
+                            appendTo="body"
+                        ></p-select>
+                    </div>
+                </div>
+
+                <!-- Botón Vincular Variable -->
+                <div class="mt-4 pt-3.5 border-t border-gray-200/80 flex justify-end">
+                    <button
+                        type="button"
+                        (click)="assignVariantDishToCurrent()"
+                        [disabled]="!selectedVariantDishId || variantDishAssignLoading()"
+                        class="w-full md:w-auto px-6 py-2.5 rounded-xl border-2 border-purple-600 text-purple-700 hover:bg-purple-50 active:bg-purple-100 font-semibold text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    >
+                        <i *ngIf="!variantDishAssignLoading()" class="pi pi-plus text-xs"></i>
+                        <i *ngIf="variantDishAssignLoading()" class="pi pi-spin pi-spinner text-xs"></i>
+                        <span>Agregar variable a la receta</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lista de variables asignadas (Tarjetas) -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between pb-1">
+                    <div class="flex items-center gap-2">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 m-0">Variables Asignadas</h4>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                            {{ assignedVariantDishes().length }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Spinner cargando -->
+                <div *ngIf="variantDishesLoading()" class="flex items-center justify-center py-8">
+                    <p-progressSpinner strokeWidth="4" styleClass="w-8 h-8"></p-progressSpinner>
+                </div>
+
+                <!-- Empty state -->
+                <div
+                    *ngIf="!variantDishesLoading() && !assignedVariantDishes().length"
+                    class="text-center py-8 px-4 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/50"
+                >
+                    <div class="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-2">
+                        <i class="pi pi-clone text-lg"></i>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-700 m-0">Sin variables asignadas</p>
+                    <p class="text-xs text-gray-400 m-0 mt-1">Selecciona arriba un platillo o bebida variable para vincularlo a esta receta.</p>
+                </div>
+
+                <!-- Lista de tarjetas de variables -->
+                <div *ngIf="!variantDishesLoading() && assignedVariantDishes().length" class="flex flex-col gap-2.5">
+                    <div
+                        *ngFor="let v of assignedVariantDishes(); trackBy: trackByVariantDish"
+                        class="bg-gray-50/90 hover:bg-gray-100/80 border border-gray-200/90 rounded-xl p-3.5 transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs"
+                    >
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-9 h-9 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-purple-600 shrink-0 shadow-2xs">
+                                <i class="pi pi-clone text-sm"></i>
+                            </div>
+                            <div class="flex flex-col min-w-0">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="font-bold text-gray-900 text-sm truncate">{{ v.variantDishName }}</span>
+                                    <span *ngIf="v.grupo" class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/70">
+                                        🏷️ {{ v.grupo }}
+                                    </span>
+                                    <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                                        {{ v.cantidad || 1 }} {{ v.unidad || 'pieza' }}
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-2 text-xs text-gray-500 mt-1 flex-wrap">
+                                    <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-100 text-purple-800 border border-purple-300">
+                                        Precio variante: ${{ v.precio ?? 0 | number:'1.2-2' }}
+                                    </span>
+                                    <span *ngIf="v.variantDishPrice !== undefined" class="text-gray-400 text-[11px]">
+                                        (Precio catálogo base: ${{ v.variantDishPrice ?? 0 | number:'1.2-2' }})
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Edición rápida y Eliminar alineados a la derecha -->
+                        <div class="flex items-center gap-2 self-end md:self-auto shrink-0 flex-wrap">
+                            <div class="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-gray-200 shadow-2xs">
+                                <span class="text-[11px] font-semibold text-gray-500 uppercase">Precio:</span>
+                                <p-inputnumber
+                                    [(ngModel)]="v.precio"
+                                    [min]="0"
+                                    [step]="1"
+                                    mode="currency"
+                                    currency="MXN"
+                                    locale="en-US"
+                                    styleClass="w-24 text-xs custom-box-input"
+                                    placeholder="$0.00"
+                                    (onBlur)="saveAssignedVariantDish(v)"
+                                ></p-inputnumber>
+                            </div>
+                            <div class="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-gray-200 shadow-2xs">
+                                <span class="text-[11px] font-semibold text-gray-500 uppercase">Grupo:</span>
+                                <input
+                                    type="text"
+                                    pInputText
+                                    [(ngModel)]="v.grupo"
+                                    placeholder="Grupo"
+                                    class="w-24 text-xs custom-box-input"
+                                    (blur)="saveAssignedVariantDish(v)"
+                                />
+                            </div>
+                            <button
+                                type="button"
+                                (click)="removeAssignedVariantDish(v)"
+                                pTooltip="Quitar variable"
+                                tooltipPosition="top"
+                                class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100 transition-colors cursor-pointer"
+                            >
+                                <i class="pi pi-trash text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de Acción Final (Footer del Paso 3) -->
+            <div class="pt-6 mt-6 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <button
+                    type="button"
+                    (click)="goToRecipeStep2()"
+                    class="w-full sm:w-auto px-5 py-2.5 rounded-full border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 active:bg-gray-100 text-sm font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                >
+                    <i class="pi pi-arrow-left text-xs"></i>
+                    <span>Volver a Sub-recetas</span>
+                </button>
+
+                <button
+                    type="button"
+                    (click)="finishRecipeStep3()"
+                    class="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-semibold text-sm rounded-full px-6 py-2 transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                >
+                    <i class="pi pi-check text-xs"></i>
+                    <span>Finalizar y Guardar Receta</span>
+                </button>
+            </div>
+        </div>
     </div>
 </p-dialog>
 
@@ -441,7 +1251,7 @@
     </ng-template>
     <ng-template pTemplate="subheader">
         <span class="text-sm text-500">
-            Preparación intermedia (ej. salsa, masa, crema) que no se vende individual pero puede asignarse a platillos o bebidas.
+            Preparación intermedia (ej. salsa, masa, crema) que genera stock preparado al elaborarse en lotes y se descuenta por porción en los platillos.
         </span>
     </ng-template>
 
@@ -449,25 +1259,64 @@
         <div>
             <label class="block text-sm font-medium mb-1">Nombre de la preparación</label>
             <input pInputText type="text" class="w-full" [(ngModel)]="subRecetaNombre"
-                placeholder="Ej. Salsa roja, Masa de pizza, Crema base…" />
+                placeholder="Ej. Salsa verde, Masa de pizza, Crema de chipotle…" />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-purple-50/50 rounded-xl border border-purple-100">
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-purple-900 mb-1">
+                    Rendimiento por lote (Producción generada)
+                </label>
+                <p-inputnumber
+                    [(ngModel)]="subRecetaTamanoLote"
+                    [min]="1"
+                    [step]="50"
+                    placeholder="Ej. 1000"
+                    styleClass="w-full"
+                ></p-inputnumber>
+                <span class="text-[11px] text-purple-700 mt-1 block">
+                    Cantidad total producida por cada preparación (ej. 1000 ml).
+                </span>
+            </div>
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-purple-900 mb-1">
+                    Unidad de medida
+                </label>
+                <p-select
+                    [options]="unidadMedidaOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    [(ngModel)]="subRecetaUnidad"
+                    styleClass="w-full"
+                    appendTo="body"
+                ></p-select>
+                <span class="text-[11px] text-purple-700 mt-1 block">
+                    Unidad en la que se medirá el stock y las porciones.
+                </span>
+            </div>
         </div>
 
         <p-divider></p-divider>
 
-        <div class="flex align-items-center gap-2">
-            <p-select
-                [options]="insumos()"
-                optionLabel="nombre"
-                optionValue="id"
-                [(ngModel)]="subRecetaInsumoId"
-                placeholder="Selecciona el insumo"
-                styleClass="w-full"
-                [loading]="insumosLoading()"
-                appendTo="body"
-            ></p-select>
-            <p-inputnumber [(ngModel)]="subRecetaCantidad" [min]="0" [step]="0.5" placeholder="Cantidad" styleClass="subreceta-qty" />
-            <p-button icon="pi pi-plus" label="Agregar" [disabled]="!subRecetaInsumoId || subRecetaCantidad <= 0"
-                (onClick)="addSubRecetaLine()"></p-button>
+        <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">
+                Insumos necesarios para preparar 1 lote ({{ subRecetaTamanoLote || 1000 }} {{ subRecetaUnidad || 'mililitros' }})
+            </label>
+            <div class="flex align-items-center gap-2">
+                <p-select
+                    [options]="insumos()"
+                    optionLabel="nombre"
+                    optionValue="id"
+                    [(ngModel)]="subRecetaInsumoId"
+                    placeholder="Selecciona el insumo"
+                    styleClass="w-full"
+                    [loading]="insumosLoading()"
+                    appendTo="body"
+                ></p-select>
+                <p-inputnumber [(ngModel)]="subRecetaCantidad" [min]="0" [step]="0.5" placeholder="Cantidad" styleClass="subreceta-qty" />
+                <p-button icon="pi pi-plus" label="Agregar" [disabled]="!subRecetaInsumoId || subRecetaCantidad <= 0"
+                    (onClick)="addSubRecetaLine()"></p-button>
+            </div>
         </div>
 
         <div class="subreceta-lines" *ngIf="!subRecetaLines().length">
@@ -492,6 +1341,139 @@
             <p-button label="Crear sub-receta" icon="pi pi-check" styleClass="minimal-submit" [loading]="subRecetaSaving()"
                 [disabled]="!subRecetaNombre?.trim() || !subRecetaLines().length || subRecetaSaving()"
                 (onClick)="saveSubReceta()"></p-button>
+        </div>
+    </ng-template>
+</p-dialog>
+
+<!-- Restock / Preparar lote de sub-receta -->
+<p-dialog
+    [(visible)]="restockModalVisible"
+    [modal]="true"
+    [style]="{ width: '42rem', maxWidth: '95vw' }"
+    styleClass="recetas-restock-dialog minimal-modal"
+    [dismissableMask]="false"
+    (onHide)="closeRestockModal()">
+    <ng-template pTemplate="header">
+        <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                <i class="pi pi-sync text-base"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-bold text-gray-900 m-0">Preparar Lote / Restock</h3>
+                <p class="text-xs text-gray-500 m-0">{{ restockItem?.name }}</p>
+            </div>
+        </div>
+    </ng-template>
+
+    <div *ngIf="restockItem" class="flex flex-col gap-4 py-1">
+        <!-- Tarjeta de estado actual -->
+        <div class="grid grid-cols-2 gap-3 p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+            <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-gray-500 block">Stock Actual</span>
+                <span class="text-base font-extrabold text-gray-900">
+                    {{ restockItem?.stock || 0 | number:'1.0-2' }} {{ restockItem?.unidad || 'mililitros' }}
+                </span>
+            </div>
+            <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-gray-500 block">Rendimiento por lote</span>
+                <span class="text-base font-extrabold text-purple-700">
+                    {{ restockItem?.tamanoLote || 1000 | number:'1.0-2' }} {{ restockItem?.unidad || 'mililitros' }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Selector de lotes a producir -->
+        <div class="p-4 bg-purple-50/60 rounded-xl border border-purple-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-purple-900 mb-0.5">
+                    ¿Cuántos lotes vas a preparar?
+                </label>
+                <span class="text-xs text-purple-700">
+                    Multiplica la producción y el descuento de insumos
+                </span>
+            </div>
+            <div class="flex items-center gap-2">
+                <p-inputnumber
+                    [(ngModel)]="restockLotes"
+                    [min]="1"
+                    [max]="100"
+                    [showButtons]="true"
+                    buttonLayout="horizontal"
+                    inputId="restockLotesInput"
+                    spinnerMode="horizontal"
+                    decrementButtonClass="p-button-secondary p-button-outlined"
+                    incrementButtonClass="p-button-secondary p-button-outlined"
+                    incrementButtonIcon="pi pi-plus"
+                    decrementButtonIcon="pi pi-minus"
+                    styleClass="w-32"
+                ></p-inputnumber>
+            </div>
+        </div>
+
+        <!-- Proyección de stock resultante -->
+        <div class="p-3.5 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <i class="pi pi-arrow-circle-up text-emerald-600 text-xl"></i>
+                <div>
+                    <span class="text-xs font-bold text-emerald-900 block">Nuevo Stock Estimado</span>
+                    <span class="text-[11px] text-emerald-700">
+                        {{ restockItem?.stock || 0 | number:'1.0-2' }} + {{ ((restockItem?.tamanoLote || 1000) * restockLotes) | number:'1.0-2' }}
+                    </span>
+                </div>
+            </div>
+            <div class="text-right">
+                <span class="text-lg font-black text-emerald-800">
+                    {{ ((restockItem?.stock || 0) + ((restockItem?.tamanoLote || 1000) * restockLotes)) | number:'1.0-2' }} {{ restockItem?.unidad || 'mililitros' }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Insumos que se descontarán del inventario -->
+        <div>
+            <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2 flex items-center gap-1.5">
+                <i class="pi pi-box text-xs"></i>
+                Insumos a descontar del inventario general:
+            </h4>
+
+            <div *ngIf="!restockItem?.recipes?.length && !restockItem?.insumos?.length" class="text-xs text-gray-400 italic py-2">
+                No hay insumos configurados en esta sub-receta.
+            </div>
+
+            <div *ngIf="(restockItem?.recipes || restockItem?.insumos)?.length" class="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                <div
+                    *ngFor="let rec of (restockItem.recipes || restockItem.insumos)"
+                    class="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-gray-200/80 text-xs"
+                >
+                    <span class="font-medium text-gray-800">
+                        {{ rec.insumo?.nombre || rec.name || rec.insumoNombre || 'Insumo' }}
+                    </span>
+                    <span class="font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                        -{{ ((rec.cantidad || 1) * restockLotes) | number:'1.0-2' }} {{ rec.insumo?.unidad || rec.unidad || 'pz' }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+            <button
+                type="button"
+                (click)="closeRestockModal()"
+                class="px-4 py-2 rounded-xl text-gray-600 hover:bg-gray-100 text-sm font-medium transition-colors cursor-pointer"
+            >
+                Cancelar
+            </button>
+            <button
+                type="button"
+                (click)="confirmRestock()"
+                [disabled]="restockLoading() || restockLotes <= 0"
+                class="bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-semibold text-sm rounded-xl px-5 py-2 transition-all shadow-sm hover:shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+                <i *ngIf="!restockLoading()" class="pi pi-check text-xs"></i>
+                <i *ngIf="restockLoading()" class="pi pi-spin pi-spinner text-xs"></i>
+                <span>Confirmar Restock (+{{ ((restockItem?.tamanoLote || 1000) * restockLotes) | number:'1.0-2' }} {{ restockItem?.unidad || 'ml' }})</span>
+            </button>
         </div>
     </ng-template>
 </p-dialog>

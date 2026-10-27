@@ -1,8 +1,33 @@
-import { ChangeDetectorRef, Component, OnInit, signal, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, signal, computed, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormArray, FormControl } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { Table, TableModule } from 'primeng/table';
+
+export interface UnifiedCatalogItem {
+    id: number | string;
+    itemType: 'alimento' | 'bebida' | 'insumo';
+    typeLabel: string;
+    areaLabel: string;
+    name: string;
+    description?: string;
+    price?: number | null;
+    stock?: number | null;
+    stockMinimo?: number | null;
+    unidad?: string;
+    categoryIds: number[];
+    categories: { id: number; name: string }[];
+    rawItem: any;
+    imageUrl?: string;
+}
+
+export interface FilterPill {
+    id: string;
+    kind: 'type' | 'category';
+    label: string;
+    value: string | number;
+    icon?: string;
+}
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -180,6 +205,43 @@ export class ProductMenuComponent implements OnInit {
     bebidaCategoryIds: number[] = [];
     bebidaCategoryPicker: any = null;
 
+    // Catálogo unificado y sistema de filtros interactivos por Pills
+    activePills = signal<FilterPill[]>([]);
+    globalSearchText = signal<string>('');
+    selectedTypeFilter: string | null = null;
+    selectedCategoryFilter: number | null = null;
+
+    typeFilterOptions = [
+        { label: '🍽️ Alimentos (Cocina)', value: 'alimento', icon: 'pi pi-compass' },
+        { label: '🍹 Bebidas (Barra)', value: 'bebida', icon: 'pi pi-glass' },
+        { label: '📦 Insumos (Almacén)', value: 'insumo', icon: 'pi pi-box' }
+    ];
+
+    // Carga manual modal state
+    manualDialogVisible: boolean = false;
+    manualSubmitted: boolean = false;
+    manualNombre: string = '';
+    manualDescripcion: string = '';
+    manualCategoryIds: number[] = [];
+    manualCategoryPicker: any = null;
+    manualTipo = signal<'alimento' | 'bebida' | 'insumo' | null>(null);
+
+    // Campos dinámicos por tipo
+    manualTieneVariantes: boolean = false;
+
+    manualAlimentoPrecio: number | null = null;
+    manualAlimentoEsVariable: boolean = false;
+
+    manualBebidaUnidad: string = 'pieza';
+    manualBebidaPrecio: number | null = null;
+    manualBebidaStock: number = 0;
+    manualBebidaStockMin: number = 0;
+    manualBebidaEsVariable: boolean = false;
+
+    manualInsumoUnidad: string = 'pieza';
+    manualInsumoStock: number = 0;
+    manualInsumoStockMin: number = 0;
+
     newCategory: { name?: string; description?: string; tenantId?: string; active: boolean } = {
         name: '',
         description: '',
@@ -228,7 +290,9 @@ export class ProductMenuComponent implements OnInit {
             img_url: [''],
             productImage: [null], // store actual File/Blob for upload
             isActive: [true],
-            autoAvailability: [true]
+            autoAvailability: [true],
+            esVariable: [false],
+            tieneVariantes: [false]
         });
     }
 
@@ -405,6 +469,18 @@ export class ProductMenuComponent implements OnInit {
         if (!cats.length && row && row.categoryId != null && row.categoryName) {
             const id = Number(row.categoryId);
             if (!Number.isNaN(id)) cats.push({ id, name: row.categoryName });
+        }
+
+        if (row && Array.isArray(row.categoryIds)) {
+            row.categoryIds.forEach((catId: any) => {
+                const id = Number(catId);
+                if (!Number.isNaN(id) && !cats.some((x) => x.id === id)) {
+                    const catDef = (this.categoriesArray?.value || []).find((c: any) => Number(c.value) === id);
+                    if (catDef && catDef.label) {
+                        cats.push({ id, name: catDef.label });
+                    }
+                }
+            });
         }
 
         return cats;
@@ -680,6 +756,429 @@ export class ProductMenuComponent implements OnInit {
         this.insumoRestockCantidad = 0;
         this.insumoRestockCostoTotal = 0;
         this.insumoRestockVisible = true;
+    }
+
+    /* ============ Catálogo Unificado y Filtros con Pills ============ */
+
+    get availableCategoryFilterOptions(): any[] {
+        const currentCatPillIds = new Set(
+            this.activePills().filter(p => p.kind === 'category').map(p => Number(p.value))
+        );
+        return (this.categoriesArray?.value || [])
+            .filter((c: any) => !currentCatPillIds.has(Number(c.value)))
+            .map((c: any) => ({ label: c.label, value: c.value }));
+    }
+
+    get availableTypeFilterOptions(): any[] {
+        const currentTypePills = new Set(
+            this.activePills().filter(p => p.kind === 'type').map(p => p.value)
+        );
+        return this.typeFilterOptions.filter(o => !currentTypePills.has(o.value));
+    }
+
+    addTypeFilter(typeVal: string | null): void {
+        if (!typeVal) return;
+        const opt = this.typeFilterOptions.find(o => o.value === typeVal);
+        const id = `type-${typeVal}`;
+        if (!this.activePills().some(p => p.id === id)) {
+            this.activePills.update(pills => [
+                ...pills,
+                {
+                    id,
+                    kind: 'type',
+                    label: opt ? opt.label : typeVal,
+                    value: typeVal,
+                    icon: opt?.icon || 'pi pi-filter'
+                }
+            ]);
+        }
+        this.selectedTypeFilter = null;
+        this.tableFirst = 0;
+        this.dt?.reset();
+    }
+
+    addCategoryFilter(catId: number | null): void {
+        if (catId === null || catId === undefined) return;
+        const cat = (this.categoriesArray?.value || []).find((c: any) => Number(c.value) === Number(catId));
+        const id = `cat-${catId}`;
+        if (!this.activePills().some(p => p.id === id)) {
+            this.activePills.update(pills => [
+                ...pills,
+                {
+                    id,
+                    kind: 'category',
+                    label: `🏷️ ${cat ? cat.label : 'Categoría ' + catId}`,
+                    value: catId,
+                    icon: 'pi pi-tag'
+                }
+            ]);
+        }
+        this.selectedCategoryFilter = null;
+        this.tableFirst = 0;
+        this.dt?.reset();
+    }
+
+    removePill(pill: FilterPill): void {
+        this.activePills.update(pills => pills.filter(p => p.id !== pill.id));
+        this.tableFirst = 0;
+        this.dt?.reset();
+    }
+
+    clearAllFilters(): void {
+        this.activePills.set([]);
+        this.globalSearchText.set('');
+        this.selectedTypeFilter = null;
+        this.selectedCategoryFilter = null;
+        this.tableFirst = 0;
+        this.dt?.reset();
+    }
+
+    onSearchInputChange(event: Event): void {
+        const val = (event.target as HTMLInputElement).value || '';
+        this.globalSearchText.set(val);
+        this.tableFirst = 0;
+    }
+
+    unifiedCatalog = computed<UnifiedCatalogItem[]>(() => {
+        const list: UnifiedCatalogItem[] = [];
+
+        // 1. Alimentos (Productos del menú)
+        const prods = this.products() || [];
+        for (const p of prods) {
+            const pId = this.normalizeProductId(p.id);
+            const inv = pId != null ? this.inventoryItems().find((i: any) => Number(i.id) === pId) : null;
+            const cats = this.rowCategories(p);
+            const catIds = Array.isArray((p as any).categoryIds)
+                ? (p as any).categoryIds.map((n: any) => Number(n)).filter((n: number) => !Number.isNaN(n))
+                : (p.categoryId != null ? [Number(p.categoryId)] : cats.map(c => c.id));
+
+            list.push({
+                id: p.id ?? `prod-${Math.random()}`,
+                itemType: 'alimento',
+                typeLabel: 'Alimento',
+                areaLabel: 'Cocina',
+                name: p.name || 'Sin nombre',
+                description: p.description || '',
+                price: p.price ?? null,
+                stock: inv ? inv.stock : null,
+                stockMinimo: inv ? inv.stockMinimo : null,
+                unidad: inv ? inv.unidad : undefined,
+                categoryIds: catIds,
+                categories: cats,
+                rawItem: p,
+                imageUrl: p.imageUrl
+            });
+        }
+
+        // 2. Bebidas
+        const bebs = this.bebidas() || [];
+        for (const b of bebs) {
+            const cats = this.rowCategories(b);
+            const catIds = Array.isArray(b.categoryIds)
+                ? b.categoryIds.map((n: any) => Number(n)).filter((n: number) => !Number.isNaN(n))
+                : cats.map(c => c.id);
+
+            list.push({
+                id: b.id ?? `beb-${Math.random()}`,
+                itemType: 'bebida',
+                typeLabel: 'Bebida',
+                areaLabel: 'Barra',
+                name: b.nombre || 'Sin nombre',
+                description: '',
+                price: b.precioVenta ?? null,
+                stock: b.stock ?? 0,
+                stockMinimo: b.stockMinimo ?? 0,
+                unidad: b.unidad || 'pieza',
+                categoryIds: catIds,
+                categories: cats,
+                rawItem: b
+            });
+        }
+
+        // 3. Insumos
+        const ins = this.insumos() || [];
+        for (const i of ins) {
+            const cats = this.rowCategories(i);
+            const catIds = Array.isArray(i.categoryIds)
+                ? i.categoryIds.map((n: any) => Number(n)).filter((n: number) => !Number.isNaN(n))
+                : cats.map(c => c.id);
+
+            list.push({
+                id: i.id ?? `ins-${Math.random()}`,
+                itemType: 'insumo',
+                typeLabel: 'Insumo',
+                areaLabel: 'Almacén',
+                name: i.nombre || 'Sin nombre',
+                description: '',
+                price: null,
+                stock: i.stock ?? 0,
+                stockMinimo: i.stockMinimo ?? 0,
+                unidad: i.unidad || 'pieza',
+                categoryIds: catIds,
+                categories: cats,
+                rawItem: i
+            });
+        }
+
+        return list;
+    });
+
+    filteredCatalog = computed<UnifiedCatalogItem[]>(() => {
+        let items = this.unifiedCatalog();
+        const pills = this.activePills();
+        const search = (this.globalSearchText() || '').toLowerCase().trim();
+
+        // 1. Filtrado por tipo (si hay pills de tipo)
+        const typePills = pills.filter(p => p.kind === 'type');
+        if (typePills.length > 0) {
+            const allowedTypes = typePills.map(p => p.value);
+            items = items.filter(item => allowedTypes.includes(item.itemType));
+        }
+
+        // 2. Filtrado por categoría (si hay pills de categoría)
+        const catPills = pills.filter(p => p.kind === 'category');
+        if (catPills.length > 0) {
+            const catIds = catPills.map(p => Number(p.value));
+            items = items.filter(item => catIds.some(cid => item.categoryIds.includes(cid)));
+        }
+
+        // 3. Búsqueda libre por texto
+        if (search) {
+            items = items.filter(item => {
+                const nameMatch = item.name.toLowerCase().includes(search);
+                const descMatch = item.description?.toLowerCase().includes(search) ?? false;
+                const typeMatch = item.typeLabel.toLowerCase().includes(search) || item.areaLabel.toLowerCase().includes(search);
+                const catMatch = item.categories.some(c => c.name.toLowerCase().includes(search));
+                return nameMatch || descMatch || typeMatch || catMatch;
+            });
+        }
+
+        return items;
+    });
+
+    /* ============ Carga Manual Modal ============ */
+
+    openManualCreate(): void {
+        this.manualSubmitted = false;
+        this.manualNombre = '';
+        this.manualDescripcion = '';
+        this.manualCategoryIds = [];
+        this.manualCategoryPicker = null;
+        this.manualTipo.set(null);
+
+        this.manualTieneVariantes = false;
+        this.manualAlimentoPrecio = null;
+        this.manualAlimentoEsVariable = false;
+
+        this.manualBebidaUnidad = 'pieza';
+        this.manualBebidaPrecio = null;
+        this.manualBebidaStock = 0;
+        this.manualBebidaStockMin = 3;
+        this.manualBebidaEsVariable = false;
+
+        this.manualInsumoUnidad = 'pieza';
+        this.manualInsumoStock = 0;
+        this.manualInsumoStockMin = 0;
+
+        this.manualDialogVisible = true;
+        this.cdr.detectChanges();
+    }
+
+    closeManualDialog(): void {
+        this.manualDialogVisible = false;
+        this.manualSubmitted = false;
+    }
+
+    setManualTipo(type: 'alimento' | 'bebida' | 'insumo'): void {
+        this.manualTipo.set(type);
+    }
+
+    manualTipoLabel(): string {
+        switch (this.manualTipo()) {
+            case 'alimento': return 'Alimento (Cocina)';
+            case 'bebida': return 'Bebida (Barra)';
+            case 'insumo': return 'Insumo (Almacén)';
+            default: return '';
+        }
+    }
+
+    addManualCategory(value: any): void {
+        this.manualCategoryPicker = null;
+        if (value === null || value === undefined) return;
+        const id = Number(value);
+        if (Number.isNaN(id)) return;
+        if (!this.manualCategoryIds.includes(id)) {
+            this.manualCategoryIds.push(id);
+        }
+    }
+
+    removeManualCategory(id: number): void {
+        this.manualCategoryIds = this.manualCategoryIds.filter(v => v !== Number(id));
+    }
+
+    manualAvailableCategories(): any[] {
+        return (this.categoriesArray?.value || []).filter(
+            (c: any) => !this.manualCategoryIds.includes(Number(c.value))
+        );
+    }
+
+    getCategoryLabel(id: number): string {
+        const cat = (this.categoriesArray?.value || []).find((c: any) => Number(c.value) === Number(id));
+        return cat?.label ?? `Categoría ${id}`;
+    }
+
+    saveManualItem(): void {
+        this.manualSubmitted = true;
+
+        if (!this.manualNombre.trim()) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Validación',
+                detail: 'Ingresa el nombre del artículo',
+                life: 3000
+            });
+            return;
+        }
+
+        const tipo = this.manualTipo();
+        if (!tipo) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Selección requerida',
+                detail: 'Debes seleccionar si es Alimento, Bebida o Insumo',
+                life: 3500
+            });
+            return;
+        }
+
+        if (tipo === 'alimento') {
+            if (!this.manualTieneVariantes && (this.manualAlimentoPrecio == null || this.manualAlimentoPrecio < 0)) {
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Validación',
+                    detail: 'Ingresa un precio de venta válido para el alimento',
+                    life: 3000
+                });
+                return;
+            }
+
+            const newProduct: any = {
+                categoryId: this.manualCategoryIds.length > 0 ? this.manualCategoryIds[0] : null,
+                categoryIds: this.manualCategoryIds,
+                tenantId: this.tenantId,
+                name: this.manualNombre.trim(),
+                description: this.manualDescripcion.trim(),
+                price: this.manualTieneVariantes ? 0 : (this.manualAlimentoPrecio || 0),
+                isActive: true,
+                autoAvailability: true,
+                esVariable: !!this.manualAlimentoEsVariable,
+                tieneVariantes: !!this.manualTieneVariantes,
+                imageUrl: ''
+            };
+
+            this.startLoading();
+            this.productService.createProduct(newProduct).subscribe({
+                next: () => {
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Alimento registrado',
+                        detail: `"${this.manualNombre.trim()}" se agregó para el área de Cocina`,
+                        life: 3500
+                    });
+                    window.dispatchEvent(new Event('productsUpdated'));
+                    this.closeManualDialog();
+                    this.loadProducts();
+                },
+                error: (err) => {
+                    console.error('Error al registrar alimento:', err);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'No se pudo crear el alimento',
+                        life: 3000
+                    });
+                },
+                complete: () => this.stopLoading()
+            });
+
+        } else if (tipo === 'bebida') {
+            if (!this.manualTieneVariantes && (this.manualBebidaPrecio == null || this.manualBebidaPrecio < 0)) {
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Validación',
+                    detail: 'Ingresa un precio de venta válido para la bebida',
+                    life: 3000
+                });
+                return;
+            }
+
+            this.startLoading();
+            this.inventoryService.createBebida(
+                this.tenantId,
+                this.manualNombre.trim(),
+                this.manualBebidaUnidad || 'pieza',
+                0,
+                3,
+                this.manualTieneVariantes ? 0 : (this.manualBebidaPrecio || 0),
+                this.manualCategoryIds,
+                !!this.manualBebidaEsVariable,
+                !!this.manualTieneVariantes
+            ).subscribe({
+                next: () => {
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Bebida registrada',
+                        detail: `"${this.manualNombre.trim()}" se agregó para el área de Barra`,
+                        life: 3500
+                    });
+                    this.closeManualDialog();
+                    this.loadBebidas();
+                    this.loadInventory();
+                },
+                error: (err) => {
+                    console.error('Error al registrar bebida:', err);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'No se pudo crear la bebida',
+                        life: 3000
+                    });
+                },
+                complete: () => this.stopLoading()
+            });
+
+        } else if (tipo === 'insumo') {
+            this.startLoading();
+            this.inventoryService.createInsumo(
+                this.tenantId,
+                this.manualNombre.trim(),
+                this.manualInsumoUnidad || 'pieza',
+                this.manualInsumoStock || 0,
+                this.manualInsumoStockMin || 0,
+                this.manualCategoryIds
+            ).subscribe({
+                next: () => {
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Insumo registrado',
+                        detail: `"${this.manualNombre.trim()}" se agregó al Almacén`,
+                        life: 3500
+                    });
+                    this.closeManualDialog();
+                    this.loadInsumos();
+                },
+                error: (err) => {
+                    console.error('Error al registrar insumo:', err);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'No se pudo crear el insumo',
+                        life: 3000
+                    });
+                },
+                complete: () => this.stopLoading()
+            });
+        }
     }
 
     private loadCrossSellingForProduct(productId: number | null): void {
@@ -1293,7 +1792,7 @@ export class ProductMenuComponent implements OnInit {
         (this.product as any).categories = [];
         this.submitted = false;
         // reset product form (clear productImage as well)
-        this.productForm.reset({ id: null, name: '', description: '', price: null, img_url: '', productImage: null, isActive: true, autoAvailability: true });
+        this.productForm.reset({ id: null, name: '', description: '', price: null, img_url: '', productImage: null, isActive: true, autoAvailability: true, esVariable: false, tieneVariantes: false });
         // ensure preview and internal file reference are cleared when creating new
         this.productImagePreview = null;
         this.productForm.get('productImage')?.setValue(null);
@@ -1317,7 +1816,9 @@ export class ProductMenuComponent implements OnInit {
             img_url: '',
             productImage: null,
             isActive: true,
-            autoAvailability: true
+            autoAvailability: true,
+            esVariable: false,
+            tieneVariantes: false
         });
         // ensure preview and internal file reference are cleared when creating new
         this.productImagePreview = null;
@@ -1344,7 +1845,9 @@ export class ProductMenuComponent implements OnInit {
             price: product.price ?? null,
             img_url: product.imageUrl ?? '',
             isActive: product.isActive ?? true,
-            autoAvailability: (product as any).autoAvailability ?? true
+            autoAvailability: (product as any).autoAvailability ?? true,
+            esVariable: (product as any).esVariable ?? false,
+            tieneVariantes: (product as any).tieneVariantes ?? false
         });
         this.productForm.get('productImage')?.setValue(null);
         this.productImagePreview = product.imageUrl ?? null;
@@ -1511,13 +2014,18 @@ export class ProductMenuComponent implements OnInit {
             return;
         }
 
+        const prod = this.productForm.value;
+        const tieneVariantes = !!prod.tieneVariantes;
+        if (tieneVariantes && (prod.price == null || prod.price < 0)) {
+            this.productForm.get('price')?.setValue(0);
+        }
+
         this.productForm.markAllAsTouched();
-        if (this.productForm.invalid) {
+        if (this.productForm.invalid && !tieneVariantes) {
             this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'Complete los campos requeridos del producto', life: 3000 });
             return;
         }
 
-        const prod = this.productForm.value;
         const imgFile: File | Blob | null = this.productForm.get('productImage')?.value || null;
 
         const selectedCategoryId = categoryIds[0];
@@ -1542,9 +2050,11 @@ export class ProductMenuComponent implements OnInit {
                 tenantId: this.tenantId,
                 name: prod.name,
                 description: prod.description,
-                price: prod.price,
+                price: tieneVariantes ? 0 : prod.price,
                 isActive: prod.isActive,
                 autoAvailability: prod.autoAvailability ?? true,
+                esVariable: !!prod.esVariable,
+                tieneVariantes: tieneVariantes,
                 imageUrl: imageUrl ?? prod.img_url
             } as any;
             this.startLoading();

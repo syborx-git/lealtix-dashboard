@@ -12,4 +12,6 @@ export interface Product {
     tenantId?: number;
     categoryIds?: number[];
     categories?: { id: number; name: string }[];
+    esVariable?: boolean;
+    tieneVariantes?: boolean;
 }

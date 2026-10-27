@@ -26,19 +26,19 @@
       [currentPageReportTemplate]="'Mostrando {first} a {last} de {totalRecords} registros de merma'"
       [tableStyle]="{ 'table-layout': 'fixed', 'min-width': '64rem' }"
     >
-      <ng-template pTemplate="header">
+      <ng-template pTemplate="caption">
         <div class="table-header-bar">
           <div class="table-title">
             <h5>{{ items().length }} mermas registradas</h5>
             <span class="table-title-sub">Salidas no-venta del negocio</span>
           </div>
-          <p-iconfield>
+          <p-iconfield iconPosition="left">
             <p-inputicon styleClass="pi pi-search" />
             <input pInputText type="text" placeholder="Buscar merma..." (input)="onGlobalFilter(dt, $event)" />
           </p-iconfield>
         </div>
       </ng-template>
-      <ng-template pTemplate="headerrow">
+      <ng-template pTemplate="header">
         <tr>
           <th pSortableColumn="fecha" style="width: 16%">Fecha <p-sortIcon field="fecha" /></th>
           <th pSortableColumn="usuarioNombre" style="width: 14%">Usuario <p-sortIcon field="usuarioNombre" /></th>

@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -80,18 +80,61 @@ export class RecetasComponent implements OnInit {
   recipeCantidad = 0;
   recipeTipoIngrediente = 'BASE';
   recipePrecio = 0;
+  recipeGrupo = '';
   recipeAddLoading = signal<boolean>(false);
+  recipeStep = signal<1 | 2 | 3>(1);
   editingRecipe: any | null = null;
   editRecipeCantidad = 0;
   editRecipeImportancia = 'BASE';
   editRecipePrecio = 0;
+  editRecipeGrupo = '';
+  readonly suggestedGroups = ['Proteína', 'Salsa', 'Guarnición', 'Complementos', 'Término', 'Queso', 'Toppings', 'Bebida'];
 
-  // Sub-recetas asignadas en el diálogo de receta
+  // Sub-recetas asignadas en el diálogo de receta (Paso 2)
   assignedSubRecetas = signal<any[]>([]);
   selectedSubRecetaId: number | null = null;
   selectedSubImportancia = 'BASE';
   selectedSubPrecio = 0;
+  selectedSubCantidad = 100;
+  selectedSubUnidad = 'mililitros';
   subRecetaAssignLoading = signal<boolean>(false);
+
+  // Variables / Variantes asignadas en el diálogo de receta (Paso 3)
+  assignedVariantDishes = signal<any[]>([]);
+  variantDishesLoading = signal<boolean>(false);
+  selectedVariantDishId: number | null = null;
+  selectedVariantPrecio = 0;
+  selectedVariantGrupo = '';
+  selectedVariantCantidad = 1;
+  selectedVariantUnidad = 'pieza';
+  variantDishAssignLoading = signal<boolean>(false);
+
+  // Platillos y bebidas marcados como variables disponibles para asignar (excluyendo el actual)
+  availableVariableProducts = computed(() => {
+    const currentDishId = this.normalizeProductId(this.recipeItem?.id);
+    return this.products()
+      .filter((p) => p.esVariable === true && this.normalizeProductId(p.id) !== currentDishId)
+      .map((p) => ({
+        id: this.normalizeProductId(p.id),
+        name: p.name,
+        price: Number(p.price ?? 0),
+        categoryName: p.categoryName || '',
+        displayName: `${p.name} — $${p.price ?? 0}${p.categoryName ? ' (' + p.categoryName + ')' : ''}`
+      }));
+  });
+
+  // Insumos disponibles para Paso 1 (excluye seleccionarse a sí mismo si la receta actual es una subreceta)
+  availableInsumos = computed(() => {
+    const list = this.insumos() || [];
+    const currentDishId = this.normalizeProductId(this.recipeItem?.id);
+    const isCurrentSubReceta = !!this.recipeItem?.esSubReceta;
+    return list.filter((ins) => {
+      if (isCurrentSubReceta && (ins.productoId === currentDishId || ins.id === currentDishId)) {
+        return false;
+      }
+      return true;
+    });
+  });
 
   // Selector de producto / bebida (botones grandes)
   pickerVisible = false;
@@ -104,14 +147,29 @@ export class RecetasComponent implements OnInit {
   subRecetaVisible = false;
   subRecetaSaving = signal<boolean>(false);
   subRecetaNombre = '';
+  subRecetaTamanoLote = 1000;
+  subRecetaUnidad = 'mililitros';
   subRecetaInsumoId: number | null = null;
   subRecetaCantidad = 0;
   subRecetaLines = signal<any[]>([]);
 
+  // Restock / Producción de sub-receta
+  restockModalVisible = false;
+  restockItem: any = null;
+  restockLotes = 1;
+  restockLoading = signal<boolean>(false);
+
+  readonly unidadMedidaOptions = [
+    { label: 'Mililitros (ml)', value: 'mililitros' },
+    { label: 'Gramos (g)', value: 'gramos' },
+    { label: 'Piezas (pz)', value: 'pieza' }
+  ];
+
   readonly importanciaOptions = [
     { label: 'Base (siempre en la receta)', value: 'BASE' },
     { label: 'Modificable (puede retirarse)', value: 'MODIFICABLE' },
-    { label: 'Adicional (costo extra)', value: 'ADICIONAL' }
+    { label: 'Adicional (costo extra)', value: 'ADICIONAL' },
+    { label: 'Variante (subcomanda en cards)', value: 'VARIANTE' }
   ];
 
   constructor(
@@ -341,32 +399,52 @@ export class RecetasComponent implements OnInit {
     this.recipeCantidad = 0;
     this.recipeTipoIngrediente = 'BASE';
     this.recipePrecio = 0;
+    this.recipeGrupo = '';
+    this.selectedVariantDishId = null;
+    this.selectedVariantPrecio = 0;
+    this.selectedVariantGrupo = '';
+    this.selectedVariantCantidad = 1;
+    this.selectedVariantUnidad = 'pieza';
+    this.assignedVariantDishes.set([]);
+    this.recipeStep.set(1);
     this.recipeVisible = true;
     const dishId = this.normalizeProductId(product?.id);
     if (dishId != null) {
       this.loadRecipeLines(dishId);
       this.loadAssignedSubRecetas(dishId);
+      this.loadAssignedVariantDishes(dishId);
     }
   }
 
   private loadRecipeLines(dishId: number): void {
     this.loadingRecipes.set(true);
     const lines: any[] = [];
+    const insumoMap = new Map<number, any>();
+    (this.insumos() || []).forEach((ins) => insumoMap.set(ins.id, ins));
+
     this.inventoryService.getRecipes(dishId).subscribe({
       next: (res) => {
-        const recipes = (res?.object ?? []).map((r: any) => ({
-          ...r,
-          kind: 'RECIPE',
-          tipoIngrediente: r.modificable ? 'MODIFICABLE' : 'BASE'
-        }));
+        const recipes = (res?.object ?? []).map((r: any) => {
+          const ins = insumoMap.get(r.insumoId);
+          return {
+            ...r,
+            esSubReceta: ins ? !!ins.esSubReceta : false,
+            kind: 'RECIPE',
+            tipoIngrediente: r.modificable ? 'MODIFICABLE' : 'BASE'
+          };
+        });
         lines.push(...recipes);
         this.inventoryService.getAdditionals(dishId).subscribe({
           next: (res2) => {
-            const additionals = (res2?.object ?? []).map((a: any) => ({
-              ...a,
-              kind: 'ADDITIONAL',
-              tipoIngrediente: 'ADICIONAL'
-            }));
+            const additionals = (res2?.object ?? []).map((a: any) => {
+              const ins = insumoMap.get(a.insumoId);
+              return {
+                ...a,
+                esSubReceta: ins ? !!ins.esSubReceta : false,
+                kind: 'ADDITIONAL',
+                tipoIngrediente: (a.isVariant || a.tipoIngrediente === 'VARIANTE' || a.grupo === 'VARIANTE') ? 'VARIANTE' : 'ADICIONAL'
+              };
+            });
             lines.push(...additionals);
             this.recipeIngredients.set(lines);
             this.loadingRecipes.set(false);
@@ -389,7 +467,14 @@ export class RecetasComponent implements OnInit {
     this.selectedSubRecetaId = null;
     this.inventoryService.getSubRecetasByDish(dishId).subscribe({
       next: (res) => {
-        this.assignedSubRecetas.set(res?.object ?? []);
+        const list = (res?.object ?? []).map((sr: any) => ({
+          ...sr,
+          _savedImportancia: sr.importancia || 'BASE',
+          _savedPrecio: Number(sr.precio ?? 0),
+          _savedCantidad: Number(sr.cantidad ?? 1),
+          _savedUnidad: sr.unidad || 'mililitros'
+        }));
+        this.assignedSubRecetas.set(list);
       },
       error: (err) => {
         console.error('Error cargando sub-recetas asignadas:', err);
@@ -398,24 +483,44 @@ export class RecetasComponent implements OnInit {
     });
   }
 
+  onSelectedSubRecetaChange(subId: number | null): void {
+    this.selectedSubRecetaId = subId;
+    if (subId) {
+      const sr = this.subRecetas().find((s) => s.id === subId);
+      if (sr?.unidad) {
+        this.selectedSubUnidad = sr.unidad;
+      }
+    }
+  }
+
   assignSubRecetaToCurrent(): void {
     const dishId = this.normalizeProductId(this.recipeItem?.id);
     if (dishId == null || !this.selectedSubRecetaId || this.subRecetaAssignLoading()) {
       return;
     }
+    const qty = this.selectedSubCantidad > 0 ? this.selectedSubCantidad : 1;
+    const uni = this.selectedSubUnidad || 'mililitros';
     this.subRecetaAssignLoading.set(true);
-    this.inventoryService.assignSubReceta(dishId, this.selectedSubRecetaId, this.selectedSubImportancia, this.selectedSubPrecio || 0).subscribe({
+    this.inventoryService.assignSubReceta(
+      dishId,
+      this.selectedSubRecetaId,
+      this.selectedSubImportancia,
+      this.selectedSubPrecio || 0,
+      qty,
+      uni
+    ).subscribe({
       next: (res) => {
         this.subRecetaAssignLoading.set(false);
         this.selectedSubRecetaId = null;
         this.selectedSubImportancia = 'BASE';
         this.selectedSubPrecio = 0;
+        this.selectedSubCantidad = 100;
         this.loadAssignedSubRecetas(dishId);
         if (res?.code !== 200) {
           this.messageService.add({ severity: 'warn', summary: 'Atención', detail: res?.message || 'No se pudo asignar la sub-receta', life: 3000 });
           return;
         }
-        this.messageService.add({ severity: 'success', summary: 'Sub-receta asignada', detail: 'La preparación ahora suma sus insumos a este producto', life: 3000 });
+        this.messageService.add({ severity: 'success', summary: 'Sub-receta asignada', detail: `Se asignaron ${qty} ${uni} al platillo`, life: 3000 });
       },
       error: (err) => {
         this.subRecetaAssignLoading.set(false);
@@ -424,22 +529,74 @@ export class RecetasComponent implements OnInit {
     });
   }
 
-  saveAssignedSubImportancia(sr: any): void {
+  saveAssignedSubImportancia(sr: any, event?: any): void {
     const dishId = this.normalizeProductId(this.recipeItem?.id);
-    if (dishId == null) {
+    if (dishId == null || !sr) {
       return;
     }
-    this.inventoryService.updateSubRecetaImportance(dishId, sr.id, sr.importancia || 'BASE', Number(sr.precio ?? 0)).subscribe({
+    const newImportancia = event?.value ?? sr.importancia ?? 'BASE';
+    sr.importancia = newImportancia;
+    const currentPrecio = Number(sr.precio ?? 0);
+    const currentCantidad = Number(sr.cantidad ?? 1);
+    const currentUnidad = sr.unidad || 'mililitros';
+
+    // Evitar llamadas repetidas o bucles infinitos si el valor no cambió
+    if (
+      sr._savedImportancia === newImportancia &&
+      sr._savedPrecio === currentPrecio &&
+      sr._savedCantidad === currentCantidad &&
+      sr._savedUnidad === currentUnidad
+    ) {
+      return;
+    }
+
+    const prevImportancia = sr._savedImportancia ?? 'BASE';
+    const prevPrecio = sr._savedPrecio ?? 0;
+    const prevCantidad = sr._savedCantidad ?? 1;
+    const prevUnidad = sr._savedUnidad ?? 'mililitros';
+    sr._savedImportancia = newImportancia;
+    sr._savedPrecio = currentPrecio;
+    sr._savedCantidad = currentCantidad;
+    sr._savedUnidad = currentUnidad;
+
+    this.inventoryService.updateSubRecetaImportance(
+      dishId,
+      sr.id,
+      newImportancia,
+      currentPrecio,
+      currentCantidad,
+      currentUnidad
+    ).subscribe({
       next: (res) => {
         if (res?.code !== 200) {
-          this.messageService.add({ severity: 'warn', summary: 'Atención', detail: res?.message || 'No se pudo actualizar la importancia', life: 3000 });
+          sr._savedImportancia = prevImportancia;
+          sr._savedPrecio = prevPrecio;
+          sr._savedCantidad = prevCantidad;
+          sr._savedUnidad = prevUnidad;
+          sr.importancia = prevImportancia;
+          sr.precio = prevPrecio;
+          sr.cantidad = prevCantidad;
+          sr.unidad = prevUnidad;
+          this.messageService.add({ severity: 'warn', summary: 'Atención', detail: res?.message || 'No se pudo actualizar la sub-receta', life: 3000 });
+          return;
         }
-        this.loadAssignedSubRecetas(dishId);
-        this.messageService.add({ severity: 'success', summary: 'Importancia actualizada', detail: `"${sr.name}" quedó como ${this.importanciaLabel(sr.importancia || 'BASE')}`, life: 3000 });
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Sub-receta actualizada',
+          detail: `"${sr.name}" quedó con porción de ${currentCantidad} ${currentUnidad} (${this.importanciaLabel(newImportancia)})`,
+          life: 2500
+        });
       },
       error: (err) => {
-        this.loadAssignedSubRecetas(dishId);
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo actualizar la importancia', life: 3000 });
+        sr._savedImportancia = prevImportancia;
+        sr._savedPrecio = prevPrecio;
+        sr._savedCantidad = prevCantidad;
+        sr._savedUnidad = prevUnidad;
+        sr.importancia = prevImportancia;
+        sr.precio = prevPrecio;
+        sr.cantidad = prevCantidad;
+        sr.unidad = prevUnidad;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo actualizar la sub-receta', life: 3000 });
       }
     });
   }
@@ -451,7 +608,7 @@ export class RecetasComponent implements OnInit {
 
   removeAssignedSubReceta(sr: any): void {
     const dishId = this.normalizeProductId(this.recipeItem?.id);
-    if (dishId == null) {
+    if (dishId == null || !sr) {
       return;
     }
     this.confirmationService.confirm({
@@ -461,12 +618,21 @@ export class RecetasComponent implements OnInit {
       accept: () => {
         this.inventoryService.removeSubRecetaFromDish(dishId, sr.id).subscribe({
           next: () => {
-            this.loadAssignedSubRecetas(dishId);
+            this.assignedSubRecetas.update((list) => list.filter((item) => item.id !== sr.id));
+            this.messageService.add({ severity: 'success', summary: 'Sub-receta removida', detail: `Se desvinculó "${sr.name}" del platillo`, life: 2500 });
           },
           error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo quitar la sub-receta', life: 3000 })
         });
       }
     });
+  }
+
+  trackBySubReceta(_index: number, item: any): number {
+    return item?.id ?? _index;
+  }
+
+  trackByIngredient(_index: number, item: any): number {
+    return item?.id ?? _index;
   }
 
   addRecipeIngredient(): void {
@@ -480,22 +646,24 @@ export class RecetasComponent implements OnInit {
       this.recipeCantidad = 0;
       this.recipePrecio = 0;
       this.recipeTipoIngrediente = 'BASE';
+      this.recipeGrupo = '';
       this.loadRecipeLines(dishId);
       this.messageService.add({ severity: 'success', summary: 'Insumo agregado', detail: 'Se actualizó la receta del platillo', life: 3000 });
     };
-    if (this.recipeTipoIngrediente === 'ADICIONAL') {
-      this.inventoryService.addAdditional(dishId, this.recipeInsumoId, this.recipeCantidad, this.recipePrecio || 0).subscribe({
+    if (this.recipeTipoIngrediente === 'ADICIONAL' || this.recipeTipoIngrediente === 'VARIANTE') {
+      const isVariant = this.recipeTipoIngrediente === 'VARIANTE';
+      this.inventoryService.addAdditional(dishId, this.recipeInsumoId, this.recipeCantidad, this.recipePrecio || 0, this.recipeGrupo, isVariant).subscribe({
         next: () => {
           finish();
           this.recipeAddLoading.set(false);
         },
         error: (err) => {
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo agregar el adicional', life: 3000 });
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo agregar la opción', life: 3000 });
           this.recipeAddLoading.set(false);
         }
       });
     } else {
-      this.inventoryService.addRecipeIngredient(dishId, this.recipeInsumoId, this.recipeCantidad, this.recipeTipoIngrediente === 'MODIFICABLE').subscribe({
+      this.inventoryService.addRecipeIngredient(dishId, this.recipeInsumoId, this.recipeCantidad, this.recipeTipoIngrediente === 'MODIFICABLE', this.recipeGrupo).subscribe({
         next: () => {
           finish();
           this.recipeAddLoading.set(false);
@@ -536,6 +704,7 @@ export class RecetasComponent implements OnInit {
     this.editRecipeCantidad = ing.cantidad;
     this.editRecipeImportancia = ing.tipoIngrediente || 'BASE';
     this.editRecipePrecio = Number(ing.precio ?? 0);
+    this.editRecipeGrupo = ing.grupo || '';
   }
 
   cancelEditIngredient(): void {
@@ -550,8 +719,8 @@ export class RecetasComponent implements OnInit {
     const ing = this.editingRecipe;
     const importancia = this.editRecipeImportancia || 'BASE';
     const action = ing.kind === 'ADDITIONAL'
-      ? this.inventoryService.updateAdditional(ing.id, this.editRecipeCantidad, importancia, this.editRecipePrecio || 0)
-      : this.inventoryService.updateRecipeIngredient(ing.id, this.editRecipeCantidad, importancia, this.editRecipePrecio || 0);
+      ? this.inventoryService.updateAdditional(ing.id, this.editRecipeCantidad, importancia, this.editRecipePrecio || 0, this.editRecipeGrupo)
+      : this.inventoryService.updateRecipeIngredient(ing.id, this.editRecipeCantidad, importancia, this.editRecipePrecio || 0, this.editRecipeGrupo);
     action.subscribe({
       next: (res) => {
         this.editingRecipe = null;
@@ -566,6 +735,210 @@ export class RecetasComponent implements OnInit {
       },
       error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar', life: 3000 })
     });
+  }
+
+  saveRecipeStep1AndClose(): void {
+    this.recipeVisible = false;
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Receta guardada',
+      detail: 'Insumos registrados correctamente (sin sub-receta)',
+      life: 3000
+    });
+  }
+
+  goToRecipeStep2(): void {
+    this.recipeStep.set(2);
+  }
+
+  goToRecipeStep1(): void {
+    this.recipeStep.set(1);
+  }
+
+  finishRecipeStep2(): void {
+    this.recipeVisible = false;
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Receta finalizada',
+      detail: 'Insumos y sub-recetas guardados exitosamente',
+      life: 3000
+    });
+  }
+
+  goToRecipeStep3(): void {
+    this.recipeStep.set(3);
+  }
+
+  finishRecipeStep3(): void {
+    this.recipeVisible = false;
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Receta completa guardada',
+      detail: 'Insumos, sub-recetas y variables configurados correctamente',
+      life: 3000
+    });
+  }
+
+  loadAssignedVariantDishes(dishId: number): void {
+    this.variantDishesLoading.set(true);
+    this.inventoryService.getVariantDishes(dishId).subscribe({
+      next: (res) => {
+        const list = (res?.object ?? []).map((v: any) => ({
+          ...v,
+          _savedPrecio: Number(v.precio ?? 0),
+          _savedCantidad: Number(v.cantidad ?? 1),
+          _savedUnidad: v.unidad || 'pieza',
+          _savedGrupo: v.grupo || ''
+        }));
+        this.assignedVariantDishes.set(list);
+        this.variantDishesLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Error cargando variables asignadas:', err);
+        this.assignedVariantDishes.set([]);
+        this.variantDishesLoading.set(false);
+      }
+    });
+  }
+
+  onSelectedVariantDishChange(varDishId: number | null): void {
+    this.selectedVariantDishId = varDishId;
+    if (varDishId) {
+      const p = this.products().find((prod) => this.normalizeProductId(prod.id) === varDishId);
+      if (p) {
+        this.selectedVariantPrecio = Number(p.price ?? 0);
+        this.selectedVariantGrupo = p.categoryName || 'Variante';
+      }
+    }
+  }
+
+  assignVariantDishToCurrent(): void {
+    const dishId = this.normalizeProductId(this.recipeItem?.id);
+    if (dishId == null || !this.selectedVariantDishId || this.variantDishAssignLoading()) {
+      return;
+    }
+    this.variantDishAssignLoading.set(true);
+    const qty = this.selectedVariantCantidad > 0 ? this.selectedVariantCantidad : 1;
+    const uni = this.selectedVariantUnidad || 'pieza';
+    const precio = this.selectedVariantPrecio || 0;
+    const grupo = this.selectedVariantGrupo || '';
+
+    this.inventoryService.addVariantDish(
+      dishId,
+      this.selectedVariantDishId,
+      precio,
+      grupo,
+      qty,
+      uni
+    ).subscribe({
+      next: (res) => {
+        this.variantDishAssignLoading.set(false);
+        this.selectedVariantDishId = null;
+        this.selectedVariantPrecio = 0;
+        this.selectedVariantGrupo = '';
+        this.selectedVariantCantidad = 1;
+        this.selectedVariantUnidad = 'pieza';
+        this.loadAssignedVariantDishes(dishId);
+        if (res?.code !== 200) {
+          this.messageService.add({ severity: 'warn', summary: 'Atención', detail: res?.message || 'No se pudo vincular la variable', life: 3000 });
+          return;
+        }
+        this.messageService.add({ severity: 'success', summary: 'Variable agregada', detail: 'Platillo/bebida vinculado como variante de esta receta', life: 3000 });
+      },
+      error: (err) => {
+        this.variantDishAssignLoading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo agregar la variable', life: 3000 });
+      }
+    });
+  }
+
+  saveAssignedVariantDish(v: any): void {
+    if (!v || !v.id) return;
+    const currentPrecio = Number(v.precio ?? 0);
+    const currentCantidad = Number(v.cantidad ?? 1);
+    const currentUnidad = v.unidad || 'pieza';
+    const currentGrupo = v.grupo || '';
+
+    if (
+      v._savedPrecio === currentPrecio &&
+      v._savedCantidad === currentCantidad &&
+      v._savedUnidad === currentUnidad &&
+      v._savedGrupo === currentGrupo
+    ) {
+      return;
+    }
+
+    const prevPrecio = v._savedPrecio ?? 0;
+    const prevCantidad = v._savedCantidad ?? 1;
+    const prevUnidad = v._savedUnidad ?? 'pieza';
+    const prevGrupo = v._savedGrupo ?? '';
+
+    v._savedPrecio = currentPrecio;
+    v._savedCantidad = currentCantidad;
+    v._savedUnidad = currentUnidad;
+    v._savedGrupo = currentGrupo;
+
+    this.inventoryService.updateVariantDish(
+      v.id,
+      currentPrecio,
+      currentGrupo,
+      currentCantidad,
+      currentUnidad
+    ).subscribe({
+      next: (res) => {
+        if (res?.code !== 200) {
+          v._savedPrecio = prevPrecio;
+          v._savedCantidad = prevCantidad;
+          v._savedUnidad = prevUnidad;
+          v._savedGrupo = prevGrupo;
+          v.precio = prevPrecio;
+          v.cantidad = prevCantidad;
+          v.unidad = prevUnidad;
+          v.grupo = prevGrupo;
+          this.messageService.add({ severity: 'warn', summary: 'Atención', detail: res?.message || 'No se pudo actualizar la variable', life: 3000 });
+          return;
+        }
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Variable actualizada',
+          detail: `"${v.variantDishName || 'Variante'}" actualizada correctamente`,
+          life: 2500
+        });
+      },
+      error: (err) => {
+        v._savedPrecio = prevPrecio;
+        v._savedCantidad = prevCantidad;
+        v._savedUnidad = prevUnidad;
+        v._savedGrupo = prevGrupo;
+        v.precio = prevPrecio;
+        v.cantidad = prevCantidad;
+        v.unidad = prevUnidad;
+        v.grupo = prevGrupo;
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo actualizar la variable', life: 3000 });
+      }
+    });
+  }
+
+  removeAssignedVariantDish(v: any): void {
+    if (!v || !v.id) return;
+    this.confirmationService.confirm({
+      message: `¿Desvincular "${v.variantDishName}" como variante de esta receta?`,
+      header: 'Confirmar desvinculación',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.inventoryService.removeVariantDish(v.id).subscribe({
+          next: () => {
+            this.assignedVariantDishes.update((list) => list.filter((item) => item.id !== v.id));
+            this.messageService.add({ severity: 'success', summary: 'Variable eliminada', detail: `Se quitó "${v.variantDishName}" de la receta`, life: 2500 });
+          },
+          error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo quitar la variable', life: 3000 })
+        });
+      }
+    });
+  }
+
+  trackByVariantDish(_index: number, item: any): number {
+    return item?.id ?? _index;
   }
 
   recipeIngredientCount(product: any): number {
@@ -585,6 +958,8 @@ export class RecetasComponent implements OnInit {
     this.subRecetaVisible = true;
     this.subRecetaSaving.set(false);
     this.subRecetaNombre = '';
+    this.subRecetaTamanoLote = 1000;
+    this.subRecetaUnidad = 'mililitros';
     this.subRecetaInsumoId = null;
     this.subRecetaCantidad = 0;
     this.subRecetaLines.set([]);
@@ -627,8 +1002,10 @@ export class RecetasComponent implements OnInit {
       this.messageService.add({ severity: 'warn', summary: 'Sin insumos', detail: 'Agrega al menos un insumo a la sub-receta', life: 3000 });
       return;
     }
+    const tamano = Number(this.subRecetaTamanoLote) > 0 ? Number(this.subRecetaTamanoLote) : 1000;
+    const uni = this.subRecetaUnidad || 'mililitros';
     this.subRecetaSaving.set(true);
-    this.inventoryService.createSubReceta(this.tenantId, this.subRecetaNombre.trim(), lines).subscribe({
+    this.inventoryService.createSubReceta(this.tenantId, this.subRecetaNombre.trim(), lines, tamano, uni).subscribe({
       next: (res) => {
         this.subRecetaSaving.set(false);
         if (res?.code !== 200) {
@@ -636,12 +1013,82 @@ export class RecetasComponent implements OnInit {
           return;
         }
         this.subRecetaVisible = false;
-        this.messageService.add({ severity: 'success', summary: 'Sub-receta creada', detail: `"${this.subRecetaNombre.trim()}" está lista para asignarse a platillos o bebidas`, life: 4000 });
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Sub-receta creada',
+          detail: `"${this.subRecetaNombre.trim()}" con rendimiento de ${tamano} ${uni} creada exitosamente`,
+          life: 4000
+        });
         this.loadSubRecetas();
       },
       error: (err) => {
         this.subRecetaSaving.set(false);
         this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.message || 'No se pudo crear la sub-receta', life: 3000 });
+      }
+    });
+  }
+
+  /* ============ Restock / Producción de sub-receta ============ */
+
+  openRestockModal(sr: any): void {
+    if (!sr) return;
+    this.restockItem = sr;
+    this.restockLotes = 1;
+    this.restockLoading.set(false);
+    this.restockModalVisible = true;
+  }
+
+  closeRestockModal(): void {
+    this.restockModalVisible = false;
+    this.restockItem = null;
+    this.restockLotes = 1;
+    this.restockLoading.set(false);
+  }
+
+  confirmRestock(): void {
+    if (!this.restockItem || this.restockLotes <= 0 || this.restockLoading()) {
+      return;
+    }
+    this.restockLoading.set(true);
+    const subRecetaId = this.restockItem.id;
+    const lotes = Number(this.restockLotes) > 0 ? Number(this.restockLotes) : 1;
+    const tamanoLote = Number(this.restockItem.tamanoLote || 1000);
+    const unidad = this.restockItem.unidad || 'mililitros';
+
+    this.inventoryService.producirLoteSubReceta(subRecetaId, lotes).subscribe({
+      next: (res) => {
+        this.restockLoading.set(false);
+        if (res?.code !== 200) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error al preparar lote',
+            detail: res?.message || 'No se pudo generar el restock de la sub-receta',
+            life: 5000
+          });
+          return;
+        }
+        const data = res?.data;
+        const totalProducido = data?.producidoTotal ?? (tamanoLote * lotes);
+        const nuevoStock = data?.nuevoStock ?? ((this.restockItem.stock || 0) + totalProducido);
+
+        this.messageService.add({
+          severity: 'success',
+          summary: '¡Producción generada!',
+          detail: `Se prepararon ${lotes} lote(s) (+${totalProducido} ${unidad}) de "${this.restockItem.name}". Stock actual: ${nuevoStock} ${unidad}. Insumos descontados correctamente.`,
+          life: 5000
+        });
+        this.closeRestockModal();
+        this.loadSubRecetas();
+        this.loadInsumos();
+      },
+      error: (err) => {
+        this.restockLoading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Insumos insuficientes o error',
+          detail: err?.error?.message || 'No se pudo generar la preparación del lote. Verifica el inventario de insumos.',
+          life: 5000
+        });
       }
     });
   }

@@ -202,7 +202,7 @@
         [rows]="10"
         [rowsPerPageOptions]="[5, 10, 20, 50]"
         styleClass="p-datatable-sm"
-        [globalFilterFields]="['folio', 'responsable', 'mesa', 'motivo', 'itemsResumen', 'mesero']"
+        [globalFilterFields]="['folio', 'responsable', 'mesa', 'categoria', 'comentario', 'motivo', 'itemsResumen', 'mesero']"
         [showCurrentPageReport]="true"
         currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} tickets"
         [tableStyle]="{ 'min-width': '65rem' }"
@@ -214,7 +214,7 @@
               <input
                 pInputText
                 type="text"
-                placeholder="Buscar por folio, responsable, mesa, motivo..."
+                placeholder="Buscar por folio, responsable, mesa, categoría, motivo..."
                 (input)="dtDetalle.filterGlobal($any($event.target).value, 'contains')"
               />
             </p-iconfield>
@@ -241,8 +241,17 @@
                     <i class="pi pi-user mr-1 text-slate-400"></i>
                     {{ valorCelda(fila, col) }}
                   </span>
+                } @else if (col.key === 'categoria') {
+                  <span class="font-semibold text-red-700 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full text-xs inline-flex items-center gap-1">
+                    <i class="pi pi-tag text-[10px]"></i>
+                    {{ valorCelda(fila, col) }}
+                  </span>
+                } @else if (col.key === 'comentario') {
+                  <span class="text-xs text-slate-600 italic block max-w-xs truncate" [title]="fila['comentario'] || ''">
+                    {{ valorCelda(fila, col) || '—' }}
+                  </span>
                 } @else if (col.key === 'motivo') {
-                  <span class="font-semibold text-red-700 bg-red-50 px-2 py-1 rounded">
+                  <span class="text-xs text-slate-600" [title]="fila['motivo'] || ''">
                     {{ valorCelda(fila, col) }}
                   </span>
                 } @else if (col.key === 'total') {
@@ -293,14 +302,22 @@
     (onHide)="cerrarDetalle()"
   >
     @if (ticketSeleccionado(); as t) {
-      <!-- Cuadro Destacado del Motivo de Cancelación -->
-      <div class="motivo-box">
-        <div class="motivo-label">
-          <i class="pi pi-exclamation-circle"></i>
-          Motivo de Cancelación Registrado
+      <!-- Cuadro Destacado del Motivo y Categoría de Cancelación -->
+      <div class="motivo-box" style="display: flex; flex-direction: column; gap: 0.5rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+          <div class="motivo-label">
+            <i class="pi pi-chart-pie mr-1 text-red-600"></i>
+            Categoría:
+            <span class="font-bold text-red-700 bg-red-100 px-2.5 py-0.5 rounded-full ml-1 text-xs">
+              {{ t.categoria || t.motivo || 'Sin categoría' }}
+            </span>
+          </div>
         </div>
-        <div class="motivo-text">
-          "{{ t.motivo || 'Sin motivo especificado' }}"
+        <div class="motivo-text" style="font-size: 0.95rem; color: #1e293b; margin-top: 0.25rem;">
+          <strong style="color: #64748b; font-size: 0.8rem; text-transform: uppercase; display: block; margin-bottom: 0.25rem;">
+            Comentarios / Observaciones:
+          </strong>
+          "{{ t.comentario || t.motivo || 'Sin comentarios registrados' }}"
         </div>
       </div>
 

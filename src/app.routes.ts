@@ -26,12 +26,13 @@ export const appRoutes: Routes = [
                 path: '',
                 component: AppLayout,
                 canActivate: [AuthGuard],
-                canActivateChild: [AuthGuard],
+                canActivateChild: [AuthGuard, RoleGuard],
                 children: [
                     { path: '', loadComponent: () => import('@/pages/dashboard/dashboard.component').then(m => m.DashboardComponent), canActivate: [RoleHomeGuard], pathMatch: 'full' },
-                    { path: 'kpis', loadComponent: () => import('@/pages/dashboard/dashboard.component').then(m => m.DashboardComponent), canActivate: [RoleGuard], data: { roles: ['ADMIN', 'MARKETING', 'CAJA'] } },
+                    { path: 'kpis', loadComponent: () => import('@/pages/dashboard/dashboard.component').then(m => m.DashboardComponent), canActivate: [RoleGuard], data: { roles: ['ADMIN', 'MARKETING'] } },
                     { path: 'mesero', loadComponent: () => import('@/pages/waiter/waiter-dashboard.component').then(m => m.WaiterDashboardComponent), canActivate: [RoleGuard, WaiterGuard], data: { roles: ['MESERO'] }, title: 'Dashboard Mesero' },
                     { path: 'adminPage', loadComponent: () => import('@/pages/admin-page/landing-editor.component').then(m => m.LandingEditorComponent) },
+                    { path: 'logo-negocio', loadComponent: () => import('@/pages/logo-negocio/logo-negocio.component').then(m => m.LogoNegocioComponent), title: 'Logo del Negocio', canActivate: [PermissionGuard], data: { permission: 'view_dashboard' } },
                     { path: 'categoriesMenu', loadComponent: () => import('@/pages/categories-menu/categories-menu.component').then(m => m.CategoriesMenuComponent) },
                     { path: 'adminMenu', loadComponent: () => import('@/pages/products-menu/products-menu.component').then(m => m.ProductMenuComponent) },
                     // Campaign routes
@@ -47,7 +48,7 @@ export const appRoutes: Routes = [
                     { path: 'bodega', loadComponent: () => import('@/pages/bodega/bodega.component').then(m => m.BodegaComponent), title: 'Bodega', canActivate: [PermissionGuard], data: { permission: 'view_products' } },
                     { path: 'reportes/transferencias', loadComponent: () => import('@/pages/reportes/transferencias-report.component').then(m => m.TransferenciasReportComponent), title: 'Reportes - Transferencias de Bodega', canActivate: [PermissionGuard], data: { permission: 'view_products' } },
                     { path: 'reportes/mermas', loadComponent: () => import('@/pages/reportes/mermas-report.component').then(m => m.MermasReportComponent), title: 'Reportes - Mermas', canActivate: [PermissionGuard], data: { permission: 'manage_mermas' } },
-                    { path: 'reportes/ventas', loadComponent: () => import('@/pages/caja/caja.component').then(m => m.CajaComponent), title: 'Reportes - Ventas y Comandas', canActivate: [RoleGuard], data: { roles: ['ADMIN', 'CAJA', 'MESERO'], initialView: 'reporte' } },
+                    { path: 'reportes/ventas', loadComponent: () => import('@/pages/caja/caja.component').then(m => m.CajaComponent), title: 'Reportes - Ventas y Comandas', canActivate: [RoleGuard], data: { roles: ['ADMIN'], initialView: 'reporte' } },
                     // Modulo maestro de Reportes y Analitica (12 reportes en 4 pilares).
                     // Ruta propia para no chocar con las vistas de reportes del POS.
                     {
@@ -55,14 +56,23 @@ export const appRoutes: Routes = [
                         loadComponent: () => import('@/pages/reportes/reportes-shell.component').then(m => m.ReportesShellComponent),
                         title: 'Reportes y Analitica',
                         canActivate: [RoleGuard],
-                        data: { roles: ['ADMIN', 'CAJA'] },
+                        data: { roles: ['ADMIN'] },
                         children: [
                             { path: '', pathMatch: 'full', redirectTo: 'ventas' },
                             { path: 'ventas', loadComponent: () => import('@/pages/reportes/ventas-tendencias-report.component').then(m => m.VentasTendenciasReportComponent), title: '1.1 Dashboard de Ventas y Tendencias' },
                             { path: 'corte-caja', loadComponent: () => import('@/pages/reportes/corte-caja-report.component').then(m => m.CorteCajaReportComponent), title: '1.2 Corte de Caja y Conciliacion' },
-                            { path: 'mermas', loadComponent: () => import('@/pages/reportes/mermas-auditoria-report.component').then(m => m.MermasAuditoriaReportComponent), title: '2.3 Auditoria de Mermas' },
-                            { path: 'stock-minimo', loadComponent: () => import('@/pages/reportes/stock-minimo-report.component').then(m => m.StockMinimoReportComponent), title: '2.4 Alertas de Stock Mínimo' },
+                            { path: 'corte-insumos', loadComponent: () => import('@/pages/reportes/corte-insumos-report.component').then(m => m.CorteInsumosReportComponent), title: '2.1 Corte Diario de Insumos (Cocina / Barra)' },
+                            { path: 'ingenieria-menu', loadComponent: () => import('@/pages/reportes/ingenieria-menu-report.component').then(m => m.IngenieriaMenuReportComponent), title: '2.2 Ingeniería del Menú' },
+                            { path: 'kardex', loadComponent: () => import('@/pages/reportes/kardex-report.component').then(m => m.KardexReportComponent), title: '2.3 Kardex de Insumos' },
+                            { path: 'mermas', loadComponent: () => import('@/pages/reportes/mermas-auditoria-report.component').then(m => m.MermasAuditoriaReportComponent), title: '2.4 Auditoria de Mermas' },
+                            { path: 'stock-minimo', loadComponent: () => import('@/pages/reportes/stock-minimo-report.component').then(m => m.StockMinimoReportComponent), title: '2.5 Alertas de Stock Mínimo' },
+                            { path: 'rfm', loadComponent: () => import('@/pages/reportes/rfm-report.component').then(m => m.RfmReportComponent), title: '3.1 Análisis RFM de Clientes' },
+                            { path: 'campanas', loadComponent: () => import('@/pages/reportes/campanas-report.component').then(m => m.CampanasReportComponent), title: '3.2 Rendimiento de Campañas' },
                             { path: 'tickets-cancelados', loadComponent: () => import('@/pages/reportes/tickets-cancelados-report.component').then(m => m.TicketsCanceladosReportComponent), title: '4.1 Auditoria de Tickets Cancelados' },
+                            { path: 'cortes-diarios', loadComponent: () => import('@/pages/reportes/cortes-diarios-report.component').then(m => m.CortesDiariosReportComponent), title: '4.2 Auditoría de Cortes del Día' },
+                            { path: 'tiempos', loadComponent: () => import('@/pages/reportes/tiempos-servicio-report.component').then(m => m.TiemposServicioReportComponent), title: '4.3 Tiempos de Servicio' },
+                            { path: 'meseros', loadComponent: () => import('@/pages/reportes/meseros-report.component').then(m => m.MeserosReportComponent), title: '4.4 Rendimiento por Mesero' },
+                            { path: 'mapa-calor', loadComponent: () => import('@/pages/reportes/mapa-calor-report.component').then(m => m.MapaCalorReportComponent), title: '4.5 Mapa de Calor de Afluencia' },
                         ]
                     },
                     { path: 'recetas', loadComponent: () => import('@/pages/recetas/recetas.component').then(m => m.RecetasComponent), title: 'Recetas', canActivate: [PermissionGuard], data: { permission: 'manage_recetas' } },
@@ -78,10 +88,10 @@ export const appRoutes: Routes = [
                     { path: 'facturacion', loadComponent: () => import('@/pages/facturacion/facturacion.component').then(m => m.FacturacionComponent), title: 'Facturación' },
                     { path: 'cocina-dashboard', loadComponent: () => import('@/pages/kitchen/kitchen-dashboard.component').then(m => m.KitchenDashboardComponent), title: 'Kitchndix - Dashboard Cocina', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'COCINA'], permission: 'dashboard_kitchen' } },
                     { path: 'cocina', loadComponent: () => import('@/pages/kitchen/kitchen.component').then(m => m.KitchenComponent), title: 'Kitchndix - Cocina', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'COCINA'], permission: 'view_kitchen_orders' } },
-                    { path: 'barra', loadComponent: () => import('@/pages/barra/barra.component').then(m => m.BarraComponent), title: 'Kitchndix - Barra', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'COCINA'], permission: 'view_kitchen_orders' } },
+                    { path: 'barra', loadComponent: () => import('@/pages/barra/barra.component').then(m => m.BarraComponent), title: 'Kitchndix - Barra', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN', 'COCINA', 'BARRA'], permission: 'view_kitchen_orders' } },
                     // Hostess
                     { path: 'mesas', loadComponent: () => import('@/pages/hostess/mapeo-mesas/mapeo-mesas.component').then(m => m.MapeoMesasComponent), title: 'Mapeo de Mesas', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['HOSTESS', 'ADMIN'], permission: 'view_mesas' } },
-                    { path: 'reservaciones', loadComponent: () => import('@/pages/hostess/reservaciones/reservaciones.component').then(m => m.ReservacionesComponent), title: 'Reservaciones', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['HOSTESS', 'ADMIN'], permission: 'view_reservaciones' } },
+                    { path: 'reservaciones', loadComponent: () => import('@/pages/hostess/reservaciones/reservaciones.component').then(m => m.ReservacionesComponent), title: 'Reservaciones', canActivate: [RoleGuard, PermissionGuard], data: { roles: ['ADMIN'], permission: 'view_reservaciones' } },
                     // Ruta eliminada: menu-print
                     { path: 'menu-classic-print', loadComponent: () => import('@/pages/menu-classic-print/menu-classic-print.component').then(m => m.MenuClassicPrintComponent), title: 'Imprimir Menú Clásico' }
                 ]

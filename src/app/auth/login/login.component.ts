@@ -49,6 +49,17 @@ export class LoginComponent {
 
     constructor() {
         this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        const reason = this.route.snapshot.queryParamMap.get('reason');
+        if (reason === 'inactivity') {
+            setTimeout(() => {
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Sesión Cerrada',
+                    detail: 'Tu sesión se cerró automáticamente tras 3 minutos de inactividad.',
+                    life: 6000
+                });
+            }, 300);
+        }
     }
 
     submit() {
@@ -98,11 +109,7 @@ export class LoginComponent {
 
                             // Redirigir
                             setTimeout(() => {
-                                if (this.returnUrl) {
-                                    this.router.navigateByUrl(this.returnUrl);
-                                } else {
-                                    this.router.navigateByUrl(this.resolveDefaultRoute());
-                                }
+                                this.navigateAfterLogin();
                             }, 500);
                         } catch (e) {
                             console.error('Error procesando login:', e);
@@ -124,11 +131,7 @@ export class LoginComponent {
 
                             // Redirigir
                             setTimeout(() => {
-                                if (this.returnUrl) {
-                                    this.router.navigateByUrl(this.returnUrl);
-                                } else {
-                                    this.router.navigateByUrl(this.resolveDefaultRoute());
-                                }
+                                this.navigateAfterLogin();
                             }, 500);
                         } catch (e) {
                             console.error('Error procesando login:', e);
@@ -181,9 +184,21 @@ export class LoginComponent {
         });
     }
 
-    private resolveDefaultRoute(): string {
+    private navigateAfterLogin(): void {
         const currentUser = this.authService.getCurrentUser();
-        const userRole = currentUser?.role || currentUser?.rol;
-        return homeRouteForRole(userRole);
+        const rawRole = currentUser?.role || currentUser?.rol || '';
+        const userRole = rawRole.toUpperCase();
+        const operationalRoles = ['BARRA', 'MESERO', 'HOSTESS', 'CAJA'];
+
+        if (operationalRoles.includes(userRole)) {
+            this.router.navigateByUrl(homeRouteForRole(userRole));
+            return;
+        }
+
+        if (this.returnUrl) {
+            this.router.navigateByUrl(this.returnUrl);
+        } else {
+            this.router.navigateByUrl(homeRouteForRole(userRole));
+        }
     }
 }

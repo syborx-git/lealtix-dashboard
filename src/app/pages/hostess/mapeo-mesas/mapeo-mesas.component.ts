@@ -18,7 +18,7 @@ import { MesaService } from '../services/mesa.service';
 import { ReservaService } from '../services/reserva.service';
 import { UserService } from '@/pages/user-management/services/user.service';
 import { AuthService } from '@/auth/auth.service';
-import { MesaDTO, MesaEstado, MesaForma, EstadoTagSeverity, MESA_ESTADO_COLORS, MESA_FORMA_OPTIONS, mesaSize, mesaTamano, rotacionGrados } from '../models/mesa.model';
+import { MesaDTO, MesaRequest, MesaEstado, MesaForma, MesaGrupo, EstadoTagSeverity, MESA_ESTADO_COLORS, MESA_FORMA_OPTIONS, mesaSize, mesaTamano, rotacionGrados } from '../models/mesa.model';
 import { ReservaDTO, ReservaEstado, RESERVA_ESTADO_COLORS } from '../models/reserva.model';
 
 // Dimensiones lógicas del plano (px). Las coordenadas guardadas en BD usan esta misma escala.
@@ -35,6 +35,27 @@ const GRUPO_PADDING = 7;
 
 type ModoVista = 'edicion' | 'operacion';
 
+type ResizeEdge = 'e' | 'w' | 's' | 'n' | 'se';
+
+interface ResizeState {
+    id: number;
+    edge: ResizeEdge;
+    fixedL: number;
+    fixedR: number;
+    fixedT: number;
+    fixedB: number;
+    grabOffsetX: number;
+    grabOffsetY: number;
+    initialWidth: number;
+    initialHeight: number;
+    initialPosX: number;
+    initialPosY: number;
+    currentWidth: number;
+    currentHeight: number;
+    currentPosX: number;
+    currentPosY: number;
+}
+
 interface DragState {
     id: number;
     x: number;
@@ -46,17 +67,6 @@ interface MesaPopover {
     mesa: MesaDTO;
     left: number;
     top: number;
-}
-
-interface MesaGrupo {
-    grupoId: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    mesas: MesaDTO[];
-    capacidadTotal: number;
-    etiqueta: string;
 }
 
 interface EstadoOption {
@@ -90,6 +100,7 @@ interface EstadoOption {
 export class MapeoMesasComponent implements OnInit {
     readonly workspaceW = WORKSPACE_W;
     readonly workspaceH = WORKSPACE_H;
+    readonly Math = Math;
     readonly formaOptions = MESA_FORMA_OPTIONS;
 
     mesas = signal<MesaDTO[]>([]);
@@ -98,6 +109,7 @@ export class MapeoMesasComponent implements OnInit {
     reservasLoading = signal(false);
     loading = signal(false);
     drag = signal<DragState | null>(null);
+    resize = signal<ResizeState | null>(null);
 
     tenantId = 0;
 
@@ -123,10 +135,30 @@ export class MapeoMesasComponent implements OnInit {
         { label: 'Operación', value: 'operacion', icon: 'pi pi-bolt' }
     ];
 
-    // Mesas agrupadas temporalmente, con su caja delimitadora para el borde contenedor
+    // ==========================================================================
+    // ÁREAS DEL LOCAL (Pizarrón por Área)
+    // ==========================================================================
+    areas = signal<string[]>(['Principal']);
+    areaSeleccionada = signal<string>('Principal');
+    nuevaAreaDialogVisible = false;
+    formNuevaAreaNombre = '';
+    formArea = 'Principal';
+
+    /** Mesas del área activa actualmente seleccionada */
+    mesasDelArea = computed<MesaDTO[]>(() => {
+        const areaActual = this.areaSeleccionada() || 'Principal';
+        return this.mesas().filter(m => (m.area || 'Principal') === areaActual);
+    });
+
+    /** Opciones de áreas para el selector del formulario */
+    areaOptions = computed(() => {
+        return this.areas().map(a => ({ label: a, value: a }));
+    });
+
+    // Mesas agrupadas temporalmente en el área activa
     grupoTemporal = computed<MesaGrupo[]>(() => {
         const byGroup = new Map<string, MesaDTO[]>();
-        this.mesas().forEach(m => {
+        this.mesasDelArea().forEach(m => {
             if (m.idGrupoTemporal) {
                 const list = byGroup.get(m.idGrupoTemporal) || [];
                 list.push(m);
@@ -165,8 +197,9 @@ export class MapeoMesasComponent implements OnInit {
     editingMesa: MesaDTO | null = null;
     saving = false;
     formNombre = '';
+    formIdentificador = '';
     formNumero: number | null = null;
-    formCapacidad: number = 2;
+    formCapacidad: number = 4;
     formEstado: MesaEstado = 'LIBRE';
     formForma: MesaForma = 'cuadrada';
     formRotacion = 0;
@@ -196,11 +229,40 @@ export class MapeoMesasComponent implements OnInit {
     // CARGA DE DATOS
     // ==========================================================================
 
+    private normalizeMesas(mesas: MesaDTO[]): MesaDTO[] {
+        return mesas.map(m => {
+            const rot = rotacionGrados(m.rotacion);
+            if (rot % 180 !== 0 && m.ancho && m.alto) {
+                // Mesas con rotación legacy de 90° o 270°: se normalizan a dimensiones visuales de pantalla directas
+                return {
+                    ...m,
+                    ancho: m.alto,
+                    alto: m.ancho,
+                    rotacion: 0
+                };
+            }
+            return m;
+        });
+    }
+
     loadMesas() {
         this.loading.set(true);
         this.mesaService.getMesas(this.tenantId).subscribe({
             next: (res) => {
-                this.mesas.set(this.applyDefaultPositions(res || []));
+                const normalized = this.applyDefaultPositions(this.normalizeMesas(res || []));
+                this.mesas.set(normalized);
+
+                // Sincronizar lista de áreas con las presentes en las mesas y localStorage
+                const storedAreas = this.loadStoredAreas();
+                const uniqueAreas = new Set<string>(['Principal', ...this.areas(), ...storedAreas]);
+                normalized.forEach(m => {
+                    if (m.area && m.area.trim()) {
+                        uniqueAreas.add(m.area.trim());
+                    }
+                });
+                const areasList = Array.from(uniqueAreas);
+                this.areas.set(areasList);
+                this.saveStoredAreas(areasList);
                 this.loading.set(false);
             },
             error: () => {
@@ -294,11 +356,11 @@ export class MapeoMesasComponent implements OnInit {
     }
 
     // ==========================================================================
-    // DRAG-AND-DROP (Modo Edición)
+    // DRAG-AND-DROP Y REDIMENSIÓN DE ARISTAS (Modo Edición)
     // ==========================================================================
 
     onMesaPointerDown(event: PointerEvent, mesa: MesaDTO) {
-        if (this.modo !== 'edicion' || mesa.id == null) {
+        if (this.modo !== 'edicion' || mesa.id == null || this.resize() != null) {
             return;
         }
         event.preventDefault();
@@ -326,9 +388,64 @@ export class MapeoMesasComponent implements OnInit {
         });
     }
 
+    onResizePointerDown(event: PointerEvent, mesa: MesaDTO, edge: ResizeEdge) {
+        if (this.modo !== 'edicion' || mesa.id == null) {
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        this.closePopover();
+        this.drag.set(null);
+
+        const workspace = document.querySelector('.workspace') as HTMLElement | null;
+        if (!workspace) return;
+        workspace.setPointerCapture(event.pointerId);
+
+        const rect = workspace.getBoundingClientRect();
+        const scaleX = WORKSPACE_W / rect.width;
+        const scaleY = WORKSPACE_H / rect.height;
+        const localX = (event.clientX - rect.left) * scaleX;
+        const localY = (event.clientY - rect.top) * scaleY;
+
+        const currentSize = mesaTamano(mesa);
+        const initialWidth = mesa.ancho ?? currentSize.width;
+        const initialHeight = mesa.alto ?? currentSize.height;
+        const initialPosX = mesa.posicionX ?? DEFAULT_X;
+        const initialPosY = mesa.posicionY ?? DEFAULT_Y;
+
+        const fixedL = initialPosX - initialWidth / 2;
+        const fixedR = initialPosX + initialWidth / 2;
+        const fixedT = initialPosY - initialHeight / 2;
+        const fixedB = initialPosY + initialHeight / 2;
+
+        const grabTargetX = (edge === 'e' || edge === 'se') ? fixedR : (edge === 'w' ? fixedL : initialPosX);
+        const grabTargetY = (edge === 's' || edge === 'se') ? fixedB : (edge === 'n' ? fixedT : initialPosY);
+
+        this.resize.set({
+            id: mesa.id,
+            edge,
+            fixedL,
+            fixedR,
+            fixedT,
+            fixedB,
+            grabOffsetX: localX - grabTargetX,
+            grabOffsetY: localY - grabTargetY,
+            initialWidth,
+            initialHeight,
+            initialPosX,
+            initialPosY,
+            currentWidth: initialWidth,
+            currentHeight: initialHeight,
+            currentPosX: initialPosX,
+            currentPosY: initialPosY
+        });
+    }
+
     onWorkspacePointerMove(event: PointerEvent) {
+        const res = this.resize();
         const drag = this.drag();
-        if (!drag) {
+
+        if (!res && !drag) {
             return;
         }
         event.preventDefault();
@@ -343,16 +460,150 @@ export class MapeoMesasComponent implements OnInit {
         const localX = (event.clientX - rect.left) * scaleX;
         const localY = (event.clientY - rect.top) * scaleY;
 
-        const current = this.mesas().find(m => m.id === drag.id);
-        const size = mesaTamano(current as MesaDTO);
+        if (res) {
+            const curX = localX - res.grabOffsetX;
+            const curY = localY - res.grabOffsetY;
 
-        const x = Math.min(Math.max(localX, size.width / 2), WORKSPACE_W - size.width / 2);
-        const y = Math.min(Math.max(localY, size.height / 2), WORKSPACE_H - size.height / 2);
+            // Medida mínima equivalente a una mesa cuadrada estándar (80px).
+            // Impide que el usuario pueda hacer una mesa super delgada o casi imperceptible.
+            const MIN_DIM = 80;
+            const MAX_DIM = 600;
 
-        if (Math.hypot(x - drag.x, y - drag.y) > 4) {
-            drag.moved = true;
+            let w = res.initialWidth;
+            let h = res.initialHeight;
+            let x = res.initialPosX;
+            let y = res.initialPosY;
+
+            switch (res.edge) {
+                case 'e': {
+                    // El lado izquierdo queda fijo. Solo se mueve el lado derecho. Altura no cambia.
+                    const targetR = Math.max(res.fixedL + MIN_DIM, Math.min(curX, res.fixedL + MAX_DIM, WORKSPACE_W));
+                    w = targetR - res.fixedL;
+                    x = res.fixedL + w / 2;
+                    h = res.initialHeight;
+                    y = res.initialPosY;
+                    break;
+                }
+                case 'w': {
+                    // El lado derecho queda fijo. Solo se mueve el lado izquierdo. Altura no cambia.
+                    const targetL = Math.min(res.fixedR - MIN_DIM, Math.max(curX, res.fixedR - MAX_DIM, 0));
+                    w = res.fixedR - targetL;
+                    x = targetL + w / 2;
+                    h = res.initialHeight;
+                    y = res.initialPosY;
+                    break;
+                }
+                case 's': {
+                    // El lado superior queda fijo. Solo se mueve el lado inferior. Ancho no cambia.
+                    const targetB = Math.max(res.fixedT + MIN_DIM, Math.min(curY, res.fixedT + MAX_DIM, WORKSPACE_H));
+                    h = targetB - res.fixedT;
+                    y = res.fixedT + h / 2;
+                    w = res.initialWidth;
+                    x = res.initialPosX;
+                    break;
+                }
+                case 'n': {
+                    // El lado inferior queda fijo. Solo se mueve el lado superior. Ancho no cambia.
+                    const targetT = Math.min(res.fixedB - MIN_DIM, Math.max(curY, res.fixedB - MAX_DIM, 0));
+                    h = res.fixedB - targetT;
+                    y = targetT + h / 2;
+                    w = res.initialWidth;
+                    x = res.initialPosX;
+                    break;
+                }
+                case 'se': {
+                    // Lado izquierdo y superior quedan fijos. Mueven lado derecho e inferior.
+                    const targetR = Math.max(res.fixedL + MIN_DIM, Math.min(curX, res.fixedL + MAX_DIM, WORKSPACE_W));
+                    const targetB = Math.max(res.fixedT + MIN_DIM, Math.min(curY, res.fixedT + MAX_DIM, WORKSPACE_H));
+                    w = targetR - res.fixedL;
+                    h = targetB - res.fixedT;
+                    x = res.fixedL + w / 2;
+                    y = res.fixedT + h / 2;
+                    break;
+                }
+            }
+
+            w = Math.round(w);
+            h = Math.round(h);
+            x = Math.round(x);
+            y = Math.round(y);
+
+            this.patchMesaLocal(res.id, { ancho: w, alto: h, posicionX: x, posicionY: y });
+            this.resize.set({
+                ...res,
+                currentWidth: w,
+                currentHeight: h,
+                currentPosX: x,
+                currentPosY: y
+            });
+            return;
         }
-        this.drag.set({ ...drag, x, y });
+
+        if (drag) {
+            const current = this.mesas().find(m => m.id === drag.id);
+            const size = mesaTamano(current as MesaDTO);
+
+            const x = Math.min(Math.max(localX, size.width / 2), WORKSPACE_W - size.width / 2);
+            const y = Math.min(Math.max(localY, size.height / 2), WORKSPACE_H - size.height / 2);
+
+            if (Math.hypot(x - drag.x, y - drag.y) > 4) {
+                drag.moved = true;
+            }
+            this.drag.set({ ...drag, x, y });
+        }
+    }
+
+    onDragOrResizeEnd(event?: PointerEvent) {
+        if (event) {
+            try {
+                const workspace = document.querySelector('.workspace') as HTMLElement | null;
+                if (workspace && workspace.hasPointerCapture(event.pointerId)) {
+                    workspace.releasePointerCapture(event.pointerId);
+                }
+            } catch {
+                // ignore
+            }
+        }
+        const res = this.resize();
+        if (res) {
+            this.resize.set(null);
+            this.mesaService.updateMesa(res.id, this.tenantId, {
+                ancho: res.currentWidth,
+                alto: res.currentHeight,
+                posicionX: res.currentPosX,
+                posicionY: res.currentPosY
+            }).subscribe({
+                next: (saved) => {
+                    this.patchMesaLocal(res.id, {
+                        ancho: saved.ancho,
+                        alto: saved.alto,
+                        posicionX: saved.posicionX,
+                        posicionY: saved.posicionY
+                    });
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Dimensiones actualizadas',
+                        detail: `Mesa ajustada a ${Math.round(res.currentWidth)} × ${Math.round(res.currentHeight)} px`
+                    });
+                },
+                error: () => {
+                    this.patchMesaLocal(res.id, {
+                        ancho: res.initialWidth,
+                        alto: res.initialHeight,
+                        posicionX: res.initialPosX,
+                        posicionY: res.initialPosY
+                    });
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'No se pudieron guardar las dimensiones de la mesa'
+                    });
+                }
+            });
+            return;
+        }
+
+        this.onDragEnd();
     }
 
     onDragEnd() {
@@ -381,6 +632,10 @@ export class MapeoMesasComponent implements OnInit {
                 this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar la posición de la mesa' });
             }
         });
+    }
+
+    isResizing(mesaId?: number): boolean {
+        return this.resize()?.id === mesaId;
     }
 
     // ==========================================================================
@@ -449,6 +704,11 @@ export class MapeoMesasComponent implements OnInit {
         return mesaId != null && this.selectedIds.has(mesaId);
     }
 
+    /** Cantidad de mesas seleccionadas para unión */
+    numSeleccionadas(): number {
+        return this.selectedIds.size;
+    }
+
     seleccionActiva(): boolean {
         return this.unirMode && this.selectedIds.size >= 2;
     }
@@ -478,9 +738,18 @@ export class MapeoMesasComponent implements OnInit {
         this.mesaService.separarGrupo(this.tenantId, grupoId).subscribe({
             next: (res) => {
                 const byId = new Map(res.map(m => [m.id as number, m]));
-                this.mesas.set(this.mesas().map(m => byId.get(m.id as number) || m));
+                this.mesas.set(this.mesas().map(m => {
+                    const fromServer = byId.get(m.id as number);
+                    if (fromServer) {
+                        return { ...fromServer, estado: 'LIBRE' };
+                    }
+                    if (m.idGrupoTemporal === grupoId) {
+                        return { ...m, idGrupoTemporal: null, estado: 'LIBRE' };
+                    }
+                    return m;
+                }));
                 this.closePopover();
-                this.messageService.add({ severity: 'success', summary: 'Exitoso', detail: 'Mesas separadas' });
+                this.messageService.add({ severity: 'success', summary: 'Exitoso', detail: 'Mesas separadas y liberadas' });
             },
             error: (err) => this.messageService.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudieron separar las mesas' })
         });
@@ -552,9 +821,16 @@ export class MapeoMesasComponent implements OnInit {
     }
 
     rotarMesa(mesa: MesaDTO) {
-        const nueva = (rotacionGrados(mesa.rotacion) + 90) % 360;
-        this.mesaService.updateMesa(mesa.id as number, this.tenantId, { rotacion: nueva }).subscribe({
-            next: (res) => this.patchMesaLocal(res.id as number, { rotacion: res.rotacion }),
+        // Rotar 90° intercambia directamente su ancho horizontal y alto vertical en pantalla
+        const currentSize = mesaTamano(mesa);
+        const nuevoAncho = currentSize.height;
+        const nuevoAlto = currentSize.width;
+        this.mesaService.updateMesa(mesa.id as number, this.tenantId, {
+            ancho: nuevoAncho,
+            alto: nuevoAlto,
+            rotacion: 0
+        }).subscribe({
+            next: (res) => this.patchMesaLocal(res.id as number, { ancho: nuevoAncho, alto: nuevoAlto, rotacion: 0 }),
             error: (err) => this.messageService.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo rotar la mesa' })
         });
     }
@@ -565,14 +841,99 @@ export class MapeoMesasComponent implements OnInit {
     }
 
     // ==========================================================================
+    // GESTIÓN DE ÁREAS (Pizarrón Múltiple)
+    // ==========================================================================
+
+    seleccionarArea(area: string): void {
+        this.areaSeleccionada.set(area);
+        this.cancelarUnion();
+        this.closePopover();
+    }
+
+    abrirNuevaAreaDialog(): void {
+        this.formNuevaAreaNombre = '';
+        this.nuevaAreaDialogVisible = true;
+    }
+
+    guardarNuevaArea(): void {
+        const nombre = (this.formNuevaAreaNombre || '').trim();
+        if (!nombre) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Validación',
+                detail: 'Debes ingresar un nombre o identificador para la nueva área'
+            });
+            return;
+        }
+
+        const actuales = this.areas();
+        const existe = actuales.some(a => a.toLowerCase() === nombre.toLowerCase());
+        if (existe) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Área existente',
+                detail: `El área "${nombre}" ya existe en el plano`
+            });
+            const existingName = actuales.find(a => a.toLowerCase() === nombre.toLowerCase()) || nombre;
+            this.areaSeleccionada.set(existingName);
+            this.nuevaAreaDialogVisible = false;
+            return;
+        }
+
+        // Agregar la nueva área y seleccionarla de inmediato con pizarrón en blanco
+        const nuevasAreas = [...actuales, nombre];
+        this.areas.set(nuevasAreas);
+        this.saveStoredAreas(nuevasAreas);
+        this.areaSeleccionada.set(nombre);
+        this.nuevaAreaDialogVisible = false;
+
+        this.messageService.add({
+            severity: 'success',
+            summary: 'Nueva Área Creada',
+            detail: `Pizarrón en blanco establecido para "${nombre}". Puedes comenzar a agregar sus mesas.`
+        });
+    }
+
+    private getAreasStorageKey(): string {
+        return `lealtix_areas_${this.tenantId || 0}`;
+    }
+
+    private loadStoredAreas(): string[] {
+        try {
+            const raw = localStorage.getItem(this.getAreasStorageKey());
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) return parsed.filter((a: any) => typeof a === 'string' && a.trim().length > 0);
+            }
+        } catch {
+            // ignore
+        }
+        return [];
+    }
+
+    private saveStoredAreas(areas: string[]): void {
+        try {
+            localStorage.setItem(this.getAreasStorageKey(), JSON.stringify(areas));
+        } catch {
+            // ignore
+        }
+    }
+
+    conteoMesasPorArea(area: string): number {
+        return this.mesas().filter(m => (m.area || 'Principal') === area).length;
+    }
+
+    // ==========================================================================
     // CRUD (diálogo crear/editar)
     // ==========================================================================
 
     crearNuevaMesa() {
         this.editingMesa = null;
         this.formNombre = '';
+        this.formArea = this.areaSeleccionada() || 'Principal';
+        this.formIdentificador = '';
         this.formNumero = null;
-        this.formCapacidad = 2;
+        this.formCapacidad = 4;
         this.formEstado = 'LIBRE';
         this.formForma = 'cuadrada';
         this.formRotacion = 0;
@@ -582,29 +943,54 @@ export class MapeoMesasComponent implements OnInit {
     openEditMesa(mesa: MesaDTO) {
         this.editingMesa = mesa;
         this.formNombre = mesa.nombre;
+        this.formArea = mesa.area || this.areaSeleccionada() || 'Principal';
+        this.formIdentificador = mesa.identificador || (mesa.numero != null ? String(mesa.numero) : (mesa.id != null ? String(mesa.id) : ''));
         this.formNumero = mesa.numero ?? null;
-        this.formCapacidad = mesa.capacidad;
-        this.formEstado = mesa.estado;
-        this.formForma = mesa.forma ?? 'cuadrada';
+        this.formCapacidad = mesa.capacidad || 4;
+        this.formEstado = mesa.estado || 'LIBRE';
+        this.formForma = mesa.forma === 'redonda' ? 'redonda' : 'cuadrada';
         this.formRotacion = rotacionGrados(mesa.rotacion) % 180 === 90 ? 90 : 0;
         this.mesaDialogVisible = true;
     }
 
     saveMesa() {
-        if (!this.formNombre?.trim() || !this.formCapacidad || this.formCapacidad <= 0) {
-            this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'Nombre y capacidad son obligatorios' });
+        if (!this.formNombre?.trim()) {
+            this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'El nombre a mostrar en el mapa es obligatorio' });
+            return;
+        }
+        if (!this.formIdentificador?.trim()) {
+            this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'El identificador único de la mesa es obligatorio' });
+            return;
+        }
+        if (!this.formCapacidad || this.formCapacidad <= 0) {
+            this.messageService.add({ severity: 'warn', summary: 'Validación', detail: 'La cantidad de personas debe ser mayor a 0' });
             return;
         }
 
         this.saving = true;
-        const payload = {
+        const isRedonda = this.formForma === 'redonda';
+        const finalAncho = isRedonda ? 80 : (this.editingMesa?.ancho ?? 80);
+        const finalAlto = isRedonda ? 80 : (this.editingMesa?.alto ?? 80);
+
+        const numParsed = Number(this.formIdentificador.trim());
+        const numeroVal = !isNaN(numParsed) && Number.isInteger(numParsed) && numParsed > 0
+            ? numParsed
+            : (this.editingMesa?.numero ?? undefined);
+
+        const finalArea = (this.formArea || this.areaSeleccionada() || 'Principal').trim();
+
+        const payload: MesaRequest = {
             nombre: this.formNombre.trim(),
-            numero: this.formNumero ?? undefined,
+            area: finalArea,
+            identificador: this.formIdentificador.trim(),
+            numero: numeroVal,
             capacidad: this.formCapacidad,
             estado: this.formEstado,
             forma: this.formForma,
+            ancho: finalAncho,
+            alto: finalAlto,
             rotacion: this.formRotacion,
-            // Mesa nueva aparece centrada en el plano para que el gerente la arrastre
+            // Mesa nueva aparece centrada en el plano para que el usuario la acomode
             posicionX: this.editingMesa ? undefined : WORKSPACE_W / 2,
             posicionY: this.editingMesa ? undefined : WORKSPACE_H / 2
         };
@@ -617,12 +1003,24 @@ export class MapeoMesasComponent implements OnInit {
             next: (res) => {
                 this.saving = false;
                 this.mesaDialogVisible = false;
-                this.messageService.add({ severity: 'success', summary: 'Exitoso', detail: this.editingMesa ? 'Mesa actualizada' : 'Mesa creada' });
+                if (!this.areas().includes(finalArea)) {
+                    this.areas.set([...this.areas(), finalArea]);
+                }
+                this.areaSeleccionada.set(finalArea);
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Exitoso',
+                    detail: this.editingMesa ? 'Mesa actualizada exitosamente' : 'Mesa registrada exitosamente'
+                });
                 this.loadMesas();
             },
             error: (err) => {
                 this.saving = false;
-                this.messageService.add({ severity: 'error', summary: 'Error', detail: err?.error?.message || 'No se pudo guardar la mesa' });
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: err?.error?.message || 'No se pudo guardar la mesa'
+                });
             }
         });
     }
@@ -660,21 +1058,27 @@ export class MapeoMesasComponent implements OnInit {
     }
 
     conteoEstado(estado: MesaEstado): number {
-        return this.mesas().filter(m => m.estado === estado).length;
+        return this.mesasDelArea().filter(m => m.estado === estado).length;
     }
 
     tooltipMesa(mesa: MesaDTO): string {
-        const idPart = mesa.id != null ? `#${mesa.id} · ` : '';
-        const numero = mesa.numero != null ? `Mesa ${mesa.numero} · ` : '';
+        const idPart = mesa.identificador ? `[ID: ${mesa.identificador}] ` : (mesa.id != null ? `#${mesa.id} · ` : '');
         const mesero = mesa.meseroNombre ? ` · Mesero: ${mesa.meseroNombre}` : ' · Sin mesero';
-        return `${idPart}${numero}${mesa.nombre} (${mesa.capacidad} pax)${mesero}`;
+        const dim = (mesa.forma ?? 'cuadrada') === 'cuadrada' && mesa.ancho && mesa.alto ? ` · ${Math.round(mesa.ancho)}×${Math.round(mesa.alto)}px` : '';
+        return `${idPart}${mesa.nombre} (${mesa.capacidad} personas)${dim}${mesero}`;
     }
 
     labelMesa(mesa: MesaDTO): string {
+        if (mesa.nombre && mesa.nombre.trim().length > 0) {
+            return mesa.nombre.trim();
+        }
+        if (mesa.identificador) {
+            return mesa.identificador;
+        }
         if (mesa.numero != null) {
             return `M${mesa.numero}`;
         }
-        return mesa.id != null ? `#${mesa.id}` : mesa.nombre;
+        return mesa.id != null ? `#${mesa.id}` : 'Mesa';
     }
 
     mesaLeft(mesa: MesaDTO): number {
@@ -701,10 +1105,10 @@ export class MapeoMesasComponent implements OnInit {
         return mesaTamano(mesa).height;
     }
 
-    // Mesa rectangular en orientación vertical (rotación 90/270): se logra
-    // intercambiando ancho/alto reales (mesaTamano), nunca con rotate().
+    // Mesa en orientación vertical (altura > ancho): ajusta layout vertical de los textos internos
     esVertical(mesa: MesaDTO): boolean {
-        return (mesa.forma ?? 'cuadrada') === 'rectangular' && rotacionGrados(mesa.rotacion) % 180 === 90;
+        const size = mesaTamano(mesa);
+        return size.height > size.width;
     }
 
     // transform inline: solo centrado del punto de ancla + ligera escala al arrastrar.
@@ -741,10 +1145,6 @@ export class MapeoMesasComponent implements OnInit {
 
     isDragging(mesaId?: number): boolean {
         return this.drag()?.id === mesaId;
-    }
-
-    numSeleccionadas(): number {
-        return this.selectedIds.size;
     }
 
     private patchMesaLocal(id: number, patch: Partial<MesaDTO>) {

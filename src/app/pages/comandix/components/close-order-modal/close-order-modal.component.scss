@@ -1,7 +1,51 @@
 :host ::ng-deep .close-order-dialog {
   .p-dialog-header {
-    background: linear-gradient(135deg, #fff8ed, #fffbf2);
-    border-bottom: 1px solid rgba(218, 159, 91, 0.2);
+    background: linear-gradient(135deg, #fff8ed, #fffbf2) !important;
+    border-bottom: 1px solid rgba(218, 159, 91, 0.25) !important;
+    padding: 1.25rem 1.75rem !important;
+
+    .p-dialog-title {
+      color: #33211d !important;
+      font-weight: 700 !important;
+      font-size: 1.25rem !important;
+    }
+
+    .p-dialog-header-actions button,
+    .p-dialog-close-button,
+    .p-dialog-header-close {
+      background: #ffffff !important;
+      color: #78350f !important;
+      border: 1px solid rgba(218, 159, 91, 0.35) !important;
+      border-radius: 9999px !important;
+      width: 2.25rem !important;
+      height: 2.25rem !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      box-shadow: 0 1px 3px rgba(120, 53, 15, 0.12) !important;
+      transition: all 0.2s ease !important;
+
+      svg, i {
+        color: #78350f !important;
+        fill: #78350f !important;
+        stroke: #78350f !important;
+        width: 14px !important;
+        height: 14px !important;
+      }
+
+      &:hover {
+        background: #fef3c7 !important;
+        color: #451a03 !important;
+        transform: scale(1.08) !important;
+
+        svg, i {
+          color: #451a03 !important;
+          fill: #451a03 !important;
+          stroke: #451a03 !important;
+          transform: rotate(90deg) scale(1.1) !important;
+        }
+      }
+    }
   }
 
   .p-dialog-content {

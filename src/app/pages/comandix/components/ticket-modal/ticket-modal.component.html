@@ -1,18 +1,27 @@
 <div class="ticket-overlay" *ngIf="visible && order">
   <div class="ticket-modal-root">
     <div class="ticket" *ngIf="order as currentOrder">
+      <!-- Marca de Agua del Logotipo -->
+      <img *ngIf="businessLogo && (ticketLogoMode === 'WATERMARK' || ticketLogoMode === 'BOTH')" [src]="businessLogo" class="ticket-watermark" alt="Logo Watermark" />
+
       <div class="ticket-header">
+        <div *ngIf="businessLogo && (ticketLogoMode === 'HEADER' || ticketLogoMode === 'BOTH')" class="ticket-logo-box">
+          <img [src]="businessLogo" class="ticket-logo-header" alt="Logo Negocio" />
+        </div>
         <div class="ticket-business">{{ businessName }}</div>
         <div class="ticket-line" *ngIf="businessAddress">{{ businessAddress }}</div>
         <div class="ticket-line" *ngIf="businessPhone">Tel: {{ businessPhone }}</div>
+        <div class="ticket-type">*** TICKET DE VENTA ***</div>
       </div>
 
       <div class="ticket-sep"></div>
 
       <div class="ticket-meta">
-        <div>Ticket: #{{ currentOrder.id.slice(0, 8).toUpperCase() }}</div>
-        <div>Cliente: {{ currentOrder.customerName ?? currentOrder.nombre ?? 'Cliente General' }}</div>
-        <div>Fecha: {{ (currentOrder.payment?.paidAt || currentOrder.fechaCreacion) | date:'dd/MM/yyyy HH:mm' }}</div>
+        <div class="ticket-meta-row"><span>FOLIO:</span> <strong>#{{ currentOrder.id.slice(0, 8).toUpperCase() }}</strong></div>
+        <div class="ticket-meta-row"><span>MESA:</span> <strong>{{ currentOrder.mesaNombre || 'Mesa General' }}</strong></div>
+        <div class="ticket-meta-row" *ngIf="currentOrder.meseroNombre"><span>MESERO:</span> <span>{{ currentOrder.meseroNombre }}</span></div>
+        <div class="ticket-meta-row"><span>CLIENTE:</span> <span>{{ currentOrder.customerName ?? currentOrder.nombre ?? 'Cliente General' }}</span></div>
+        <div class="ticket-meta-row"><span>FECHA:</span> <span>{{ (currentOrder.payment?.paidAt || currentOrder.fechaCreacion) | date:'dd/MM/yyyy HH:mm' }}</span></div>
       </div>
 
       <div class="ticket-sep"></div>
@@ -21,8 +30,8 @@
         <div class="ticket-item" *ngFor="let item of currentOrder.items">
           <div class="ticket-item-name">
             {{ item.cantidad }}x {{ item.productName ?? item.prod }}
-            <span *ngIf="item.tiempo === 2" style="font-size: 0.8em; font-weight: bold; color: #b45309;">(2do Tiempo)</span>
-            <span *ngIf="item.tiempo === 3" style="font-size: 0.8em; font-weight: bold; color: #7e22ce;">(3er Tiempo)</span>
+            <span *ngIf="item.tiempo === 2" class="ticket-item-tag">[2do T.]</span>
+            <span *ngIf="item.tiempo === 3" class="ticket-item-tag">[3er T.]</span>
           </div>
           <div class="ticket-item-price">{{ fmt(itemPrice(item)) }}</div>
         </div>
@@ -31,38 +40,44 @@
       <div class="ticket-sep"></div>
 
       <div class="ticket-totals">
+        <div class="ticket-total-row" *ngIf="currentOrder.subtotal && currentOrder.descuento">
+          <span>SUBTOTAL:</span><span>{{ fmt(currentOrder.subtotal) }}</span>
+        </div>
         <div class="ticket-total-row" *ngIf="currentOrder.descuento">
-          <span>Descuento</span><span>-{{ fmt(currentOrder.descuento || 0) }}</span>
+          <span>DESCUENTO:</span><span>-{{ fmt(currentOrder.descuento || 0) }}</span>
         </div>
         <div class="ticket-total-row ticket-total-final">
-          <span>TOTAL</span><span>{{ fmt(total) }}</span>
+          <span>TOTAL:</span><span>{{ fmt(total) }}</span>
         </div>
         <div class="ticket-total-row" *ngIf="currentOrder.payment?.method">
-          <span>Pago</span><span>{{ currentOrder.payment?.method }}</span>
+          <span>PAGO:</span><span>{{ currentOrder.payment?.method }}</span>
+        </div>
+        <div class="ticket-total-row" *ngIf="currentOrder.estado">
+          <span>ESTADO:</span><span>{{ currentOrder.estado }}</span>
         </div>
       </div>
 
       <div class="ticket-sep"></div>
 
       <div class="ticket-qr-section" *ngIf="!invoiceUuid">
-        <div class="ticket-qr-label">¿Necesitas factura?</div>
+        <div class="ticket-qr-label">¿NECESITAS FACTURA?</div>
         <qrcode
           [qrdata]="invoiceUrl"
-          [width]="150"
+          [width]="110"
           [margin]="1"
           errorCorrectionLevel="M"
-          elementType="canvas"
+          elementType="img"
         ></qrcode>
         <div class="ticket-qr-help">Escanea el código para facturar</div>
       </div>
 
       <div class="ticket-qr-section" *ngIf="invoiceUuid">
-        <div class="ticket-qr-label">Factura emitida</div>
+        <div class="ticket-qr-label">FACTURA EMITIDA</div>
         <div class="ticket-invoice-uuid">UUID: {{ invoiceUuid }}</div>
       </div>
 
       <div class="ticket-footer">
-        <div>¡Gracias por tu compra!</div>
+        <div>¡GRACIAS POR SU PREFERENCIA!</div>
       </div>
     </div>
 

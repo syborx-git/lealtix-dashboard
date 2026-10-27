@@ -24,22 +24,33 @@
       dataKey="id"
       [tableStyle]="{ 'min-width': '50rem' }"
     >
-      <ng-template pTemplate="header">
+      <ng-template pTemplate="caption">
         <div class="table-header-bar">
-          <h5>Transferencias de bodega</h5>
-          <p-iconfield>
-            <p-inputicon styleClass="pi pi-search" />
-            <input pInputText type="text" placeholder="Buscar transferencia..." (input)="onGlobalFilter(dt, $event)" />
-          </p-iconfield>
+          <div class="table-title">
+            <h5 class="table-title-main">Transferencias de bodega</h5>
+            <span class="table-title-sub">Historial de movimientos auditados entre almacenes</span>
+          </div>
+          <div class="table-tools">
+            <p-iconfield iconPosition="left" class="search-box">
+              <p-inputicon styleClass="pi pi-search search-icon" />
+              <input
+                pInputText
+                type="text"
+                placeholder="Buscar transferencia..."
+                (input)="onGlobalFilter(dt, $event)"
+                class="search-input"
+              />
+            </p-iconfield>
+          </div>
         </div>
       </ng-template>
-      <ng-template pTemplate="headerrow">
+      <ng-template pTemplate="header">
         <tr>
-          <th pSortableColumn="createdAt">Fecha <p-sortIcon field="createdAt" /></th>
-          <th pSortableColumn="insumoNombre">Insumo <p-sortIcon field="insumoNombre" /></th>
-          <th>Origen</th>
-          <th pSortableColumn="destino">Destino <p-sortIcon field="destino" /></th>
-          <th pSortableColumn="cantidad">Cantidad <p-sortIcon field="cantidad" /></th>
+          <th pSortableColumn="createdAt" style="width: 22%">Fecha <p-sortIcon field="createdAt" /></th>
+          <th pSortableColumn="insumoNombre" style="width: 32%">Insumo <p-sortIcon field="insumoNombre" /></th>
+          <th style="width: 15%">Origen</th>
+          <th pSortableColumn="destino" style="width: 15%">Destino <p-sortIcon field="destino" /></th>
+          <th pSortableColumn="cantidad" class="col-num" style="width: 16%">Cantidad <p-sortIcon field="cantidad" /></th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-row>

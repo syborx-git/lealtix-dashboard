@@ -46,6 +46,29 @@ export interface MermaRecord {
   fecha?: string;
 }
 
+export interface ComandaItemMerma {
+  itemId: string;
+  productoId: number;
+  productoNombre: string;
+  categoria?: string;
+  cantidad: number;
+  precioUnitario: number;
+  subtotal: number;
+  costoEstimado: number;
+  tieneReceta: boolean;
+  insumos: InsumoUsado[];
+}
+
+export interface ComandaDetalleMerma {
+  orderId: string;
+  ticket: string;
+  customerName: string;
+  mesaNombre: string;
+  estado: string;
+  totalFinal: number;
+  items: ComandaItemMerma[];
+}
+
 export const TIPOS_MERMA = [
   { codigo: 'OPERATIVA', label: 'Operativa' },
   { codigo: 'ROTURA', label: 'Rotura / desperfecto' },
@@ -62,6 +85,10 @@ export class MermaService {
 
   resolverInsumosUsados(orderId: string): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/order/${orderId}/insumos-usados`);
+  }
+
+  resolverDetalleComandaMerma(orderId: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/order/${orderId}/detalles-merma`);
   }
 
   registrarMerma(request: {

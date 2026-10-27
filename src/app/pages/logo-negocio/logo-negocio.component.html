@@ -1,0 +1,337 @@
+<p-toast position="top-right"></p-toast>
+
+<div class="logo-admin-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <i class="pi pi-image"></i>
+      </div>
+      <div>
+        <h1 class="page-title">Logotipo del Establecimiento</h1>
+        <p class="page-subtitle">
+          Configura el logotipo oficial de tu negocio para que se imprima automáticamente en los tickets.
+        </p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="tenant-chip">
+        <i class="pi pi-building"></i>
+        <span>{{ businessName() }} (ID: {{ tenantId() }})</span>
+      </div>
+      <button class="btn-refresh" (click)="cargarDatosNegocio()" [disabled]="cargando()" title="Recargar datos">
+        <i class="pi pi-refresh" [class.pi-spin]="cargando()"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <!-- COLUMNA IZQUIERDA: Carga y Gestión -->
+    <div class="upload-column">
+      <!-- Tarjeta de Carga -->
+      <div class="card upload-card">
+        <div class="card-header">
+          <h2 class="card-title">Cargar Nueva Imagen</h2>
+          <span class="status-badge" [class.status-saved]="currentLogoUrl() && !previewLogoUrl()" [class.status-pending]="previewLogoUrl()">
+            <i class="pi" [class.pi-check-circle]="currentLogoUrl() && !previewLogoUrl()" [class.pi-clock]="previewLogoUrl()"></i>
+            {{ previewLogoUrl() ? 'Cambios pendientes' : (currentLogoUrl() ? 'Logotipo activo' : 'Sin logotipo') }}
+          </span>
+        </div>
+
+        <div
+          class="drop-zone"
+          [class.drag-over]="dragOver()"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)"
+          (click)="fileInput.click()"
+        >
+          <input
+            #fileInput
+            type="file"
+            accept="image/png,image/jpeg"
+            class="hidden-input"
+            (change)="onFileChange($event)"
+          />
+
+          <div class="drop-zone-content">
+            <div class="upload-icon-circle">
+              <i class="pi pi-cloud-upload"></i>
+            </div>
+            <div class="upload-text-main">
+              <strong>Haz clic para examinar</strong> o arrastra y suelta tu archivo aquí
+            </div>
+            <p class="upload-text-sub">
+              Formatos recomendados: PNG con fondo blanco o transparente, JPG (Máx. 5MB)
+            </p>
+          </div>
+        </div>
+
+        <!-- Acciones Principales -->
+        <div class="action-buttons">
+          <button
+            type="button"
+            class="btn-primary"
+            (click)="guardarLogo()"
+            [disabled]="guardando() || (!selectedFile() && !previewLogoUrl())"
+          >
+            <i class="pi" [class.pi-spin]="guardando()" [class.pi-spinner]="guardando()" [class.pi-check]="!guardando()"></i>
+            <span>{{ guardando() ? 'Guardando...' : 'Guardar' }}</span>
+          </button>
+
+          <button
+            *ngIf="previewLogoUrl()"
+            type="button"
+            class="btn-secondary"
+            (click)="cancelarSeleccion()"
+            [disabled]="guardando()"
+          >
+            <i class="pi pi-times"></i>
+            <span>Descartar cambios</span>
+          </button>
+
+          <button
+            *ngIf="currentLogoUrl()"
+            type="button"
+            class="btn-danger"
+            (click)="eliminarLogo()"
+            [disabled]="guardando()"
+          >
+            <i class="pi pi-trash"></i>
+            <span>Eliminar logotipo</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tarjeta de Selector de Opciones en Ticket -->
+      <div class="card mode-card">
+        <div class="card-header border-none pb-0">
+          <div>
+            <h2 class="card-title flex items-center gap-2">
+              <i class="pi pi-sliders-h text-primary"></i>
+              Ubicación del Logotipo en Ticket
+            </h2>
+            <p class="text-xs text-slate-500 m-0 mt-1">Selecciona cómo deseas que aparezca tu logotipo al imprimir el ticket:</p>
+          </div>
+        </div>
+
+        <div class="mode-options-grid mt-3">
+          <!-- Opción 1: Cabecera -->
+          <div
+            class="mode-option-card"
+            [class.selected]="ticketLogoMode() === 'HEADER'"
+            (click)="cambiarModoLogo('HEADER')"
+          >
+            <div class="mode-radio">
+              <i class="pi" [class.pi-check-circle]="ticketLogoMode() === 'HEADER'" [class.pi-circle]="ticketLogoMode() !== 'HEADER'"></i>
+            </div>
+            <div class="mode-content">
+              <div class="flex items-center gap-2">
+                <strong class="mode-name">Cabecera</strong>
+                <span class="mode-badge-rec">Recomendado</span>
+              </div>
+              <span class="mode-desc">Bien marcado sobre la información del ticket (arriba de los datos del negocio).</span>
+            </div>
+          </div>
+
+          <!-- Opción 2: Marca de agua -->
+          <div
+            class="mode-option-card"
+            [class.selected]="ticketLogoMode() === 'WATERMARK'"
+            (click)="cambiarModoLogo('WATERMARK')"
+          >
+            <div class="mode-radio">
+              <i class="pi" [class.pi-check-circle]="ticketLogoMode() === 'WATERMARK'" [class.pi-circle]="ticketLogoMode() !== 'WATERMARK'"></i>
+            </div>
+            <div class="mode-content">
+              <strong class="mode-name">Marca de agua</strong>
+              <span class="mode-desc">Detrás de todo el ticket (sutil en el fondo de la comanda).</span>
+            </div>
+          </div>
+
+          <!-- Opción 3: Ambos -->
+          <div
+            class="mode-option-card"
+            [class.selected]="ticketLogoMode() === 'BOTH'"
+            (click)="cambiarModoLogo('BOTH')"
+          >
+            <div class="mode-radio">
+              <i class="pi" [class.pi-check-circle]="ticketLogoMode() === 'BOTH'" [class.pi-circle]="ticketLogoMode() !== 'BOTH'"></i>
+            </div>
+            <div class="mode-content">
+              <strong class="mode-name">Ambos</strong>
+              <span class="mode-desc">Logotipo en el encabezado superior y marca de agua al fondo.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tarjeta de Especificaciones de Formato (Sin Justificación) -->
+      <div class="card specs-card">
+        <div class="card-header border-none pb-0">
+          <h2 class="card-title flex items-center gap-2">
+            <i class="pi pi-info-circle text-primary"></i>
+            Especificaciones del Formato
+          </h2>
+        </div>
+        <ul class="specs-list mt-3">
+          <li>
+            <i class="pi pi-times-circle text-rose-500 text-sm"></i>
+            <span>Evite fondos oscuros</span>
+          </li>
+          <li>
+            <i class="pi pi-times-circle text-rose-500 text-sm"></i>
+            <span>Evitar formato .svg</span>
+          </li>
+          <li>
+            <i class="pi pi-times-circle text-rose-500 text-sm"></i>
+            <span>Evitar formato .webp</span>
+          </li>
+          <li>
+            <i class="pi pi-check-circle text-emerald-500 text-sm"></i>
+            <span>Formato recomendado: PNG o JPG</span>
+          </li>
+          <li>
+            <i class="pi pi-check-circle text-emerald-500 text-sm"></i>
+            <span>Dimensiones recomendadas: 300x300 px a 400x400 px</span>
+          </li>
+          <li>
+            <i class="pi pi-check-circle text-emerald-500 text-sm"></i>
+            <span>Usar contraste alto (trazos negros o colores oscuros)</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- COLUMNA DERECHA: Visualización y Previsualización del Ticket -->
+    <div class="preview-column">
+      <!-- Tarjeta de Logotipo Actual -->
+      <div class="card logo-display-card">
+        <div class="card-header">
+          <h2 class="card-title">Logotipo Actual</h2>
+          <span class="badge-tag" *ngIf="activeLogo">
+            {{ previewLogoUrl() ? 'Vista previa seleccionada' : 'Activo' }}
+          </span>
+        </div>
+
+        <div class="logo-viewport-wrapper">
+          <div class="logo-viewport">
+            <img
+              *ngIf="activeLogo"
+              [src]="activeLogo"
+              alt="Logo del Establecimiento"
+              class="logo-preview-image"
+            />
+            <div *ngIf="!activeLogo" class="no-logo-placeholder">
+              <i class="pi pi-image text-3xl"></i>
+              <span>No hay logotipo registrado</span>
+              <p>Sube una imagen para activarla en tus tickets</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="logo-meta" *ngIf="activeLogo">
+          <div class="meta-item">
+            <span class="meta-label">Estado:</span>
+            <span class="meta-value text-emerald-600 font-bold" *ngIf="!previewLogoUrl()">Guardado</span>
+            <span class="meta-value text-amber-600 font-bold" *ngIf="previewLogoUrl()">Listo para guardar</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Simulador de Ticket Térmico en Vivo -->
+      <div class="card simulator-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Previsualización de Ticket</h2>
+            <p class="simulator-desc">Así se visualizará e imprimirá con la marca de agua y el código QR de facturación.</p>
+          </div>
+          <span class="badge-paper">58mm Térmico</span>
+        </div>
+
+        <div class="ticket-stand">
+          <!-- Ticket Térmico Simulado -->
+          <div class="simulated-ticket">
+            <!-- MARCA DE AGUA DEL LOGOTIPO -->
+            <img
+              *ngIf="activeLogo && (ticketLogoMode() === 'WATERMARK' || ticketLogoMode() === 'BOTH')"
+              [src]="activeLogo"
+              class="simulated-watermark"
+              alt="Marca de Agua"
+            />
+
+            <!-- Contenido del Ticket -->
+            <div class="ticket-header">
+              <!-- LOGOTIPO EN CABECERA -->
+              <div *ngIf="activeLogo && (ticketLogoMode() === 'HEADER' || ticketLogoMode() === 'BOTH')" class="ticket-logo-box">
+                <img [src]="activeLogo" class="ticket-logo-header" alt="Logo Cabecera" />
+              </div>
+              <div class="ticket-business">{{ businessName() }}</div>
+              <div class="ticket-line" *ngIf="businessAddress()">{{ businessAddress() }}</div>
+              <div class="ticket-line" *ngIf="businessPhone()">Tel: {{ businessPhone() }}</div>
+              <div class="ticket-type">*** TICKET DE CONSUMO ***</div>
+            </div>
+
+            <div class="ticket-sep"></div>
+
+            <div class="ticket-meta">
+              <div class="ticket-meta-row"><span>FOLIO:</span> <strong>#{{ simulatedOrderId }}</strong></div>
+              <div class="ticket-meta-row"><span>MESA:</span> <strong>Mesa 04 (Terraza)</strong></div>
+              <div class="ticket-meta-row"><span>MESERO:</span> <span>Carlos M.</span></div>
+              <div class="ticket-meta-row"><span>FECHA:</span> <span>25/10/2026 21:45</span></div>
+            </div>
+
+            <div class="ticket-sep"></div>
+
+            <div class="ticket-items">
+              <div class="ticket-item">
+                <span class="ticket-item-name">2x Hamburguesa Clásica</span>
+                <span class="ticket-item-price">$370.00</span>
+              </div>
+              <div class="ticket-item">
+                <span class="ticket-item-name">2x Cerveza Corona Extra</span>
+                <span class="ticket-item-price">$90.00</span>
+              </div>
+              <div class="ticket-item">
+                <span class="ticket-item-name">1x Papas a la Francesa</span>
+                <span class="ticket-item-price">$75.00</span>
+              </div>
+            </div>
+
+            <div class="ticket-sep"></div>
+
+            <div class="ticket-totals">
+              <div class="ticket-total-row"><span>SUBTOTAL:</span><span>$535.00</span></div>
+              <div class="ticket-total-row ticket-total-final">
+                <span>TOTAL:</span><span>$535.00</span>
+              </div>
+              <div class="ticket-total-row"><span>ESTADO:</span><span>PAGADO ✓</span></div>
+            </div>
+
+            <div class="ticket-sep"></div>
+
+            <!-- CÓDIGO QR DE FACTURACIÓN -->
+            <div class="ticket-qr-section">
+              <div class="ticket-qr-label">¿NECESITAS FACTURA?</div>
+              <qrcode
+                [qrdata]="invoiceUrl"
+                [width]="105"
+                [margin]="1"
+                errorCorrectionLevel="M"
+                elementType="img"
+              ></qrcode>
+              <div class="ticket-qr-help">Escanea el código para facturar</div>
+            </div>
+
+            <div class="ticket-sep"></div>
+
+            <div class="ticket-footer">
+              <div>¡GRACIAS POR SU PREFERENCIA!</div>
+              <div class="footer-note">Comprobante de consumo</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

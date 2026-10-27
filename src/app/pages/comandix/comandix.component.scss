@@ -1784,14 +1784,51 @@
 // ==================== DIALOG CANCELAR ORDEN ====================
 :host ::ng-deep .cancel-order-dialog {
   .p-dialog-header {
-    background: linear-gradient(135deg, #FEE2E2, #FECACA);
-    border-bottom: 2px solid rgba(220, 53, 69, 0.25);
-    padding: 1.25rem 1.5rem;
+    background: linear-gradient(135deg, #FEE2E2, #FECACA) !important;
+    border-bottom: 2px solid rgba(220, 53, 69, 0.25) !important;
+    padding: 1.25rem 1.5rem !important;
 
     .p-dialog-title {
-      color: #dc3545;
-      font-weight: 700;
-      font-size: 1.1rem;
+      color: #dc3545 !important;
+      font-weight: 700 !important;
+      font-size: 1.15rem !important;
+    }
+
+    .p-dialog-header-actions button,
+    .p-dialog-close-button,
+    .p-dialog-header-close {
+      background: #ffffff !important;
+      color: #dc2626 !important;
+      border: 1px solid rgba(220, 53, 69, 0.25) !important;
+      border-radius: 9999px !important;
+      width: 2.25rem !important;
+      height: 2.25rem !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      box-shadow: 0 1px 3px rgba(220, 53, 69, 0.15) !important;
+      transition: all 0.2s ease !important;
+
+      svg, i {
+        color: #dc2626 !important;
+        fill: #dc2626 !important;
+        stroke: #dc2626 !important;
+        width: 14px !important;
+        height: 14px !important;
+      }
+
+      &:hover {
+        background: #fef2f2 !important;
+        color: #991b1b !important;
+        transform: scale(1.08) !important;
+
+        svg, i {
+          color: #991b1b !important;
+          fill: #991b1b !important;
+          stroke: #991b1b !important;
+          transform: rotate(90deg) scale(1.1) !important;
+        }
+      }
     }
   }
 
@@ -2600,6 +2637,131 @@
   }
 }
 
+.cfg-groups-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.cfg-group-card {
+  background: var(--surface-50, #f8fafc);
+  border: 1px solid var(--surface-200, #e2e8f0);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+}
+
+.cfg-group-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 0.65rem;
+  border-bottom: 1px solid var(--surface-200, #e2e8f0);
+  padding-bottom: 0.45rem;
+
+  .cfg-group-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .cfg-group-icon {
+      color: #6366f1;
+      font-size: 0.95rem;
+    }
+
+    .cfg-group-name {
+      font-weight: 700;
+      font-size: 0.92rem;
+      color: var(--text-color, #1e293b);
+      letter-spacing: -0.01em;
+    }
+  }
+
+  .cfg-group-hint {
+    font-size: 0.72rem;
+    color: var(--text-color-secondary, #64748b);
+  }
+}
+
+.cfg-group-items-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.cfg-item-card {
+  background: #ffffff;
+  border: 1px solid var(--surface-200, #e2e8f0);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: #cbd5e1;
+    background: #fafafa;
+  }
+
+  &.item-card-excluded {
+    background: #fef2f2;
+    border-color: #fecaca;
+    border-style: dashed;
+  }
+
+  &.item-card-selected {
+    background: #f5f3ff;
+    border-color: #c4b5fd;
+  }
+
+  .cfg-item-label {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    cursor: pointer;
+    margin: 0;
+
+    .cfg-item-info {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+
+      .cfg-item-name {
+        font-size: 0.875rem;
+        color: var(--text-color, #1e293b);
+
+        &.line-through {
+          text-decoration: line-through;
+          color: #dc2626;
+        }
+      }
+
+      .cfg-item-detail {
+        font-size: 0.72rem;
+        color: var(--text-color-secondary, #64748b);
+      }
+    }
+
+    .cfg-excluded-badge {
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: #dc2626;
+      background: #fee2e2;
+      padding: 0.1rem 0.45rem;
+      border-radius: 999px;
+      letter-spacing: 0.02em;
+    }
+
+    .cfg-item-price-badge {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #7c3aed;
+      background: #ede9fe;
+      padding: 0.15rem 0.5rem;
+      border-radius: 6px;
+    }
+  }
+}
+
 .cfg-item {
   display: flex;
   align-items: center;
@@ -3014,461 +3176,1196 @@
   }
 }
 
+// ==========================================================================
+// MAPA DE MESAS (VISTA MESERO EN COMANDIX)
+// ==========================================================================
 
-/* ============================================================================
-   RESPONSIVE: tabs de vista en móvil/tablet
-   Antes: flex:1 1 0 + nowrap aplastaba los 5 botones y el texto se encimaba
-   ("Canceladas", "Reporte Ventas"). Ahora hacen scroll horizontal sin apretarse.
-   ============================================================================ */
-@media (max-width: 900px) {
-  .view-toggle {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .view-toggle::-webkit-scrollbar { display: none; }
-
-  .view-toggle-btn {
-    flex: 0 0 auto;
-    white-space: nowrap;
-  }
-}
-
-/* ============================================================================
-   REDISEÑO POS PROFESIONAL — tablet horizontal (sept 2026)
-   Se coloca al final para ganar en orden de cascada sobre los estilos previos.
-   ============================================================================ */
-
-// --- Fondo del módulo ---
-.comandix-container {
-  background:
-    radial-gradient(1100px 520px at 100% -20%, #eef2ff 0%, rgba(238, 242, 255, 0) 55%),
-    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-}
-
-// --- Barra superior (marca + acciones + views) ---
-.comandix-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem 1.1rem;
-  padding: 0.8rem 1.05rem;
-  border-radius: 18px;
-  background: linear-gradient(108deg, #312e81 0%, #4338ca 42%, #6366f1 100%);
-  box-shadow: 0 22px 44px -26px rgba(49, 46, 129, 0.95);
-  color: #fff;
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(520px 150px at 90% -20%, rgba(255, 255, 255, 0.18), transparent 62%),
-      radial-gradient(360px 140px at 0% 130%, rgba(255, 255, 255, 0.08), transparent 60%);
-    pointer-events: none;
-  }
-}
-
-.comandix-brand {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  position: relative;
-  z-index: 1;
-}
-
-.comandix-header .comandix-icon {
-  width: 46px;
-  height: 46px;
-  border-radius: 13px;
-  background: rgba(255, 255, 255, 0.16);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.comandix-brand-text {
+.comandix-mesas-view {
   display: flex;
   flex-direction: column;
-  line-height: 1.05;
-
-  .comandix-title {
-    color: #fff;
-    font-size: 1.5rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    margin: 0;
-  }
-  .comandix-subtitle {
-    font-size: 0.72rem;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.72);
-  }
+  gap: 0.5rem;
+  animation: fadeIn 0.2s ease-in-out;
 }
 
-.comandix-top-actions {
-  position: relative;
-  z-index: 1;
+// ==========================================================================
+// BARRA DE ÁREAS DEL LOCAL (Pizarrón por Área en Comandix)
+// ==========================================================================
+.comandix-areas-bar {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-}
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 
-// Segmented control para el cambio de vista
-.catalog-tabs.view-toggle {
-  position: relative;
-  z-index: 1;
-  flex: 1 1 440px;
-  margin-left: auto;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  padding: 0.32rem;
-  gap: 0.22rem;
-  align-items: center;
-}
+  .areas-pills-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
 
-.view-toggle-btn {
-  border-radius: 9px;
-  color: rgba(255, 255, 255, 0.82);
-  font-weight: 600;
-  padding: 0.6rem 0.85rem;
+    .areas-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-right: 0.25rem;
+    }
 
-  i { opacity: 0.9; }
+    .area-pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.95rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #475569;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
 
-  &:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
+      .area-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #94a3b8;
+        transition: background 0.18s ease;
 
-  &.active {
-    background: #ffffff;
-    color: #4338ca;
-    box-shadow: 0 10px 20px -12px rgba(0, 0, 0, 0.7);
-    i { opacity: 1; }
+        &.dot-has-libres {
+          background: #10b981;
+        }
+      }
+
+      .area-name {
+        white-space: nowrap;
+      }
+
+      .area-count-badge {
+        font-size: 0.7rem;
+        padding: 0.1rem 0.5rem;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.08);
+        color: inherit;
+        font-weight: 700;
+      }
+
+      &:hover {
+        background: #eff6ff;
+        border-color: #93c5fd;
+        color: #1d4ed8;
+
+        .area-dot {
+          background: #3b82f6;
+        }
+      }
+
+      &.active {
+        background: #2563eb;
+        border-color: #2563eb;
+        color: #ffffff;
+        box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35);
+
+        .area-dot {
+          background: #ffffff;
+        }
+
+        .area-count-badge {
+          background: rgba(255, 255, 255, 0.25);
+          color: #ffffff;
+        }
+      }
+    }
   }
 }
 
-.view-toggle-refresh {
-  color: rgba(255, 255, 255, 0.85);
-  border-radius: 9px;
-  &:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
-}
-
-.orders-badge {
-  background: #dc2626;
-  color: #fff;
-  border-radius: 999px;
-  padding: 0 0.4rem;
-  font-size: 0.65rem;
-  font-weight: 800;
-  min-width: 1.05rem;
-  height: 1.05rem;
-  display: inline-flex;
+.workspace-empty-canvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-left: 0.35rem;
-}
-
-// --- Paneles con sombra suave unificada ---
-.pos-compact-header-card,
-.pos-seats-tabs-card,
-.pos-catalog-card,
-.pos-categories-rail {
-  border-radius: 16px !important;
-  border-color: #e6eaf2 !important;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 14px 34px -26px rgba(16, 24, 40, 0.5) !important;
-}
-
-// --- Tarjetas de platillo tipo POS (grandes para elegir rápido en tablet) ---
-.pos-catalog-card .dish-pos-card {
+  text-align: center;
+  padding: 2.5rem 2rem;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(6px);
+  border: 1.5px dashed #cbd5e1;
   border-radius: 20px;
-  border: 1px solid #e9edf5;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
-  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.22s ease, border-color 0.22s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  max-width: 440px;
+  pointer-events: none;
+  z-index: 10;
+
+  .empty-badge-area {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #1d4ed8;
+    margin-bottom: 0.85rem;
+  }
+
+  .empty-msg {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.35rem;
+  }
+
+  .empty-sub {
+    font-size: 0.82rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+  }
+}
+
+.mesas-toolbar-card {
+  .legenda-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 0.35rem 0.65rem;
+    border-radius: 999px;
+    user-select: none;
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+
+      &.dot-libre { background: #16a34a; }
+      &.dot-ocupada { background: #dc2626; }
+      &.dot-reservada { background: #d97706; }
+      &.dot-grupo { background: #2563eb; }
+    }
+
+    .count {
+      font-weight: 800;
+      font-size: 0.75rem;
+      border-radius: 999px;
+      padding: 0.05rem 0.45rem;
+    }
+
+    &.clickable {
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+
+      &:hover {
+        background: #eff6ff;
+        border-color: #93c5fd;
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(37, 99, 235, 0.15);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+  }
+}
+
+.plano-container {
+  .plano-wrap {
+    width: 100%;
+    overflow: auto;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    background: #eef2f7;
+    position: relative;
+    max-height: calc(100vh - 250px);
+    min-height: 520px;
+  }
+}
+
+.workspace {
+  position: relative;
+  width: 1200px;
+  height: 720px;
+  min-width: 1200px;
+  min-height: 720px;
+  overflow: hidden;
+  background-color: #f8fafc;
+  background-image: radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.07) 1px, transparent 0);
+  background-size: 20px 20px;
+
+  &.modo-operacion {
+    cursor: default;
+  }
+}
+
+.workspace-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(59, 130, 246, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.06) 1px, transparent 1px);
+  background-size: 80px 80px;
+}
+
+// ==========================================================================
+// MESAS EN EL PLANO (MESERO)
+// ==========================================================================
+
+.mesa-floor {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: 14px;
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+  color: #fff;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease, filter 0.18s ease;
+  z-index: 2;
+
+  &:hover {
+    transform: translate(-50%, -50%) scale(1.05) !important;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+    z-index: 5;
+  }
+
+  &:active {
+    transform: translate(-50%, -50%) scale(0.98) !important;
+  }
+
+  // Formas geométricas
+  &.forma-redonda {
+    border-radius: 50%;
+  }
+
+  &.forma-cuadrada {
+    border-radius: 10px;
+  }
+
+  &.forma-rectangular {
+    border-radius: 8px;
+  }
+
+  // Orientación vertical
+  &.mesa-vertical {
+    gap: 4px;
+    padding: 6px 4px;
+
+    .mesa-label {
+      max-width: 92%;
+      line-height: 1.05;
+    }
+
+    .mesa-cap {
+      max-width: 92%;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+  }
+
+  // Colores por estado
+  &.estado-libre {
+    background: linear-gradient(145deg, #34d399, #059669);
+    border-color: #047857;
+
+    &:hover {
+      filter: brightness(1.08);
+    }
+  }
+
+  &.estado-ocupada {
+    background: linear-gradient(145deg, #f87171, #dc2626);
+    border-color: #991b1b;
+  }
+
+  &.estado-reservada {
+    background: linear-gradient(145deg, #fbbf24, #d97706);
+    border-color: #b45309;
+  }
+
+  // Mesa agrupada
+  &.en-grupo {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.6), 0 6px 14px rgba(0, 0, 0, 0.2);
+  }
+
+  // Modo unir
+  &.seleccionable {
+    cursor: pointer;
+  }
+
+  &.bloqueada {
+    opacity: 0.42;
+    cursor: not-allowed;
+    filter: grayscale(0.4);
+
+    &:hover {
+      transform: translate(-50%, -50%) scale(1) !important;
+    }
+  }
+
+  &.seleccionada {
+    box-shadow: 0 0 0 4px #fff, 0 0 0 8px #2563eb, 0 8px 22px rgba(0, 0, 0, 0.4) !important;
+    z-index: 10;
+  }
+}
+
+.mesa-label {
+  font-weight: 800;
+  font-size: 0.8rem;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  max-width: 90%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+.mesa-cap {
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.28);
+  border-radius: 999px;
+  padding: 0.08rem 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  .mesa-user-icon {
+    font-size: 0.62rem;
+  }
+}
+
+.mesa-estado-mini-badge {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #dc2626;
+  border: 1.5px solid #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  z-index: 3;
+}
+
+.mesa-select-indicator {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #2563eb;
+  border: 1.5px solid #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+  z-index: 4;
+}
+
+.mesa-floor.seleccionada .mesa-select-indicator {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+// Borde contenedor de grupo
+.mesa-grupo-borde {
+  position: absolute;
+  border: 2px dashed rgba(37, 99, 235, 0.7);
+  border-radius: 18px;
+  background: rgba(37, 99, 235, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.12);
+  z-index: 1;
+  pointer-events: none;
+
+  .grupo-etiqueta {
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #fff;
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 0.22rem 0.75rem;
+    border-radius: 999px;
+    white-space: nowrap;
+    box-shadow: 0 3px 8px rgba(37, 99, 235, 0.35);
+    pointer-events: auto;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    outline: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    z-index: 6;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+
+    &:hover {
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+      transform: translateX(-50%) scale(1.06);
+      box-shadow: 0 6px 14px rgba(37, 99, 235, 0.45);
+    }
+
+    &:active {
+      transform: translateX(-50%) scale(0.97);
+    }
+  }
+}
+
+// Dialog de Opciones de Grupo
+::ng-deep .modal-grupo-opciones-dialog {
+  .p-dialog-header {
+    padding: 1.25rem 1.5rem 0.75rem 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .p-dialog-content {
+    padding: 1.25rem 1.5rem 1.5rem 1.5rem;
+  }
+}
+
+// Badge de mesa bloqueada en POS
+.mesa-locked-badge {
+  box-shadow: 0 1px 3px rgba(147, 51, 234, 0.08);
+}
+
+.mesa-unselected-warning {
+  box-shadow: 0 1px 3px rgba(217, 119, 6, 0.08);
+}
+
+/* ============================================================
+   Minimalist Waiter Dish Cards (Estilo SaaS / Core Feature Card)
+   ============================================================ */
+.waiter-dish-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.waiter-dish-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1.25rem;
+  padding: 1.15rem 1.35rem;
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.waiter-dish-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.waiter-dish-title-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.waiter-dish-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 0.65rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.25);
+}
+
+.waiter-dish-name-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.waiter-dish-name {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.waiter-dish-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.waiter-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  &.waiter-badge-seat {
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+  }
+
+  &.waiter-badge-marchado {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+  }
+
+  &.waiter-badge-espera {
+    background: #fefce8;
+    color: #a16207;
+    border: 1px dashed #fde047;
+  }
+
+  &.waiter-badge-takeaway {
+    background: #ffedd5;
+    color: #9a3412;
+    border: 1px solid #fed7aa;
+  }
+}
+
+.waiter-dish-right-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.waiter-dish-qty {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #0f172a;
+  line-height: 1;
+}
+
+.waiter-dish-price {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #059669;
+}
+
+.waiter-dish-comments {
+  margin-top: 0.65rem;
+  background: #fffbeb;
+  border-left: 3px solid #f59e0b;
+  padding: 0.45rem 0.65rem;
+  border-radius: 0 0.5rem 0.5rem 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  font-size: 0.825rem;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.waiter-dish-divider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 0.85rem 0;
+}
+
+.waiter-dish-specs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.waiter-specs-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+}
+
+.waiter-ing-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.waiter-ing-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.875rem;
+  color: #334155;
+  padding: 0.15rem 0;
+
+  .waiter-ing-icon {
+    font-size: 0.8rem;
+    flex-shrink: 0;
+
+    &.icon-check {
+      color: #10b981;
+    }
+
+    &.icon-times {
+      color: #ef4444;
+      font-size: 0.9rem;
+    }
+
+    &.icon-plus {
+      color: #8b5cf6;
+      font-size: 0.9rem;
+    }
+  }
+
+  .waiter-ing-name {
+    font-weight: 500;
+    color: #1e293b;
+
+    &.waiter-ing-strikethrough {
+      text-decoration: line-through;
+      color: #dc2626;
+      font-weight: 700;
+    }
+  }
+
+  .waiter-ing-group {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    background: #f1f5f9;
+    color: #64748b;
+
+    &.tag-removed {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    &.tag-extra {
+      background: #ede9fe;
+      color: #6d28d9;
+    }
+  }
+
+  .waiter-ing-qty {
+    font-size: 0.78rem;
+    color: #64748b;
+    margin-left: auto;
+  }
+
+  .waiter-ing-strike-badge {
+    margin-left: auto;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #dc2626;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    padding: 0.12rem 0.45rem;
+    border-radius: 9999px;
+  }
+
+  .waiter-ing-price {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #7c3aed;
+    background: #f5f3ff;
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+  }
+
+  &.waiter-ing-removed {
+    background: rgba(254, 242, 242, 0.6);
+    padding: 0.3rem 0.5rem;
+    border-radius: 0.45rem;
+    border: 1px dashed #fca5a5;
+  }
+}
+
+.waiter-no-recipe-hint {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-style: italic;
+  padding: 0.2rem 0;
+}
+
+// ==================== SUBCOMANDA DE VARIANTES ====================
+::ng-deep .variant-selection-dialog {
+  .p-dialog-header {
+    border-bottom: 1px solid #f1f5f9;
+    padding: 1.25rem 1.5rem;
+    background: #ffffff;
+    border-top-left-radius: 1.5rem;
+    border-top-right-radius: 1.5rem;
+  }
+
+  .p-dialog-content {
+    background: #f8fafc !important;
+    padding: 1.1rem 1.25rem !important;
+  }
+
+  .p-dialog-footer {
+    border-top: 1px solid #f1f5f9;
+    padding: 0.9rem 1.25rem;
+    background: #ffffff;
+    border-bottom-left-radius: 1.5rem;
+    border-bottom-right-radius: 1.5rem;
+  }
+}
+
+.variant-gallery-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 1rem;
+  max-height: 64vh;
+  overflow-y: auto;
+  padding: 0.25rem;
+
+  @media (max-width: 620px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 380px) {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.variant-square-card {
+  aspect-ratio: 1 / 1;
+  min-height: 195px;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 1.25rem;
+  padding: 0.85rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  user-select: none;
 
   &:hover {
     transform: translateY(-4px);
-    border-color: #c7d2fe;
-    box-shadow: 0 22px 44px -22px rgba(79, 70, 229, 0.55);
+    border-color: #7c3aed;
+    box-shadow: 0 12px 24px -4px rgba(124, 58, 237, 0.18), 0 4px 8px -2px rgba(124, 58, 237, 0.08);
+
+    .card-icon-container {
+      transform: scale(1.08);
+      background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+      color: #ffffff;
+      box-shadow: 0 6px 14px -2px rgba(124, 58, 237, 0.35);
+    }
+
+    .card-title {
+      color: #6d28d9;
+    }
+
+    .card-btn {
+      background: #7c3aed;
+      color: #ffffff;
+      box-shadow: 0 4px 10px rgba(124, 58, 237, 0.25);
+    }
   }
 
-  // Imagen más alta: el platillo se ve grande
-  .aspect-video { aspect-ratio: 4 / 3 !important; }
-
-  // Nombre del platillo (hasta 2 líneas, alto estable para que las tarjetas alineen)
-  h4 {
-    font-weight: 800 !important;
-    font-size: 1.05rem !important;
-    line-height: 1.25 !important;
-    -webkit-line-clamp: 2 !important;
-    line-clamp: 2 !important;
-    min-height: 2.5em;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  // Precio más grande
-  span.text-base { font-size: 1.22rem !important; }
-
-  // Badge de stock más visible
-  .absolute.top-2.right-2 {
-    font-size: 0.78rem !important;
-    padding: 0.24rem 0.66rem !important;
-    border-radius: 999px !important;
-  }
-
-  // Cuerpo con algo más de aire
-  > div:last-child { padding: 0.95rem 1.05rem 1.05rem !important; }
-
-  // Botones grandes (tap fácil en tablet)
-  button[aria-label^='Agregar'] {
-    width: 2.75rem !important;
-    height: 2.75rem !important;
-    border-radius: 16px !important;
-    background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
-    color: #fff !important;
-    box-shadow: 0 10px 20px -10px rgba(79, 70, 229, 0.85) !important;
-
-    i { font-size: 1.05rem; }
-    &:hover { filter: brightness(1.06); transform: translateY(-1px); }
-  }
-
-  button[aria-label^='Ver detalles'] {
-    width: 2.75rem !important;
-    height: 2.75rem !important;
-    border-radius: 16px !important;
-    background: var(--surface-section, #f1f5f9) !important;
-    color: var(--text-color-secondary, #64748b) !important;
-
-    i { font-size: 1rem; }
+  &:active {
+    transform: translateY(-1px) scale(0.98);
   }
 }
 
-// Rejilla del catálogo: un poco más de aire entre tarjetas
-.pos-catalog-card .pos-products-grid { gap: 1.05rem !important; }
+// ==================== DISPONIBILIDAD DE PLATILLOS (8-5 y 8-6) ====================
+.disponibilidad-view-container {
+  width: 100%;
+  animation: fadeIn 0.25s ease-out;
 
-// --- Comanda / Ticket ---
-.ticket-receipt-card {
-  border-radius: 18px !important;
-  border-color: #e6eaf2 !important;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 30px 60px -40px rgba(16, 24, 40, 0.7) !important;
-}
+  .disp-kpi-filter-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem;
+    background: #ffffff;
+    border-radius: 1rem;
+    border: 1.5px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
 
-.ticket-receipt-header {
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
-}
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.08);
+      border-color: #cbd5e1;
+    }
 
-// Botón principal de la comanda
-.ticket-receipt-bottom button.bg-purple-600 {
-  background: linear-gradient(135deg, #6338f0 0%, #4f46e5 100%) !important;
-  box-shadow: 0 16px 30px -14px rgba(79, 70, 229, 0.9) !important;
-  border-radius: 14px !important;
-  padding-top: 0.85rem !important;
-  padding-bottom: 0.85rem !important;
+    &:active {
+      transform: scale(0.98);
+    }
 
-  &:hover { filter: brightness(1.05); }
-}
+    .disp-kpi-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
 
-// --- Panel central estrecho: Mesa y Cliente en una sola fila (más compacto) ---
-// Así la cabecera ocupa menos alto y el menú de platillos sube.
-@container comandix (min-width: 900px) {
-  .pos-compact-header-card > .flex {
-    flex-direction: row !important;
-    align-items: center !important;
-  }
-  // Mesa más angosta para darle más espacio al buscador de Cliente.
-  .pos-compact-header-card > .flex > .flex-1:nth-child(1) { flex: 0 0 40% !important; }
-  .pos-seats-tabs-card .hidden.sm\:inline-block { display: none !important; }
-}
+    &:hover .disp-kpi-icon {
+      transform: scale(1.08);
+    }
 
-/* ============================================================================
-   MODO APP NATIVA — alto fijo, sin scroll de página; scroll interno por panel
-   Solo en tablet (dispositivos táctiles). En computadora se conserva el scroll.
-   ============================================================================ */
-@media (pointer: coarse) {
-.comandix-container {
-  height: 100%;
-  min-height: 0 !important;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-sizing: border-box;
-}
+    .disp-kpi-label {
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      line-height: 1.2;
+    }
 
-.comandix-header { flex: 0 0 auto; padding: 0.7rem 0.95rem !important; margin-bottom: 0.5rem !important; }
+    .disp-kpi-value {
+      font-size: 1.35rem;
+      font-weight: 900;
+      line-height: 1.1;
+      margin-top: 0.15rem;
+    }
 
-.comandix-main-content {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: hidden;
-  align-items: stretch;
-  grid-template-rows: minmax(0, 1fr);
-}
+    .disp-kpi-hint {
+      font-size: 0.68rem;
+      font-weight: 600;
+      margin-top: 0.15rem;
+    }
 
-// Scrollea TODA la columna central (mesa + comensales + platillos): al bajar,
-// la configuración se va y se ven más platillos. El catálogo no scrollea solo.
-.pos-catalog-card {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: visible;
-}
+    .disp-kpi-badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #4f46e5;
+      color: #ffffff;
+      font-size: 0.65rem;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(79, 70, 229, 0.4);
 
-.pos-catalog-card .pos-products-grid {
-  flex: 0 0 auto;
-  overflow: visible;
-  align-content: start;
-  padding: 1.25rem;
-}
+      &.badge-disp {
+        background: #059669;
+        box-shadow: 0 2px 6px rgba(5, 150, 105, 0.4);
+      }
+      &.badge-85 {
+        background: #d97706;
+        box-shadow: 0 2px 6px rgba(217, 119, 6, 0.4);
+      }
+      &.badge-86 {
+        background: #e11d48;
+        box-shadow: 0 2px 6px rgba(225, 29, 72, 0.4);
+      }
+    }
 
-// Barra de título del menú: SIN sticky (se va con el scroll, no se queda fija).
-.pos-catalog-card {
-  padding: 0 !important;
-}
+    &.active {
+      border-color: #4f46e5;
+      background: #f8fafc;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25), 0 8px 16px -4px rgba(79, 70, 229, 0.12);
 
-.pos-catalog-card > .flex.items-center.justify-between {
-  position: static;
-  margin: 0;
-  padding: 1.25rem 1.25rem 0.9rem;
-  background: #ffffff;
-}
+      &.kpi-disp {
+        border-color: #059669;
+        background: #f0fdf4;
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25), 0 8px 16px -4px rgba(5, 150, 105, 0.12);
+      }
 
-// Estados vacíos del catálogo conservan su padding lateral (la tarjeta ya no lo tiene)
-.pos-catalog-card > .empty-catalog,
-.pos-catalog-card > .text-center {
-  padding-left: 1.25rem;
-  padding-right: 1.25rem;
-}
+      &.kpi-85 {
+        border-color: #d97706;
+        background: #fffbeb;
+        box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25), 0 8px 16px -4px rgba(217, 119, 6, 0.15);
+      }
 
-// Comanda: llena el alto y su lista de ítems scrollea
-.comandix-right-column { height: 100%; min-height: 0; }
-
-.pos-ticket-sticky {
-  height: 100%;
-  max-height: none !important;
-  position: static !important;
-  top: 0 !important;
-}
-
-.ticket-receipt-card { height: 100%; min-height: 0 !important; }
-.ticket-receipt-card [class*='max-h-'] { max-height: none !important; }
-.ticket-receipt-card [class*='min-h-'] { min-height: 0 !important; }
-
-@container comandix (min-width: 900px) {
-  .pos-left-column {
-    height: 100%;
-    min-height: 0;
-    grid-template-rows: auto auto auto;
-    align-items: start;
-    overflow-y: auto;
-    overflow-x: hidden;
-  }
-
-  .pos-categories-rail {
-    align-self: start;
-    position: sticky;
-    top: 0;
-    max-height: 100%;
-    height: auto;
+      &.kpi-86 {
+        border-color: #e11d48;
+        background: #fff1f2;
+        box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.25), 0 8px 16px -4px rgba(225, 29, 72, 0.15);
+      }
+    }
   }
 
-  .pos-categories-list { overflow-y: auto; min-height: 0; }
-  .pos-catalog-card { min-height: 0; overflow: visible; }
-
-  // Prioridad al catálogo de platillos en tablet: compactar la configuración
-  // (Mesa/Cliente y Comensales) para que el menú se lleve la mayor parte del alto.
-  .pos-compact-header-card { padding: 0.4rem 0.8rem !important; }
-  .pos-compact-header-card label { display: none !important; }
-  .pos-seats-tabs-card { padding: 0.45rem 0.8rem !important; }
-  .pos-seats-tabs-card > .flex.items-center.justify-between { margin-bottom: 0.4rem !important; }
-  .pos-seats-tabs-card > .mt-2\.5 { margin-top: 0.4rem !important; padding-top: 0.4rem !important; }
-
-  // Menú de platillos: menos relleno interno para mostrar más platillos.
-  .pos-catalog-card .pos-products-grid { padding: 0.75rem 1rem 1rem !important; }
-  .pos-catalog-card > .flex.items-center.justify-between { padding: 0.7rem 1rem 0.6rem !important; margin-bottom: 0 !important; }
-}
-
-// Scrollbars finas (look app nativa)
-.pos-catalog-card,
-.pos-categories-list,
-.ticket-receipt-card .overflow-y-auto {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(100, 116, 139, 0.35) transparent;
-}
-
-// En pantallas táctiles angostas (teléfono/tablet chica) el layout se apila;
-// el scroll ocurre SIEMPRE dentro del panel, nunca en la página.
-@media (max-width: 767px) {
-  .comandix-container { height: 100%; overflow: hidden; }
-  .comandix-main-content { overflow-y: auto; }
-  .pos-catalog-card { overflow: visible; }
-  .pos-ticket-sticky { height: auto; }
-  .ticket-receipt-card { height: auto; }
-}
-
-} // fin @media (pointer: coarse)
-
-/* ==================== MODAL DETALLE DE PLATILLO (hero premium) ==================== */
-.dish-detail-card {
-  max-width: 380px;
-  box-shadow: 0 30px 70px -20px rgba(15, 23, 42, 0.55), 0 10px 30px -12px rgba(15, 23, 42, 0.35);
-}
-.dish-detail-grid { display: block; }
-.dish-detail-media { aspect-ratio: 4 / 3; }
-.dish-detail-img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-.dish-detail-media-grad {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 45%;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0));
-  pointer-events: none;
-}
-
-.dish-detail-name { letter-spacing: -0.02em; }
-
-.dish-detail-price span {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
-}
-
-.dish-detail-cta {
-  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
-  box-shadow: 0 16px 30px -14px rgba(79, 70, 229, 0.9);
-}
-.dish-detail-cta:hover { filter: brightness(1.06); }
-
-// En tablet/escritorio: modal grande tipo "menú premium" (imagen | info).
-@media (min-width: 768px) {
-  .dish-detail-card { max-width: 980px; padding: 1.25rem; }
-
-  .dish-detail-grid {
-    display: grid;
-    grid-template-columns: 1.15fr 1fr;
-    gap: 2rem;
-    align-items: stretch;
+  .disp-kpi-card {
+    transition: all 0.2s ease;
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.06);
+    }
+    .disp-kpi-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+    .disp-kpi-label {
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .disp-kpi-value {
+      font-size: 1.35rem;
+      font-weight: 900;
+      line-height: 1.1;
+      margin-top: 0.15rem;
+    }
+    .disp-kpi-hint {
+      font-size: 0.68rem;
+      margin-top: 0.15rem;
+    }
   }
 
-  .dish-detail-media {
-    aspect-ratio: auto;
-    min-height: 560px;
-    height: 100%;
+  .disp-pill-btn {
+    padding: 0.4rem 0.85rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    background: transparent;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+
+    &:hover {
+      color: #1e293b;
+      background: rgba(255, 255, 255, 0.6);
+    }
+
+    &.active {
+      color: #0f172a;
+      background: #ffffff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
   }
-  .dish-detail-img { position: absolute; inset: 0; height: 100%; }
-  .dish-detail-info { padding: 0.75rem 1rem 0.75rem 0; }
+
+  .disp-hero-cocina {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .disp-hero-barra {
+    background: linear-gradient(135deg, #2e1065 0%, #581c87 50%, #3b0764 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+
+  .disp-item-card {
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    border-color: #e2e8f0;
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.08);
+      border-color: #cbd5e1;
+    }
+
+    &.card-86 {
+      border-color: #fecdd3;
+      background: #fffbfa;
+      opacity: 0.94;
+
+      &:hover {
+        box-shadow: 0 12px 24px -4px rgba(225, 29, 72, 0.15);
+        border-color: #fda4af;
+      }
+    }
+
+    &.card-85 {
+      border-color: #fde68a;
+      background: #fffdf5;
+
+      &:hover {
+        box-shadow: 0 12px 24px -4px rgba(217, 119, 6, 0.16);
+        border-color: #fcd34d;
+      }
+    }
+
+    .disp-stock-box {
+      border: 1px solid transparent;
+
+      &.stock-zero {
+        background: #fef2f2;
+        border-color: #fee2e2;
+        .stock-num {
+          color: #dc2626;
+        }
+      }
+
+      &.stock-low {
+        background: #fffbeb;
+        border-color: #fef3c7;
+        .stock-num {
+          color: #d97706;
+        }
+      }
+
+      &.stock-ok {
+        background: #f0fdf4;
+        border-color: #dcfce7;
+        .stock-num {
+          color: #16a34a;
+        }
+      }
+    }
+
+    .disp-sales-mesero-box {
+      background: #faf5ff;
+      border: 1px dashed #e9d5ff;
+    }
+  }
+
+  // Estilos compartidos para badges y botones (Grid + Lista)
+  .disp-area-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.55rem;
+    border-radius: 8px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+
+    &.badge-cocina {
+      background: rgba(37, 99, 235, 0.92);
+      color: #ffffff;
+    }
+
+    &.badge-barra {
+      background: rgba(124, 58, 237, 0.92);
+      color: #ffffff;
+    }
+  }
+
+  .disp-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.55rem;
+    border-radius: 8px;
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+
+    &.badge-code-86 {
+      background: rgba(225, 29, 72, 0.95);
+      color: #ffffff;
+      animation: pulseSubtle 2s infinite;
+    }
+
+    &.badge-code-85 {
+      background: rgba(217, 119, 6, 0.95);
+      color: #ffffff;
+    }
+
+    &.badge-code-disp {
+      background: rgba(5, 150, 105, 0.92);
+      color: #ffffff;
+    }
+  }
+
+  .disp-order-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.9rem;
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+    white-space: nowrap;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(79, 70, 229, 0.35);
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    &.btn-disabled,
+    &:disabled {
+      background: #f1f5f9;
+      color: #94a3b8;
+      cursor: not-allowed;
+      box-shadow: none;
+      border: 1px solid #e2e8f0;
+    }
+  }
 }
 
-@media (min-width: 1400px) {
-  .dish-detail-card { max-width: 1160px; }
-  .dish-detail-media { min-height: 620px; }
+@keyframes pulseSubtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.85;
+  }
 }
+

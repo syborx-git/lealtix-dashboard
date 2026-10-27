@@ -1,0 +1,234 @@
+<!-- ============ REPORTE 3.2: RENDIMIENTO DE CAMPAÑAS Y CUPONES ============ -->
+
+@if (loading() && !reporte()) {
+  <div class="reporte-panel">
+    <div class="kpi-grid">
+      @for (i of [1, 2, 3, 4, 5]; track i) {
+        <div class="kpi-card">
+          <p-skeleton width="55%" height="0.8rem" />
+          <p-skeleton width="70%" height="1.6rem" styleClass="mt-3" />
+          <p-skeleton width="45%" height="0.75rem" styleClass="mt-2" />
+        </div>
+      }
+    </div>
+    <div class="panel">
+      <p-skeleton width="30%" height="1.1rem" />
+      <p-skeleton height="16rem" styleClass="mt-3" />
+    </div>
+  </div>
+} @else if (error() && !reporte()) {
+  <div class="panel panel--error">
+    <i class="pi pi-exclamation-triangle"></i>
+    <h3>No se pudo cargar el rendimiento de campañas</h3>
+    <p>{{ error() }}</p>
+    <button pButton type="button" label="Reintentar" icon="pi pi-refresh" (click)="recargar()"></button>
+  </div>
+} @else if (reporte(); as datos) {
+  <div class="reporte-panel">
+    <!-- ============ SUBENCABEZADO ============ -->
+    <div class="reporte-subheader">
+      <div>
+        <h3>{{ datos.meta.nombre }}</h3>
+        <p class="reporte-subheader__rango">
+          {{ datos.meta.rangoActual.etiqueta }}
+          <i class="pi pi-arrow-right"></i>
+          comparado con {{ datos.meta.rangoAnterior.etiqueta }}
+        </p>
+      </div>
+      <div class="reporte-subheader__acciones">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          severity="secondary"
+          [outlined]="true"
+          size="small"
+          [loading]="loading()"
+          (click)="recargar()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-file-excel"
+          label="Exportar a Excel"
+          size="small"
+          [loading]="exportando()"
+          (click)="exportar()"
+        ></button>
+      </div>
+    </div>
+
+    <!-- ============ AVISO METODOLOGICO ============ -->
+    <div class="reporte-nota">
+      <i class="pi pi-info-circle"></i>
+      <div>
+        <strong>Medición de Retorno de Inversión (ROI):</strong> El reporte contrasta los descuentos aplicados por canje
+        con el ticket neto total facturado en esas mismas órdenes, cuantificando la rentabilidad de cada cupón emitido.
+      </div>
+    </div>
+
+    <!-- ============ KPIs COMPARATIVOS ============ -->
+    <app-kpi-grid [kpis]="datos.kpis" />
+
+    <!-- ============ GRAFICAS DE APOYO ============ -->
+    <div class="grid-2">
+      <!-- Canjes por Campaña -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Canjes por Campaña</h4>
+            <p class="panel__subtitulo">Cupones efectivamente redimidos en caja</p>
+          </div>
+        </div>
+        @if (datos.canjesPorCampana.length) {
+          <div class="panel__grafica panel__grafica--alta">
+            <p-chart type="doughnut" [data]="canjesChartData()" [options]="canjesChartOptions" />
+          </div>
+        } @else {
+          <div class="panel__vacio">
+            <i class="pi pi-ticket"></i>
+            <p>Sin cupones canjeados en este periodo</p>
+          </div>
+        }
+      </div>
+
+      <!-- Descuentos Otorgados vs Ventas Generadas -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Descuentos vs Ventas Generadas</h4>
+            <p class="panel__subtitulo">Inversión en descuento ($) vs ingresos obtenidos ($)</p>
+          </div>
+        </div>
+        @if (datos.comparativaDescuentoVenta.length) {
+          <div class="panel__grafica panel__grafica--alta">
+            <p-chart type="bar" [data]="comparativaChartData()" [options]="comparativaChartOptions" />
+          </div>
+        } @else {
+          <div class="panel__vacio">
+            <i class="pi pi-chart-bar"></i>
+            <p>Sin datos comparativos disponibles</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ============ TABLA 1: RESUMEN DE CAMPAÑAS ============ -->
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <h4>Efectividad por Campaña</h4>
+          <p class="panel__subtitulo">Canjes, monto de descuento otorgado, ventas y ROI</p>
+        </div>
+      </div>
+
+      <p-table
+        [value]="datos.resumenCampanas.filas"
+        styleClass="p-datatable-sm tabla-reporte"
+        [tableStyle]="{ 'min-width': '100%' }"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            @for (col of datos.resumenCampanas.columnas; track col.key) {
+              <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-fila>
+          <tr>
+            @for (col of datos.resumenCampanas.columnas; track col.key) {
+              <td [style.text-align]="alineacion(col)">
+                @if (col.key === 'campana') {
+                  <span class="font-bold text-slate-800">{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'descuentoTotal') {
+                  <span class="font-semibold text-red-600">{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'ventaTotal') {
+                  <span class="font-bold text-emerald-700">{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'roi') {
+                  <span class="font-bold text-purple-700">{{ valorCelda(fila, col) }}</span>
+                } @else {
+                  {{ valorCelda(fila, col) }}
+                }
+              </td>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td [attr.colspan]="datos.resumenCampanas.columnas.length" class="text-center py-4 text-slate-400">
+              No se registraron campañas en el periodo.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- ============ TABLA 2: HISTORIAL DE CUPONES CANJEADOS ============ -->
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <h4>Registro de Cupones Redimidos</h4>
+          <p class="panel__subtitulo">Folio de comanda, cliente, código, descuento y cajero responsable</p>
+        </div>
+        <div class="filtro-busqueda">
+          <p-iconfield styleClass="w-full">
+            <p-inputicon styleClass="pi pi-search" />
+            <input
+              pInputText
+              type="text"
+              placeholder="Buscar cupón, comanda o cliente..."
+              [(ngModel)]="filtroCupones"
+              (input)="dtCupones.filterGlobal($any($event.target).value, 'contains')"
+              class="w-full p-inputtext-sm"
+            />
+          </p-iconfield>
+        </div>
+      </div>
+
+      <p-table
+        #dtCupones
+        [value]="datos.cuponesCanjeados.filas"
+        [globalFilterFields]="['cupon', 'campana', 'comanda', 'cliente', 'cajero']"
+        [paginator]="true"
+        [rows]="15"
+        [rowsPerPageOptions]="[15, 30, 60]"
+        styleClass="p-datatable-sm tabla-reporte"
+        [tableStyle]="{ 'min-width': '100%' }"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            @for (col of datos.cuponesCanjeados.columnas; track col.key) {
+              <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-fila>
+          <tr>
+            @for (col of datos.cuponesCanjeados.columnas; track col.key) {
+              <td [style.text-align]="alineacion(col)">
+                @if (col.key === 'cupon') {
+                  <span class="font-mono font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                    {{ valorCelda(fila, col) }}
+                  </span>
+                } @else if (col.key === 'descuento') {
+                  <span class="font-bold text-red-600">-{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'totalComanda') {
+                  <span class="font-bold text-slate-900">{{ valorCelda(fila, col) }}</span>
+                } @else {
+                  {{ valorCelda(fila, col) }}
+                }
+              </td>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td [attr.colspan]="datos.cuponesCanjeados.columnas.length" class="text-center py-4 text-slate-400">
+              No se encontraron redenciones en el periodo seleccionado.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+}

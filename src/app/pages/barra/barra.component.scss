@@ -1,16 +1,24 @@
 :host {
     display: block;
+    height: 100%;
 }
 
 .barra-shell {
-    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 10.5rem);
+    min-height: 520px;
+    box-sizing: border-box;
+    overflow: hidden;
+    padding: 0.5rem 0.5rem 0.5rem 0.5rem;
 }
 
 .barra-header {
+    flex-shrink: 0;
     align-items: center;
     display: flex;
     justify-content: space-between;
-    margin-bottom: 1rem;
+    margin-bottom: 0.85rem;
 }
 
 .barra-header h2 {
@@ -36,22 +44,81 @@
 }
 
 .barra-grid {
+    flex: 1 1 0%;
+    min-height: 0;
     display: grid;
     gap: 1rem;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    height: 100%;
+    overflow: hidden;
 }
 
 .barra-column {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    overflow: hidden;
     background: color-mix(in srgb, var(--surface-card) 88%, #ffffff 12%);
     border: 1px solid var(--surface-border);
     border-radius: 1rem;
-    padding: 0.75rem;
+    padding: 0.85rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .barra-column h3 {
+    flex-shrink: 0;
     font-size: 1rem;
     font-weight: 700;
-    margin: 0 0 0.65rem;
+    margin: 0 0 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--surface-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.barra-column-body {
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 0.35rem;
+
+    // Scrollbar estilizado moderno
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
+
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+        background: rgba(148, 163, 184, 0.4);
+        border-radius: 9999px;
+    }
+    &::-webkit-scrollbar-thumb:hover {
+        background: rgba(100, 116, 139, 0.7);
+    }
+}
+
+.barra-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: var(--text-color-secondary, #94a3b8);
+    font-size: 0.85rem;
+    font-weight: 500;
+    border: 1.5px dashed var(--surface-border, #e2e8f0);
+    border-radius: 0.75rem;
+    background: rgba(248, 250, 252, 0.5);
+    margin-top: 0.25rem;
 }
 
 .order-card {
@@ -769,4 +836,335 @@
 
 :host ::ng-deep .ready-card .p-card {
     border-color: #7c3aed;
+}
+
+/* ============================================================
+   Minimalist Dish Prep Cards (Estilo SaaS / Barra)
+   ============================================================ */
+.prep-dish-cards-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 0.75rem;
+}
+
+.prep-dish-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1.25rem;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+
+    &.dish-card-tappable {
+        cursor: pointer;
+        &:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.08);
+        }
+    }
+
+    &.dish-card-delivered {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+        opacity: 0.72;
+
+        .prep-dish-name {
+            color: #64748b;
+        }
+    }
+
+    &.dish-card-pending-attention {
+        border: 2px solid #ef4444;
+        background: #fff5f5;
+        animation: pulseWarning 1.5s infinite;
+    }
+}
+
+.prep-dish-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.prep-dish-title-group {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    flex: 1;
+}
+
+.prep-dish-icon-box {
+    width: 38px;
+    height: 38px;
+    border-radius: 0.75rem;
+    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(109, 40, 217, 0.3);
+
+    &.icon-box-delivered {
+        background: #94a3b8;
+        box-shadow: none;
+    }
+}
+
+.prep-dish-name-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.prep-dish-name {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+
+    &.line-through {
+        text-decoration: line-through;
+        color: #94a3b8;
+    }
+}
+
+.prep-dish-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+}
+
+.prep-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.18rem 0.55rem;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+
+    &.prep-badge-seat {
+        background: #e0f2fe;
+        color: #0369a1;
+        border: 1px solid #bae6fd;
+    }
+
+    &.prep-badge-marchado {
+        background: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
+    }
+
+    &.prep-badge-espera {
+        background: #fefce8;
+        color: #a16207;
+        border: 1px dashed #fde047;
+    }
+
+    &.prep-badge-takeaway {
+        background: #ffedd5;
+        color: #9a3412;
+        border: 1px solid #fed7aa;
+    }
+
+    &.prep-badge-salio {
+        background: #f0fdf4;
+        color: #15803d;
+        border: 1px solid #bbf7d0;
+    }
+}
+
+.prep-dish-right-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.prep-dish-qty-display {
+    font-size: 1.85rem;
+    font-weight: 900;
+    color: #0f172a;
+    letter-spacing: -0.03em;
+    line-height: 1;
+}
+
+.prep-dish-check-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 9999px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid #cbd5e1;
+    transition: all 0.15s ease;
+
+    input[type="checkbox"] {
+        accent-color: #8b5cf6;
+        width: 15px;
+        height: 15px;
+        cursor: pointer;
+    }
+
+    &:hover {
+        background: #e2e8f0;
+    }
+
+    &.check-btn-active {
+        background: #ede9fe;
+        color: #6d28d9;
+        border-color: #c4b5fd;
+    }
+}
+
+.prep-dish-comments {
+    margin-top: 0.75rem;
+    background: #fffbeb;
+    border-left: 3px solid #f59e0b;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0 0.5rem 0.5rem 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #92400e;
+}
+
+.prep-dish-divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 1rem 0;
+}
+
+.prep-dish-specs-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.prep-specs-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+}
+
+.prep-ingredients-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.prep-ing-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-size: 0.925rem;
+    color: #334155;
+    padding: 0.25rem 0;
+
+    .prep-ing-icon {
+        font-size: 0.85rem;
+        flex-shrink: 0;
+
+        &.icon-check {
+            color: #10b981;
+        }
+
+        &.icon-times {
+            color: #ef4444;
+            font-size: 0.95rem;
+        }
+
+        &.icon-plus {
+            color: #8b5cf6;
+            font-size: 0.95rem;
+        }
+    }
+
+    .prep-ing-name {
+        font-weight: 500;
+        color: #1e293b;
+
+        &.ing-name-strikethrough {
+            text-decoration: line-through;
+            color: #dc2626;
+            font-weight: 700;
+        }
+    }
+
+    .prep-ing-group-tag {
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.1rem 0.4rem;
+        border-radius: 4px;
+        background: #f1f5f9;
+        color: #64748b;
+
+        &.tag-removed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        &.tag-extra {
+            background: #ede9fe;
+            color: #6d28d9;
+        }
+    }
+
+    .prep-ing-qty {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin-left: auto;
+    }
+
+    .prep-ing-strike-badge {
+        margin-left: auto;
+        font-size: 0.72rem;
+        font-weight: 800;
+        color: #dc2626;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        padding: 0.15rem 0.5rem;
+        border-radius: 9999px;
+        letter-spacing: 0.02em;
+    }
+
+    .prep-ing-extra-price {
+        font-size: 0.78rem;
+        font-weight: 800;
+        color: #7c3aed;
+        background: #f5f3ff;
+        padding: 0.1rem 0.4rem;
+        border-radius: 4px;
+    }
+
+    &.ing-item-removed {
+        background: rgba(254, 242, 242, 0.6);
+        padding: 0.35rem 0.6rem;
+        border-radius: 0.5rem;
+        border: 1px dashed #fca5a5;
+    }
+}
+
+.prep-no-recipe-hint {
+    font-size: 0.825rem;
+    color: #94a3b8;
+    font-style: italic;
+    padding: 0.25rem 0;
 }

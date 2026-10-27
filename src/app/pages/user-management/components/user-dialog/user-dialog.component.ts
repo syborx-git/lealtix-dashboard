@@ -52,7 +52,7 @@ import { UserRole, ROLE_PERMISSIONS } from '@/models/user.model';
           </div>
           <div>
             <h3 class="text-base font-extrabold text-white m-0 leading-tight">
-              {{ usuarioEnEdicion ? 'Editar Miembro del Equipo' : 'Nuevo Miembro / Mesero' }}
+              {{ usuarioEnEdicion ? 'Editar Miembro del Equipo' : 'Nuevo Miembro del Equipo' }}
             </h3>
             <p class="text-xs text-white/80 m-0 mt-0.5 font-medium">
               {{ usuarioEnEdicion ? 'Actualiza los datos y asignaciones del usuario' : 'Ingresa la información para dar de alta al usuario en el sistema' }}

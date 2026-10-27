@@ -59,12 +59,31 @@ export class InventoryService {
     return this.http.get<any>(`${this.baseUrl}/bebidas/tenant/${tenantId}`);
   }
 
-createBebida(tenantId: number, nombre: string, unidad: string, stock: number, stockMinimo: number, precioVenta: number, categoryIds?: number[]): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/bebidas`, { tenantId, nombre, unidad, stock, stockMinimo, precioVenta, categoryIds: categoryIds ?? [] });
+  createBebida(tenantId: number, nombre: string, unidad: string, stock: number, stockMinimo: number, precioVenta: number, categoryIds?: number[], esVariable?: boolean, tieneVariantes?: boolean): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/bebidas`, {
+      tenantId,
+      nombre,
+      unidad,
+      stock,
+      stockMinimo,
+      precioVenta,
+      categoryIds: categoryIds ?? [],
+      esVariable: !!esVariable,
+      tieneVariantes: !!tieneVariantes
+    });
   }
 
-  updateBebida(insumoId: number, nombre: string, unidad: string, stock: number, stockMinimo: number, precioVenta: number, categoryIds?: number[]): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/bebidas/${insumoId}`, { nombre, unidad, stock, stockMinimo, precioVenta, categoryIds: categoryIds ?? [] });
+  updateBebida(insumoId: number, nombre: string, unidad: string, stock: number, stockMinimo: number, precioVenta: number, categoryIds?: number[], esVariable?: boolean, tieneVariantes?: boolean): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/bebidas/${insumoId}`, {
+      nombre,
+      unidad,
+      stock,
+      stockMinimo,
+      precioVenta,
+      categoryIds: categoryIds ?? [],
+      esVariable: esVariable !== undefined ? !!esVariable : undefined,
+      tieneVariantes: tieneVariantes !== undefined ? !!tieneVariantes : undefined
+    });
   }
 
   deleteBebida(insumoId: number): Observable<any> {
@@ -83,8 +102,8 @@ createBebida(tenantId: number, nombre: string, unidad: string, stock: number, st
     return this.http.get<any>(`${this.baseUrl}/dish/${dishId}/recipes`);
   }
 
-  addRecipeIngredient(dishId: number, insumoId: number, cantidad: number, modificable: boolean): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/dish/${dishId}/recipes`, { insumoId, cantidad, modificable });
+  addRecipeIngredient(dishId: number, insumoId: number, cantidad: number, modificable: boolean, grupo?: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/dish/${dishId}/recipes`, { insumoId, cantidad, modificable, grupo: grupo || null });
   }
 
   setRecipes(dishId: number, lines: any[]): Observable<any> {
@@ -95,20 +114,20 @@ createBebida(tenantId: number, nombre: string, unidad: string, stock: number, st
     return this.http.delete<any>(`${this.baseUrl}/recipes/${recipeId}`);
   }
 
-  updateRecipeIngredient(recipeId: number, cantidad: number, importancia: string, precio: number = 0): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/recipes/${recipeId}`, { cantidad, importancia, precio });
+  updateRecipeIngredient(recipeId: number, cantidad: number, importancia: string, precio: number = 0, grupo?: string): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/recipes/${recipeId}`, { cantidad, importancia, precio, grupo: grupo || null });
   }
 
   getAdditionals(dishId: number): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}/dish/${dishId}/additionals`);
   }
 
-  addAdditional(dishId: number, insumoId: number, cantidad: number, precio: number): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/dish/${dishId}/additionals`, { insumoId, cantidad, precio });
+  addAdditional(dishId: number, insumoId: number, cantidad: number, precio: number, grupo?: string, isVariant?: boolean): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/dish/${dishId}/additionals`, { insumoId, cantidad, precio, grupo: grupo || null, isVariant: !!isVariant });
   }
 
-  updateAdditional(additionalId: number, cantidad: number, importancia: string, precio: number = 0): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/additionals/${additionalId}`, { cantidad, importancia, precio });
+  updateAdditional(additionalId: number, cantidad: number, importancia: string, precio: number = 0, grupo?: string): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/additionals/${additionalId}`, { cantidad, importancia, precio, grupo: grupo || null });
   }
 
   removeAdditional(additionalId: number): Observable<any> {
@@ -119,12 +138,16 @@ createBebida(tenantId: number, nombre: string, unidad: string, stock: number, st
     return this.http.get<any>(`${this.baseUrl}/sub-recetas/tenant/${tenantId}`);
   }
 
-  createSubReceta(tenantId: number, nombre: string, lines: any[]): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/sub-recetas`, { tenantId, nombre, lines, categoryIds: [] });
+  createSubReceta(tenantId: number, nombre: string, lines: any[], tamanoLote: number = 1000, unidad: string = 'mililitros'): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/sub-recetas`, { tenantId, nombre, tamanoLote, unidad, lines, categoryIds: [] });
   }
 
-  updateSubReceta(subRecetaId: number, nombre: string, lines: any[]): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/sub-recetas/${subRecetaId}`, { nombre, lines, categoryIds: [] });
+  updateSubReceta(subRecetaId: number, nombre: string, lines: any[], tamanoLote?: number, unidad?: string): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/sub-recetas/${subRecetaId}`, { nombre, tamanoLote, unidad, lines, categoryIds: [] });
+  }
+
+  producirLoteSubReceta(subRecetaId: number, lotes: number = 1): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/sub-recetas/${subRecetaId}/producir-lote`, { lotes });
   }
 
   deleteSubReceta(subRecetaId: number): Observable<any> {
@@ -135,15 +158,31 @@ createBebida(tenantId: number, nombre: string, unidad: string, stock: number, st
     return this.http.get<any>(`${this.baseUrl}/dish/${dishId}/sub-recetas`);
   }
 
-  assignSubReceta(dishId: number, subRecetaId: number, importancia: string = 'BASE', precio: number = 0): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/dish/${dishId}/sub-recetas/${subRecetaId}`, { importancia, precio });
+  assignSubReceta(dishId: number, subRecetaId: number, importancia: string = 'BASE', precio: number = 0, cantidad: number = 1, unidad?: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/dish/${dishId}/sub-recetas/${subRecetaId}`, { importancia, precio, cantidad, unidad });
   }
 
-  updateSubRecetaImportance(dishId: number, subRecetaId: number, importancia: string, precio: number = 0): Observable<any> {
-    return this.http.put<any>(`${this.baseUrl}/dish/${dishId}/sub-recetas/${subRecetaId}`, { importancia, precio });
+  updateSubRecetaImportance(dishId: number, subRecetaId: number, importancia: string, precio: number = 0, cantidad?: number, unidad?: string): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/dish/${dishId}/sub-recetas/${subRecetaId}`, { importancia, precio, cantidad, unidad });
   }
 
   removeSubRecetaFromDish(dishId: number, subRecetaId: number): Observable<any> {
     return this.http.delete<any>(`${this.baseUrl}/dish/${dishId}/sub-recetas/${subRecetaId}`);
+  }
+
+  getVariantDishes(dishId: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/dish/${dishId}/variant-dishes`);
+  }
+
+  addVariantDish(dishId: number, variantDishId: number, precio?: number, grupo?: string, cantidad: number = 1, unidad?: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/dish/${dishId}/variant-dish`, { variantDishId, precio, grupo, cantidad, unidad });
+  }
+
+  updateVariantDish(id: number, precio?: number, grupo?: string, cantidad?: number, unidad?: string): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/variant-dish/${id}`, { precio, grupo, cantidad, unidad });
+  }
+
+  removeVariantDish(id: number): Observable<any> {
+    return this.http.delete<any>(`${this.baseUrl}/variant-dish/${id}`);
   }
 }

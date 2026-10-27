@@ -1,0 +1,233 @@
+<!-- ============ REPORTE 4.3: TIEMPOS DE SERVICIO Y PREPARACION ============ -->
+
+@if (loading() && !reporte()) {
+  <div class="reporte-panel">
+    <div class="kpi-grid">
+      @for (i of [1, 2, 3, 4, 5]; track i) {
+        <div class="kpi-card">
+          <p-skeleton width="55%" height="0.8rem" />
+          <p-skeleton width="70%" height="1.6rem" styleClass="mt-3" />
+          <p-skeleton width="45%" height="0.75rem" styleClass="mt-2" />
+        </div>
+      }
+    </div>
+    <div class="panel">
+      <p-skeleton width="30%" height="1.1rem" />
+      <p-skeleton height="16rem" styleClass="mt-3" />
+    </div>
+  </div>
+} @else if (error() && !reporte()) {
+  <div class="panel panel--error">
+    <i class="pi pi-exclamation-triangle"></i>
+    <h3>No se pudo cargar el reporte de tiempos de servicio</h3>
+    <p>{{ error() }}</p>
+    <button pButton type="button" label="Reintentar" icon="pi pi-refresh" (click)="recargar()"></button>
+  </div>
+} @else if (reporte(); as datos) {
+  <div class="reporte-panel">
+    <!-- ============ SUBENCABEZADO ============ -->
+    <div class="reporte-subheader">
+      <div>
+        <h3>{{ datos.meta.nombre }}</h3>
+        <p class="reporte-subheader__rango">
+          {{ datos.meta.rangoActual.etiqueta }}
+          <i class="pi pi-arrow-right"></i>
+          comparado con {{ datos.meta.rangoAnterior.etiqueta }}
+        </p>
+      </div>
+      <div class="reporte-subheader__acciones">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          severity="secondary"
+          [outlined]="true"
+          size="small"
+          [loading]="loading()"
+          (click)="recargar()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-file-excel"
+          label="Exportar a Excel"
+          size="small"
+          [loading]="exportando()"
+          (click)="exportar()"
+        ></button>
+      </div>
+    </div>
+
+    <!-- ============ AVISO METODOLOGICO ============ -->
+    <div class="reporte-nota">
+      <i class="pi pi-info-circle"></i>
+      <div>
+        <strong>Medición Operativa:</strong> Se calcula el tiempo en minutos transcurrido desde el momento en que el mesero
+        envía la comanda al KDS / pantalla de cocina hasta que el platillo es marcado como listo para entrega en mesa o barra.
+      </div>
+    </div>
+
+    <!-- ============ KPIs COMPARATIVOS ============ -->
+    <app-kpi-grid [kpis]="datos.kpis" />
+
+    <!-- ============ GRAFICAS DE APOYO ============ -->
+    <div class="grid-2">
+      <!-- Distribución por Rangos de Tiempo -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Distribución por Rangos de Tiempo</h4>
+            <p class="panel__subtitulo">Porcentaje de comandas según rapidez de despacho</p>
+          </div>
+        </div>
+        @if (datos.distribucionRangos.length) {
+          <div class="panel__grafica panel__grafica--alta">
+            <p-chart type="doughnut" [data]="rangosChartData()" [options]="rangosChartOptions" />
+          </div>
+        } @else {
+          <div class="panel__vacio">
+            <i class="pi pi-clock"></i>
+            <p>Sin comandas procesadas en este periodo</p>
+          </div>
+        }
+      </div>
+
+      <!-- Promedio por Estación (Cocina / Barra) -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Tiempos Promedio por Estación</h4>
+            <p class="panel__subtitulo">Minutos promedio de despacho en Cocina vs Barra</p>
+          </div>
+        </div>
+        @if (datos.promedioPorEstacion.length) {
+          <div class="panel__grafica panel__grafica--alta">
+            <p-chart type="bar" [data]="estacionesChartData()" [options]="estacionesChartOptions" />
+          </div>
+        } @else {
+          <div class="panel__vacio">
+            <i class="pi pi-chart-bar"></i>
+            <p>Sin datos de estación en este periodo</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ============ TABLA 1: TIEMPOS POR ESTACION ============ -->
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <h4>Rendimiento por Estación de Servicio</h4>
+          <p class="panel__subtitulo">Volumen de comandas, tiempos mínimos, máximos y porcentaje de cumplimiento</p>
+        </div>
+      </div>
+
+      <p-table
+        [value]="datos.tiemposPorEstacion.filas"
+        styleClass="p-datatable-sm tabla-reporte"
+        [tableStyle]="{ 'min-width': '100%' }"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            @for (col of datos.tiemposPorEstacion.columnas; track col.key) {
+              <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-fila>
+          <tr>
+            @for (col of datos.tiemposPorEstacion.columnas; track col.key) {
+              <td [style.text-align]="alineacion(col)">
+                @if (col.key === 'estacion') {
+                  <span class="font-bold text-slate-800">{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'promedioMin') {
+                  <span class="font-semibold text-orange-600">{{ valorCelda(fila, col) }} min</span>
+                } @else if (col.key === 'cumplimientoPct') {
+                  <span class="font-bold text-emerald-700">{{ valorCelda(fila, col) }}%</span>
+                } @else {
+                  {{ valorCelda(fila, col) }}
+                }
+              </td>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td [attr.colspan]="datos.tiemposPorEstacion.columnas.length" class="text-center py-4 text-slate-400">
+              No se encontraron estaciones en el periodo.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- ============ TABLA 2: DETALLE DE COMANDAS ============ -->
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <h4>Registro Individual de Comandas</h4>
+          <p class="panel__subtitulo">Mesa, mesero, tiempos exactos de creación/cierre y evaluación de servicio</p>
+        </div>
+        <div class="filtro-busqueda">
+          <p-iconfield styleClass="w-full">
+            <p-inputicon styleClass="pi pi-search" />
+            <input
+              pInputText
+              type="text"
+              placeholder="Buscar comanda, mesa o mesero..."
+              [(ngModel)]="filtroComandas"
+              (input)="dtComandas.filterGlobal($any($event.target).value, 'contains')"
+              class="w-full p-inputtext-sm"
+            />
+          </p-iconfield>
+        </div>
+      </div>
+
+      <p-table
+        #dtComandas
+        [value]="datos.detalleComandas.filas"
+        [globalFilterFields]="['folio', 'mesa', 'mesero', 'tipoServicio']"
+        [paginator]="true"
+        [rows]="15"
+        [rowsPerPageOptions]="[15, 30, 60]"
+        styleClass="p-datatable-sm tabla-reporte"
+        [tableStyle]="{ 'min-width': '100%' }"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            @for (col of datos.detalleComandas.columnas; track col.key) {
+              <th [style.text-align]="alineacion(col)">{{ col.label }}</th>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-fila>
+          <tr>
+            @for (col of datos.detalleComandas.columnas; track col.key) {
+              <td [style.text-align]="alineacion(col)">
+                @if (col.key === 'folio') {
+                  <span class="font-mono font-semibold text-slate-800">{{ valorCelda(fila, col) }}</span>
+                } @else if (col.key === 'minutos') {
+                  <span class="font-bold text-slate-900">{{ valorCelda(fila, col) }} min</span>
+                } @else if (col.key === 'estadoTiempo') {
+                  <p-tag
+                    [value]="estadoTiempoTag(fila['minutos']).label"
+                    [severity]="estadoTiempoTag(fila['minutos']).severity"
+                  />
+                } @else {
+                  {{ valorCelda(fila, col) }}
+                }
+              </td>
+            }
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td [attr.colspan]="datos.detalleComandas.columnas.length" class="text-center py-4 text-slate-400">
+              No se encontraron comandas registradas en este periodo.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+  </div>
+}

@@ -88,6 +88,25 @@ export class OrderService {
   }
 
   /**
+   * Agrega nuevos productos a una comanda abierta (nueva ronda)
+   * Los nuevos artículos van a cocina/barra y se suman a la misma cuenta.
+   * POST /api/tenant-client-orders/{orderId}/items
+   */
+  addItemsToOrder(orderId: string, order: TenantClientOrderCreateRequest | TenantClientOrderUpdateRequest): Observable<TenantClientOrderResponse> {
+    return this.http.post<{ object?: TenantClientOrderResponse } | TenantClientOrderResponse>(`${this.baseUrl}/${orderId}/items`, order).pipe(
+      map((response): TenantClientOrderResponse =>
+        'object' in response && response.object
+          ? response.object
+          : response as TenantClientOrderResponse
+      ),
+      catchError((error) => {
+        console.error('Error al agregar items a la comanda:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
    * Lista órdenes por tenant con filtro opcional de estado
    * GET /api/tenant-client-orders?tenantId=X&status=PENDING&page=0&size=20
    */
@@ -136,7 +155,9 @@ export class OrderService {
     orderId: string,
     status: string,
     userEmail?: string,
-    reason?: string
+    reason?: string,
+    cancellationCategory?: string,
+    cancellationComment?: string
   ): Observable<UpdateOrderStatusResponse> {
     let email = userEmail;
     let cancelReason = reason;
@@ -151,7 +172,9 @@ export class OrderService {
     const body: UpdateOrderStatusRequest = {
       estado: normalizedStatus,
       ...(email && { userEmail: email }),
-      ...(cancelReason && { reason: cancelReason })
+      ...(cancelReason && { reason: cancelReason }),
+      ...(cancellationCategory && { cancellationCategory }),
+      ...(cancellationComment && { cancellationComment })
     };
 
     return this.http

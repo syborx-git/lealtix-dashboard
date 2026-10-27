@@ -17,10 +17,44 @@ import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
 
 import { AuthService } from '@/auth/auth.service';
-import { MermaRecord, MermaService, TIPOS_MERMA } from '@/pages/comandix/services/merma.service';
+import {
+  ComandaDetalleMerma,
+  ComandaItemMerma,
+  InsumoUsado,
+  MermaRecord,
+  MermaService,
+  TIPOS_MERMA
+} from '@/pages/comandix/services/merma.service';
 import { OrderService } from '@/pages/comandix/services/order.service';
 import { PendingOrder } from '@/pages/comandix/models/order.model';
 import { InventoryService } from '@/pages/inventario/service/inventory.service';
+
+export interface InsumoUIRow {
+  insumoId?: number | null;
+  insumoNombre?: string | null;
+  productoId?: number | null;
+  productoNombre?: string | null;
+  cantidadMax: number;
+  cantidadMerma: number;
+  unidad: string;
+  costoUnitario: number;
+  costoTotal: number;
+  seleccionado: boolean;
+}
+
+export interface DishItemUIRow {
+  itemId: string;
+  productoId: number;
+  productoNombre: string;
+  categoria: string;
+  cantidad: number;
+  precioUnitario: number;
+  subtotal: number;
+  costoEstimado: number;
+  tieneReceta: boolean;
+  expanded: boolean;
+  insumos: InsumoUIRow[];
+}
 
 @Component({
   selector: 'app-mermas',
@@ -59,11 +93,10 @@ export class MermasComponent implements OnInit {
   loadingOrders = signal<boolean>(false);
   mermaDialogVisible = false;
   mermaOrderId = signal<string | null>(null);
-  orderIngredients = signal<any[]>([]);
+  comandaDetalle = signal<ComandaDetalleMerma | null>(null);
+  dishItems = signal<DishItemUIRow[]>([]);
   loadingIngredients = signal<boolean>(false);
   busquedaComanda = signal<string>('');
-  seleccionados: Record<number, boolean> = {};
-  cantidades: Record<number, number> = {};
   registeringMerma = signal<boolean>(false);
 
   // ===== Merma administrativa (transfer list de dos columnas) =====
@@ -164,27 +197,50 @@ export class MermasComponent implements OnInit {
     this.mermaDialogVisible = true;
     this.busquedaComanda.set('');
     this.loadingIngredients.set(true);
-    this.seleccionados = {};
-    this.cantidades = {};
+    this.comandaDetalle.set(null);
+    this.dishItems.set([]);
 
-    this.mermaService.resolverInsumosUsados(order.id).subscribe({
+    this.mermaService.resolverDetalleComandaMerma(order.id).subscribe({
       next: (res) => {
-        const insumos = res?.object ?? [];
-        insumos.forEach((insumo: any, i: number) => {
-          this.seleccionados[i] = false;
-          this.cantidades[i] = insumo.cantidad ?? 0;
-        });
-        this.orderIngredients.set(insumos);
+        const detalle: ComandaDetalleMerma = res?.object;
+        this.comandaDetalle.set(detalle);
+
+        const items: DishItemUIRow[] = (detalle?.items ?? []).map((item) => ({
+          itemId: String(item.itemId ?? `${item.productoId}_${Math.random()}`),
+          productoId: item.productoId,
+          productoNombre: item.productoNombre,
+          categoria: item.categoria || 'General',
+          cantidad: item.cantidad,
+          precioUnitario: item.precioUnitario,
+          subtotal: item.subtotal,
+          costoEstimado: item.costoEstimado,
+          tieneReceta: item.tieneReceta,
+          expanded: false,
+          insumos: (item.insumos ?? []).map((ins) => ({
+            insumoId: ins.insumoId ?? null,
+            insumoNombre: ins.insumoNombre ?? (ins.productoNombre || item.productoNombre),
+            productoId: ins.productoId ?? item.productoId,
+            productoNombre: ins.productoNombre ?? item.productoNombre,
+            cantidadMax: ins.cantidad,
+            cantidadMerma: ins.cantidad,
+            unidad: ins.unidad || 'pieza',
+            costoUnitario: ins.costoUnitario || 0,
+            costoTotal: ins.costoTotal || ((ins.cantidad || 0) * (ins.costoUnitario || 0)),
+            seleccionado: false
+          }))
+        }));
+
+        this.dishItems.set(items);
         this.loadingIngredients.set(false);
       },
       error: (err) => {
-        console.error('Error cargando insumos:', err);
-        this.orderIngredients.set([]);
+        console.error('Error cargando detalle de comanda:', err);
+        this.dishItems.set([]);
         this.loadingIngredients.set(false);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: err.error?.message || 'No se pudieron cargar los insumos',
+          detail: err.error?.message || 'No se pudieron cargar los detalles de la comanda',
           life: 4000
         });
       }
@@ -194,26 +250,102 @@ export class MermasComponent implements OnInit {
   closeMermaModal(): void {
     this.mermaDialogVisible = false;
     this.mermaOrderId.set(null);
-    this.orderIngredients.set([]);
+    this.comandaDetalle.set(null);
+    this.dishItems.set([]);
     this.busquedaComanda.set('');
-    this.seleccionados = {};
-    this.cantidades = {};
   }
 
-  getIngredientesFiltrados(): { i: number; insumo: any }[] {
-    const term = this.busquedaComanda().trim().toLowerCase();
-    const all = this.orderIngredients();
-    const filtered = !term
-      ? all
-      : all.filter((insumo) =>
-          (insumo.insumoNombre ?? insumo.productoNombre ?? '')
-            .toLowerCase()
-            .includes(term)
-        );
-    return filtered.map((insumo, idx) => {
-      const original = term ? all.indexOf(insumo) : idx;
-      return { i: original, insumo };
+  isDishFullyChecked(dish: DishItemUIRow): boolean {
+    return dish.insumos.length > 0 && dish.insumos.every((ins) => ins.seleccionado);
+  }
+
+  isDishPartiallyChecked(dish: DishItemUIRow): boolean {
+    const checkedCount = dish.insumos.filter((ins) => ins.seleccionado).length;
+    return checkedCount > 0 && checkedCount < dish.insumos.length;
+  }
+
+  toggleDish(dish: DishItemUIRow, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    const fullyChecked = this.isDishFullyChecked(dish);
+    const targetState = !fullyChecked;
+    dish.insumos.forEach((ins) => {
+      ins.seleccionado = targetState;
+      if (targetState && (ins.cantidadMerma == null || ins.cantidadMerma <= 0)) {
+        ins.cantidadMerma = ins.cantidadMax;
+      }
     });
+  }
+
+  toggleDishExpanded(dish: DishItemUIRow): void {
+    dish.expanded = !dish.expanded;
+  }
+
+  onInsumoCheckChanged(dish: DishItemUIRow, ins: InsumoUIRow): void {
+    if (ins.seleccionado && (ins.cantidadMerma == null || ins.cantidadMerma <= 0)) {
+      ins.cantidadMerma = ins.cantidadMax;
+    }
+  }
+
+  onInsumoCantidadChange(ins: InsumoUIRow, val: number): void {
+    ins.cantidadMerma = Math.max(0, Number(val) || 0);
+    ins.costoTotal = ins.cantidadMerma * (ins.costoUnitario || 0);
+    if (ins.cantidadMerma > 0 && !ins.seleccionado) {
+      ins.seleccionado = true;
+    }
+  }
+
+  selectAllDishes(): void {
+    this.dishItems().forEach((dish) => {
+      dish.insumos.forEach((ins) => {
+        ins.seleccionado = true;
+        if (ins.cantidadMerma == null || ins.cantidadMerma <= 0) {
+          ins.cantidadMerma = ins.cantidadMax;
+        }
+      });
+    });
+  }
+
+  deselectAllDishes(): void {
+    this.dishItems().forEach((dish) => {
+      dish.insumos.forEach((ins) => {
+        ins.seleccionado = false;
+      });
+    });
+  }
+
+  toggleAllExpanded(): void {
+    const anyCollapsed = this.dishItems().some((d) => d.tieneReceta && !d.expanded);
+    this.dishItems().forEach((d) => {
+      if (d.tieneReceta) {
+        d.expanded = anyCollapsed;
+      }
+    });
+  }
+
+  areAllExpanded(): boolean {
+    const recipeDishes = this.dishItems().filter((d) => d.tieneReceta);
+    return recipeDishes.length > 0 && recipeDishes.every((d) => d.expanded);
+  }
+
+  getPlatillosFiltrados(): DishItemUIRow[] {
+    const term = this.busquedaComanda().trim().toLowerCase();
+    const dishes = this.dishItems();
+    if (!term) return dishes;
+
+    return dishes.filter((dish) => {
+      const matchDish = (dish.productoNombre ?? '').toLowerCase().includes(term) ||
+                        (dish.categoria ?? '').toLowerCase().includes(term);
+      const matchInsumo = dish.insumos.some((ins) =>
+        (ins.insumoNombre ?? '').toLowerCase().includes(term)
+      );
+      return matchDish || matchInsumo;
+    });
+  }
+
+  trackByDishId(_index: number, dish: DishItemUIRow): string {
+    return dish.itemId;
   }
 
   isNewOrder(order: PendingOrder): boolean {
@@ -250,33 +382,29 @@ export class MermasComponent implements OnInit {
   }
 
   getSeleccionTotal(): number {
-    return this.orderIngredients().filter((_, i) => this.seleccionados[i]).length;
+    let count = 0;
+    for (const dish of this.dishItems()) {
+      for (const ins of dish.insumos) {
+        if (ins.seleccionado) count++;
+      }
+    }
+    return count;
+  }
+
+  getPlatillosCompletosCount(): number {
+    return this.dishItems().filter((dish) => this.isDishFullyChecked(dish)).length;
   }
 
   getPerdidaTotal(): number {
     let total = 0;
-    for (const [indexStr, checked] of Object.entries(this.seleccionados)) {
-      if (!checked) continue;
-      const index = Number(indexStr);
-      const insumo = this.orderIngredients()[index];
-      if (!insumo) continue;
-      const cantidad = this.cantidades[index] ?? insumo.cantidad ?? 0;
-      total += cantidad * (insumo.costoUnitario ?? 0);
+    for (const dish of this.dishItems()) {
+      for (const ins of dish.insumos) {
+        if (ins.seleccionado) {
+          total += (ins.cantidadMerma || 0) * (ins.costoUnitario || 0);
+        }
+      }
     }
     return total;
-  }
-
-  onCantidadInput(index: number, event: Event): void {
-    this.seleccionados[index] = true;
-    this.cantidades[index] = Number((event.target as HTMLInputElement).value);
-  }
-
-  onInsumoCheck(index: number, checked: boolean): void {
-    this.seleccionados[index] = checked;
-  }
-
-  getInsumoName(insumo: any): string {
-    return insumo.insumoNombre ?? insumo.productoNombre ?? 'Producto';
   }
 
   registerMerma(): void {
@@ -284,28 +412,29 @@ export class MermasComponent implements OnInit {
     if (!currentId || this.registeringMerma()) return;
 
     const items: any[] = [];
-    for (const [indexStr, checked] of Object.entries(this.seleccionados)) {
-      if (!checked) continue;
-      const index = Number(indexStr);
-      const insumo = this.orderIngredients()[index];
-      if (!insumo) continue;
-      const cantidad = this.cantidades[index] ?? 0;
-      if (cantidad <= 0) continue;
-      items.push({
-        insumoId: insumo.insumoId ?? null,
-        insumoNombre: insumo.insumoNombre ?? null,
-        productoId: insumo.productoId ?? null,
-        productoNombre: insumo.productoNombre ?? null,
-        cantidad,
-        unidad: insumo.unidad ?? 'pieza'
-      });
+    for (const dish of this.dishItems()) {
+      for (const ins of dish.insumos) {
+        if (ins.seleccionado) {
+          const cantidad = ins.cantidadMerma ?? 0;
+          if (cantidad <= 0) continue;
+          items.push({
+            insumoId: ins.insumoId ?? null,
+            insumoNombre: ins.insumoNombre ?? null,
+            productoId: ins.productoId ?? dish.productoId,
+            productoNombre: ins.productoNombre ?? dish.productoNombre,
+            cantidad,
+            unidad: ins.unidad || 'pieza',
+            costoUnitario: ins.costoUnitario || 0
+          });
+        }
+      }
     }
 
     if (items.length === 0) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Sin selección',
-        detail: 'Selecciona al menos un insumo con cantidad mayor a 0',
+        detail: 'Selecciona al menos un insumo con cantidad mayor a 0 para mermar',
         life: 3000
       });
       return;
@@ -329,9 +458,10 @@ export class MermasComponent implements OnInit {
             detail: res?.message || 'No se pudo registrar la merma',
             life: 4000
           });
+          this.registeringMerma.set(false);
           return;
         }
-        const ticket = this.getTicket(currentId);
+        const ticket = this.comandaDetalle()?.ticket || this.getTicket(currentId);
         this.messageService.add({
           severity: 'success',
           summary: 'Merma registrada',

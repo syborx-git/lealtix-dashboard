@@ -1,0 +1,391 @@
+<!-- ============ REPORTE 4.2: AUDITORÍA DE CORTES DEL DÍA ============ -->
+
+@if (loading() && !reporte()) {
+  <div class="reporte-panel">
+    <div class="kpi-grid">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="kpi-card">
+          <p-skeleton width="55%" height="0.8rem" />
+          <p-skeleton width="70%" height="1.6rem" styleClass="mt-3" />
+          <p-skeleton width="45%" height="0.75rem" styleClass="mt-2" />
+        </div>
+      }
+    </div>
+    <div class="panel">
+      <p-skeleton width="30%" height="1.1rem" />
+      <p-skeleton height="16rem" styleClass="mt-3" />
+    </div>
+  </div>
+} @else if (error() && !reporte()) {
+  <div class="panel panel--error">
+    <i class="pi pi-exclamation-triangle"></i>
+    <h3>No se pudo cargar la auditoría de cortes del día</h3>
+    <p>{{ error() }}</p>
+    <button pButton type="button" label="Reintentar" icon="pi pi-refresh" (click)="recargar()"></button>
+  </div>
+} @else if (reporte(); as datos) {
+  <div class="reporte-panel">
+    <!-- ============ SUBENCABEZADO ============ -->
+    <div class="reporte-subheader">
+      <div>
+        <h3>{{ datos.meta.nombre }}</h3>
+        <p class="reporte-subheader__rango">
+          {{ datos.meta.rangoActual.etiqueta }}
+          <i class="pi pi-arrow-right"></i>
+          comparado con {{ datos.meta.rangoAnterior.etiqueta }}
+        </p>
+      </div>
+      <div class="reporte-subheader__acciones">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          severity="secondary"
+          [outlined]="true"
+          size="small"
+          [loading]="loading()"
+          (click)="recargar()"
+          pTooltip="Actualizar datos"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-file-excel"
+          label="Exportar a Excel"
+          size="small"
+          [loading]="exportando()"
+          (click)="exportar()"
+        ></button>
+      </div>
+    </div>
+
+    <!-- ============ AVISO METODOLOGICO ============ -->
+    <div class="reporte-nota">
+      <i class="pi pi-info-circle"></i>
+      <div>
+        <strong>Control y Conciliación de Arqueo Diario:</strong> Se auditan los movimientos de cierre y corte de caja diario generados por el cajero, contrastando el dinero físico reportado contra los importes esperados por el sistema para detectar faltantes o sobrantes y su respectiva justificación documentada.
+      </div>
+    </div>
+
+    <!-- ============ KPIs COMPARATIVOS ============ -->
+    <app-kpi-grid [kpis]="datos.kpis" />
+
+    <!-- ============ SECCIÓN: GRÁFICA Y DISTRIBUCIÓN ============ -->
+    <div class="grid-2">
+      <!-- Gráfica de distribución de resultados -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Distribución de resultados del cuadre</h4>
+            <p class="panel__subtitulo">Proporción de cortes cuadrados, con sobrante o con faltante</p>
+          </div>
+        </div>
+        @if (datos.distribucion.filas.length) {
+          <div class="panel__grafica panel__grafica--alta">
+            <p-chart type="doughnut" [data]="distribucionChartData()" [options]="distribucionChartOptions" />
+          </div>
+        } @else {
+          <div class="panel__vacio">
+            <i class="pi pi-check-circle"></i>
+            <p>No se registran cortes en este periodo</p>
+          </div>
+        }
+      </div>
+
+      <!-- Tabla de resultados de cuadre -->
+      <div class="panel">
+        <div class="panel__header">
+          <div>
+            <h4>Resumen de cuadre de caja</h4>
+            <p class="panel__subtitulo">Frecuencia e impacto económico acumulado por resultado</p>
+          </div>
+        </div>
+        <p-table
+          [value]="datos.distribucion.filas"
+          styleClass="p-datatable-sm"
+          [tableStyle]="{ 'min-width': '100%' }"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              @for (col of datos.distribucion.columnas; track col.key) {
+                <th [style.text-align]="alineacion(col)">
+                  {{ col.label }}
+                </th>
+              }
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-fila>
+            <tr>
+              <td class="font-bold">
+                <span class="inline-flex items-center gap-1.5">
+                  <i [class]="iconoEstado(fila.estado)" [class.text-emerald-600]="fila.estado.includes('Cuadrado')" [class.text-indigo-600]="fila.estado.includes('Sobrante')" [class.text-rose-600]="fila.estado.includes('Faltante')"></i>
+                  {{ fila.estado }}
+                </span>
+              </td>
+              <td class="text-right font-semibold">{{ fila.cantidad }}</td>
+              <td class="text-right font-medium text-slate-500">{{ fila.pct }}%</td>
+              <td class="text-right font-black" [class.text-emerald-600]="fila.estado.includes('Cuadrado')" [class.text-indigo-600]="fila.estado.includes('Sobrante')" [class.text-rose-600]="fila.estado.includes('Faltante')">
+                ${{ fila.montoDiferencia | number:'1.2-2' }}
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+
+    <!-- ============ SECCIÓN: COMPARATIVA POR MÉTODO DE PAGO ============ -->
+    <div class="panel">
+      <div class="panel__header">
+        <div>
+          <h4>Comparativa acumulada por método de pago</h4>
+          <p class="panel__subtitulo">Importe total esperado por el sistema vs declarado en arqueo físico</p>
+        </div>
+      </div>
+      <p-table
+        [value]="datos.porMetodo.filas"
+        styleClass="p-datatable-sm"
+        [tableStyle]="{ 'min-width': '100%' }"
+      >
+        <ng-template pTemplate="header">
+          <tr class="bg-slate-50">
+            <th class="text-left font-black">Método de Pago</th>
+            <th class="text-right font-black">Esperado (Sistema)</th>
+            <th class="text-right font-black">Declarado (Físico)</th>
+            <th class="text-right font-black">Diferencia</th>
+            <th class="text-center font-black">Resultado</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-fila>
+          <tr [class.font-black]="fila.metodo.includes('Total')" [class.bg-purple-50/40]="fila.metodo.includes('Total')">
+            <td class="text-slate-800">
+              <span [class.font-black]="fila.metodo.includes('Total')">{{ fila.metodo }}</span>
+            </td>
+            <td class="text-right text-slate-700">${{ fila.sistema | number:'1.2-2' }}</td>
+            <td class="text-right text-slate-900 font-bold">${{ fila.real | number:'1.2-2' }}</td>
+            <td class="text-right font-black" [class.text-emerald-600]="fila.diferencia == 0" [class.text-indigo-600]="fila.diferencia > 0" [class.text-rose-600]="fila.diferencia < 0">
+              {{ fila.diferencia > 0 ? '+' : '' }}${{ fila.diferencia | number:'1.2-2' }}
+            </td>
+            <td class="text-center">
+              <p-tag
+                [value]="fila.estado"
+                [severity]="severidadEstado(fila.estado)"
+                [rounded]="true"
+                styleClass="text-[10px] font-bold px-2 py-0.5"
+              ></p-tag>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </div>
+
+    <!-- ============ SECCIÓN: HISTORIAL CRONOLÓGICO DE CORTES ============ -->
+    <div class="panel">
+      <div class="panel__header flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div>
+          <h4>Historial y trazabilidad de cortes diarios</h4>
+          <p class="panel__subtitulo">Registro inmutable de cortes de caja realizados con motivo y responsable</p>
+        </div>
+        <div class="w-full md:w-72">
+          <p-iconField iconPosition="left">
+            <p-inputIcon styleClass="pi pi-search"></p-inputIcon>
+            <input
+              type="text"
+              pInputText
+              placeholder="Buscar por folio, fecha, cajero..."
+              class="w-full p-inputtext-sm"
+              [ngModel]="textoBusqueda()"
+              (ngModelChange)="textoBusqueda.set($event)"
+            />
+          </p-iconField>
+        </div>
+      </div>
+
+      @if (filasDetalleFiltradas().length) {
+        <p-table
+          [value]="filasDetalleFiltradas()"
+          [paginator]="true"
+          [rows]="10"
+          [rowsPerPageOptions]="[10, 20, 50]"
+          styleClass="p-datatable-sm p-datatable-striped"
+          [tableStyle]="{ 'min-width': '100%' }"
+        >
+          <ng-template pTemplate="header">
+            <tr>
+              <th class="text-left font-black">Folio</th>
+              <th class="text-left font-black">Fecha</th>
+              <th class="text-left font-black">Hora</th>
+              <th class="text-left font-black">Responsable</th>
+              <th class="text-right font-black">Sistema</th>
+              <th class="text-right font-black">Físico</th>
+              <th class="text-right font-black">Diferencia</th>
+              <th class="text-center font-black">Estado</th>
+              <th class="text-left font-black">Comentarios / Justificación</th>
+              <th class="text-center font-black">Detalle</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-fila>
+            <tr class="hover:bg-slate-50/70 transition-colors">
+              <td class="font-black text-purple-700">{{ fila.folio }}</td>
+              <td class="text-slate-700 font-semibold">{{ fila.fecha }}</td>
+              <td class="text-slate-500 text-xs">{{ fila.hora }}</td>
+              <td class="text-slate-800 font-medium">{{ fila.cajero }}</td>
+              <td class="text-right text-slate-600">${{ fila.sistema | number:'1.2-2' }}</td>
+              <td class="text-right text-slate-900 font-bold">${{ fila.real | number:'1.2-2' }}</td>
+              <td class="text-right font-black" [class.text-emerald-600]="fila.diferencia == 0" [class.text-indigo-600]="fila.diferencia > 0" [class.text-rose-600]="fila.diferencia < 0">
+                {{ fila.diferencia > 0 ? '+' : '' }}${{ fila.diferencia | number:'1.2-2' }}
+              </td>
+              <td class="text-center">
+                <p-tag
+                  [value]="fila.estado"
+                  [severity]="severidadEstado(fila.estado)"
+                  [rounded]="true"
+                  styleClass="text-[10px] font-bold px-2 py-0.5"
+                ></p-tag>
+              </td>
+              <td class="text-slate-600 text-xs max-w-xs truncate" [pTooltip]="fila.comentarios" tooltipPosition="top">
+                {{ fila.comentarios }}
+              </td>
+              <td class="text-center">
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-eye"
+                  severity="secondary"
+                  [text]="true"
+                  size="small"
+                  (click)="abrirModalDetalle(fila)"
+                  pTooltip="Ver desglose completo del corte"
+                ></button>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      } @else {
+        <div class="panel__vacio">
+          <i class="pi pi-search"></i>
+          <p>No se encontraron cortes de caja que coincidan con la búsqueda</p>
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<!-- ==================== MODAL DE DETALLE DE CORTE ==================== -->
+<p-dialog
+  [header]="'Detalle del Corte de Caja ' + (corteSeleccionado()?.idCorteDiario ? '#CD-' + corteSeleccionado()?.idCorteDiario : '')"
+  [visible]="detalleModalVisible()"
+  (visibleChange)="detalleModalVisible.set($event)"
+  [modal]="true"
+  [style]="{ width: '90vw', maxWidth: '680px' }"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="true"
+>
+  @if (corteSeleccionado(); as corte) {
+    <div class="flex flex-col gap-4 py-2">
+      <!-- Header de datos del corte -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+        <div>
+          <span class="text-slate-400 block text-[10px] font-bold uppercase">Fecha de Corte</span>
+          <span class="font-bold text-slate-800">{{ corte.fechaCorte }}</span>
+        </div>
+        <div>
+          <span class="text-slate-400 block text-[10px] font-bold uppercase">Hora de Registro</span>
+          <span class="font-bold text-slate-800">{{ corte.fechaHoraRegistro | date:'HH:mm:ss' }}</span>
+        </div>
+        <div>
+          <span class="text-slate-400 block text-[10px] font-bold uppercase">Responsable</span>
+          <span class="font-bold text-slate-800 truncate block">{{ corte.cajeroNombre || corte.cajeroEmail || 'Caja' }}</span>
+        </div>
+        <div>
+          <span class="text-slate-400 block text-[10px] font-bold uppercase">Comandas Cobradas</span>
+          <span class="font-bold text-slate-800">{{ corte.totalComandas || 0 }}</span>
+        </div>
+        <div>
+          <span class="text-slate-400 block text-[10px] font-bold uppercase">Propinas Registradas</span>
+          <span class="font-bold text-slate-800">${{ (corte.totalPropinas || 0) | number:'1.2-2' }}</span>
+        </div>
+        <div>
+          <span class="text-slate-400 block text-[10px] font-bold uppercase">Resultado Cuadre</span>
+          <p-tag [value]="corte.estadoDiferencia" [severity]="severidadEstado(corte.estadoDiferencia)" [rounded]="true"></p-tag>
+        </div>
+      </div>
+
+      <!-- Desglose por método de pago -->
+      <div>
+        <h5 class="text-xs font-black uppercase text-slate-500 tracking-wider mb-2">Desglose por método de pago</h5>
+        <div class="border border-slate-200 rounded-xl overflow-hidden">
+          <table class="w-full text-xs">
+            <thead class="bg-slate-100 text-slate-600">
+              <tr>
+                <th class="p-2 text-left font-bold">Método</th>
+                <th class="p-2 text-right font-bold">Esperado</th>
+                <th class="p-2 text-right font-bold">Declarado</th>
+                <th class="p-2 text-right font-bold">Diferencia</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr>
+                <td class="p-2 font-medium">Efectivo Físico</td>
+                <td class="p-2 text-right text-slate-600">${{ (corte.sistemaEfectivo || 0) | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-bold">${{ (corte.realEfectivo || 0) | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-black" [class.text-emerald-600]="(corte.diferenciaEfectivo || 0) == 0" [class.text-indigo-600]="(corte.diferenciaEfectivo || 0) > 0" [class.text-rose-600]="(corte.diferenciaEfectivo || 0) < 0">
+                  {{ (corte.diferenciaEfectivo || 0) > 0 ? '+' : '' }}${{ (corte.diferenciaEfectivo || 0) | number:'1.2-2' }}
+                </td>
+              </tr>
+              <tr>
+                <td class="p-2 font-medium">Tarjeta / Terminal</td>
+                <td class="p-2 text-right text-slate-600">${{ (corte.sistemaTarjeta || 0) | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-bold">${{ (corte.realTarjeta || 0) | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-black" [class.text-emerald-600]="(corte.diferenciaTarjeta || 0) == 0" [class.text-indigo-600]="(corte.diferenciaTarjeta || 0) > 0" [class.text-rose-600]="(corte.diferenciaTarjeta || 0) < 0">
+                  {{ (corte.diferenciaTarjeta || 0) > 0 ? '+' : '' }}${{ (corte.diferenciaTarjeta || 0) | number:'1.2-2' }}
+                </td>
+              </tr>
+              <tr>
+                <td class="p-2 font-medium">Transferencia / SPEI</td>
+                <td class="p-2 text-right text-slate-600">${{ (corte.sistemaTransferencia || 0) | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-bold">${{ (corte.realTransferencia || 0) | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-black" [class.text-emerald-600]="(corte.diferenciaTransferencia || 0) == 0" [class.text-indigo-600]="(corte.diferenciaTransferencia || 0) > 0" [class.text-rose-600]="(corte.diferenciaTransferencia || 0) < 0">
+                  {{ (corte.diferenciaTransferencia || 0) > 0 ? '+' : '' }}${{ (corte.diferenciaTransferencia || 0) | number:'1.2-2' }}
+                </td>
+              </tr>
+              <tr>
+                <td class="p-2 font-medium">Otros Métodos</td>
+                <td class="p-2 text-right text-slate-600">${{ (corte.sistemaOtros || 0) | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-bold">${{ (corte.realOtros || 0) | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-black" [class.text-emerald-600]="(corte.diferenciaOtros || 0) == 0" [class.text-indigo-600]="(corte.diferenciaOtros || 0) > 0" [class.text-rose-600]="(corte.diferenciaOtros || 0) < 0">
+                  {{ (corte.diferenciaOtros || 0) > 0 ? '+' : '' }}${{ (corte.diferenciaOtros || 0) | number:'1.2-2' }}
+                </td>
+              </tr>
+              <tr class="bg-purple-50/60 font-black text-sm">
+                <td class="p-2.5 text-purple-900">Total Consolidado</td>
+                <td class="p-2.5 text-right text-purple-900">${{ (corte.sistemaTotal || 0) | number:'1.2-2' }}</td>
+                <td class="p-2.5 text-right text-purple-950 font-black">${{ (corte.realTotal || 0) | number:'1.2-2' }}</td>
+                <td class="p-2.5 text-right font-black" [class.text-emerald-600]="(corte.diferenciaTotal || 0) == 0" [class.text-indigo-600]="(corte.diferenciaTotal || 0) > 0" [class.text-rose-600]="(corte.diferenciaTotal || 0) < 0">
+                  {{ (corte.diferenciaTotal || 0) > 0 ? '+' : '' }}${{ (corte.diferenciaTotal || 0) | number:'1.2-2' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Comentarios de justificación -->
+      <div>
+        <h5 class="text-xs font-black uppercase text-slate-500 tracking-wider mb-1.5">Comentarios y Justificación</h5>
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 italic">
+          {{ corte.comentarios || 'Sin observaciones ni justificaciones registradas por el cajero.' }}
+        </div>
+      </div>
+
+      <!-- Sello de inmutabilidad -->
+      <div class="flex items-center gap-2 p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800 text-[11px]">
+        <i class="pi pi-lock text-emerald-600"></i>
+        <span><strong>Registro Inmutable:</strong> Este corte fue cerrado definitivamente y no puede ser alterado ni modificado.</span>
+      </div>
+    </div>
+  }
+  <ng-template pTemplate="footer">
+    <button pButton type="button" label="Cerrar" icon="pi pi-times" severity="secondary" (click)="cerrarModalDetalle()"></button>
+  </ng-template>
+</p-dialog>

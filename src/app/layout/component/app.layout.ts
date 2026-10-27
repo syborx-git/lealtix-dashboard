@@ -12,8 +12,7 @@ import { AppFooter } from './app.footer';
 import { LayoutService } from '../service/layout.service';
 import { OrderSseService, SseNewOrderEvent, SseOrderStatusEvent } from '@/pages/comandix/services/order-sse.service';
 import { AuthService } from '@/auth/auth.service';
-import { NotificationService } from '@/shared/services/notification.service';
-import { InventoryService } from '@/pages/inventario/service/inventory.service';
+import { InactivityService } from '@/auth/inactivity.service';
 
 @Component({
     selector: 'app-layout',
@@ -113,58 +112,12 @@ export class AppLayout implements OnInit, OnDestroy {
         private orderSseService: OrderSseService,
         private authService: AuthService,
         private messageService: MessageService,
-        private notificationService: NotificationService,
-        private inventoryService: InventoryService
-    ) {
-        this.updateFullBleed(this.router.url);
-        this.navSub = this.router.events
-            .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
-            .subscribe((e) => this.updateFullBleed(e.urlAfterRedirects || e.url));
-    }
-
-    private updateFullBleed(url: string): void {
-        const clean = (url || '').split('?')[0];
-        const isOperationalRoute = this.FULL_BLEED_ROUTES.some((r) => clean.startsWith(r));
-        // Pantalla completa solo en dispositivos táctiles (tablet). En computadora
-        // con mouse se conserva el layout normal con scroll de página.
-        const fullBleed = isOperationalRoute && this.isTouchDevice();
-        this.isFullBleed.set(fullBleed);
-
-        // En tablet, en pantallas operativas (POS/cocina/barra) se colapsa el menú
-        // lateral a iconos para dar más espacio a los platillos. Se restaura al salir.
-        if (fullBleed) {
-            if (this.prevSidebarCollapsed === null) {
-                this.prevSidebarCollapsed = this.layoutService.isSidebarCollapsed();
-            }
-            if (!this.layoutService.isSidebarCollapsed()) {
-                this.layoutService.setSidebarCollapsed(true);
-            }
-        } else if (this.prevSidebarCollapsed !== null) {
-            this.layoutService.setSidebarCollapsed(this.prevSidebarCollapsed);
-            this.prevSidebarCollapsed = null;
-        }
-    }
-
-    private isTouchDevice(): boolean {
-        try {
-            return !!window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-        } catch {
-            return false;
-        }
-    }
+        private inactivityService: InactivityService
+    ) {}
 
     ngOnInit(): void {
         this.startGlobalOrderNotifications();
-        this.notificationService.ensureBrowserPermission();
-    }
-
-    /** Al hacer clic en un toast, navega al apartado de la notificación. */
-    onToastClick(message: any): void {
-        const route = message?.data?.route;
-        if (route) {
-            void this.router.navigateByUrl(route);
-            this.messageService.clear();
-        }
+        this.inactivityService.start();
     }
 
     /**
@@ -332,6 +285,7 @@ export class AppLayout implements OnInit, OnDestroy {
             clearInterval(this.stockTimer);
         }
 
+        this.inactivityService.stop();
         this.orderSseService.disconnect();
     }
 }

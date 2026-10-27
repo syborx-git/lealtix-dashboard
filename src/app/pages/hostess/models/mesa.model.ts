@@ -8,6 +8,8 @@ export interface MesaDTO {
     id?: number;
     tenantId: number;
     nombre: string;
+    area?: string;
+    identificador?: string;
     numero?: number;
     capacidad: number;
     estado: MesaEstado;
@@ -15,6 +17,8 @@ export interface MesaDTO {
     meseroNombre?: string | null;
     posicionX?: number | null;
     posicionY?: number | null;
+    ancho?: number;
+    alto?: number;
     forma?: MesaForma;
     /** Orientación en grados (0/90/180/270) sobre el plano */
     rotacion?: number;
@@ -26,6 +30,7 @@ export interface MesaDTO {
 
 export function mesaIdentificador(mesa: MesaDTO | null | undefined): string {
     if (!mesa) return '';
+    if (mesa.identificador) return mesa.identificador;
     if (mesa.identificadorUnico) return mesa.identificadorUnico;
     const numPart = mesa.numero != null ? ` (M-${mesa.numero})` : '';
     const idPart = mesa.id != null ? `#${mesa.id} · ` : '';
@@ -34,12 +39,16 @@ export function mesaIdentificador(mesa: MesaDTO | null | undefined): string {
 
 export interface MesaRequest {
     nombre: string;
+    area?: string;
+    identificador?: string;
     numero?: number;
     capacidad: number;
     estado?: MesaEstado;
     meseroUserId?: number | null;
     posicionX?: number | null;
     posicionY?: number | null;
+    ancho?: number;
+    alto?: number;
     forma?: MesaForma;
     rotacion?: number;
 }
@@ -68,20 +77,22 @@ export const MESA_ESTADO_COLORS: Record<MesaEstado, EstadoTagSeverity> = {
     RESERVADA: 'warn'
 };
 
-export const MESA_FORMA_OPTIONS: { label: string; value: MesaForma }[] = [
-    { label: 'Redonda', value: 'redonda' },
-    { label: 'Cuadrada', value: 'cuadrada' },
-    { label: 'Rectangular', value: 'rectangular' }
+export const MESA_FORMA_OPTIONS: { label: string; value: MesaForma; icon?: string }[] = [
+    { label: 'Circular', value: 'redonda', icon: 'pi pi-circle' },
+    { label: 'Cuadrada', value: 'cuadrada', icon: 'pi pi-stop' }
 ];
 
 export const MESA_FORMA_SIZE: Record<MesaForma, MesaSize> = {
-    redonda: { width: 81, height: 81 },
-    cuadrada: { width: 78, height: 78 },
-    rectangular: { width: 111, height: 69 }
+    redonda: { width: 80, height: 80 },
+    cuadrada: { width: 80, height: 80 },
+    rectangular: { width: 110, height: 70 }
 };
 
-export function mesaSize(forma?: MesaForma): MesaSize {
-    return MESA_FORMA_SIZE[forma ?? 'cuadrada'];
+export function mesaSize(forma?: MesaForma, ancho?: number, alto?: number): MesaSize {
+    if (ancho != null && alto != null && ancho > 0 && alto > 0) {
+        return { width: ancho, height: alto };
+    }
+    return MESA_FORMA_SIZE[forma ?? 'cuadrada'] || { width: 80, height: 80 };
 }
 
 /** Normaliza la rotación a grados positivos 0-359 */
@@ -90,9 +101,27 @@ export function rotacionGrados(rotacion?: number): number {
     return r < 0 ? r + 360 : r;
 }
 
-/** Tamaño efectivo de la mesa considerando su rotación (90/270 intercambian ancho/alto) */
-export function mesaTamano(mesa: { forma?: MesaForma; rotacion?: number }): MesaSize {
-    const base = mesaSize(mesa.forma);
-    const rot = rotacionGrados(mesa.rotacion);
-    return rot % 180 === 0 ? base : { width: base.height, height: base.width };
+/** Tamaño efectivo de la mesa en pantalla:
+ *  - width: dimensión horizontal (ancho)
+ *  - height: dimensión vertical (alto)
+ */
+export function mesaTamano(mesa: { forma?: MesaForma; rotacion?: number; ancho?: number; alto?: number }): MesaSize {
+    if (mesa.ancho != null && mesa.ancho > 0 && mesa.alto != null && mesa.alto > 0) {
+        return { width: mesa.ancho, height: mesa.alto };
+    }
+    const defaultSize = MESA_FORMA_SIZE[mesa.forma ?? 'cuadrada'] || { width: 80, height: 80 };
+    const w = mesa.ancho != null && mesa.ancho > 0 ? mesa.ancho : defaultSize.width;
+    const h = mesa.alto != null && mesa.alto > 0 ? mesa.alto : defaultSize.height;
+    return { width: w, height: h };
+}
+
+export interface MesaGrupo {
+    grupoId: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    mesas: MesaDTO[];
+    capacidadTotal: number;
+    etiqueta: string;
 }
