@@ -20,7 +20,7 @@ export class PwaUpdateService {
         }
 
         this.swUpdate.versionUpdates
-            .pipe(filter((event): event is VersionReadyEvent => event.type === 'VERSION_READY'))
+            .pipe(filter((event: any): event is VersionReadyEvent => event?.type === 'VERSION_READY'))
             .subscribe(async () => {
                 try {
                     await this.swUpdate.activateUpdate();

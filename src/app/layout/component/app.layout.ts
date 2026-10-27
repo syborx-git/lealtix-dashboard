@@ -13,6 +13,8 @@ import { LayoutService } from '../service/layout.service';
 import { OrderSseService, SseNewOrderEvent, SseOrderStatusEvent } from '@/pages/comandix/services/order-sse.service';
 import { AuthService } from '@/auth/auth.service';
 import { InactivityService } from '@/auth/inactivity.service';
+import { NotificationService } from '@/shared/services/notification.service';
+import { InventoryService } from '@/pages/inventario/service/inventory.service';
 
 @Component({
     selector: 'app-layout',
@@ -112,12 +114,24 @@ export class AppLayout implements OnInit, OnDestroy {
         private orderSseService: OrderSseService,
         private authService: AuthService,
         private messageService: MessageService,
-        private inactivityService: InactivityService
+        private inactivityService: InactivityService,
+        private notificationService: NotificationService,
+        private inventoryService: InventoryService
     ) {}
 
     ngOnInit(): void {
         this.startGlobalOrderNotifications();
         this.inactivityService.start();
+        this.notificationService.ensureBrowserPermission();
+    }
+
+    /** Al hacer clic en un toast, navega al apartado de la notificación. */
+    onToastClick(message: any): void {
+        const route = message?.data?.route;
+        if (route) {
+            void this.router.navigateByUrl(route);
+            this.messageService.clear();
+        }
     }
 
     /**

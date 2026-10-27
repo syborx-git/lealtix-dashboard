@@ -3345,9 +3345,32 @@
             *ngIf="getProductCategoryName(selectedProductDetail())"
             class="inline-flex w-fit items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-widest text-purple-700 bg-purple-50 border border-purple-100 px-3 py-1 rounded-full"
           >
-            <i class="pi" [ngClass]="selectedProductDetail()?.variants?.length ? 'pi-th-large' : 'pi-shopping-cart'" class="text-sm"></i>
-            <span>{{ selectedProductDetail()?.variants?.length ? 'Elegir variante' : 'Agregar a la comanda' }}</span>
-          </button>
+            <i class="pi pi-tag text-[10px]"></i>{{ getProductCategoryName(selectedProductDetail()) }}
+          </span>
+
+          <h3 class="dish-detail-name text-2xl md:text-[28px] font-extrabold text-slate-900 leading-tight tracking-tight mt-3">
+            {{ selectedProductDetail()?.name }}
+          </h3>
+
+          <div class="dish-detail-price mt-3 flex items-baseline">
+            <span class="text-[32px] font-black">${{ selectedProductDetail()?.price | number:'1.2-2' }}</span>
+          </div>
+
+          <p class="text-slate-500 text-sm leading-relaxed mt-3">
+            {{ selectedProductDetail()?.description || 'Platillo preparado con ingredientes frescos y recetas tradicionales de la más alta calidad.' }}
+          </p>
+
+          <!-- Botón de acción -->
+          <div class="mt-6 md:mt-auto pt-3">
+            <button
+              type="button"
+              (click)="addProductFromDetail(selectedProductDetail()!)"
+              class="dish-detail-cta w-full active:scale-[0.99] text-white font-bold py-3.5 px-6 rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg cursor-pointer text-sm sm:text-base"
+            >
+              <i class="pi" [ngClass]="selectedProductDetail()?.variants?.length ? 'pi-th-large' : 'pi-shopping-cart'" class="text-sm"></i>
+              <span>{{ selectedProductDetail()?.variants?.length ? 'Elegir variante' : 'Agregar a la comanda' }}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
