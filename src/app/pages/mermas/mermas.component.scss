@@ -240,16 +240,40 @@
       align-items: center;
       gap: 0.5rem;
 
+      button,
+      .p-dialog-close-button,
       .p-dialog-header-close {
-        width: 2.25rem;
-        height: 2.25rem;
-        border-radius: 50%;
-        color: var(--text-color-secondary, #64748b);
-        transition: all 0.2s ease;
+        width: 2.25rem !important;
+        height: 2.25rem !important;
+        border-radius: 9999px !important;
+        background: #f1f5f9 !important;
+        color: #334155 !important;
+        border: 1px solid #e2e8f0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+
+        svg, i {
+          color: #334155 !important;
+          fill: #334155 !important;
+          stroke: #334155 !important;
+          width: 14px !important;
+          height: 14px !important;
+        }
 
         &:hover {
-          background: var(--surface-100, #f1f5f9);
-          color: var(--text-color, #1e293b);
+          background: #e2e8f0 !important;
+          color: #0f172a !important;
+          transform: scale(1.08) !important;
+
+          svg, i {
+            color: #0f172a !important;
+            fill: #0f172a !important;
+            stroke: #0f172a !important;
+            transform: rotate(90deg) scale(1.1) !important;
+          }
         }
       }
     }

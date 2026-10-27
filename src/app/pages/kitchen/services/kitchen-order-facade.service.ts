@@ -256,6 +256,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
 
         const incomingTickets = this.mapBackendOrderToTickets(event.order);
         let added = false;
+        let addedCocina = false;
         const currentOrders = [...this.ordersSubject.value];
 
         for (const ticket of incomingTickets) {
@@ -263,12 +264,17 @@ export class KitchenOrderFacadeService implements OnDestroy {
                 this.knownOrderIds.add(ticket.id);
                 currentOrders.push(ticket);
                 added = true;
+                if (ticket.area === 'COCINA') {
+                    addedCocina = true;
+                }
             }
         }
 
         if (added) {
             this.emitOrders(currentOrders);
-            this.kitchenNotificationService.playNewOrderSound(1);
+            if (addedCocina) {
+                this.kitchenNotificationService.playNewOrderSound(1);
+            }
         }
     }
 
@@ -292,7 +298,8 @@ export class KitchenOrderFacadeService implements OnDestroy {
         }
 
         let currentOrders = [...this.ordersSubject.value];
-        let hasNewTicket = false;
+        let hasNewCocinaTicket = false;
+        let cocinaBecameConfirmed = false;
 
         for (const ticket of incomingTickets) {
             const existingIdx = currentOrders.findIndex((o) => o.id === ticket.id);
@@ -302,18 +309,24 @@ export class KitchenOrderFacadeService implements OnDestroy {
                 const preservedStatus = (prev.status === 'EN_PREPARACION' || prev.status === 'LISTO') && status === 'CONFIRMADA'
                     ? prev.status
                     : ticket.status;
+                if (ticket.area === 'COCINA' && prev.status !== 'CONFIRMADA' && preservedStatus === 'CONFIRMADA') {
+                    cocinaBecameConfirmed = true;
+                }
                 currentOrders[existingIdx] = { ...ticket, status: preservedStatus };
             } else {
                 // Nuevo ticket generado (ej. 2do o 3er tiempo recién marchado)
                 currentOrders.push(ticket);
                 this.knownOrderIds.add(ticket.id);
-                hasNewTicket = true;
+                if (ticket.area === 'COCINA') {
+                    hasNewCocinaTicket = true;
+                }
             }
         }
 
         this.emitOrders(currentOrders);
 
-        if (hasNewTicket || status === 'CONFIRMADA') {
+        // Solo sonar en cocina si realmente hay un ticket nuevo o reactivado de cocina
+        if (hasNewCocinaTicket || cocinaBecameConfirmed) {
             this.kitchenNotificationService.playNewOrderSound(1);
         }
     }
@@ -753,38 +766,6 @@ export class KitchenOrderFacadeService implements OnDestroy {
             }
         }
 
-        // Si por alguna razón la orden no tenía ni barra ni cocina items, generar un ticket fallback
-        if (tickets.length === 0) {
-            const ticketId = `${parentOrderId}__COCINA${rondaSuffix}`;
-            const status = this.resolveTicketStatus(ticketId, backendStatus);
-            tickets.push({
-                id: ticketId,
-                parentOrderId,
-                area: 'COCINA',
-                tiempo: 1,
-                tiempoLabel: ronda > 1 ? `Cocina${rondaLabel}` : '1er Tiempo',
-                ronda,
-                tenantId,
-                status,
-                customerId,
-                customerName,
-                mesaId,
-                mesaNombre,
-                mesaNumero,
-                source,
-                createdAt,
-                marchedAt: createdAt,
-                items: itemsToTicket,
-                subtotal,
-                discount,
-                total,
-                recorrido: 1,
-                segundoTiempoMarchado: false,
-                tercerTiempoMarchado: false,
-                waitingTiemposLabels: []
-            });
-        }
-
         return tickets;
     }
 
@@ -803,6 +784,11 @@ export class KitchenOrderFacadeService implements OnDestroy {
             return persisted;
         }
 
+        // Si el estado general o del área en backend ya está en LISTO, respetarlo siempre
+        if (backendStatus === 'LISTO') {
+            return 'LISTO';
+        }
+
         // Para tickets de rondas posteriores recién creadas:
         // Deben empezar en CONFIRMADA y recorrer todo el flujo (CONFIRMADA -> EN_PREPARACION -> LISTO)
         if (ticketId.includes('__R')) {
@@ -815,8 +801,6 @@ export class KitchenOrderFacadeService implements OnDestroy {
         if (tiempo === 2 || tiempo === 3) {
             return 'CONFIRMADA';
         }
-
-        if (backendStatus === 'LISTO') return 'LISTO';
 
         return backendStatus;
     }

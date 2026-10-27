@@ -43,13 +43,42 @@
         margin-top: 0.15rem;
       }
 
+      .p-dialog-header-actions button,
+      .p-dialog-close-button,
+      .p-dialog-header-close,
       .p-dialog-header-icon {
-        color: #cbd5e1;
-        transition: all 0.2s ease;
+        color: #ffffff !important;
+        background: rgba(255, 255, 255, 0.18) !important;
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
+        border-radius: 9999px !important;
+        width: 2.25rem !important;
+        height: 2.25rem !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25) !important;
+        cursor: pointer !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+        svg, i {
+          color: #ffffff !important;
+          fill: #ffffff !important;
+          stroke: #ffffff !important;
+          width: 14px !important;
+          height: 14px !important;
+        }
 
         &:hover {
-          color: white;
-          background: rgba(255, 255, 255, 0.12);
+          color: #ffffff !important;
+          background: rgba(255, 255, 255, 0.32) !important;
+          transform: scale(1.08) !important;
+
+          svg, i {
+            color: #ffffff !important;
+            fill: #ffffff !important;
+            stroke: #ffffff !important;
+            transform: rotate(90deg) scale(1.1) !important;
+          }
         }
       }
     }

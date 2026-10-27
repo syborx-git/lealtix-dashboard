@@ -10,22 +10,56 @@ const BEVERAGE_CATEGORY_KEYWORDS = [
     'destilado', 'botella',
     'licor', 'liquor',
     'vino', 'wine',
-    'trago', 'shot',
+    'trago', 'shot', 'chupito',
     'cafe', 'coffee', 'cafeteria',
     'infusion', 'te', 'tea',
     'refresco', 'soda',
     'agua', 'water',
     'jugo', 'juice',
-    'smoothie', 'malteada'
+    'smoothie', 'malteada', 'frappe',
+    'cava', 'cantina', 'copeo', 'preparados', 'preparado',
+    'mixers', 'mixer', 'digestivo', 'aperitivo',
+    'calientes', 'frios', 'sin alcohol', 'con alcohol', 'bebestibles'
 ];
 
 const BEVERAGE_NAME_KEYWORDS = [
+    // Cervezas y preparados
     'cerveza', 'heineken', 'corona', 'victoria', 'modelo', 'bohemia', 'stella',
-    'michelob', 'amstel', 'ultra', 'mojito', 'margarita', 'carajillo', 'pina colada',
-    'azulito', 'ruso negro', 'alma negra', 'coca-cola', 'coca cola', 'sprite', 'fanta',
-    'refresco', 'tequila', 'whisky', 'vodka', 'mezcal', 'brandy', 'perrier', 'pellegrino',
+    'michelob', 'amstel', 'ultra', 'pacifico', 'indio', 'tecate', 'carta blanca',
+    'dos equis', 'xx', 'leon', 'montejo', 'barril', 'caguama', 'caguamon',
+    'michelada', 'chelada', 'ojo rojo', 'cubana', 'clamato',
+    // Cocteles clásicos y populares
+    'mojito', 'margarita', 'carajillo', 'pina colada', 'piña colada', 'azulito',
+    'ruso negro', 'alma negra', 'paloma', 'charro negro', 'vampiro', 'cantarito',
+    'pinada', 'piñada', 'conga', 'sangria', 'clericot', 'aperol', 'spritz',
+    'gin tonic', 'gin & tonic', 'martini', 'cosmopolitan', 'daikiri', 'daiquiri',
+    'submarino', 'perla negra', 'baby mango', 'cucaracha', 'torito',
+    // Destilados y marcas habituales
+    'tequila', 'whisky', 'vodka', 'mezcal', 'brandy', 'cognac', 'ginebra', 'gin ',
+    'don julio', 'herradura', 'maestro dobel', 'dobel', 'centenario', '7 leguas',
+    'siete leguas', 'jose cuervo', 'cuervo', '1800', 'tradicional', 'cazadores', 'espolon',
+    'buchanan', 'red label', 'black label', 'chivas', 'jack daniel', 'jim beam',
+    'macallan', 'glenfiddich', 'j&b', 'ballantines', 'johnnie walker',
+    'bacardi', 'havana', 'captain morgan', 'matusalem', 'appleton', 'zacapa', 'flor de cana',
+    'absolut', 'smirnoff', 'grey goose', 'belvedere', 'stolichnaya',
+    '400 conejos', 'ojo de tigre', 'alipus', 'montelobos', 'amores', 'creyente',
+    'torres 10', 'torres 5', 'fundador', 'don pedro', 'terry', 'hennessy', 'martell',
+    'baileys', 'kahlua', 'frangelico', 'jagermeister', 'licor 43', 'anis', 'campari',
+    'amaretto', 'sambuca', 'midori', 'hpnotiq',
+    // Vinos
+    'cabernet', 'merlot', 'malbec', 'chardonnay', 'sauvignon', 'tempranillo',
+    'syrah', 'pinot', 'rioja', 'ribera', 'lambrusco', 'prosecco', 'champagne', 'champana',
+    // Cafetería
+    'latte', 'capuchino', 'cappuccino', 'espresso', 'expreso', 'americano', 'moka', 'mocha',
+    'frappe', 'matcha', 'chai',
+    // Refrescos, aguas y energizantes
+    'coca-cola', 'coca cola', 'sprite', 'fanta', 'refresco', 'perrier', 'pellegrino',
     'penafiel', 'peñafiel', 'ciel', 'agua embotellada', 'agua mineral', 'agua natural',
-    'agua fresca', 'limonada', 'naranjada', 'ron '
+    'agua fresca', 'limonada', 'naranjada', 'horchata', 'jamaica', 'tamarindo',
+    'topo chico', 'tehuacan', 'squirt', 'mundet', 'sidral', 'delaware', 'boing', 'jarrito',
+    'red bull', 'monster', 'boost', 'electrolit',
+    // Ron y derivados
+    'ron ', 'ron 7', 'ron blanco', 'ron añejo'
 ];
 
 export function cleanText(text: string | null | undefined): string {

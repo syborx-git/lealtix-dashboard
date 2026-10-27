@@ -1607,14 +1607,51 @@
 // ==================== DIALOG CANCELAR ORDEN ====================
 :host ::ng-deep .cancel-order-dialog {
   .p-dialog-header {
-    background: linear-gradient(135deg, #FEE2E2, #FECACA);
-    border-bottom: 2px solid rgba(220, 53, 69, 0.25);
-    padding: 1.25rem 1.5rem;
+    background: linear-gradient(135deg, #FEE2E2, #FECACA) !important;
+    border-bottom: 2px solid rgba(220, 53, 69, 0.25) !important;
+    padding: 1.25rem 1.5rem !important;
 
     .p-dialog-title {
-      color: #dc3545;
-      font-weight: 700;
-      font-size: 1.1rem;
+      color: #dc3545 !important;
+      font-weight: 700 !important;
+      font-size: 1.15rem !important;
+    }
+
+    .p-dialog-header-actions button,
+    .p-dialog-close-button,
+    .p-dialog-header-close {
+      background: #ffffff !important;
+      color: #dc2626 !important;
+      border: 1px solid rgba(220, 53, 69, 0.25) !important;
+      border-radius: 9999px !important;
+      width: 2.25rem !important;
+      height: 2.25rem !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      box-shadow: 0 1px 3px rgba(220, 53, 69, 0.15) !important;
+      transition: all 0.2s ease !important;
+
+      svg, i {
+        color: #dc2626 !important;
+        fill: #dc2626 !important;
+        stroke: #dc2626 !important;
+        width: 14px !important;
+        height: 14px !important;
+      }
+
+      &:hover {
+        background: #fef2f2 !important;
+        color: #991b1b !important;
+        transform: scale(1.08) !important;
+
+        svg, i {
+          color: #991b1b !important;
+          fill: #991b1b !important;
+          stroke: #991b1b !important;
+          transform: rotate(90deg) scale(1.1) !important;
+        }
+      }
     }
   }
 
@@ -2857,6 +2894,156 @@
   flex-direction: column;
   gap: 0.5rem;
   animation: fadeIn 0.2s ease-in-out;
+}
+
+// ==========================================================================
+// BARRA DE ÁREAS DEL LOCAL (Pizarrón por Área en Comandix)
+// ==========================================================================
+.comandix-areas-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+  .areas-pills-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+
+    .areas-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-right: 0.25rem;
+    }
+
+    .area-pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.95rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #475569;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+
+      .area-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #94a3b8;
+        transition: background 0.18s ease;
+
+        &.dot-has-libres {
+          background: #10b981;
+        }
+      }
+
+      .area-name {
+        white-space: nowrap;
+      }
+
+      .area-count-badge {
+        font-size: 0.7rem;
+        padding: 0.1rem 0.5rem;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.08);
+        color: inherit;
+        font-weight: 700;
+      }
+
+      &:hover {
+        background: #eff6ff;
+        border-color: #93c5fd;
+        color: #1d4ed8;
+
+        .area-dot {
+          background: #3b82f6;
+        }
+      }
+
+      &.active {
+        background: #2563eb;
+        border-color: #2563eb;
+        color: #ffffff;
+        box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35);
+
+        .area-dot {
+          background: #ffffff;
+        }
+
+        .area-count-badge {
+          background: rgba(255, 255, 255, 0.25);
+          color: #ffffff;
+        }
+      }
+    }
+  }
+}
+
+.workspace-empty-canvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2.5rem 2rem;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(6px);
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  max-width: 440px;
+  pointer-events: none;
+  z-index: 10;
+
+  .empty-badge-area {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #1d4ed8;
+    margin-bottom: 0.85rem;
+  }
+
+  .empty-msg {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.35rem;
+  }
+
+  .empty-sub {
+    font-size: 0.82rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+  }
 }
 
 .mesas-toolbar-card {

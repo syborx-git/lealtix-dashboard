@@ -151,7 +151,7 @@
     <div class="comandix-areas-bar">
       <div class="areas-pills-container">
         <span class="areas-label">
-          <i class="pi pi-map-marker text-emerald-600"></i>
+          <i class="pi pi-map-marker text-blue-600"></i>
           <span>Áreas:</span>
         </span>
         <button
@@ -160,8 +160,10 @@
           class="area-pill-btn"
           [class.active]="areaSeleccionada() === a"
           (click)="seleccionarArea(a)"
+          [pTooltip]="'Ver mesas de ' + a + ' (' + conteoMesasLibresPorArea(a) + ' libres)'"
+          tooltipPosition="bottom"
         >
-          <span class="area-dot"></span>
+          <span class="area-dot" [class.dot-has-libres]="conteoMesasLibresPorArea(a) > 0"></span>
           <span class="area-name">{{ a }}</span>
           <span class="area-count-badge">{{ conteoMesasPorArea(a) }}</span>
         </button>
@@ -268,6 +270,7 @@
       <div *ngIf="selectedMesa() as sm" class="hidden md:flex items-center gap-1.5 text-purple-700 font-bold">
         <i class="pi pi-check-circle"></i>
         <span>Mesa activa en comanda: {{ sm.nombre }}</span>
+        <span *ngIf="sm.area" class="text-xs font-semibold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">Área: {{ sm.area }}</span>
       </div>
     </div>
 
@@ -277,6 +280,16 @@
         <div class="workspace modo-operacion">
           <!-- Cuadrícula esquemática -->
           <div class="workspace-grid"></div>
+
+          <!-- Mensaje cuando el área no tiene mesas -->
+          <div *ngIf="mesasDelArea().length === 0" class="workspace-empty-canvas">
+            <div class="empty-badge-area">
+              <i class="pi pi-map-marker text-blue-600"></i>
+              <span>Área: {{ areaSeleccionada() }}</span>
+            </div>
+            <div class="empty-msg">No hay mesas registradas en esta área</div>
+            <p class="empty-sub">Puedes agregar o reasignar mesas a "{{ areaSeleccionada() }}" desde el módulo de Mapeo de Mesas.</p>
+          </div>
 
           <!-- Bounding boxes de grupos unidos -->
           <div
@@ -302,9 +315,9 @@
             </button>
           </div>
 
-          <!-- Mesas en el plano -->
+          <!-- Mesas en el plano (Filtradas por área activa) -->
           <div
-            *ngFor="let mesa of mesas()"
+            *ngFor="let mesa of mesasDelArea()"
             class="mesa-floor"
             [class.estado-libre]="mesa.estado === 'LIBRE'"
             [class.estado-ocupada]="mesa.estado === 'OCUPADA'"
@@ -750,6 +763,10 @@
                       </span>
                       <span *ngIf="mesa.numero" class="text-xs text-slate-500 font-semibold">
                         (M-{{ mesa.numero }})
+                      </span>
+                      <span *ngIf="mesa.area" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
+                        <i class="pi pi-map-marker text-[9px]"></i>
+                        {{ mesa.area }}
                       </span>
                     </div>
                     <div class="text-[11px] text-slate-500 font-medium flex items-center gap-2 mt-0.5">
@@ -3351,17 +3368,17 @@
   >
     <ng-template pTemplate="header">
       <div class="flex items-center gap-3">
-        <div class="w-11 h-11 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center text-xl font-bold shadow-xs">
-          <i class="pi pi-th-large"></i>
+        <div class="w-11 h-11 rounded-2xl bg-white/20 text-white flex items-center justify-center text-xl font-bold shadow-xs">
+          <i class="pi pi-th-large text-white"></i>
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-purple-800 bg-purple-100/80 px-2 py-0.5 rounded-md">
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-white bg-white/25 px-2 py-0.5 rounded-md">
               Subcomanda de Bebidas
             </span>
-            <span class="text-xs text-slate-400">· Selecciona una presentación</span>
+            <span class="text-xs text-white/80">· Selecciona una presentación</span>
           </div>
-          <h3 class="text-lg font-black text-slate-900 m-0 leading-tight">
+          <h3 class="text-lg font-black text-white m-0 leading-tight">
             {{ variantModalProduct()?.name }}
           </h3>
         </div>

@@ -249,6 +249,45 @@ import { TreeNode } from 'primeng/api';
         ::ng-deep .product-dialog .p-dialog-title {
             font-size: 1.25rem;
             font-weight: 700;
+            color: #ffffff !important;
+        }
+
+        ::ng-deep .product-dialog .p-dialog-header-actions button,
+        ::ng-deep .product-dialog .p-dialog-close-button,
+        ::ng-deep .product-dialog .p-dialog-header-close {
+            background: #ffffff !important;
+            color: #4f46e5 !important;
+            border: 1px solid rgba(255, 255, 255, 0.9) !important;
+            border-radius: 9999px !important;
+            width: 2.25rem !important;
+            height: 2.25rem !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18) !important;
+            cursor: pointer !important;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+            svg, i {
+                color: #4f46e5 !important;
+                fill: #4f46e5 !important;
+                stroke: #4f46e5 !important;
+                width: 14px !important;
+                height: 14px !important;
+            }
+
+            &:hover {
+                background: #f8fafc !important;
+                color: #3730a3 !important;
+                transform: scale(1.08) !important;
+
+                svg, i {
+                    color: #3730a3 !important;
+                    fill: #3730a3 !important;
+                    stroke: #3730a3 !important;
+                    transform: rotate(90deg) scale(1.1) !important;
+                }
+            }
         }
 
         .product-dialog-content { padding: 0 !important; }

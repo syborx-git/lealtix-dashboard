@@ -38,6 +38,7 @@ import { ProductService } from '@/pages/products-menu/service/product.service';
 import { InventoryService } from '@/pages/inventario/service/inventory.service';
 import { MesaService } from '@/pages/hostess/services/mesa.service';
 import { environment } from '@/pages/commons/environment';
+import { isBeverageCategoryName, isBeverageProductName } from '@/pages/kitchen/services/order-beverage-utils';
 
 // Componentes
 import { ClienteDialogComponent } from '@/pages/clientes/components/cliente-dialog/cliente-dialog.component';
@@ -420,6 +421,7 @@ export class ComandixComponent implements OnInit, OnDestroy {
 
   seleccionarArea(area: string): void {
     this.areaSeleccionada.set(area);
+    this.saveSelectedArea(area);
     if (this.unirModeMesas()) {
       this.selectedMesaIds.set(new Set());
     }
@@ -453,6 +455,27 @@ export class ComandixComponent implements OnInit, OnDestroy {
   private saveStoredAreas(areas: string[]): void {
     try {
       localStorage.setItem(this.getAreasStorageKey(), JSON.stringify(areas));
+    } catch {
+      // ignore
+    }
+  }
+
+  private getSelectedAreaStorageKey(): string {
+    return `lealtix_selected_area_${this.tenantId || 0}`;
+  }
+
+  private loadSelectedArea(): string | null {
+    try {
+      const val = localStorage.getItem(this.getSelectedAreaStorageKey());
+      return val && val.trim().length > 0 ? val.trim() : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private saveSelectedArea(area: string): void {
+    try {
+      localStorage.setItem(this.getSelectedAreaStorageKey(), area);
     } catch {
       // ignore
     }
@@ -677,6 +700,8 @@ export class ComandixComponent implements OnInit, OnDestroy {
 
         const isBeverage =
           beverageIds.has(prod.id) ||
+          isBeverageCategoryName(cat.name) ||
+          isBeverageProductName(prod.name) ||
           catNameLower.includes('bebida') ||
           catNameLower.includes('coctel') ||
           catNameLower.includes('cocktail') ||
@@ -1210,14 +1235,29 @@ export class ComandixComponent implements OnInit, OnDestroy {
           // Extraer áreas únicas de las mesas y combinar con las guardadas en localStorage
           const storedAreas = this.loadStoredAreas();
           const mesaAreas = Array.from(new Set(mesas.map(m => (m.area || 'Principal').trim()).filter(a => a.length > 0)));
-          const allAreasSet = new Set<string>(['Principal', ...storedAreas, ...mesaAreas]);
+          const allAreasSet = new Set<string>();
+          storedAreas.forEach(a => allAreasSet.add(a));
+          mesaAreas.forEach(a => allAreasSet.add(a));
+          if (allAreasSet.size === 0) {
+            allAreasSet.add('Principal');
+          }
           const finalAreas = Array.from(allAreasSet);
           this.areas.set(finalAreas);
           this.saveStoredAreas(finalAreas);
 
-          // Si el área seleccionada no existe en la lista, reajustar a Principal
-          if (!finalAreas.includes(this.areaSeleccionada())) {
-            this.areaSeleccionada.set(finalAreas[0] || 'Principal');
+          // Si hay un área previamente seleccionada guardada en localStorage, usarla si aún existe
+          const lastSelectedArea = this.loadSelectedArea();
+          if (lastSelectedArea && finalAreas.includes(lastSelectedArea)) {
+            this.areaSeleccionada.set(lastSelectedArea);
+          } else if (!finalAreas.includes(this.areaSeleccionada())) {
+            // Priorizar primera área que tenga mesas
+            const firstWithMesas = finalAreas.find(a => mesas.some(m => (m.area || 'Principal') === a));
+            this.areaSeleccionada.set(firstWithMesas || finalAreas[0] || 'Principal');
+          } else if (this.areaSeleccionada() === 'Principal' && !mesas.some(m => (m.area || 'Principal') === 'Principal')) {
+            const firstWithMesas = finalAreas.find(a => mesas.some(m => (m.area || 'Principal') === a));
+            if (firstWithMesas) {
+              this.areaSeleccionada.set(firstWithMesas);
+            }
           }
 
           // Si ya teníamos una mesa seleccionada, mantenerla sincronizada
@@ -1228,13 +1268,10 @@ export class ComandixComponent implements OnInit, OnDestroy {
             }
           }
         } else {
-          const defaultMesas: MesaDTO[] = [
-            { id: 1, tenantId: this.tenantId, nombre: 'Mesa 1', numero: 1, capacidad: 4, estado: 'LIBRE', posicionX: 200, posicionY: 200 },
-            { id: 2, tenantId: this.tenantId, nombre: 'Mesa 2', numero: 2, capacidad: 4, estado: 'LIBRE', posicionX: 360, posicionY: 200 },
-            { id: 3, tenantId: this.tenantId, nombre: 'Mesa 3', numero: 3, capacidad: 4, estado: 'LIBRE', posicionX: 520, posicionY: 200 },
-            { id: 4, tenantId: this.tenantId, nombre: 'Barra', numero: 4, capacidad: 2, estado: 'LIBRE', posicionX: 680, posicionY: 200 }
-          ];
-          this.mesas.set(defaultMesas);
+          const storedAreas = this.loadStoredAreas();
+          const finalAreas = storedAreas.length > 0 ? storedAreas : ['Principal'];
+          this.areas.set(finalAreas);
+          this.mesas.set([]);
         }
       },
       error: () => {
@@ -1600,10 +1637,11 @@ export class ComandixComponent implements OnInit, OnDestroy {
   tooltipMesa(mesa: MesaDTO): string {
     const idPart = mesa.id != null ? `#${mesa.id} · ` : '';
     const numero = mesa.numero != null ? `Mesa ${mesa.numero} · ` : '';
+    const areaPart = mesa.area ? `[${mesa.area}] · ` : '';
     const estado = mesa.estado ? `[${mesa.estado}] · ` : '';
     const cap = `${mesa.capacidad} personas`;
     const grupo = mesa.idGrupoTemporal ? ' · (Mesa agrupada · Clic para opciones)' : '';
-    return `${idPart}${numero}${mesa.nombre} · ${estado}${cap}${grupo}`;
+    return `${idPart}${numero}${mesa.nombre} · ${areaPart}${estado}${cap}${grupo}`;
   }
 
   // ==================== POLLING DE ÓRDENES PENDIENTES ====================

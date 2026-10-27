@@ -74,17 +74,41 @@
       border-bottom: 1px solid #f1f5f9 !important;
       color: #0f172a !important;
 
+      .p-dialog-header-actions button,
+      .p-dialog-close-button,
       .p-dialog-header-icon,
       .p-dialog-header-close {
-        color: #64748b !important;
+        color: #334155 !important;
+        background: #f1f5f9 !important;
+        border: 1px solid #e2e8f0 !important;
         border-radius: 9999px !important;
         width: 2.25rem !important;
         height: 2.25rem !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important;
         transition: all 0.2s ease !important;
+
+        svg, i {
+          color: #334155 !important;
+          fill: #334155 !important;
+          stroke: #334155 !important;
+          width: 14px !important;
+          height: 14px !important;
+        }
 
         &:hover {
           color: #0f172a !important;
-          background: #f1f5f9 !important;
+          background: #e2e8f0 !important;
+          transform: scale(1.08) !important;
+
+          svg, i {
+            color: #0f172a !important;
+            fill: #0f172a !important;
+            stroke: #0f172a !important;
+            transform: rotate(90deg) scale(1.1) !important;
+          }
         }
       }
     }
