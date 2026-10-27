@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, computed, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, ChangeDetectorRef, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -844,9 +844,12 @@ export class ComandixComponent implements OnInit, OnDestroy {
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
   private editCountdownTimer: ReturnType<typeof setInterval> | null = null;
   private knownOrderIds = new Set<string>();
-  private readonly POLLING_INTERVAL_MS = 30_000;
+  private readonly POLLING_INTERVAL_MS = 6_000;
   private readonly NOTIFICATION_SOUND = 'assets/sounds/dragon-studio-correct-472358.mp3';
   private readonly ACTIVE_DASHBOARD_STATUSES: OrderStatus[] = ['PENDIENTE', 'CONFIRMADA', 'EN_PREPARACION', 'LISTO', 'PAGADA'];
+  // Estados que se consultan por polling. Incluye CANCELADA para que las
+  // comandas canceladas aparezcan en su pestaña (no solo las activas).
+  private readonly POLL_STATUSES: OrderStatus[] = ['PENDIENTE', 'CONFIRMADA', 'EN_PREPARACION', 'LISTO', 'PAGADA', 'CANCELADA'];
 
   /** Prórroga de edición de comandas enviadas (30 segundos) */
   private readonly EDIT_WINDOW_SECONDS = 30;
@@ -1663,7 +1666,7 @@ export class ComandixComponent implements OnInit, OnDestroy {
     try {
       console.log('[Comandix] 🔄 Consultando órdenes activas...');
       const responses = await Promise.all(
-        this.ACTIVE_DASHBOARD_STATUSES.map((status) =>
+        this.POLL_STATUSES.map((status) =>
           firstValueFrom(this.orderService.getOrdersByTenant(this.tenantId, status))
         )
       );
@@ -1718,6 +1721,8 @@ export class ComandixComponent implements OnInit, OnDestroy {
         console.log('[Comandix] ✅ Órdenes pendientes actualizadas:', mergedOrders.length);
         return mergedOrders;
       });
+
+      this.syncEditCountdown();
 
       // Mostrar alerta en primera carga si hay órdenes
       if (isFirstPoll && mappedOrders.length > 0) {
@@ -1945,6 +1950,7 @@ export class ComandixComponent implements OnInit, OnDestroy {
           this.pendingOrders.update(orders =>
             orders.map(o => o.id === orderId ? { ...o, estado: normalizedState } : o)
           );
+          this.syncEditCountdown();
 
           // 2. Si la orden fue PAGADA
           if (normalizedState === 'PAGADA') {
@@ -2325,14 +2331,16 @@ export class ComandixComponent implements OnInit, OnDestroy {
     return diffMs < 2 * 60 * 1000;
   }
 
-  /** Arranca el timer que refresca nowTick cada segundo para el countdown de edición */
+  /** Timer de edición: ya no hay prórroga, se limpia por compatibilidad. */
   private startEditCountdown(): void {
+    this.syncEditCountdown();
+  }
+
+  private syncEditCountdown(): void {
     if (this.editCountdownTimer) {
       clearInterval(this.editCountdownTimer);
+      this.editCountdownTimer = null;
     }
-    this.editCountdownTimer = setInterval(() => {
-      this.nowTick.set(Date.now());
-    }, 1000);
   }
 
   /** True si la comanda aún puede editarse (estado pendiente/confirmada y dentro de la prórroga) */
@@ -2355,13 +2363,13 @@ export class ComandixComponent implements OnInit, OnDestroy {
     return remainingSec > 0 ? remainingSec : 0;
   }
 
-  /** Etiqueta "Editable por mm:ss" para la tarjeta de la comanda */
-  editCountdownLabel(order: PendingOrder): string {
-    const seconds = this.getEditableRemainingSeconds(order);
-    if (seconds <= 0) return '';
-    const mm = Math.floor(seconds / 60).toString().padStart(2, '0');
-    const ss = (seconds % 60).toString().padStart(2, '0');
-    return `Editable por ${mm}:${ss}`;
+  /**
+   * La comanda puede editarse en cualquier momento mientras NO esté pagada ni
+   * cancelada (permite agregar platillos si llega otro comensal o piden más).
+   */
+  canEditOrder(order: PendingOrder): boolean {
+    if (!order) return false;
+    return this.editableStates.includes(order.estado as OrderStatus);
   }
 
   /** Nombre legible del cliente para mostrar en la tarjeta */
@@ -2596,7 +2604,8 @@ export class ComandixComponent implements OnInit, OnDestroy {
         life: 3000
       });
 
-      this.removeOrderFromList(order.id);
+      // La comanda cancelada debe pasar a la pestaña "Canceladas" (no desaparecer).
+      this.patchOrderStatus(order.id, 'CANCELADA' as OrderStatus);
       this.showCancelOrderDialog.set(false);
       this.selectedOrderForCancellation.set(null);
       this.cancellationComment = '';
@@ -3632,6 +3641,14 @@ export class ComandixComponent implements OnInit, OnDestroy {
 
 trackByProductId = (index: number, item: CartItem): string => {
     return this.cartItemKey(item);
+  };
+
+  trackByProductGrid = (index: number, product: any): number | string => {
+    return product?.id ?? index;
+  };
+
+  trackByCategoryId = (index: number, cat: any): number | string => {
+    return cat?.id ?? index;
   };
 
   trackByOrderId(index: number, order: PendingOrder): string {

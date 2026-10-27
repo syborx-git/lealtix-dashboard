@@ -16,11 +16,32 @@ jobs:
           username: ${{ secrets.HETZNER_USER }}
           key: ${{ secrets.HETZNER_SSH_KEY }}
           script: |
+            set -e
             BRANCH="${{ github.ref_name }}"
             echo "🚀 Desplegando Dashboard desde rama $BRANCH..."
             cd /var/www/lealtix/lealtix-dashboard
-            git checkout $BRANCH
-            git pull origin $BRANCH
+            # Forzar que el servidor quede EXACTAMENTE en origin/$BRANCH (evita drift)
+            git fetch origin "$BRANCH"
+            git checkout -f "$BRANCH"
+            git reset --hard "origin/$BRANCH"
+            echo "HEAD del servidor: $(git rev-parse --short HEAD)"
             cd /var/www/lealtix
-            docker compose up -d --build lealtix-dashboard
+            # Liberar el puerto 4201 por si quedó un contenedor viejo (evita "port already allocated")
+            docker rm -f lealtix_dashboard lealtix_dashboard_container 2>/dev/null || true
+            echo "===== build + up dashboard ====="
+            docker compose build lealtix-dashboard
+            docker compose up -d --force-recreate lealtix-dashboard
+            sleep 10
+            echo "===== docker compose ps ====="
+            docker compose ps || true
+            echo "===== logs ====="
+            docker compose logs --tail=80 lealtix-dashboard || true
+            echo "===== health check dashboard ====="
+            for i in $(seq 1 20); do
+              code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:4201/ || echo 000)
+              echo "intento $i: $code"
+              if [ "$code" = "200" ]; then break; fi
+              if [ "$i" = "20" ]; then echo "❌ El dashboard no respondió 200 tras el deploy"; exit 1; fi
+              sleep 5
+            done
             echo "✅ Dashboard actualizado con éxito!"

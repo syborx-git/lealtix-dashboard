@@ -2348,3 +2348,158 @@ body.modulo-fullscreen-active .app-content {
 
   body.ticket-print-mode .ticket-actions { display: none !important; }
 }
+
+/* ============================================================================
+   RESPONSIVE GLOBAL — Lealtix (móvil y tablet)
+   Homogeneiza toda la app: tablas con scroll horizontal, diálogos dentro de la
+   pantalla, sin scroll horizontal de página y objetivos táctiles cómodos.
+   ============================================================================ */
+@media (max-width: 991px) {
+  /* 1) Tablas: scroll horizontal en vez de desbordar la página */
+  .p-datatable .p-datatable-table-container,
+  .p-datatable .p-datatable-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .p-datatable table { min-width: 100%; }
+
+  /* 2) Diálogos: siempre dentro de la pantalla y con contenido desplazable */
+  .p-dialog { max-height: 95dvh; }
+  .p-dialog .p-dialog-content { max-height: 70vh; overflow-y: auto; }
+
+  /* 3) Prevenir scroll horizontal accidental */
+  .app-main { overflow-x: hidden; }
+  .app-main img, .app-main video, .app-main canvas { max-width: 100%; height: auto; }
+
+  /* 4) Barras de herramientas con muchos botones: permitir wrap */
+  .p-toolbar { flex-wrap: wrap; gap: 0.5rem; }
+}
+
+@media (max-width: 640px) {
+  /* Diálogos y pies de acción a ancho completo (patrón móvil) */
+  .p-dialog .p-dialog-content { max-height: 74vh; padding: 1rem; }
+  .p-dialog .p-dialog-header,
+  .p-dialog .p-dialog-footer { padding: 0.75rem 1rem; }
+  .p-dialog .p-dialog-footer { flex-wrap: wrap; gap: 0.5rem; }
+  .p-dialog .p-dialog-footer .p-button { flex: 1 1 100%; }
+}
+
+/* ============================================================================
+   RESPONSIVE GLOBAL: pestañas de catálogo (.catalog-tabs) en móvil/tablet
+   Antes se aplastaban y el texto se encimaba. Ahora hacen scroll horizontal.
+   ============================================================================ */
+@media (max-width: 900px) {
+  .catalog-tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .catalog-tabs::-webkit-scrollbar { display: none; }
+  .catalog-tabs .catalog-tab {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
+
+/* ============================================================================
+   MODO OSCURO GLOBAL — contraste de textos y superficies en TODO el sistema.
+   Cubre: utilidades Tailwind (slate/gray/zinc/neutral/stone), helpers de
+   PrimeFlex (text-900/800/...), colores hardcodeados en estilos inline y
+   fondos claros inline. Así ninguna letra queda tenue sobre fondo oscuro.
+   ============================================================================ */
+:root[class*='app-dark'],
+.app-dark {
+  /* --- Textos Tailwind (slate/gray/zinc/neutral/stone) → tonos claros --- */
+  .text-slate-400, .text-gray-400, .text-zinc-400, .text-neutral-400, .text-stone-400 { color: #cbd5e1 !important; }
+  .text-slate-500, .text-gray-500, .text-zinc-500, .text-neutral-500, .text-stone-500 { color: #cbd5e1 !important; }
+  .text-slate-600, .text-gray-600, .text-zinc-600, .text-neutral-600, .text-stone-600 { color: #cbd5e1 !important; }
+  .text-slate-700, .text-gray-700, .text-zinc-700, .text-neutral-700, .text-stone-700 { color: #e2e8f0 !important; }
+  .text-slate-800, .text-gray-800, .text-zinc-800, .text-neutral-800, .text-stone-800 { color: #e6e8ef !important; }
+  .text-slate-900, .text-gray-900, .text-zinc-900, .text-neutral-900, .text-stone-900 { color: #ffffff !important; }
+  .text-black { color: #ffffff !important; }
+
+  /* --- Helpers de PrimeFlex (text-900..) --- */
+  .text-900 { color: #ffffff !important; }
+  .text-800 { color: #e6e8ef !important; }
+  .text-700 { color: #e2e8f0 !important; }
+  .text-600 { color: #cbd5e1 !important; }
+  .text-500, .text-400, .text-300 { color: #cbd5e1 !important; }
+  .text-color { color: var(--text-color) !important; }
+  .text-color-secondary { color: var(--text-color-secondary) !important; }
+
+  /* --- Textos de celdas de tablas (PrimeNG) --- */
+  .p-datatable .p-datatable-tbody > tr > td { color: var(--text-color) !important; }
+
+  /* --- Labels de selects/dropdowns (p. ej. "10" filas por página) --- */
+  .p-select-label, .p-dropdown-label, .p-multiselect-label, .p-cascadeselect-label { color: var(--text-color) !important; }
+
+  /* --- Mensajes PrimeNG --- */
+  .p-message-summary { color: #ffffff !important; }
+  .p-message-text { color: #e6e8ef !important; }
+
+  /* --- Etiquetas/subtítulos genéricos de páginas --- */
+  .input-label,
+  .page-subtitle,
+  .form-label,
+  .field-label { color: var(--text-color-secondary) !important; }
+
+  /* --- Botones secundarios (outlined/solid): superficie oscura y texto claro --- */
+  .p-button.p-button-secondary,
+  .p-button.p-button-secondary.p-button-outlined {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+    color: #e2e8f0 !important;
+  }
+  .p-button.p-button-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.14) !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    color: #ffffff !important;
+  }
+
+  /* --- Fondos claros de Tailwind → superficies oscuras --- */
+  .bg-white { background-color: var(--surface-card) !important; }
+  .bg-slate-50, .bg-gray-50, .bg-zinc-50, .bg-neutral-50, .bg-stone-50 { background-color: var(--surface-section) !important; }
+  .bg-slate-100, .bg-gray-100, .bg-zinc-100, .bg-neutral-100 { background-color: rgba(255, 255, 255, 0.05) !important; }
+  .bg-slate-200, .bg-gray-200 { background-color: rgba(255, 255, 255, 0.08) !important; }
+
+  /* --- Colores oscuros hardcodeados en estilos inline (POS Comandix y otros) --- */
+  [style*='#33211d' i], [style*='#1a1817' i], [style*='#12100e' i], [style*='#1a1a1a' i] { color: var(--text-color) !important; }
+  [style*='#7a5c51' i], [style*='#6b5c56' i], [style*='#6d4c41' i], [style*='#8d6e63' i], [style*='#5d4037' i], [style*='#3a2410' i] { color: var(--text-color-secondary) !important; }
+  [style*='#111827' i], [style*='#0f172a' i], [style*='#1e293b' i], [style*='#1f2937' i], [style*='#2c3e50' i], [style*='#34495e' i] { color: #f2f4f8 !important; }
+  [style*='#374151' i], [style*='#475569' i], [style*='#334155' i], [style*='#3d4561' i] { color: #e2e8f0 !important; }
+  [style*='#6b7280' i], [style*='#64748b' i], [style*='#9ca3af' i], [style*='#888888' i], [style*='#666' i] { color: #cbd5e1 !important; }
+
+  /* --- Fondos claros hardcodeados en estilos inline → superficies oscuras --- */
+  [style*='background: #fff' i], [style*='background:#fff' i], [style*='background: white' i] { background-color: var(--surface-card) !important; }
+  [style*='background: #f8fafc' i], [style*='background:#f8fafc' i], [style*='background: #f9fafb' i],
+  [style*='background: #f3f4f6' i], [style*='background: #f1f5f9' i], [style*='background: #fbf9f6' i],
+  [style*='background: #f7f4f0' i], [style*='background: #f3f3f3' i], [style*='background: #f5f5f5' i] { background-color: var(--surface-section) !important; }
+
+  /* Chips con fondo claro inline → versión oscura temática (bg + texto claros) */
+  [style*='background: #eef2ff' i] { background-color: rgba(99, 102, 241, 0.18) !important; color: #c7d2fe !important; }
+  [style*='background: #e0e7ff' i] { background-color: rgba(99, 102, 241, 0.2) !important; color: #c7d2fe !important; }
+  [style*='background: #fef3c7' i] { background-color: rgba(245, 158, 11, 0.18) !important; color: #fcd34d !important; }
+  [style*='background: #ffedd5' i] { background-color: rgba(249, 115, 22, 0.18) !important; color: #fdba74 !important; }
+  [style*='background: #dcfce7' i] { background-color: rgba(16, 185, 129, 0.18) !important; color: #6ee7b7 !important; }
+  [style*='background: #fee2e2' i] { background-color: rgba(239, 68, 68, 0.18) !important; color: #fca5a5 !important; }
+  [style*='background: #f9f7f4' i], [style*='background: #f8fbff' i], [style*='background: #ebdccb' i] { background-color: var(--surface-section) !important; }
+
+  /* Textos oscuros inline de chips (sobre fondos que se oscurecen) */
+  [style*='color: #4338ca' i], [style*='color: #4f46e5' i], [style*='color: #1d4ed8' i], [style*='color: #2563eb' i] { color: #a5b4fc !important; }
+  [style*='color: #92400e' i], [style*='color: #78350f' i], [style*='color: #b45309' i] { color: #fcd34d !important; }
+  [style*='color: #166534' i], [style*='color: #15803d' i], [style*='color: #047857' i] { color: #6ee7b7 !important; }
+
+  /* --- Tab activa del POS/catálogos con fondo claro ⇒ texto oscuro legible --- */
+  .view-toggle-btn.active,
+  .view-toggle-btn.active .view-btn-label { color: #312e81 !important; }
+
+  /* --- Paginador: página seleccionada legible --- */
+  .p-paginator .p-paginator-pages .p-paginator-page.p-paginator-page-selected {
+    background: var(--lealtix-primary-600) !important;
+    color: #ffffff !important;
+  }
+}
+

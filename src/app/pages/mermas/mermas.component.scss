@@ -1446,6 +1446,7 @@
 }
 
 /* === MODO OSCURO: tablas y buscador homologueados === */
+::ng-deep {
 :root[class*='app-dark'],
 .app-dark {
   ::ng-deep .catalog-panel {
@@ -1494,12 +1495,27 @@
   }
 
   .caption-badge {
-    background: rgba(255, 255, 255, 0.12);
-    color: #ffffff;
+    background: var(--surface-card) !important;
+    color: var(--text-color) !important;
   }
 
   .caption-badge-danger {
-    background: rgba(254, 226, 226, 0.2);
-    color: #fecaca;
+    background: rgba(239, 68, 68, 0.2) !important;
+    color: #fca5a5 !important;
   }
+}
+}
+
+/* === MODO OSCURO — tarjetas de comanda de mermas (crema → oscuro) === */
+::ng-deep {
+:root[class*='app-dark'],
+.app-dark {
+  .order-card {
+    background: var(--surface-card) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+  .order-card-client { background: rgba(218, 159, 91, 0.12) !important; }
+  .order-card-total { border-top-color: rgba(218, 159, 91, 0.25) !important; }
+  .order-card-price { color: var(--text-color) !important; }
+}
 }

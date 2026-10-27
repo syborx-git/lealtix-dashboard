@@ -43,6 +43,7 @@ export class KitchenComponent implements OnInit, OnDestroy {
     private readonly destroy$ = new Subject<void>();
     private timerRef: ReturnType<typeof setInterval> | null = null;
     private processingOrderIds = new Set<string>();
+    private static readonly READY_PAGE_SIZE = 25;
 
     // Catálogo de recetas/adicionales por producto (productId -> receta)
     private readonly recipeCatalog = new Map<number, { recipes: IngredientOption[]; additionals: IngredientOption[] }>();
@@ -109,7 +110,7 @@ export class KitchenComponent implements OnInit, OnDestroy {
 
         this.timerRef = setInterval(() => {
             this.currentTime = Date.now();
-        }, 1000);
+        }, 15000);
     }
 
     ngOnDestroy(): void {
@@ -153,8 +154,21 @@ export class KitchenComponent implements OnInit, OnDestroy {
         const count = this.getReadyOrders().length;
         return {
             total: count,
-            shown: count
+            shown: Math.min(count, KitchenComponent.READY_PAGE_SIZE)
         };
+    }
+
+    /** Historial limitado para no renderizar cientos de tarjetas (rendimiento). */
+    getReadyOrdersShown(): KitchenOrder[] {
+        return this.getReadyOrders().slice(0, KitchenComponent.READY_PAGE_SIZE);
+    }
+
+    trackByOrderId(index: number, order: KitchenOrder): string {
+        return order?.id ?? String(index);
+    }
+
+    trackByItem(index: number, item: any): string {
+        return `${item?.productId ?? 'i'}-${index}`;
     }
 
     hasSegundoTiempo(order: KitchenOrder): boolean {

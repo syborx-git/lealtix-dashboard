@@ -208,6 +208,7 @@
                   <i class="pi pi-clone"></i>
                 </button>
                 <button
+                  *ngIf="canCancelOrders"
                   type="button"
                   class="px-2.5 py-1.5 rounded-lg border border-rose-200 text-rose-500 hover:bg-rose-50 cursor-pointer"
                   (click)="abrirModalCancelar(o)"
@@ -402,6 +403,15 @@
                   (click)="reimprimirTicketCerrada(o)"
                 >
                   <i class="pi pi-print"></i><span class="text-[11px] font-bold">Reimprimir</span>
+                </button>
+                <button
+                  *ngIf="userRole === 'ADMIN'"
+                  type="button"
+                  class="px-3 py-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 cursor-pointer flex items-center justify-center gap-1.5"
+                  (click)="abrirModalCancelar(o)"
+                  title="Anular / devolver companda pagada"
+                >
+                  <i class="pi pi-undo"></i><span class="text-[11px] font-bold">Anular</span>
                 </button>
               </div>
             </footer>

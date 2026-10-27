@@ -6,6 +6,7 @@ import { MenuListComponent } from '../component/menu-list/menu-list.component';
 import { LayoutService } from '../service/layout.service';
 import { MenuService } from '../service/menu.service';
 import { UserProfileComponent } from '@/shared/components/user-profile.component';
+import { NotificationService, AppNotification } from '@/shared/services/notification.service';
 
 @Component({
     selector: 'app-topbar',
@@ -29,6 +30,33 @@ export class HeaderComponent implements OnInit, OnDestroy {
     readonly isMobileMenuOpen = computed(() => this.layoutService.isMobileMenuOpen());
 
     readonly collapsed = computed(() => this.layoutService.isSidebarCollapsed());
+
+    readonly notifications = inject(NotificationService);
+
+    toggleNotifications(): void {
+        this.notifications.togglePanel();
+    }
+
+    notificationTimeAgo(ts: number): string {
+        const diff = Date.now() - ts;
+        const min = Math.floor(diff / 60000);
+        if (min < 1) return 'ahora';
+        if (min < 60) return `hace ${min} min`;
+        const h = Math.floor(min / 60);
+        if (h < 24) return `hace ${h} h`;
+        const d = Math.floor(h / 24);
+        return `hace ${d} d`;
+    }
+
+    /** Abre el apartado indicado por la notificación. */
+    openNotification(n: AppNotification): void {
+        this.notifications.markRead(n.id);
+        this.notifications.closePanel();
+        const route = this.notifications.resolveRoute(n);
+        if (route) {
+            void this.router.navigateByUrl(route);
+        }
+    }
 
     ngOnInit(): void {
         this.menuService.init();

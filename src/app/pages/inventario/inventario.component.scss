@@ -223,8 +223,30 @@
 }
 
 /* === MODO OSCURO: tablas y buscador homologueados (gris oscuro, no blanco) === */
+::ng-deep {
 :root[class*='app-dark'],
 .app-dark {
+  .stock-ok {
+    background: rgba(16, 185, 129, 0.18) !important;
+    color: #6ee7b7 !important;
+    border-color: rgba(16, 185, 129, 0.3) !important;
+  }
+  .stock-low {
+    background: rgba(239, 68, 68, 0.18) !important;
+    color: #fca5a5 !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+  }
+  .cat-chip-mini {
+    background: rgba(99, 102, 241, 0.18) !important;
+    border-color: rgba(99, 102, 241, 0.3) !important;
+    color: #c7d2fe !important;
+  }
+  .cat-chip-more {
+    background: rgba(99, 102, 241, 0.15) !important;
+    border-color: rgba(99, 102, 241, 0.3) !important;
+    color: #c7d2fe !important;
+  }
+
   ::ng-deep .catalog-panel {
     border-color: var(--surface-border) !important;
   }
@@ -472,4 +494,5 @@
       box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35) !important;
     }
   }
+}
 }

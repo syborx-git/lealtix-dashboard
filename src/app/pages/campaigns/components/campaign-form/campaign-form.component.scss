@@ -251,6 +251,7 @@ small.text-500 {
   }
 }
 
+::ng-deep {
 :root[class*='app-dark'],
 .app-dark {
   .card {
@@ -358,4 +359,5 @@ small.text-500 {
   .border-1 {
     border-color: rgba(255, 255, 255, 0.08) !important;
   }
+}
 }
