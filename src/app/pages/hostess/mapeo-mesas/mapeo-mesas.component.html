@@ -130,6 +130,7 @@
     <div class="plano-wrap">
     <div
         class="workspace"
+        [style.zoom]="wsZoom()"
         [class.modo-edicion]="modo === 'edicion'"
         [class.modo-operacion]="modo === 'operacion'"
         [class.resizing-ew]="resize()?.edge === 'e' || resize()?.edge === 'w'"
