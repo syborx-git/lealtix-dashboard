@@ -26,21 +26,21 @@ import { InventoryService } from '@/pages/inventario/service/inventory.service';
             min-height: 100vh;
         }
 
-        /* Pantallas operativas (POS/tableros): app nativa a pantalla completa,
-           sin scroll de página; cada panel scrollea por dentro.
-           Solo se aplica en dispositivos táctiles (ver isFullBleed). */
+        /* Pantallas operativas (POS/tableros): ancho completo pero con flujo
+           natural y scroll vertical (sin encajonar ni ocultar el overflow). */
         .app-content:has(.app-main--flush) {
             display: flex;
             flex-direction: column;
-            height: 100dvh;
-            overflow: hidden;
+            min-height: 100dvh;
+            height: auto;
+            overflow: visible;
         }
 
         .app-main--flush {
             flex: 1 1 auto;
-            min-height: 0;
+            min-height: 100dvh;
             padding: 0 !important;
-            overflow: hidden;
+            overflow: visible;
             position: relative;
         }
 
@@ -117,7 +117,45 @@ export class AppLayout implements OnInit, OnDestroy {
         private inactivityService: InactivityService,
         private notificationService: NotificationService,
         private inventoryService: InventoryService
-    ) {}
+    ) {
+        this.updateFullBleed(this.router.url);
+        this.navSub = this.router.events
+            .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+            .subscribe((e) => this.updateFullBleed(e.urlAfterRedirects || e.url));
+    }
+
+    /**
+     * En tablet: pantallas operativas (Comandix/Cocina/Barra) van full-bleed y se
+     * colapsa el sidebar; en Mesas también se colapsa el sidebar para ganar ancho.
+     * Se restaura al salir.
+     */
+    private updateFullBleed(url: string): void {
+        const clean = (url || '').split('?')[0];
+        const touch = this.isTouchDevice();
+        const isOperationalRoute = this.FULL_BLEED_ROUTES.some((r) => clean.startsWith(r));
+        this.isFullBleed.set(isOperationalRoute && touch);
+
+        const shouldCollapse = touch && (isOperationalRoute || clean.startsWith('/dashboard/mesas'));
+        if (shouldCollapse) {
+            if (this.prevSidebarCollapsed === null) {
+                this.prevSidebarCollapsed = this.layoutService.isSidebarCollapsed();
+            }
+            if (!this.layoutService.isSidebarCollapsed()) {
+                this.layoutService.setSidebarCollapsed(true);
+            }
+        } else if (this.prevSidebarCollapsed !== null) {
+            this.layoutService.setSidebarCollapsed(this.prevSidebarCollapsed);
+            this.prevSidebarCollapsed = null;
+        }
+    }
+
+    private isTouchDevice(): boolean {
+        try {
+            return !!window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+        } catch {
+            return false;
+        }
+    }
 
     ngOnInit(): void {
         this.startGlobalOrderNotifications();

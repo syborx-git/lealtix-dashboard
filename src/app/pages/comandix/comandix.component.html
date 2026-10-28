@@ -51,32 +51,6 @@
       </div>
     </div>
 
-    <div class="comandix-top-actions header-tags">
-      <p-tag
-        *ngIf="selectedCliente && activeView() === 'pos'"
-        [value]="selectedCliente.nombreCompleto"
-        icon="pi pi-user"
-        styleClass="p-tag-info"
-      ></p-tag>
-      <p-tag
-        *ngIf="!selectedCliente && activeView() === 'pos'"
-        value="Venta General"
-        icon="pi pi-shopping-bag"
-        styleClass="p-tag-secondary"
-      ></p-tag>
-      <!-- Botón carrito mobile -->
-      <button
-        *ngIf="cart().length > 0 && activeView() === 'pos'"
-        class="cart-button-mobile"
-        (click)="sidebarCarrito = true"
-        type="button"
-        title="Ver carrito"
-      >
-        <i class="pi pi-shopping-cart"></i>
-        <span class="cart-count">{{ cart().length }}</span>
-      </button>
-    </div>
-
     <!-- ==================== TOGGLE DE VISTA ==================== -->
     <div class="catalog-tabs view-toggle">
       <button
@@ -300,7 +274,7 @@
     <!-- CONTENEDOR DEL PLANO INTERACTIVO -->
     <div class="plano-container bg-white rounded-2xl p-2 md:p-3 shadow-sm border border-slate-200/80 overflow-hidden">
       <div class="plano-wrap">
-        <div class="workspace modo-operacion">
+        <div class="workspace modo-operacion" [style.zoom]="wsZoom()">
           <!-- Cuadrícula esquemática -->
           <div class="workspace-grid"></div>
 

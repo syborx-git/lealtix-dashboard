@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, computed, ChangeDetectorRef, inject, HostListener } from '@angular/core';
+import { AfterViewInit, Component, OnInit, OnDestroy, signal, computed, ChangeDetectorRef, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -140,7 +140,7 @@ export interface DisponibilidadItem {
   templateUrl: './comandix.component.html',
   styleUrls: ['./comandix.component.scss']
 })
-export class ComandixComponent implements OnInit, OnDestroy {
+export class ComandixComponent implements OnInit, OnDestroy, AfterViewInit {
   private route = inject(ActivatedRoute);
 
   // ==================== SIGNALS POS (existente) ====================
@@ -354,6 +354,9 @@ export class ComandixComponent implements OnInit, OnDestroy {
   // ==================== MAPA DE MESAS (Modo Mesero: Vista / Consulta / Unión) ====================
   readonly workspaceW = 1200;
   readonly workspaceH = 720;
+  /** Escala responsiva del lienzo para que ocupe el ancho disponible en tablet. */
+  readonly wsZoom = signal<string>('1');
+  private wsObserver: ResizeObserver | null = null;
   private readonly DEFAULT_X = 100;
   private readonly DEFAULT_Y = 100;
   private readonly DEFAULT_STEP = 40;
@@ -920,17 +923,46 @@ export class ComandixComponent implements OnInit, OnDestroy {
       });
   }
 
+  ngAfterViewInit(): void {
+    this.observeWorkspace();
+  }
+
   ngOnDestroy(): void {
     this.stopPolling();
     if (this.editCountdownTimer) {
       clearInterval(this.editCountdownTimer);
       this.editCountdownTimer = null;
     }
+    this.wsObserver?.disconnect();
+    this.wsObserver = null;
     // NO desconectar el SSE aquí: la conexión es global (AppLayout la mantiene
     // viva en todos los módulos). Desconectarla al salir de esta página cortaría
     // las notificaciones en el resto del dashboard.
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  /**
+   * Escala el lienzo lógico (1200x720) para ocupar el ancho real disponible,
+   * evitando el hueco blanco a la derecha y que las mesas se vean apiladas.
+   * El zoom respeta las coordenadas guardadas (las mesas escalan juntas).
+   */
+  private observeWorkspace(attempt = 0): void {
+    const wrap = document.querySelector('.comandix-mesas-view .plano-wrap') as HTMLElement | null;
+    if (!wrap) {
+      if (attempt < 12) setTimeout(() => this.observeWorkspace(attempt + 1), 250);
+      return;
+    }
+    const compute = () => {
+      const w = wrap.clientWidth;
+      if (!w) return;
+      const scale = Math.max(0.35, Math.min((w - 2) / this.workspaceW, 1.5));
+      this.wsZoom.set(String(scale));
+    };
+    compute();
+    this.wsObserver?.disconnect();
+    this.wsObserver = new ResizeObserver(compute);
+    this.wsObserver.observe(wrap);
   }
 
   // ==================== VISTA ACTIVA ====================
@@ -943,6 +975,9 @@ export class ComandixComponent implements OnInit, OnDestroy {
     if (view === 'disponibilidad') {
       this.loadStockInfo();
       this.loadBebidas();
+    }
+    if (view === 'mesas') {
+      setTimeout(() => this.observeWorkspace(), 0);
     }
   }
 
@@ -1276,6 +1311,7 @@ export class ComandixComponent implements OnInit, OnDestroy {
           this.areas.set(finalAreas);
           this.mesas.set([]);
         }
+        setTimeout(() => this.observeWorkspace(), 0);
       },
       error: () => {
         const defaultMesas: MesaDTO[] = [
@@ -1285,6 +1321,7 @@ export class ComandixComponent implements OnInit, OnDestroy {
           { id: 4, tenantId: this.tenantId, nombre: 'Barra', numero: 4, capacidad: 2, estado: 'LIBRE', posicionX: 680, posicionY: 200 }
         ];
         this.mesas.set(defaultMesas);
+        setTimeout(() => this.observeWorkspace(), 0);
       }
     });
   }
