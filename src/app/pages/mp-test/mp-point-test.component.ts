@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, inject, signal } from '@angular/core';
+import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MpPointTestService } from './mp-point-test.service';
 
@@ -26,9 +26,12 @@ import { MpPointTestService } from './mp-point-test.service';
         <label>Monto (MXN) — mínimo $5.00</label>
         <div class="mp-row">
           <input type="number" min="5" step="0.01" [(ngModel)]="amount" [disabled]="loading()" />
-          <button class="btn primary" (click)="charge()" [disabled]="loading()">
-            {{ loading() ? 'Enviando…' : 'Cobrar en terminal' }}
+          <button class="btn primary" (click)="charge()" [disabled]="loading() || pending()">
+            {{ loading() ? 'Enviando…' : (pending() ? 'Esperando en terminal…' : 'Cobrar en terminal') }}
           </button>
+        </div>
+        <div class="mp-hint" *ngIf="pending()">
+          Hay un cobro pendiente en la terminal. Pásale la tarjeta o pulsa <b>Cancelar cobro</b>.
         </div>
         <div class="mp-actions">
           <button class="btn" (click)="refresh()" [disabled]="!intentId()">Consultar estado</button>
@@ -230,6 +233,12 @@ export class MpPointTestComponent implements OnDestroy {
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
 
+  /** Hay un cobro en curso en la terminal (OPEN/ON_TERMINAL). */
+  readonly pending = computed(() => {
+    const s = (this.intent()?.state || '').toUpperCase();
+    return ['OPEN', 'ON_TERMINAL', 'IN_PROGRESS', 'PENDING'].includes(s);
+  });
+
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private attempts = 0;
 
@@ -253,7 +262,11 @@ export class MpPointTestComponent implements OnDestroy {
       },
       error: (err) => {
         this.loading.set(false);
-        this.error.set(this.msg(err));
+        this.error.set(
+          err?.status === 409
+            ? 'Ya hay un cobro pendiente en la terminal. Pásale la tarjeta o cancélalo; si no, espera unos minutos.'
+            : this.msg(err),
+        );
       },
     });
   }
