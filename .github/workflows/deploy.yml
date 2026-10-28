@@ -23,12 +23,13 @@ jobs:
             # Localizar el repo (por si cambió de ruta en el servidor)
             REPO_DIR="/var/www/lealtix/lealtix-dashboard"
             if [ ! -d "$REPO_DIR" ]; then
-              echo "⚠️ No existe $REPO_DIR. Buscando..."
-              echo "--- /var/www ---"; ls -la /var/www 2>/dev/null || true
-              echo "--- /var/www/lealtix ---"; ls -la /var/www/lealtix 2>/dev/null || true
-              echo "--- /root ---"; ls -la /root 2>/dev/null || true
-              echo "--- /home ---"; ls -la /home 2>/dev/null || true
-              REPO_DIR="$(find / -maxdepth 6 -type d -name 'lealtix-dashboard' 2>/dev/null | grep -v '/node_modules/' | head -n 1)"
+              echo "👤 USER=$(whoami) HOME=$HOME"
+              echo "--- HOME ---"; ls -la "$HOME" 2>/dev/null || true
+              echo "--- /home/* ---"; ls -la /home/* 2>/dev/null || true
+              echo "--- /opt /srv /app ---"; ls -la /opt /srv /app 2>/dev/null || true
+              echo "--- dirs lealtix ---"; find /home /root /opt /srv /app /var /usr/local -maxdepth 8 -type d -iname '*lealtix*' 2>/dev/null | head -n 40
+              echo "--- compose ---"; find /home /root /opt /srv /app /var /usr/local -maxdepth 8 -name 'docker-compose*.y*ml' 2>/dev/null | head -n 40
+              REPO_DIR="$(find /home /root /opt /srv /app /var /usr/local -maxdepth 8 -type d -name 'lealtix-dashboard' 2>/dev/null | head -n 1)"
             fi
             if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR" ]; then
               echo "❌ No se encontró el repo lealtix-dashboard en el servidor"; exit 1
