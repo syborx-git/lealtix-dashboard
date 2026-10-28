@@ -19,13 +19,40 @@ jobs:
             set -e
             BRANCH="${{ github.ref_name }}"
             echo "🚀 Desplegando Dashboard desde rama $BRANCH..."
-            cd /var/www/lealtix/lealtix-dashboard
+
+            # Localizar el repo (por si cambió de ruta en el servidor)
+            REPO_DIR="/var/www/lealtix/lealtix-dashboard"
+            if [ ! -d "$REPO_DIR" ]; then
+              echo "⚠️ No existe $REPO_DIR. Buscando..."
+              echo "--- /var/www ---"; ls -la /var/www 2>/dev/null || true
+              echo "--- /var/www/lealtix ---"; ls -la /var/www/lealtix 2>/dev/null || true
+              echo "--- /root ---"; ls -la /root 2>/dev/null || true
+              echo "--- /home ---"; ls -la /home 2>/dev/null || true
+              REPO_DIR="$(find / -maxdepth 6 -type d -name 'lealtix-dashboard' 2>/dev/null | grep -v '/node_modules/' | head -n 1)"
+            fi
+            if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR" ]; then
+              echo "❌ No se encontró el repo lealtix-dashboard en el servidor"; exit 1
+            fi
+            echo "REPO_DIR=$REPO_DIR"
+            cd "$REPO_DIR"
             # Forzar que el servidor quede EXACTAMENTE en origin/$BRANCH (evita drift)
             git fetch origin "$BRANCH"
             git checkout -f "$BRANCH"
             git reset --hard "origin/$BRANCH"
             echo "HEAD del servidor: $(git rev-parse --short HEAD)"
-            cd /var/www/lealtix
+
+            # Localizar docker-compose (padre del repo o búsqueda en rutas comunes)
+            COMPOSE_DIR="$(dirname "$REPO_DIR")"
+            for d in "$COMPOSE_DIR" "$(dirname "$COMPOSE_DIR")"; do
+              if [ -f "$d/docker-compose.yml" ] || [ -f "$d/docker-compose.yaml" ]; then COMPOSE_DIR="$d"; break; fi
+            done
+            if [ ! -f "$COMPOSE_DIR/docker-compose.yml" ] && [ ! -f "$COMPOSE_DIR/docker-compose.yaml" ]; then
+              echo "⚠️ Sin compose en $COMPOSE_DIR; buscando..."
+              COMPOSE_FILE="$(grep -rl 'lealtix-dashboard' /var/www /root /home /opt /srv /app --include='docker-compose.yml' --include='docker-compose.yaml' 2>/dev/null | head -n 1)"
+              if [ -n "$COMPOSE_FILE" ]; then COMPOSE_DIR="$(dirname "$COMPOSE_FILE")"; fi
+            fi
+            echo "COMPOSE_DIR=$COMPOSE_DIR"
+            cd "$COMPOSE_DIR"
             # Liberar el puerto 4201 por si quedó un contenedor viejo (evita "port already allocated")
             docker rm -f lealtix_dashboard lealtix_dashboard_container 2>/dev/null || true
             echo "===== build + up dashboard ====="
