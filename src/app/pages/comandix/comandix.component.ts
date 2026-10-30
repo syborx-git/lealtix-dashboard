@@ -149,8 +149,20 @@ export class ComandixComponent implements OnInit, OnDestroy {
   // Ids de sub-recetas: NO se venden solas y se ocultan del catálogo
   subRecetaIds = signal<Set<number>>(new Set());
 
-  // Filtro de categoría para el catálogo (0 = todas las categorías)
-  selectedCategoryId = signal<number>(0);
+  // Filtro de categoría para el catálogo: null = en vista de categorías, 0 = Todos los productos, >0 = id de categoría específica
+  selectedCategoryId = signal<number | null>(null);
+
+  // Búsqueda en tiempo real de platillos y bebidas
+  searchQuery = signal<string>('');
+
+  // Nombre legible de la categoría actualmente abierta
+  selectedCategoryName = computed<string>(() => {
+    const selected = this.selectedCategoryId();
+    if (selected === null) return '';
+    if (selected === 0) return 'Todos los productos';
+    const cat = this.categories().find((c) => Number(c.id) === selected);
+    return cat ? cat.name : 'Categoría';
+  });
 
   // Lista plana y deduplicada de productos de todas las categorías
   allProducts = computed<Product[]>(() => {
@@ -189,14 +201,29 @@ export class ComandixComponent implements OnInit, OnDestroy {
     ];
   });
 
-  // Productos visibles según el filtro de categoría seleccionado
+  // Productos visibles según el filtro de categoría seleccionado y/o búsqueda
   filteredProducts = computed<Product[]>(() => {
     const all = this.allProducts();
+    const query = this.searchQuery().trim().toLowerCase();
     const selected = this.selectedCategoryId();
-    if (!selected) return all;
-    const ids = this.categoryProductIds().get(selected);
-    if (!ids) return [];
-    return all.filter((p) => ids.has(p.id));
+
+    let list = all;
+    // Si hay una categoría seleccionada específica (distinta de 0 / Todos), filtrar por sus IDs
+    if (selected !== null && selected !== 0) {
+      const ids = this.categoryProductIds().get(selected);
+      if (!ids) list = [];
+      else list = all.filter((p) => ids.has(p.id));
+    }
+
+    // Si hay término de búsqueda, filtrar por nombre y descripción
+    if (query) {
+      list = list.filter((p) =>
+        (p.name && p.name.toLowerCase().includes(query)) ||
+        (p.description && p.description.toLowerCase().includes(query))
+      );
+    }
+
+    return list;
   });
   clientes = signal<Cliente[]>([]);
   cart = signal<CartItem[]>([]);
@@ -338,6 +365,17 @@ export class ComandixComponent implements OnInit, OnDestroy {
   editingAsiento = signal<ComandaAsiento | null>(null);
   tempAliasInput: string = '';
 
+  // ==================== DYNAMIC ISLAND (Cabecera Superior Moderna) ====================
+  mesaIslandModalVisible = signal<boolean>(false);
+  clienteIslandModalVisible = signal<boolean>(false);
+  asientosIslandModalVisible = signal<boolean>(false);
+  activeExpandedPill = signal<'none' | 'mesa' | 'cliente' | 'asiento' | 'tiempo' | 'cart'>('none');
+  showViewsSlider = signal<boolean>(false);
+
+  mesasLibres = computed<MesaDTO[]>(() => {
+    return this.mesas().filter(m => m.estado === 'LIBRE');
+  });
+
   // ==================== TRAZABILIDAD (Mesa y Mesero) ====================
   mesas = signal<MesaDTO[]>([]);
   selectedMesa = signal<MesaDTO | null>(null);
@@ -368,6 +406,12 @@ export class ComandixComponent implements OnInit, OnDestroy {
   modalOpcionesGrupoVisible = signal<boolean>(false);
   grupoSeleccionado = signal<MesaGrupo | null>(null);
   mesaDelGrupoSeleccionada = signal<MesaDTO | null>(null);
+
+  // ==================== CAMBIO DE MESA EN COMANDA ACTIVA ====================
+  ordenParaCambioMesa = signal<PendingOrder | null>(null);
+  modalConfirmarCambioMesaVisible = signal<boolean>(false);
+  mesaDestinoParaCambio = signal<MesaDTO | null>(null);
+  procesandoCambioMesa = signal<boolean>(false);
 
   ordenesDeGrupoSeleccionado = computed<PendingOrder[]>(() => {
     const grupo = this.grupoSeleccionado();
@@ -1021,6 +1065,95 @@ export class ComandixComponent implements OnInit, OnDestroy {
     this.tiempoActivo.set(tiempo);
   }
 
+  siguienteTiempo(): void {
+    const actual = this.tiempoActivo();
+    const siguiente: 1 | 2 | 3 = actual === 1 ? 2 : (actual === 2 ? 3 : 1);
+    this.setTiempoActivo(siguiente);
+  }
+
+  openMesaIslandModal(): void {
+    this.mesaIslandModalVisible.set(true);
+  }
+
+  openClienteIslandModal(): void {
+    this.clienteIslandModalVisible.set(true);
+  }
+
+  openAsientosIslandModal(): void {
+    this.asientosIslandModalVisible.set(true);
+  }
+
+  seleccionarMesaRapida(mesa: MesaDTO): void {
+    this.selectedMesa.set(mesa);
+    this.mesaIslandModalVisible.set(false);
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Mesa asignada',
+      detail: `Comanda asignada a ${mesa.nombre}.`,
+      life: 2500
+    });
+  }
+
+  desasignarMesa(): void {
+    this.selectedMesa.set(null);
+    this.mesaIslandModalVisible.set(false);
+    this.messageService.add({
+      severity: 'warn',
+      summary: 'Mesa desasignada',
+      detail: 'La comanda ahora no tiene mesa asignada.',
+      life: 2000
+    });
+  }
+
+  quitarCliente(): void {
+    this.selectedCliente = null;
+    this.clienteIslandModalVisible.set(false);
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Venta General',
+      detail: 'Comanda establecida como Venta General.',
+      life: 2000
+    });
+  }
+
+  togglePill(pill: 'mesa' | 'cliente' | 'asiento' | 'tiempo' | 'cart'): void {
+    if (pill === 'tiempo') {
+      this.activeExpandedPill.set('tiempo');
+      this.siguienteTiempo();
+      return;
+    }
+
+    if (this.activeExpandedPill() === pill) {
+      if (pill === 'mesa') this.openMesaIslandModal();
+      else if (pill === 'cliente') this.openClienteIslandModal();
+      else if (pill === 'asiento') this.openAsientosIslandModal();
+      else if (pill === 'cart') this.sidebarCarrito = true;
+    } else {
+      this.activeExpandedPill.set(pill);
+    }
+  }
+
+  collapsePill(event?: MouseEvent): void {
+    if (event) event.stopPropagation();
+    this.activeExpandedPill.set('none');
+  }
+
+  toggleViewsSlider(): void {
+    this.showViewsSlider.update((v) => !v);
+  }
+
+  switchViewFromSlider(view: 'mesas' | 'pos' | 'orders' | 'report' | 'disponibilidad'): void {
+    this.switchView(view);
+    if (view === 'pos' || view === 'mesas') {
+      this.showViewsSlider.set(false);
+    }
+  }
+
+  switchOrdersViewFromSlider(ordersView: 'active' | 'closed' | 'cancelled'): void {
+    this.switchOrdersView(ordersView);
+    this.showViewsSlider.set(false);
+  }
+
   toggleItemTiempo(item: CartItem): void {
     const current = item.tiempo || 1;
     const nuevoTiempo: 1 | 2 | 3 = current === 1 ? 2 : (current === 2 ? 3 : 1);
@@ -1291,6 +1424,33 @@ export class ComandixComponent implements OnInit, OnDestroy {
   onMesaClick(mesa: MesaDTO): void {
     if (mesa.id == null) return;
 
+    // Modo cambio de mesa para comanda activa
+    if (this.ordenParaCambioMesa()) {
+      const ordenActual = this.ordenParaCambioMesa()!;
+      if (mesa.id === ordenActual.mesaId) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Mesa Actual',
+          detail: `La comanda ya pertenece a la mesa '${mesa.nombre}'. Por favor selecciona otra mesa libre.`
+        });
+        return;
+      }
+
+      if (mesa.estado !== 'LIBRE') {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Mesa No Disponible',
+          detail: `La mesa '${mesa.nombre}' está ${mesa.estado}. Para transferir la comanda, la mesa debe estar LIBRE.`
+        });
+        return;
+      }
+
+      // Mesa libre seleccionada
+      this.mesaDestinoParaCambio.set(mesa);
+      this.modalConfirmarCambioMesaVisible.set(true);
+      return;
+    }
+
     // Modo unión de mesas
     if (this.unirModeMesas()) {
       if (mesa.estado !== 'LIBRE') {
@@ -1396,6 +1556,85 @@ export class ComandixComponent implements OnInit, OnDestroy {
       this.areaSeleccionada.set(this.selectedMesa()!.area!);
     }
     this.switchView('mesas');
+  }
+
+  // ==================== ACCIONES DE CAMBIO DE MESA ====================
+
+  iniciarCambioMesa(order: PendingOrder): void {
+    this.ordenParaCambioMesa.set(order);
+    this.showOrderDetail.set(false);
+    this.switchView('mesas');
+
+    // Si la orden actual tiene un área asignada en su mesa y existe en la lista de áreas, seleccionarla
+    if (order.mesaId) {
+      const mesaActual = this.mesas().find(m => m.id === order.mesaId);
+      if (mesaActual?.area && this.areas().includes(mesaActual.area)) {
+        this.areaSeleccionada.set(mesaActual.area);
+      }
+    }
+
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Cambiar de Mesa',
+      detail: `Selecciona una mesa libre en el plano para transferir la orden #${order.id.slice(0, 8).toUpperCase()}.`,
+      life: 5000
+    });
+  }
+
+  cancelarCambioMesa(): void {
+    this.ordenParaCambioMesa.set(null);
+    this.mesaDestinoParaCambio.set(null);
+    this.modalConfirmarCambioMesaVisible.set(false);
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Operación Cancelada',
+      detail: 'El cambio de mesa ha sido cancelado.',
+      life: 3000
+    });
+  }
+
+  confirmarCambioMesa(): void {
+    const orden = this.ordenParaCambioMesa();
+    const destino = this.mesaDestinoParaCambio();
+    if (!orden || !destino || destino.id == null) return;
+
+    this.procesandoCambioMesa.set(true);
+    this.orderService.cambiarMesa(orden.id, destino.id)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.procesandoCambioMesa.set(false))
+      )
+      .subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Mesa Cambiada',
+            detail: `La comanda #${orden.id.slice(0, 8).toUpperCase()} ahora está en la mesa ${destino.nombre}.`,
+            life: 4500
+          });
+
+          this.modalConfirmarCambioMesaVisible.set(false);
+          this.ordenParaCambioMesa.set(null);
+          this.mesaDestinoParaCambio.set(null);
+
+          // Recargar plano de mesas y comandas
+          this.loadMesas();
+          this.pollOrders();
+
+          // Regresar a la vista de órdenes activas para ver el cambio reflejado
+          this.switchView('orders');
+          this.ordersView.set('active');
+        },
+        error: (err) => {
+          const errorMsg = err?.error?.message ?? err?.message ?? 'No se pudo transferir la orden a la nueva mesa';
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error al cambiar mesa',
+            detail: errorMsg,
+            life: 5000
+          });
+        }
+      });
   }
 
   // Unión y separación de mesas
@@ -1941,10 +2180,30 @@ export class ComandixComponent implements OnInit, OnDestroy {
           const normalizedState = this.normalizeOrderStatus(sseEvent.order.estado);
           console.log('[Comandix] Actualización en tiempo real recibida para comanda:', orderId, normalizedState);
 
-          // 1. Actualizar el estado en pendingOrders
+          // 1. Actualizar el estado y datos de mesa en pendingOrders
           this.pendingOrders.update(orders =>
-            orders.map(o => o.id === orderId ? { ...o, estado: normalizedState } : o)
+            orders.map(o => o.id === orderId ? {
+              ...o,
+              estado: normalizedState,
+              mesaId: sseEvent.order.mesaId ?? o.mesaId,
+              mesaNombre: sseEvent.order.mesaNombre ?? o.mesaNombre,
+              mesaNumero: sseEvent.order.mesaNumero ?? o.mesaNumero
+            } : o)
           );
+
+          if (this.selectedOrder()?.id === orderId) {
+            this.selectedOrder.update(prev => prev ? {
+              ...prev,
+              estado: normalizedState,
+              mesaId: sseEvent.order.mesaId ?? prev.mesaId,
+              mesaNombre: sseEvent.order.mesaNombre ?? prev.mesaNombre,
+              mesaNumero: sseEvent.order.mesaNumero ?? prev.mesaNumero
+            } : null);
+          }
+
+          if (sseEvent.order.mesaNombre || sseEvent.order.mesaId) {
+            this.loadMesas();
+          }
 
           // 2. Si la orden fue PAGADA
           if (normalizedState === 'PAGADA') {
@@ -3718,7 +3977,38 @@ trackByProductId = (index: number, item: CartItem): string => {
   }
 
   onCategoryFilterChange(categoryId: number | null | undefined): void {
-    this.selectedCategoryId.set(Number(categoryId) || 0);
+    if (categoryId === null || categoryId === undefined) {
+      this.selectedCategoryId.set(null);
+    } else {
+      this.selectedCategoryId.set(Number(categoryId));
+    }
+  }
+
+  onSearchInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value || '';
+    this.searchQuery.set(value);
+  }
+
+  clearSearch(): void {
+    this.searchQuery.set('');
+  }
+
+  getCategoryProductCount(cat: MenuCategory): number {
+    if (!cat || !cat.products) return 0;
+    const subIds = this.subRecetaIds();
+    return cat.products.filter(p => p?.id && !subIds.has(p.id)).length;
+  }
+
+  getCategoryIcon(name: string): string {
+    const n = (name || '').toLowerCase();
+    if (n.includes('desayun') || n.includes('huevo') || n.includes('morning')) return 'pi-sun';
+    if (n.includes('enchilada') || n.includes('chilaquil') || n.includes('taco') || n.includes('fuerte')) return 'pi-bolt';
+    if (n.includes('bebida') || n.includes('drink') || n.includes('cafe') || n.includes('café') || n.includes('jugo') || n.includes('cerveza')) return 'pi-coffee';
+    if (n.includes('postre') || n.includes('dulce') || n.includes('cake') || n.includes('helado')) return 'pi-heart';
+    if (n.includes('entrada') || n.includes('snack') || n.includes('botana') || n.includes('appetizer')) return 'pi-compass';
+    if (n.includes('ensalada') || n.includes('salad') || n.includes('verde')) return 'pi-check-circle';
+    if (n.includes('especial') || n.includes('promo') || n.includes('chef')) return 'pi-star';
+    return 'pi-bookmark';
   }
 
   async validarCupon(): Promise<void> {

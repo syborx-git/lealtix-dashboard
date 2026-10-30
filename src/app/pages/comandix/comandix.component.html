@@ -12,246 +12,559 @@
     <ng-container *ngTemplateOutlet="carritoTemplate"></ng-container>
   </p-dialog>
 
-  <!-- ==================== HEADER ==================== -->
-  <div class="comandix-header mb-3">
-    <div class="flex align-items-center justify-content-between gap-3 mb-3">
-      <div class="flex align-items-center gap-3">
-        <div class="comandix-icon">
-          <i class="pi pi-shopping-cart text-2xl text-white"></i>
-        </div>
-        <h1 class="text-3xl font-bold m-0 comandix-title">Comandix</h1>
-      </div>
-      <div class="flex align-items-center gap-2 header-tags">
-        <p-tag
-          *ngIf="selectedMesa() && activeView() === 'pos'"
-          [value]="selectedMesa()!.nombre + (selectedMesa()!.numero ? ' (M-' + selectedMesa()!.numero + ')' : '')"
-          icon="pi pi-table"
-          severity="warn"
-        ></p-tag>
-        <p-tag
-          *ngIf="selectedCliente && activeView() === 'pos'"
-          [value]="selectedCliente.nombreCompleto"
-          icon="pi pi-user"
-          styleClass="p-tag-info"
-        ></p-tag>
-        <p-tag
-          *ngIf="!selectedCliente && activeView() === 'pos'"
-          value="Venta General"
-          icon="pi pi-shopping-bag"
-          styleClass="p-tag-secondary"
-        ></p-tag>
-        <!-- Botón carrito mobile -->
-        <button
-          *ngIf="cart().length > 0 && activeView() === 'pos'"
-          class="cart-button-mobile"
-          (click)="sidebarCarrito = true"
-          type="button"
-          title="Ver carrito"
-        >
-          <i class="pi pi-shopping-cart"></i>
-          <span class="cart-count">{{ cart().length }}</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- ==================== TOGGLE DE VISTA ==================== -->
-    <div class="catalog-tabs view-toggle mb-3">
+  <!-- ==================== BARRA DE NAVEGACIÓN DINÁMICA SUPERIOR (DYNAMIC TOPBAR) ==================== -->
+  <div class="comandix-dynamic-topbar mb-3 select-none">
+    
+    <!-- MODO 1: SLIDER DE MENÚS Y VISTAS (Se muestra al pulsar el botón hamburguesa o en vistas distintas a POS y MESAS) -->
+    <div
+      *ngIf="showViewsSlider() || (activeView() !== 'pos' && activeView() !== 'mesas')"
+      class="views-slider-container flex items-center justify-start md:justify-center gap-2 w-full overflow-x-auto scrollbar-none py-1 px-1.5"
+    >
+      <!-- Botón Volver / Cerrar slider (visible cuando estamos en vista POS o MESAS) -->
       <button
-        class="catalog-tab view-toggle-btn"
-        [class.active]="activeView() === 'mesas'"
-        (click)="switchView('mesas')"
+        *ngIf="activeView() === 'pos' || activeView() === 'mesas'"
         type="button"
+        class="slider-close-btn flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-all cursor-pointer flex-shrink-0"
+        (click)="toggleViewsSlider()"
+        pTooltip="Cerrar menú y volver"
+        tooltipPosition="bottom"
+      >
+        <i class="pi pi-times text-xs"></i>
+      </button>
+
+      <!-- Botones del Slider de Vistas -->
+      <button
+        type="button"
+        class="view-slider-pill"
+        [class.active]="activeView() === 'mesas'"
+        (click)="switchViewFromSlider('mesas')"
       >
         <i class="pi pi-table"></i>
-        <span class="view-btn-label">Mapa de Mesas</span>
-        <span *ngIf="mesasOcupadasCount() > 0" class="orders-badge" style="background: #ef4444; color: #fff;">{{ mesasOcupadasCount() }}</span>
+        <span>Mapa de Mesas</span>
+        <span *ngIf="mesasOcupadasCount() > 0" class="orders-badge-mini bg-red-500 text-white">{{ mesasOcupadasCount() }}</span>
       </button>
 
       <button
-        class="catalog-tab view-toggle-btn"
-        [class.active]="activeView() === 'pos'"
-        (click)="switchView('pos')"
         type="button"
+        class="view-slider-pill"
+        [class.active]="activeView() === 'pos'"
+        (click)="switchViewFromSlider('pos')"
       >
         <i class="pi pi-plus-circle"></i>
-        <span class="view-btn-label">Nueva Venta</span>
+        <span>Nueva Venta</span>
       </button>
 
       <button
-        class="catalog-tab view-toggle-btn"
-        [class.active]="activeView() === 'orders' && ordersView() === 'active'"
-        (click)="switchOrdersView('active')"
         type="button"
+        class="view-slider-pill"
+        [class.active]="activeView() === 'orders' && ordersView() === 'active'"
+        (click)="switchOrdersViewFromSlider('active')"
       >
         <i class="pi pi-hourglass"></i>
-        <span class="view-btn-label">Activas</span>
-        <span *ngIf="pendingOrdersCount() > 0" class="orders-badge">{{ pendingOrdersCount() }}</span>
+        <span>Activas</span>
+        <span *ngIf="pendingOrdersCount() > 0" class="orders-badge-mini bg-indigo-600 text-white">{{ pendingOrdersCount() }}</span>
       </button>
 
       <button
-        class="catalog-tab view-toggle-btn"
-        [class.active]="activeView() === 'orders' && ordersView() === 'closed'"
-        (click)="switchOrdersView('closed')"
         type="button"
+        class="view-slider-pill"
+        [class.active]="activeView() === 'orders' && ordersView() === 'closed'"
+        (click)="switchOrdersViewFromSlider('closed')"
       >
         <i class="pi pi-check-circle"></i>
-        <span class="view-btn-label">Cerradas</span>
-        <span *ngIf="closedOrdersCount() > 0" class="orders-badge">{{ closedOrdersCount() }}</span>
+        <span>Cerradas</span>
+        <span *ngIf="closedOrdersCount() > 0" class="orders-badge-mini bg-slate-500 text-white">{{ closedOrdersCount() }}</span>
       </button>
 
       <button
-        class="catalog-tab view-toggle-btn"
-        [class.active]="activeView() === 'orders' && ordersView() === 'cancelled'"
-        (click)="switchOrdersView('cancelled')"
         type="button"
+        class="view-slider-pill"
+        [class.active]="activeView() === 'orders' && ordersView() === 'cancelled'"
+        (click)="switchOrdersViewFromSlider('cancelled')"
       >
         <i class="pi pi-times-circle"></i>
-        <span class="view-btn-label">Canceladas</span>
-        <span *ngIf="cancelledOrdersCount() > 0" class="orders-badge">{{ cancelledOrdersCount() }}</span>
+        <span>Canceladas</span>
+        <span *ngIf="cancelledOrdersCount() > 0" class="orders-badge-mini bg-slate-400 text-white">{{ cancelledOrdersCount() }}</span>
       </button>
 
       <button
-        class="catalog-tab view-toggle-btn"
-        [class.active]="activeView() === 'report'"
-        (click)="switchView('report')"
         type="button"
+        class="view-slider-pill"
+        [class.active]="activeView() === 'report'"
+        (click)="switchViewFromSlider('report')"
       >
         <i class="pi pi-chart-bar"></i>
-        <span class="view-btn-label">Reporte Ventas</span>
+        <span>Reporte Ventas</span>
       </button>
 
       <button
-        class="catalog-tab view-toggle-btn"
-        [class.active]="activeView() === 'disponibilidad'"
-        (click)="switchView('disponibilidad')"
         type="button"
+        class="view-slider-pill"
+        [class.active]="activeView() === 'disponibilidad'"
+        (click)="switchViewFromSlider('disponibilidad')"
         title="Disponibilidad de platillos y bebidas (8-5 y 8-6)"
       >
         <i class="pi pi-box"></i>
-        <span class="view-btn-label">Disponibilidad</span>
-        <span *ngIf="items86Count() > 0" class="orders-badge" style="background: #ef4444; color: #fff;" pTooltip="Agotados (8-6)">8-6: {{ items86Count() }}</span>
-        <span *ngIf="items85Count() > 0" class="orders-badge" style="background: #f59e0b; color: #fff;" pTooltip="Pocas existencias (8-5)">8-5: {{ items85Count() }}</span>
+        <span>Disponibilidad</span>
+        <span *ngIf="items86Count() > 0" class="orders-badge-mini bg-red-500 text-white">8-6: {{ items86Count() }}</span>
+        <span *ngIf="items85Count() > 0" class="orders-badge-mini bg-amber-500 text-white">8-5: {{ items85Count() }}</span>
       </button>
 
       <button
         *ngIf="activeView() === 'orders' && ordersView() === 'active'"
-        class="view-toggle-refresh"
+        class="slider-refresh-btn flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer flex-shrink-0"
         (click)="pollOrders()"
         type="button"
         title="Actualizar órdenes"
       >
-        <i class="pi pi-refresh"></i>
+        <i class="pi pi-refresh text-xs"></i>
       </button>
     </div>
-  </div>
 
-  <!-- ==================== VISTA: MAPA DE MESAS (MESERO) ==================== -->
-  <div *ngIf="activeView() === 'mesas'" class="comandix-mesas-view">
-    <!-- BARRA DE ÁREAS DEL LOCAL (Pizarrón por Área) -->
-    <div class="comandix-areas-bar">
-      <div class="areas-pills-container">
-        <span class="areas-label">
-          <i class="pi pi-map-marker text-blue-600"></i>
-          <span>Áreas:</span>
-        </span>
-        <button
-          *ngFor="let a of areas()"
-          type="button"
-          class="area-pill-btn"
-          [class.active]="areaSeleccionada() === a"
-          (click)="seleccionarArea(a)"
-          [pTooltip]="'Ver mesas de ' + a + ' (' + conteoMesasLibresPorArea(a) + ' libres)'"
-          tooltipPosition="bottom"
-        >
-          <span class="area-dot" [class.dot-has-libres]="conteoMesasLibresPorArea(a) > 0"></span>
-          <span class="area-name">{{ a }}</span>
-          <span class="area-count-badge">{{ conteoMesasPorArea(a) }}</span>
-        </button>
+    <!-- MODO 2: ISLA DINÁMICA DE ÍCONOS (En modo POS cuando el slider no está abierto) -->
+    <div
+      *ngIf="!showViewsSlider() && activeView() === 'pos'"
+      class="icons-dock-container flex items-center justify-center gap-2 overflow-x-auto scrollbar-none py-1 px-1.5 w-full"
+    >
+      <!-- Ícono 0: MENÚ DE HAMBURGUESA (Abre el slider de vistas) -->
+      <button
+        type="button"
+        class="dock-icon-capsule capsule-menu"
+        (click)="toggleViewsSlider()"
+        pTooltip="Menú de vistas (Mapa de mesas, Activas, etc.)"
+        tooltipPosition="bottom"
+      >
+        <div class="dynamic-ring ring-menu">
+          <i class="pi pi-bars text-indigo-600"></i>
+        </div>
+      </button>
+
+      <!-- Ícono 1: MESA ASIGNADA (Ícono colapsado / Pill expandida al dar clic) -->
+      <div
+        class="dock-icon-capsule capsule-mesa"
+        [class.expanded]="activeExpandedPill() === 'mesa'"
+        [class.has-mesa]="selectedMesa()"
+        [class.no-mesa]="!selectedMesa()"
+        (click)="togglePill('mesa')"
+        pTooltip="Mesa asignada (clic para ver / cambiar)"
+        tooltipPosition="bottom"
+      >
+        <div class="dynamic-ring ring-mesa">
+          <svg class="ring-svg" viewBox="0 0 36 36">
+            <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            <path
+              class="ring-fill ring-fill-mesa"
+              [attr.stroke-dasharray]="selectedMesa() ? '100, 100' : '35, 100'"
+              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+            />
+          </svg>
+          <i class="pi" [ngClass]="selectedMesa() ? 'pi-table' : 'pi-exclamation-triangle'"></i>
+        </div>
+
+        <!-- Vista Expandida: Características completas -->
+        <div *ngIf="activeExpandedPill() === 'mesa'" class="capsule-expanded-body">
+          <div class="capsule-info">
+            <span class="capsule-label">MESA</span>
+            <span class="capsule-value text-truncate">
+              {{ selectedMesa() ? selectedMesa()!.nombre : 'Sin Mesa' }}
+            </span>
+            <span class="capsule-sub" *ngIf="selectedMesa() as m">
+              {{ m.capacidad }} pax <span *ngIf="m.area">· {{ m.area }}</span>
+            </span>
+            <span class="capsule-sub text-amber-600 font-bold" *ngIf="!selectedMesa()">
+              ¡Asignar mesa!
+            </span>
+          </div>
+          <button
+            type="button"
+            class="capsule-action-btn"
+            (click)="$event.stopPropagation(); openMesaIslandModal()"
+            title="Cambiar mesa"
+          >
+            <i class="pi pi-pencil text-xs"></i>
+          </button>
+          <button
+            type="button"
+            class="capsule-close-pill-btn"
+            (click)="collapsePill($event)"
+            title="Colapsar"
+          >
+            <i class="pi pi-times text-[10px]"></i>
+          </button>
+        </div>
       </div>
 
-      <div class="text-xs text-slate-500 font-medium hidden sm:flex items-center gap-1.5">
-        <span>Área activa:</span>
-        <span class="font-bold text-slate-800">{{ areaSeleccionada() }}</span>
-        <span class="text-slate-300">·</span>
-        <span class="text-emerald-700 font-semibold">{{ conteoMesasLibresPorArea(areaSeleccionada()) }} libres</span>
+      <!-- Ícono 2: CLIENTE REGISTRADO (Ícono colapsado / Pill expandida al dar clic) -->
+      <div
+        class="dock-icon-capsule capsule-cliente"
+        [class.expanded]="activeExpandedPill() === 'cliente'"
+        [class.has-cliente]="selectedCliente"
+        (click)="togglePill('cliente')"
+        pTooltip="Cliente registrado (clic para ver / registrar)"
+        tooltipPosition="bottom"
+      >
+        <div class="dynamic-ring ring-cliente">
+          <svg class="ring-svg" viewBox="0 0 36 36">
+            <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            <path
+              class="ring-fill ring-fill-cliente"
+              [attr.stroke-dasharray]="selectedCliente ? '100, 100' : '40, 100'"
+              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+            />
+          </svg>
+          <i class="pi pi-user"></i>
+          <span *ngIf="selectedCliente && hasClientAllergies(selectedCliente)" class="allergy-ring-dot"></span>
+        </div>
+
+        <!-- Vista Expandida: Características completas -->
+        <div *ngIf="activeExpandedPill() === 'cliente'" class="capsule-expanded-body">
+          <div class="capsule-info">
+            <span class="capsule-label">CLIENTE</span>
+            <span class="capsule-value text-truncate">
+              {{ selectedCliente ? selectedCliente.nombreCompleto : 'Venta General' }}
+            </span>
+            <span class="capsule-sub text-amber-600 font-bold" *ngIf="selectedCliente && hasClientAllergies(selectedCliente)">
+              ⚠️ Alergias
+            </span>
+            <span class="capsule-sub text-slate-500" *ngIf="!selectedCliente">Opcional</span>
+            <span class="capsule-sub text-emerald-600 font-semibold" *ngIf="selectedCliente && !hasClientAllergies(selectedCliente)">Registrado</span>
+          </div>
+          <button
+            type="button"
+            class="capsule-action-btn"
+            (click)="$event.stopPropagation(); openClienteIslandModal()"
+            title="Buscar cliente"
+          >
+            <i class="pi pi-search text-xs"></i>
+          </button>
+          <button
+            type="button"
+            class="capsule-close-pill-btn"
+            (click)="collapsePill($event)"
+            title="Colapsar"
+          >
+            <i class="pi pi-times text-[10px]"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Ícono 3: COMENSALES / ASIENTOS (Ícono colapsado / Pill expandida al dar clic) -->
+      <div
+        class="dock-icon-capsule capsule-asiento"
+        [class.expanded]="activeExpandedPill() === 'asiento'"
+        (click)="togglePill('asiento')"
+        pTooltip="Comensales / Asientos (clic para ver / cambiar)"
+        tooltipPosition="bottom"
+      >
+        <div class="dynamic-ring ring-asiento">
+          <svg class="ring-svg" viewBox="0 0 36 36">
+            <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            <path
+              class="ring-fill ring-fill-asiento"
+              [attr.stroke-dasharray]="countItemsPorAsiento(asientoActivoId()) > 0 ? '100, 100' : '50, 100'"
+              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+            />
+          </svg>
+          <i class="pi pi-users"></i>
+          <span *ngIf="countItemsPorAsiento(asientoActivoId()) > 0" class="seat-badge-dot">
+            {{ countItemsPorAsiento(asientoActivoId()) }}
+          </span>
+        </div>
+
+        <!-- Vista Expandida: Características completas y micro-chips -->
+        <div *ngIf="activeExpandedPill() === 'asiento'" class="capsule-expanded-body">
+          <div class="capsule-info">
+            <span class="capsule-label">COMENSAL</span>
+            <span class="capsule-value text-truncate">{{ asientoActivo().alias }}</span>
+            <span class="capsule-sub">Asiento #{{ asientoActivo().numero }}</span>
+          </div>
+
+          <div class="capsule-micro-seats" (click)="$event.stopPropagation()">
+            <button
+              *ngFor="let s of asientos()"
+              type="button"
+              class="micro-seat-chip"
+              [class.active]="s.id === asientoActivoId()"
+              (click)="seleccionarAsiento(s.id)"
+              [title]="s.alias"
+            >
+              P{{ s.numero }}
+            </button>
+            <button
+              type="button"
+              class="micro-seat-add"
+              (click)="agregarAsiento()"
+              title="Agregar comensal"
+            >
+              <i class="pi pi-plus"></i>
+            </button>
+          </div>
+
+          <button
+            type="button"
+            class="capsule-close-pill-btn"
+            (click)="collapsePill($event)"
+            title="Colapsar"
+          >
+            <i class="pi pi-times text-[10px]"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Ícono 4: TIEMPO DE SERVICIO (1T / 2T / 3T) -->
+      <!-- Al dar clic se muestra la pill completa Y rota al siguiente tiempo -->
+      <div
+        class="dock-icon-capsule capsule-tiempo"
+        [class.expanded]="activeExpandedPill() === 'tiempo'"
+        [ngClass]="'tiempo-' + tiempoActivo()"
+        (click)="togglePill('tiempo')"
+        pTooltip="Tiempo de servicio (clic para rotar: 1T -> 2T -> 3T)"
+        tooltipPosition="bottom"
+      >
+        <div class="dynamic-ring ring-tiempo">
+          <svg class="ring-svg" viewBox="0 0 36 36">
+            <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            <path
+              class="ring-fill ring-fill-tiempo"
+              [attr.stroke-dasharray]="tiempoActivo() === 1 ? '33, 100' : (tiempoActivo() === 2 ? '66, 100' : '100, 100')"
+              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+            />
+          </svg>
+          <i class="pi" [ngClass]="tiempoActivo() === 1 ? 'pi-bolt' : (tiempoActivo() === 2 ? 'pi-clock' : 'pi-sparkles')"></i>
+        </div>
+
+        <!-- Vista Expandida: Características completas -->
+        <div *ngIf="activeExpandedPill() === 'tiempo'" class="capsule-expanded-body">
+          <div class="capsule-info">
+            <span class="capsule-label">TIEMPO ACTIVO</span>
+            <span class="capsule-value">
+              {{ tiempoActivo() === 1 ? '1er Tiempo' : (tiempoActivo() === 2 ? '2do Tiempo' : '3er Tiempo') }}
+            </span>
+            <span class="capsule-sub">
+              {{ tiempoActivo() === 1 ? '⚡ Inmediato' : (tiempoActivo() === 2 ? '⏱️ Por marchar' : '🍰 Postre') }}
+            </span>
+          </div>
+          <button
+            type="button"
+            class="capsule-close-pill-btn"
+            (click)="collapsePill($event)"
+            title="Colapsar"
+          >
+            <i class="pi pi-times text-[10px]"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Ícono 5: CARRITO / TICKET -->
+      <div
+        *ngIf="cart().length > 0"
+        class="dock-icon-capsule capsule-cart"
+        [class.expanded]="activeExpandedPill() === 'cart'"
+        (click)="togglePill('cart')"
+        pTooltip="Ver comanda y carrito"
+        tooltipPosition="bottom"
+      >
+        <div class="dynamic-ring ring-cart">
+          <svg class="ring-svg" viewBox="0 0 36 36">
+            <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            <path class="ring-fill ring-fill-cart" stroke-dasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+          </svg>
+          <i class="pi pi-shopping-cart"></i>
+          <span class="cart-badge-dot">{{ cart().length }}</span>
+        </div>
+
+        <div *ngIf="activeExpandedPill() === 'cart'" class="capsule-expanded-body">
+          <div class="capsule-info">
+            <span class="capsule-label">TICKET</span>
+            <span class="capsule-value text-rose-600 font-bold">${{ totalFinal() | number:'1.2-2' }}</span>
+            <span class="capsule-sub">{{ cart().length }} platillos</span>
+          </div>
+          <button
+            type="button"
+            class="capsule-close-pill-btn"
+            (click)="collapsePill($event)"
+            title="Colapsar"
+          >
+            <i class="pi pi-times text-[10px]"></i>
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- BARRA SUPERIOR DE ESTADO Y ACCIONES DE MESAS -->
-    <div class="mesas-toolbar-card bg-white rounded-2xl p-3 md:p-4 mb-3 shadow-sm border border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-3">
-      
-      <!-- Contador y Leyenda de Estados -->
-      <div class="flex items-center gap-2 md:gap-3 flex-wrap">
-        <div class="legenda-chip" pTooltip="Mesas listas para tomar orden" tooltipPosition="bottom">
-          <span class="dot dot-libre"></span>
-          <span class="font-bold text-slate-700">Libres</span>
-          <span class="count bg-emerald-100 text-emerald-800">{{ mesasLibresCount() }}</span>
-        </div>
-        <div class="legenda-chip" pTooltip="Mesas con clientes o comanda activa" tooltipPosition="bottom">
-          <span class="dot dot-ocupada"></span>
-          <span class="font-bold text-slate-700">Ocupadas</span>
-          <span class="count bg-rose-100 text-rose-800">{{ mesasOcupadasCount() }}</span>
-        </div>
-        <div class="legenda-chip" pTooltip="Mesas reservadas" tooltipPosition="bottom">
-          <span class="dot dot-reservada"></span>
-          <span class="font-bold text-slate-700">Reservadas</span>
-          <span class="count bg-amber-100 text-amber-800">{{ mesasReservadasCount() }}</span>
-        </div>
-        <div
-          *ngIf="grupoTemporal().length > 0"
-          class="legenda-chip clickable"
-          (click)="onLegendGrupoClick()"
-          pTooltip="Ver opciones de mesas unidas"
+    <!-- MODO 3: BARRA UNIFICADA MAPA DE MESAS (Cuando estamos en vista mesas y el slider no está abierto) -->
+    <div
+      *ngIf="!showViewsSlider() && activeView() === 'mesas'"
+      class="mesas-unified-dock flex items-center justify-between gap-2.5 w-full py-0.5 px-1 overflow-x-auto scrollbar-none"
+    >
+      <!-- LADO IZQUIERDO: HAMBURGUESA + SELECTOR DE ÁREA -->
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <!-- 1. Ícono de Hamburguesa (Abre slider de vistas) -->
+        <button
+          type="button"
+          class="dock-icon-capsule capsule-menu"
+          (click)="toggleViewsSlider()"
+          pTooltip="Menú de vistas (Mapa de mesas, Nueva Venta, Activas, etc.)"
           tooltipPosition="bottom"
         >
-          <span class="dot dot-grupo"></span>
-          <span class="font-bold text-slate-700">Unidas</span>
-          <span class="count bg-blue-100 text-blue-800">{{ grupoTemporal().length }}</span>
+          <div class="dynamic-ring ring-menu">
+            <i class="pi pi-bars text-indigo-600"></i>
+          </div>
+        </button>
+
+        <!-- 2. Ícono y selector de Área (Áreas del local) -->
+        <div class="dock-icon-capsule capsule-area">
+          <div class="dynamic-ring ring-area" [pTooltip]="'Área activa: ' + areaSeleccionada()" tooltipPosition="bottom">
+            <i class="pi pi-map-marker text-blue-600"></i>
+          </div>
+
+          <!-- Píldoras de selección de área -->
+          <div class="flex items-center gap-1.5 py-0.5 pr-1">
+            <button
+              *ngFor="let a of areas()"
+              type="button"
+              class="area-dock-chip"
+              [class.active]="areaSeleccionada() === a"
+              (click)="seleccionarArea(a)"
+              [pTooltip]="'Ver mesas de ' + a + ' (' + conteoMesasLibresPorArea(a) + ' libres)'"
+              tooltipPosition="bottom"
+            >
+              <span class="area-chip-dot" [class.has-libres]="conteoMesasLibresPorArea(a) > 0"></span>
+              <span class="area-chip-name">{{ a }}</span>
+              <span class="area-chip-badge">{{ conteoMesasPorArea(a) }}</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      <!-- Acciones de Mesas (Mesero: Ver, Consultar, Unir) -->
-      <div class="flex items-center gap-2">
+      <!-- LADO DERECHO: CONTADORES DE MESAS Y ACCIONES -->
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <!-- Libres -->
+        <div class="mesas-status-badge badge-libres" pTooltip="Mesas listas para tomar orden" tooltipPosition="bottom">
+          <span class="badge-dot dot-libre"></span>
+          <span class="badge-label">Libres</span>
+          <span class="badge-count count-libre">{{ mesasLibresCount() }}</span>
+        </div>
+
+        <!-- Ocupadas -->
+        <div class="mesas-status-badge badge-ocupadas" pTooltip="Mesas con orden activa" tooltipPosition="bottom">
+          <span class="badge-dot dot-ocupada"></span>
+          <span class="badge-label">Ocupadas</span>
+          <span class="badge-count count-ocupada">{{ mesasOcupadasCount() }}</span>
+        </div>
+
+        <!-- Reservadas -->
+        <div class="mesas-status-badge badge-reservadas" pTooltip="Mesas reservadas" tooltipPosition="bottom">
+          <span class="badge-dot dot-reservada"></span>
+          <span class="badge-label">Reservadas</span>
+          <span class="badge-count count-reservada">{{ mesasReservadasCount() }}</span>
+        </div>
+
+        <!-- Unidas -->
+        <div
+          *ngIf="grupoTemporal().length > 0"
+          class="mesas-status-badge badge-unidas cursor-pointer hover:opacity-90"
+          (click)="onLegendGrupoClick()"
+          pTooltip="Mesas unidas (clic para ver opciones)"
+          tooltipPosition="bottom"
+        >
+          <span class="badge-dot dot-unida"></span>
+          <span class="badge-label">Unidas</span>
+          <span class="badge-count count-unida">{{ grupoTemporal().length }}</span>
+        </div>
+
+        <!-- Separador sutil -->
+        <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
+
+        <!-- Botón Unir Mesas -->
         <button
           *ngIf="!unirModeMesas()"
           type="button"
           (click)="activarUnionMode()"
-          class="px-3.5 py-2 text-xs md:text-sm font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-colors flex items-center gap-2 cursor-pointer shadow-2xs"
-          pTooltip="Selecciona dos o más mesas libres para atender a un grupo grande"
+          class="mesas-dock-action-btn btn-unir"
+          pTooltip="Selecciona mesas libres para unir"
           tooltipPosition="bottom"
         >
           <i class="pi pi-objects-column text-blue-600"></i>
-          <span>Unir Mesas</span>
+          <span class="hidden md:inline">Unir Mesas</span>
         </button>
 
+        <!-- Botones Modo Unión Activo -->
         <ng-container *ngIf="unirModeMesas()">
           <button
             type="button"
             (click)="ejecutarUnionMesas()"
             [disabled]="selectedMesaIds().size < 2"
-            class="px-3.5 py-2 text-xs md:text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-xl transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
+            class="mesas-dock-action-btn btn-confirmar-union"
           >
             <i class="pi pi-check"></i>
-            <span>Confirmar Unión ({{ selectedMesaIds().size }})</span>
+            <span>Confirmar ({{ selectedMesaIds().size }})</span>
           </button>
           <button
             type="button"
             (click)="cancelarUnionMode()"
-            class="px-3 py-2 text-xs md:text-sm font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+            class="mesas-dock-action-btn btn-cancelar-union"
           >
             <i class="pi pi-times"></i>
             <span>Cancelar</span>
           </button>
         </ng-container>
 
+        <!-- Botón Refrescar -->
         <button
           type="button"
           (click)="loadMesas()"
-          class="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer border border-slate-200"
-          pTooltip="Refrescar estado de mesas"
+          class="mesas-dock-refresh-btn"
+          pTooltip="Refrescar mesas"
           tooltipPosition="bottom"
         >
-          <i class="pi pi-refresh"></i>
+          <i class="pi pi-refresh text-xs text-slate-600"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== VISTA: MAPA DE MESAS (MESERO) ==================== -->
+  <div *ngIf="activeView() === 'mesas'" class="comandix-mesas-view">
+
+    <!-- BANNER: MODO CAMBIO DE MESA ACTIVO -->
+    <div
+      *ngIf="ordenParaCambioMesa() as ord"
+      class="cambio-mesa-banner bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/20 border-2 border-amber-400 rounded-2xl p-3 md:p-4 mb-3 shadow-md flex items-center justify-between gap-3 flex-wrap"
+    >
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+          <i class="pi pi-arrows-alt animate-pulse"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-extrabold text-slate-900 text-sm md:text-base">
+              Modo Cambio de Mesa Activo
+            </span>
+            <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
+              Orden #{{ ord.id.slice(0, 8).toUpperCase() }}
+            </span>
+            <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-white text-slate-700 border border-slate-200">
+              Mesa actual: {{ ord.mesaNombre || 'Mesa General' }}
+            </span>
+            <span *ngIf="ord.meseroNombre" class="px-2 py-0.5 rounded-full text-xs font-medium bg-white text-slate-600 border border-slate-200">
+              <i class="pi pi-user mr-1 text-[10px]"></i>Mesero: {{ ord.meseroNombre }}
+            </span>
+          </div>
+          <p class="text-xs text-amber-950 font-medium mt-1 mb-0 flex items-center gap-1.5">
+            <i class="pi pi-info-circle text-amber-700"></i>
+            Toca una mesa <span class="font-extrabold text-emerald-800 uppercase underline">libre</span> (verde) en el plano para mover toda la comanda.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          (click)="cancelarCambioMesa()"
+          class="px-3.5 py-2 text-xs md:text-sm font-bold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+        >
+          <i class="pi pi-times text-xs"></i>
+          <span>Cancelar Cambio</span>
         </button>
       </div>
     </div>
@@ -330,6 +643,8 @@
             [class.seleccionable]="unirModeMesas() && mesa.estado === 'LIBRE'"
             [class.bloqueada]="unirModeMesas() && mesa.estado !== 'LIBRE'"
             [class.seleccionada]="isMesaSelected(mesa.id)"
+            [class.modo-cambio-candidata]="!!ordenParaCambioMesa() && mesa.estado === 'LIBRE'"
+            [class.modo-cambio-bloqueada]="!!ordenParaCambioMesa() && mesa.estado !== 'LIBRE'"
             [style.left.px]="mesaLeft(mesa)"
             [style.top.px]="mesaTop(mesa)"
             [style.width.px]="mesaWidth(mesa)"
@@ -342,6 +657,11 @@
             <!-- Indicador en modo unir -->
             <span *ngIf="unirModeMesas()" class="mesa-select-indicator">
               <i [class]="isMesaSelected(mesa.id) ? 'pi pi-check' : 'pi pi-plus'"></i>
+            </span>
+
+            <!-- Indicador en modo cambio de mesa -->
+            <span *ngIf="ordenParaCambioMesa() && mesa.estado === 'LIBRE'" class="mesa-cambio-indicator">
+              <i class="pi pi-arrow-circle-down"></i>
             </span>
 
             <!-- Contenido de la mesa -->
@@ -732,322 +1052,167 @@
       </div>
     </div>
 
-    <!-- COLUMNA IZQUIERDA (70%): CONFIGURACIÓN Y CATÁLOGO -->
+    <!-- COLUMNA IZQUIERDA (70%): CATÁLOGO DE PRODUCTOS -->
     <div class="pos-left-column">
-
-      <!-- PASO 1: CABECERA COMPACTA HORIZONTAL (MESA Y CLIENTE) -->
-      <div class="pos-compact-header-card bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
-          
-          <!-- Selector de Mesa Asignada -->
-          <div class="flex items-center gap-3 flex-1 min-w-0">
-            <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center flex-shrink-0">
-              <i class="pi pi-table text-lg"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Mesa Asignada *</label>
-
-              <!-- Mesa Bloqueada / No Reemplazable (Seleccionada desde el mapa) -->
-              <div *ngIf="selectedMesa() as mesa" class="mesa-locked-badge flex items-center justify-between p-2.5 bg-purple-50/70 border border-purple-200 rounded-xl w-full">
-                <div class="flex items-center gap-2.5 min-w-0">
-                  <div class="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center flex-shrink-0 text-sm font-bold shadow-2xs">
-                    <i class="pi pi-lock"></i>
-                  </div>
-                  <div class="min-w-0">
-                    <div class="flex items-center gap-1.5 flex-wrap">
-                      <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-extrabold bg-purple-200 text-purple-800">
-                        #{{ mesa.id }}
-                      </span>
-                      <span class="font-extrabold text-slate-800 text-sm truncate">
-                        {{ mesa.nombre }}
-                      </span>
-                      <span *ngIf="mesa.numero" class="text-xs text-slate-500 font-semibold">
-                        (M-{{ mesa.numero }})
-                      </span>
-                      <span *ngIf="mesa.area" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
-                        <i class="pi pi-map-marker text-[9px]"></i>
-                        {{ mesa.area }}
-                      </span>
-                    </div>
-                    <div class="text-[11px] text-slate-500 font-medium flex items-center gap-2 mt-0.5">
-                      <span><i class="pi pi-users text-[10px] mr-1"></i>Capacidad: {{ mesa.capacidad }} pax</span>
-                      <span class="text-emerald-700 font-bold">· Mesa asignada</span>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  (click)="volverAlMapa()"
-                  class="px-2.5 py-1.5 text-xs font-semibold text-purple-700 bg-white border border-purple-200 hover:bg-purple-100/60 rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0 cursor-pointer shadow-2xs ml-2"
-                  pTooltip="Regresar al mapa de mesas"
-                  tooltipPosition="left"
-                >
-                  <i class="pi pi-map"></i>
-                  <span>Ver Mapa</span>
-                </button>
-              </div>
-
-              <!-- Advertencia si no se ha seleccionado mesa -->
-              <div *ngIf="!selectedMesa()" class="mesa-unselected-warning flex items-center justify-between p-2.5 bg-amber-50 border border-amber-200 rounded-xl w-full">
-                <div class="flex items-center gap-2 min-w-0 text-amber-800 text-xs font-semibold">
-                  <i class="pi pi-exclamation-triangle text-amber-600 text-sm flex-shrink-0"></i>
-                  <span class="truncate">Ninguna mesa seleccionada</span>
-                </div>
-                <button
-                  type="button"
-                  (click)="volverAlMapa()"
-                  class="px-3 py-1.5 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0 cursor-pointer shadow-2xs ml-2"
-                >
-                  <i class="pi pi-map"></i>
-                  <span>Seleccionar en Mapa</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Separador vertical -->
-          <div class="hidden md:block w-px h-10 bg-slate-200 self-center"></div>
-
-          <!-- Buscador de Cliente Opcional -->
-          <div class="flex items-center gap-3 flex-1 min-w-0">
-            <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center flex-shrink-0">
-              <i class="pi pi-user text-lg"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between mb-1">
-                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider m-0">Cliente Registrado (Opcional)</label>
-                <span *ngIf="selectedCliente && hasClientAllergies(selectedCliente)" class="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
-                  <i class="pi pi-exclamation-triangle text-amber-500"></i> Alergias
-                </span>
-              </div>
-              <div class="flex items-center gap-2">
-                <p-autoComplete
-                  [(ngModel)]="selectedCliente"
-                  [suggestions]="filteredClientes"
-                  (completeMethod)="filterClientes($event)"
-                  field="nombreCompleto"
-                  optionLabel="nombreCompleto"
-                  [dropdown]="true"
-                  placeholder="Buscar por nombre o teléfono..."
-                  [showEmptyMessage]="false"
-                  [autoHighlight]="true"
-                  styleClass="compact-p-autocomplete w-full"
-                >
-                  <ng-template let-cliente #item>
-                    <div class="flex items-center justify-between py-1 px-1">
-                      <span class="font-bold text-slate-800 text-sm">{{ cliente.nombreCompleto }}</span>
-                      <span class="text-xs text-slate-400 ml-2">{{ cliente.telefono || cliente.email }}</span>
-                    </div>
-                  </ng-template>
-                </p-autoComplete>
-
-                <button
-                  type="button"
-                  class="px-3 py-2 bg-slate-100 hover:bg-purple-50 text-slate-700 hover:text-purple-700 font-semibold text-xs rounded-xl flex items-center gap-1.5 border border-slate-200 transition-colors whitespace-nowrap cursor-pointer"
-                  (click)="openDialogNuevoCliente()"
-                  title="Registrar nuevo cliente"
-                >
-                  <i class="pi pi-plus text-xs"></i>
-                  <span>Nuevo</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Alergias expandidas si el cliente seleccionado tiene -->
-        <div *ngIf="selectedCliente && hasClientAllergies(selectedCliente)" class="mt-3 pt-2.5 border-t border-slate-100">
-          <div class="bg-amber-50/80 border border-amber-200/80 rounded-xl p-2.5 flex items-center gap-2 text-xs text-amber-900">
-            <i class="pi pi-exclamation-triangle text-amber-600 text-sm"></i>
-            <span><strong>Alergias del cliente:</strong> {{ allergensText(selectedCliente) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- PASO 2: BARRA DE PESTAÑAS DE "COMENSALES / ASIENTOS" (JUSTO POR ENCIMA DEL CATÁLOGO) -->
-      <div class="pos-seats-tabs-card bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-purple-600 animate-pulse"></span>
-            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider m-0">Comensales / Asientos</h3>
-            <span class="text-xs font-semibold text-slate-400">({{ asientos().length }} persona{{ asientos().length === 1 ? '' : 's' }})</span>
-          </div>
-          <span class="text-xs text-purple-700 font-medium hidden sm:inline-block">
-            Todo lo que selecciones abajo se agregará a la persona activa
-          </span>
-        </div>
-
-        <!-- Barra de pestañas navegable horizontalmente (overflow-x-auto) -->
-        <div class="flex items-center gap-2 overflow-x-auto pb-2 pt-1 scrollbar-none">
-          <div
-            *ngFor="let asiento of asientos()"
-            class="seat-tab-chip flex items-center gap-2.5 px-3.5 py-2 rounded-xl border transition-all cursor-pointer select-none whitespace-nowrap min-w-fit"
-            [ngClass]="asiento.id === asientoActivoId()
-              ? 'bg-purple-50 border-2 border-purple-600 text-purple-900 shadow-sm ring-2 ring-purple-100'
-              : 'bg-slate-50/80 hover:bg-slate-100 border-slate-200 text-slate-700 hover:border-slate-300'"
-            (click)="seleccionarAsiento(asiento.id)"
-          >
-            <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs"
-              [ngClass]="asiento.id === asientoActivoId() ? 'bg-purple-600 text-white font-bold' : 'bg-slate-200 text-slate-600'">
-              <i class="pi pi-user text-xs"></i>
-            </div>
-            <div class="flex flex-col text-left">
-              <span class="font-bold text-sm leading-tight">{{ asiento.alias }}</span>
-              <span class="text-[11px] leading-tight"
-                [ngClass]="asiento.id === asientoActivoId() ? 'text-purple-600 font-semibold' : 'text-slate-400'">
-                Asiento #{{ asiento.numero }}
-              </span>
-            </div>
-
-            <!-- Contador de platillos del asiento -->
-            <span *ngIf="countItemsPorAsiento(asiento.id) > 0"
-              class="ml-1 px-1.5 py-0.5 rounded-full text-[11px] font-bold"
-              [ngClass]="asiento.id === asientoActivoId() ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-700'">
-              {{ countItemsPorAsiento(asiento.id) }}
-            </span>
-
-            <!-- Botón renombrar inline -->
-            <button
-              type="button"
-              class="w-6 h-6 rounded-md hover:bg-black/5 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors ml-0.5 cursor-pointer"
-              (click)="abrirEditarAlias(asiento, $event)"
-              title="Renombrar comensal (ej. 'Niño azul')"
-            >
-              <i class="pi pi-pencil text-[11px]"></i>
-            </button>
-          </div>
-
-          <!-- Botón + Persona al final de la fila -->
-          <button
-            type="button"
-            class="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-dashed border-purple-300 text-purple-700 bg-purple-50/40 hover:bg-purple-100/60 font-semibold text-sm transition-all cursor-pointer whitespace-nowrap"
-            (click)="agregarAsiento()"
-            title="Agregar nuevo comensal a la mesa"
-          >
-            <i class="pi pi-plus text-xs"></i>
-            <span>Persona</span>
-          </button>
-        </div>
-
-        <!-- Callout visual de asignación activa -->
-        <div class="mt-2.5 pt-2 border-t border-slate-100">
-          <div class="flex items-center justify-between flex-wrap gap-2 text-xs">
-            <div class="flex items-center gap-1.5 text-slate-600">
-              <i class="pi pi-arrow-circle-down text-purple-600 text-sm"></i>
-              <span>Agregando platillos para:</span>
-              <strong class="text-purple-700 font-bold">{{ asientoActivo().alias }}</strong>
-              <span class="text-slate-400">(Asiento #{{ asientoActivo().numero }})</span>
-            </div>
-
-            <!-- Selector de Tiempo (1er Tiempo vs 2do Tiempo) -->
-            <div class="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200">
-              <button
-                type="button"
-                (click)="setTiempoActivo(1)"
-                [ngClass]="tiempoActivo() === 1
-                  ? 'bg-emerald-600 text-white font-bold shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 font-medium'"
-                class="px-2.5 py-1 text-xs rounded-lg transition-all flex items-center gap-1.5 cursor-pointer border-0"
-                title="Los platillos seleccionados saldrán a preparación inmediata"
-              >
-                <i class="pi pi-bolt text-[11px]"></i>
-                <span>1er Tiempo</span>
-              </button>
-              <button
-                type="button"
-                (click)="setTiempoActivo(2)"
-                [ngClass]="tiempoActivo() === 2
-                  ? 'bg-amber-500 text-white font-bold shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 font-medium'"
-                class="px-2.5 py-1 text-xs rounded-lg transition-all flex items-center gap-1.5 cursor-pointer border-0"
-                title="Los platillos seleccionados esperarán a que el mesero dé la orden de marchar"
-              >
-                <i class="pi pi-clock text-[11px]"></i>
-                <span>2do Tiempo ⏱️</span>
-              </button>
-              <button
-                type="button"
-                (click)="setTiempoActivo(3)"
-                [ngClass]="tiempoActivo() === 3
-                  ? 'bg-purple-600 text-white font-bold shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 font-medium'"
-                class="px-2.5 py-1 text-xs rounded-lg transition-all flex items-center gap-1.5 cursor-pointer border-0"
-                title="Los platillos seleccionados serán para el 3er tiempo (postres, digestivos) y esperarán a marchar"
-              >
-                <i class="pi pi-sparkles text-[11px]"></i>
-                <span>3er Tiempo 🍰</span>
-              </button>
-            </div>
-
-            <div class="font-semibold text-slate-500">
-              <span *ngIf="countItemsPorAsiento(asientoActivoId()) === 0">Sin platillos todavía</span>
-              <span *ngIf="countItemsPorAsiento(asientoActivoId()) > 0" class="text-purple-700 font-bold">
-                {{ countItemsPorAsiento(asientoActivoId()) }} items · ${{ totalPorAsiento(asientoActivoId()) | number:'1.2-2' }}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- PASO 3: CATÁLOGO DE PRODUCTOS (JUSTO DEBAJO DE LAS PESTAÑAS DE COMENSALES) -->
       <div class="pos-catalog-card bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80">
-        <!-- Toolbar superior: Título del Menú -->
-        <div class="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+        <!-- Toolbar superior: Título / Navegación y Buscador de Platillos -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-slate-100">
+          
+          <!-- Lado Izquierdo: Título y Navegación / Breadcrumb -->
           <div class="flex items-center gap-3">
+            <!-- Botón Volver a Categorías (visible cuando se está dentro de una categoría o explorando todos) -->
+            <button
+              *ngIf="selectedCategoryId() !== null"
+              type="button"
+              class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs sm:text-sm transition-all cursor-pointer border border-purple-200"
+              (click)="onCategoryFilterChange(null); clearSearch()"
+              title="Volver a la selección de categorías"
+            >
+              <i class="pi pi-arrow-left text-xs"></i>
+              <span>Categorías</span>
+            </button>
+
             <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center flex-shrink-0">
-              <i class="pi pi-th-large text-lg"></i>
+              <i class="pi" [ngClass]="selectedCategoryId() === null ? 'pi-th-large' : 'pi-book'"></i>
             </div>
             <div>
-              <h3 class="text-base font-bold text-slate-800 m-0">Menú de Platillos</h3>
-              <span class="text-xs text-slate-400 font-medium">{{ filteredProducts().length }} platillos disponibles</span>
+              <h3 class="text-base font-bold text-slate-800 m-0">
+                <ng-container *ngIf="searchQuery().trim().length > 0">
+                  Resultados de búsqueda
+                </ng-container>
+                <ng-container *ngIf="searchQuery().trim().length === 0">
+                  {{ selectedCategoryId() === null ? 'Categorías del Menú' : selectedCategoryName() }}
+                </ng-container>
+              </h3>
+              <span class="text-xs text-slate-400 font-medium">
+                <ng-container *ngIf="searchQuery().trim().length > 0">
+                  {{ filteredProducts().length }} platillos encontrados para "{{ searchQuery().trim() }}"
+                </ng-container>
+                <ng-container *ngIf="searchQuery().trim().length === 0">
+                  <ng-container *ngIf="selectedCategoryId() === null">
+                    {{ categories().length }} categorías disponibles · Selecciona una para ver sus platillos
+                  </ng-container>
+                  <ng-container *ngIf="selectedCategoryId() !== null">
+                    {{ filteredProducts().length }} platillos en esta categoría
+                  </ng-container>
+                </ng-container>
+              </span>
+            </div>
+          </div>
+
+          <!-- Lado Derecho: Buscador Rápido de Platillos -->
+          <div class="relative w-full sm:w-72 md:w-80 flex-shrink-0">
+            <i class="pi pi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none"></i>
+            <input
+              type="text"
+              class="w-full pl-10 pr-9 py-2 rounded-xl border border-slate-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 bg-slate-50/70 focus:bg-white text-sm text-slate-700 placeholder-slate-400 transition-all outline-none"
+              placeholder="Buscar platillo o bebida..."
+              [value]="searchQuery()"
+              (input)="onSearchInput($event)"
+            />
+            <button
+              *ngIf="searchQuery().trim().length > 0"
+              type="button"
+              class="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 flex items-center justify-center cursor-pointer transition-colors"
+              (click)="clearSearch()"
+              title="Limpiar búsqueda"
+            >
+              <i class="pi pi-times text-[10px]"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- ==================== VISTA 1: GRID DE CATEGORÍAS (Cuando no hay búsqueda ni categoría activa) ==================== -->
+        <div
+          *ngIf="searchQuery().trim().length === 0 && selectedCategoryId() === null && categories().length > 0"
+          class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 mb-3"
+        >
+          <!-- Tarjeta Especial: TODOS LOS PRODUCTOS -->
+          <div
+            class="category-pos-card card-all-products group bg-gradient-to-br from-purple-50/60 to-indigo-50/60 hover:from-purple-100/70 hover:to-indigo-100/70 border-2 border-purple-200 hover:border-purple-400 rounded-2xl p-5 cursor-pointer transition-all duration-200 flex flex-col justify-between shadow-xs hover:shadow-md"
+            (click)="onCategoryFilterChange(0)"
+          >
+            <div class="flex items-center justify-between mb-3">
+              <div class="w-12 h-12 rounded-xl bg-purple-600 text-white flex items-center justify-center text-lg shadow-sm group-hover:scale-105 transition-transform">
+                <i class="pi pi-th-large"></i>
+              </div>
+              <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-200/70 text-purple-800">
+                {{ allProducts().length }} platillos
+              </span>
+            </div>
+            <div>
+              <h4 class="text-base sm:text-lg font-bold text-slate-900 group-hover:text-purple-700 transition-colors m-0 leading-tight">
+                Todos los productos
+              </h4>
+              <p class="text-xs text-slate-500 font-medium mt-1 mb-0 flex items-center justify-between">
+                <span>Ver catálogo completo</span>
+                <i class="pi pi-arrow-right text-xs text-purple-600 group-hover:translate-x-1 transition-transform"></i>
+              </p>
+            </div>
+          </div>
+
+          <!-- Tarjetas de Categorías Dinámicas -->
+          <div
+            *ngFor="let cat of categories()"
+            class="category-pos-card group bg-white hover:bg-slate-50/70 border-2 border-slate-200/80 hover:border-purple-300 rounded-2xl p-5 cursor-pointer transition-all duration-200 flex flex-col justify-between shadow-xs hover:shadow-md"
+            (click)="onCategoryFilterChange(cat.id)"
+          >
+            <div class="flex items-center justify-between mb-3">
+              <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-lg group-hover:scale-105 group-hover:bg-purple-100 transition-all">
+                <i class="pi" [ngClass]="getCategoryIcon(cat.name)"></i>
+              </div>
+              <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 group-hover:bg-purple-50 group-hover:text-purple-700 transition-colors">
+                {{ getCategoryProductCount(cat) }} platillos
+              </span>
+            </div>
+            <div>
+              <h4 class="text-base sm:text-lg font-bold text-slate-900 group-hover:text-purple-700 transition-colors m-0 leading-tight uppercase">
+                {{ cat.name }}
+              </h4>
+              <p class="text-xs text-slate-400 font-medium mt-1 mb-0 flex items-center justify-between">
+                <span>Explorar platillos</span>
+                <i class="pi pi-chevron-right text-xs text-slate-400 group-hover:text-purple-600 group-hover:translate-x-1 transition-all"></i>
+              </p>
             </div>
           </div>
         </div>
 
-        <!-- Barra de Categorías Horizontal en Cápsulas (Pills con scroll horizontal) -->
-        <div class="flex flex-row items-center gap-3 overflow-x-auto px-1 py-1.5 mb-5 scrollbar-hide no-scrollbar select-none">
-          <!-- Cápsula estática: TODO -->
-          <button
-            type="button"
-            class="rounded-full px-5 py-2 font-medium text-xs sm:text-sm transition-colors duration-200 cursor-pointer whitespace-nowrap shrink-0 border"
-            [ngClass]="selectedCategoryId() === 0
-              ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
-              : 'bg-white text-purple-600 border-purple-600 hover:bg-purple-50'"
-            (click)="onCategoryFilterChange(0)"
-          >
-            TODO
-          </button>
-
-          <!-- Cápsulas dinámicas por categoría -->
-          <button
-            *ngFor="let cat of categories()"
-            type="button"
-            class="rounded-full px-5 py-2 font-medium text-xs sm:text-sm transition-colors duration-200 cursor-pointer whitespace-nowrap shrink-0 border uppercase"
-            [ngClass]="selectedCategoryId() === cat.id
-              ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
-              : 'bg-white text-purple-600 border-purple-600 hover:bg-purple-50'"
-            (click)="onCategoryFilterChange(cat.id)"
-          >
-            {{ cat.name }}
-          </button>
-        </div>
-
-        <!-- Estado vacío catálogo general -->
+        <!-- Estado vacío catálogo general si no hay categorías -->
         <div *ngIf="categories().length === 0" class="empty-catalog text-center py-12">
           <i class="pi pi-inbox text-5xl text-slate-300 mb-3 block"></i>
           <p class="text-base font-bold text-slate-600 mb-1">Sin productos en el catálogo</p>
           <p class="text-xs text-slate-400">Agrega categorías y platillos en Gestiona tu Menú</p>
         </div>
 
-        <!-- Estado vacío si una categoría seleccionada no tiene platillos -->
-        <div *ngIf="categories().length > 0 && filteredProducts().length === 0" class="text-center py-12 text-slate-400">
-          <i class="pi pi-inbox text-4xl mb-2 text-slate-300 block"></i>
-          <p class="text-sm font-semibold text-slate-600 mb-1">No hay platillos en esta categoría</p>
-          <p class="text-xs text-slate-400">Selecciona "TODO" u otra categoría para explorar más platillos</p>
+        <!-- ==================== VISTA 2: GRID DE PLATILLOS (Cuando hay búsqueda o una categoría seleccionada) ==================== -->
+        <!-- Estado vacío si la categoría o la búsqueda no devuelve platillos -->
+        <div
+          *ngIf="(searchQuery().trim().length > 0 || selectedCategoryId() !== null) && filteredProducts().length === 0"
+          class="text-center py-12 text-slate-400"
+        >
+          <i class="pi pi-search text-4xl mb-2 text-slate-300 block"></i>
+          <p class="text-sm font-semibold text-slate-600 mb-1">
+            {{ searchQuery().trim().length > 0 ? 'No se encontraron platillos con esa búsqueda' : 'No hay platillos en esta categoría' }}
+          </p>
+          <p class="text-xs text-slate-400 mb-4">
+            {{ searchQuery().trim().length > 0 ? 'Intenta buscando con otro nombre o término' : 'Selecciona otra categoría o explora todo el menú' }}
+          </p>
+          <button
+            type="button"
+            class="px-4 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold text-xs transition-colors cursor-pointer"
+            (click)="clearSearch(); onCategoryFilterChange(null)"
+          >
+            ← Volver a categorías
+          </button>
         </div>
 
-        <!-- Grid Responsivo de Platillos (3 a 4 columnas) -->
-        <div *ngIf="categories().length > 0 && filteredProducts().length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+        <!-- Grid Responsivo de Platillos (visible cuando hay búsqueda o categoría seleccionada) -->
+        <div
+          *ngIf="(searchQuery().trim().length > 0 || selectedCategoryId() !== null) && filteredProducts().length > 0"
+          class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
+        >
           <div
             *ngFor="let product of filteredProducts()"
             class="dish-pos-card group bg-white rounded-2xl border border-slate-200/70 hover:border-purple-300 hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col cursor-pointer"
@@ -1305,18 +1470,27 @@
         </div>
 
         <!-- CTA y Acciones -->
-        <div class="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100">
+        <div class="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100 flex-wrap">
           <button
             *ngIf="canAbrirComanda(order)"
             type="button"
-            class="flex-1 py-1.5 px-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors border border-indigo-200 cursor-pointer"
+            class="flex-1 min-w-[100px] py-1.5 px-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors border border-indigo-200 cursor-pointer"
             (click)="$event.stopPropagation(); abrirComandaParaAgregar(order)"
             title="Abrir comanda para agregar más platillos o bebidas"
           >
             <i class="pi pi-cart-plus text-xs"></i>
             <span>Abrir comanda</span>
           </button>
-          <div class="order-card-cta flex-1 text-center py-1.5">
+          <button
+            type="button"
+            class="flex-1 min-w-[105px] py-1.5 px-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors border border-amber-200 cursor-pointer"
+            (click)="$event.stopPropagation(); iniciarCambioMesa(order)"
+            title="Cambiar a otra mesa libre en el mapa de mesas"
+          >
+            <i class="pi pi-arrows-alt text-xs text-amber-600"></i>
+            <span>Cambiar mesa</span>
+          </button>
+          <div class="order-card-cta flex-1 min-w-[85px] text-center py-1.5">
             <i class="pi pi-eye mr-1"></i> Ver detalle
           </div>
         </div>
@@ -2803,6 +2977,19 @@
                 <span>Editar en Comanda</span>
               </button>
 
+              <!-- Cambiar de Mesa -->
+              <button
+                *ngIf="order.estado !== 'PAGADA' && order.estado !== 'CANCELADA'"
+                type="button"
+                (click)="iniciarCambioMesa(order)"
+                [disabled]="processingOrderAction()"
+                class="min-h-[44px] px-3.5 py-2.5 rounded-xl border border-amber-300 text-amber-800 bg-amber-50/70 hover:bg-amber-100 hover:border-amber-400 font-bold text-xs inline-flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                title="Transferir esta comanda a otra mesa libre"
+              >
+                <i class="pi pi-arrows-alt text-xs text-amber-600"></i>
+                <span>Cambiar Mesa</span>
+              </button>
+
               <!-- Registrar Merma (Ghost / Contorno Púrpura) -->
               <button
                 *ngIf="canRegistrarMerma && order.estado !== 'PENDIENTE'"
@@ -3249,6 +3436,325 @@
     </ng-template>
   </p-dialog>
 
+  <!-- ==================== MODAL ISLA DINÁMICA: MESA ASIGNADA ==================== -->
+  <p-dialog
+    [visible]="mesaIslandModalVisible()"
+    (visibleChange)="mesaIslandModalVisible.set($event)"
+    header="Mesa de la Comanda"
+    [modal]="true"
+    [style]="{ width: '92%', maxWidth: '520px' }"
+    styleClass="island-dialog"
+  >
+    <div class="py-2">
+      <!-- Mesa asignada actualmente -->
+      <div *ngIf="selectedMesa() as mesa" class="p-3.5 bg-purple-50/80 border border-purple-200 rounded-2xl mb-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-purple-600 text-white flex items-center justify-center text-xl font-bold shadow-sm">
+              <i class="pi pi-table"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-base font-extrabold text-slate-800">{{ mesa.nombre }}</span>
+                <span *ngIf="mesa.numero" class="text-xs px-2 py-0.5 rounded bg-purple-200 text-purple-800 font-bold">M-{{ mesa.numero }}</span>
+              </div>
+              <div class="text-xs text-slate-500 mt-1 flex items-center gap-2">
+                <span><i class="pi pi-users mr-1"></i>{{ mesa.capacidad }} personas</span>
+                <span *ngIf="mesa.area">· Área: <strong>{{ mesa.area }}</strong></span>
+              </div>
+            </div>
+          </div>
+          <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+            Asignada
+          </span>
+        </div>
+      </div>
+
+      <div *ngIf="!selectedMesa()" class="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl mb-3 flex items-center gap-3 text-amber-800 text-sm">
+        <i class="pi pi-exclamation-triangle text-amber-600 text-xl flex-shrink-0"></i>
+        <div>
+          <strong class="block">No hay mesa seleccionada</strong>
+          <span class="text-xs text-amber-700">Selecciona una mesa libre abajo o desde el plano para iniciar la comanda.</span>
+        </div>
+      </div>
+
+      <!-- Mesas Libres Rápidas -->
+      <div class="mt-3">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Mesas Libres Disponibles</span>
+          <span class="text-xs text-slate-400 font-semibold">{{ mesasLibres().length }} libres</span>
+        </div>
+
+        <div *ngIf="mesasLibres().length === 0" class="p-3 text-center text-xs text-slate-400 bg-slate-50 rounded-xl">
+          No hay mesas libres registradas actualmente.
+        </div>
+
+        <div *ngIf="mesasLibres().length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
+          <button
+            *ngFor="let m of mesasLibres()"
+            type="button"
+            class="flex flex-col items-start p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-purple-50 hover:border-purple-300 transition-all text-left cursor-pointer group"
+            [class.border-purple-600]="selectedMesa()?.id === m.id"
+            [class.bg-purple-50]="selectedMesa()?.id === m.id"
+            (click)="seleccionarMesaRapida(m)"
+          >
+            <span class="text-xs font-bold text-slate-800 group-hover:text-purple-700">{{ m.nombre }}</span>
+            <span class="text-[10px] text-slate-400">{{ m.capacidad }} pax · {{ m.area || 'Principal' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex items-center justify-between gap-2 w-full">
+        <button
+          *ngIf="selectedMesa()"
+          type="button"
+          class="px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl border border-red-200 transition-colors cursor-pointer"
+          (click)="desasignarMesa()"
+        >
+          Desasignar Mesa
+        </button>
+        <span *ngIf="!selectedMesa()"></span>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+            (click)="mesaIslandModalVisible.set(false)"
+          >
+            Cerrar
+          </button>
+          <button
+            type="button"
+            class="px-4 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
+            (click)="mesaIslandModalVisible.set(false); volverAlMapa()"
+          >
+            <i class="pi pi-map"></i>
+            <span>Ver Plano Completo</span>
+          </button>
+        </div>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- ==================== MODAL ISLA DINÁMICA: CLIENTE REGISTRADO ==================== -->
+  <p-dialog
+    [visible]="clienteIslandModalVisible()"
+    (visibleChange)="clienteIslandModalVisible.set($event)"
+    header="Cliente Registrado"
+    [modal]="true"
+    [style]="{ width: '92%', maxWidth: '500px' }"
+    styleClass="island-dialog"
+  >
+    <div class="py-2">
+      <!-- Info del cliente seleccionado -->
+      <div *ngIf="selectedCliente" class="p-3.5 bg-cyan-50/80 border border-cyan-200 rounded-2xl mb-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-cyan-600 text-white flex items-center justify-center text-xl font-bold shadow-sm">
+              <i class="pi pi-user"></i>
+            </div>
+            <div>
+              <span class="text-base font-extrabold text-slate-800">{{ selectedCliente.nombreCompleto }}</span>
+              <div class="text-xs text-slate-500 mt-0.5">
+                {{ selectedCliente.telefono || selectedCliente.email || 'Sin datos de contacto' }}
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="px-2.5 py-1 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg border border-red-200 transition-colors cursor-pointer"
+            (click)="quitarCliente()"
+          >
+            Quitar
+          </button>
+        </div>
+
+        <!-- Alergias -->
+        <div *ngIf="hasClientAllergies(selectedCliente)" class="mt-2.5 pt-2 border-t border-cyan-200/60">
+          <div class="bg-amber-100/80 border border-amber-300 rounded-xl p-2 text-xs text-amber-900 flex items-center gap-2">
+            <i class="pi pi-exclamation-triangle text-amber-600 text-base"></i>
+            <span><strong>Alergias registradas:</strong> {{ allergensText(selectedCliente) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Buscador de cliente -->
+      <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Buscar por nombre o teléfono</label>
+      <div class="flex items-center gap-2 mb-3">
+        <p-autoComplete
+          [(ngModel)]="selectedCliente"
+          [suggestions]="filteredClientes"
+          (completeMethod)="filterClientes($event)"
+          field="nombreCompleto"
+          optionLabel="nombreCompleto"
+          [dropdown]="true"
+          placeholder="Escribe el nombre o teléfono..."
+          [showEmptyMessage]="false"
+          [autoHighlight]="true"
+          styleClass="w-full compact-p-autocomplete"
+        >
+          <ng-template let-cliente #item>
+            <div class="flex items-center justify-between py-1 px-1">
+              <span class="font-bold text-slate-800 text-sm">{{ cliente.nombreCompleto }}</span>
+              <span class="text-xs text-slate-400 ml-2">{{ cliente.telefono || cliente.email }}</span>
+            </div>
+          </ng-template>
+        </p-autoComplete>
+
+        <button
+          type="button"
+          class="px-3.5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer shadow-sm"
+          (click)="openDialogNuevoCliente()"
+          title="Registrar nuevo cliente"
+        >
+          <i class="pi pi-plus text-xs"></i>
+          <span>Nuevo</span>
+        </button>
+      </div>
+
+      <div class="text-xs text-slate-500 bg-slate-50 p-2.5 rounded-xl">
+        <i class="pi pi-info-circle mr-1 text-slate-400"></i>
+        Si no seleccionas un cliente, la comanda se registrará automáticamente como <strong>Venta General</strong>.
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-end gap-2">
+        <button
+          type="button"
+          class="px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+          (click)="clienteIslandModalVisible.set(false)"
+        >
+          Listo
+        </button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- ==================== MODAL ISLA DINÁMICA: COMENSALES Y ASIENTOS ==================== -->
+  <p-dialog
+    [visible]="asientosIslandModalVisible()"
+    (visibleChange)="asientosIslandModalVisible.set($event)"
+    header="Gestión de Comensales y Asientos"
+    [modal]="true"
+    [style]="{ width: '92%', maxWidth: '520px' }"
+    styleClass="island-dialog"
+  >
+    <div class="py-2">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-500">
+          Comensales de la comanda ({{ asientos().length }})
+        </span>
+        <button
+          type="button"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 text-xs font-bold transition-colors cursor-pointer"
+          (click)="agregarAsiento()"
+        >
+          <i class="pi pi-plus text-xs"></i>
+          <span>Agregar Persona</span>
+        </button>
+      </div>
+
+      <!-- Lista de Comensales -->
+      <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+        <div
+          *ngFor="let a of asientos()"
+          class="flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer"
+          [ngClass]="a.id === asientoActivoId()
+            ? 'bg-purple-50 border-purple-600 shadow-sm'
+            : 'bg-white border-slate-200 hover:bg-slate-50'"
+          (click)="seleccionarAsiento(a.id)"
+        >
+          <div class="flex items-center gap-3">
+            <div
+              class="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-xs"
+              [ngClass]="a.id === asientoActivoId() ? 'bg-purple-600 text-white' : 'bg-slate-100 text-slate-600'"
+            >
+              P{{ a.numero }}
+            </div>
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="font-bold text-sm text-slate-800">{{ a.alias }}</span>
+                <button
+                  type="button"
+                  class="w-6 h-6 rounded hover:bg-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors"
+                  (click)="abrirEditarAlias(a, $event)"
+                  title="Renombrar comensal"
+                >
+                  <i class="pi pi-pencil text-[11px]"></i>
+                </button>
+              </div>
+              <span class="text-xs text-slate-400">Asiento #{{ a.numero }}</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span
+              class="px-2 py-0.5 rounded-full text-xs font-semibold"
+              [ngClass]="countItemsPorAsiento(a.id) > 0 ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-400'"
+            >
+              {{ countItemsPorAsiento(a.id) }} items · ${{ totalPorAsiento(a.id) | number:'1.2-2' }}
+            </span>
+            <i *ngIf="a.id === asientoActivoId()" class="pi pi-check text-purple-600 text-sm font-bold"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Selector de Tiempo de Servicio adentro del modal -->
+      <div class="mt-4 pt-3 border-t border-slate-100">
+        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+          Tiempo para los platillos agregados
+        </label>
+        <div class="grid grid-cols-3 gap-2">
+          <button
+            type="button"
+            (click)="setTiempoActivo(1)"
+            class="p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all cursor-pointer"
+            [ngClass]="tiempoActivo() === 1 ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'"
+          >
+            <i class="pi pi-bolt text-sm"></i>
+            <span>1er Tiempo</span>
+            <span class="text-[10px] font-normal opacity-80">Directo</span>
+          </button>
+          <button
+            type="button"
+            (click)="setTiempoActivo(2)"
+            class="p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all cursor-pointer"
+            [ngClass]="tiempoActivo() === 2 ? 'bg-amber-500 text-white border-amber-500 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'"
+          >
+            <i class="pi pi-clock text-sm"></i>
+            <span>2do Tiempo</span>
+            <span class="text-[10px] font-normal opacity-80">Por marchar</span>
+          </button>
+          <button
+            type="button"
+            (click)="setTiempoActivo(3)"
+            class="p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all cursor-pointer"
+            [ngClass]="tiempoActivo() === 3 ? 'bg-purple-600 text-white border-purple-600 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'"
+          >
+            <i class="pi pi-sparkles text-sm"></i>
+            <span>3er Tiempo</span>
+            <span class="text-[10px] font-normal opacity-80">Postre</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-end">
+        <button
+          type="button"
+          class="px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+          (click)="asientosIslandModalVisible.set(false)"
+        >
+          Listo
+        </button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
   <!-- Modal de Detalle del Platillo (Inspirado en Card View moderna) -->
   <div
     *ngIf="showProductDetailModal() && selectedProductDetail()"
@@ -3461,5 +3967,80 @@
         </button>
       </div>
     </ng-template>
+  </p-dialog>
+
+  <!-- ==================== MODAL: CONFIRMAR CAMBIO DE MESA ==================== -->
+  <p-dialog
+    [(visible)]="modalConfirmarCambioMesaVisible"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '520px' }"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="!procesandoCambioMesa()"
+    header="Confirmar Cambio de Mesa"
+    (onHide)="mesaDestinoParaCambio.set(null)"
+  >
+    <div *ngIf="ordenParaCambioMesa() as ord" class="flex flex-col gap-4 pt-1">
+      <!-- Tarjetas de Comparación: Origen -> Destino -->
+      <div class="relative grid grid-cols-2 gap-3 p-3 bg-slate-50 border border-slate-200 rounded-2xl items-center">
+        <!-- Mesa Origen -->
+        <div class="p-3 bg-white rounded-xl border border-slate-200 text-center shadow-2xs">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Mesa Actual</span>
+          <div class="text-base font-extrabold text-slate-800 flex items-center justify-center gap-1.5">
+            <i class="pi pi-table text-indigo-600"></i>
+            <span>{{ ord.mesaNombre || 'Mesa General' }}</span>
+          </div>
+          <span class="text-xs text-slate-500 mt-0.5 block">Orden #{{ ord.id.slice(0, 8).toUpperCase() }}</span>
+        </div>
+
+        <!-- Mesa Destino -->
+        <div *ngIf="mesaDestinoParaCambio() as dest" class="p-3 bg-emerald-50 rounded-xl border border-emerald-300 text-center shadow-2xs">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-700 block mb-1">Nueva Mesa</span>
+          <div class="text-base font-extrabold text-emerald-900 flex items-center justify-center gap-1.5">
+            <i class="pi pi-check-circle text-emerald-600"></i>
+            <span>{{ dest.nombre }}</span>
+          </div>
+          <span class="text-xs text-emerald-700 font-medium mt-0.5 block">
+            {{ dest.capacidad }} comensales · {{ dest.area || 'Principal' }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Resumen de impacto -->
+      <div class="p-3.5 bg-amber-50/70 border border-amber-200 rounded-xl text-xs space-y-2">
+        <div class="flex items-center gap-2 text-amber-900 font-bold">
+          <i class="pi pi-sync text-amber-600 text-sm"></i>
+          <span>Impacto del cambio en el sistema:</span>
+        </div>
+        <ul class="m-0 pl-5 text-amber-950 space-y-1">
+          <li><b>Caja y cuentas:</b> El cobro y los tickets reflejarán automáticamente <b>{{ mesaDestinoParaCambio()?.nombre }}</b>.</li>
+          <li><b>Cocina y barra:</b> Las comandas activas mostrarán la nueva mesa inmediatamente vía tiempo real.</li>
+          <li><b>Mesero asignado:</b> Se mantiene asignado <b>{{ ord.meseroNombre || 'General' }}</b>.</li>
+          <li><b>Mesa anterior:</b> Se liberará automáticamente si no tiene otras órdenes pendientes.</li>
+        </ul>
+      </div>
+
+      <!-- Footer de acciones -->
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+        <button
+          type="button"
+          (click)="modalConfirmarCambioMesaVisible.set(false); mesaDestinoParaCambio.set(null)"
+          [disabled]="procesandoCambioMesa()"
+          class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-all cursor-pointer disabled:opacity-50"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          (click)="confirmarCambioMesa()"
+          [disabled]="procesandoCambioMesa()"
+          class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-bold text-xs inline-flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50 border-0"
+        >
+          <i *ngIf="procesandoCambioMesa()" class="pi pi-spin pi-spinner text-xs"></i>
+          <i *ngIf="!procesandoCambioMesa()" class="pi pi-check text-xs"></i>
+          <span>Confirmar y Cambiar Mesa</span>
+        </button>
+      </div>
+    </div>
   </p-dialog>
 </div>
