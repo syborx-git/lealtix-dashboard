@@ -3,13 +3,13 @@
   <!-- Sección KPIs (estilo ProTend claro) -->
   <div class="kpi-row">
 
-    <!-- KPI 1: Ventas Hoy (Amarillo/Crema) -->
+    <!-- KPI 1: Ventas del periodo (Amarillo/Crema) -->
     <div class="kpi-card bg-cream">
       <div class="kpi-icon-circle yellow"><span>📋</span></div>
       <div class="kpi-info">
-        <span class="kpi-label">Ventas de Hoy</span>
-        <h3 class="kpi-value">$14,280.00</h3>
-        <span class="kpi-subtext positive">+8.4% vs ayer</span>
+        <span class="kpi-label">Ventas del Periodo</span>
+        <h3 class="kpi-value">${{ (ventasResumen()?.totalSales ?? 0) | number:'1.2-2' }}</h3>
+        <span class="kpi-subtext">{{ ventasResumen()?.transactionCount ?? 0 }} tickets</span>
       </div>
     </div>
 
@@ -18,36 +18,76 @@
       <div class="kpi-icon-circle green"><span>⏳</span></div>
       <div class="kpi-info">
         <span class="kpi-label">En Preparación</span>
-        <h3 class="kpi-value">6</h3>
-        <span class="kpi-subtext">Tiempo prom: 9 min</span>
+        <h3 class="kpi-value">{{ enPreparacion() }}</h3>
+        <span class="kpi-subtext">{{ enEspera() }} en espera</span>
       </div>
     </div>
 
-    <!-- KPI 3: Clientes Frecuentes (Morado Claro) -->
+    <!-- KPI 3: Clientes (Morado Claro) -->
     <div class="kpi-card bg-lavender">
       <div class="kpi-icon-circle purple"><span>⭐</span></div>
       <div class="kpi-info">
-        <span class="kpi-label">Clientes Frecuentes</span>
-        <h3 class="kpi-value">342</h3>
-        <span class="kpi-subtext">12 registros hoy</span>
+        <span class="kpi-label">Clientes</span>
+        <h3 class="kpi-value">{{ totalClientes() ?? 0 }}</h3>
+        <span class="kpi-subtext">{{ clientesNuevosPeriodo() }} nuevos</span>
       </div>
     </div>
 
-    <!-- KPI 4: Puntos Canjeados (Blanca) -->
+    <!-- KPI 4: Cupones Canjeados (Blanca) -->
     <div class="kpi-card bg-white">
       <div class="kpi-icon-circle orange"><span>🎁</span></div>
       <div class="kpi-info">
-        <span class="kpi-label">Puntos Canjeados</span>
-        <h3 class="kpi-value">1,850 pts</h3>
-        <span class="kpi-subtext">15 recompensas</span>
+        <span class="kpi-label">Cupones Canjeados</span>
+        <h3 class="kpi-value">{{ cuponesCanjeados() }}</h3>
+        <span class="kpi-subtext">{{ cuponesEmitidos() }} emitidos</span>
       </div>
     </div>
 
-    <!-- Botón Destacado "Nuevo Pedido" -->
-    <button type="button" class="btn-primary-action">
-      <span class="btn-plus-icon">+</span>
-      <span>Nuevo Pedido</span>
-    </button>
+    <!-- Acción "Nuevo Pedido": escena de chef cocinando (animada) -->
+    <div class="kpi-action-cell">
+      <button type="button" class="btn-chef-action" title="Nuevo Pedido" aria-label="Nuevo Pedido">
+        <span class="chef-scene" aria-hidden="true">
+          <svg viewBox="0 0 200 130" preserveAspectRatio="xMidYMid meet">
+            <!-- estufa -->
+            <rect class="stove" x="138" y="114" width="62" height="6" rx="3" />
+            <!-- vapor -->
+            <g class="steam">
+              <path class="w w1" d="M150 80 C145 70 155 64 150 52" />
+              <path class="w w2" d="M163 78 C158 68 168 62 163 50" />
+            </g>
+            <!-- flamas -->
+            <g class="flames">
+              <path class="flame fl1" d="M148 114 C143 105 152 102 150 94 C159 100 159 109 154 114 Z" />
+              <path class="flame fl2" d="M163 114 C159 104 168 101 165 93 C174 100 174 109 169 114 Z" />
+              <path class="flame fl3" d="M176 114 C172 106 180 103 178 96 C186 102 186 110 182 114 Z" />
+            </g>
+            <!-- sartén + comida (mango hacia el chef) -->
+            <g class="pan-group">
+              <rect class="pan-handle" x="112" y="92" width="36" height="6" rx="3" />
+              <ellipse class="pan" cx="158" cy="96" rx="27" ry="7.5" />
+              <ellipse class="pan-rim" cx="158" cy="94" rx="22" ry="5" />
+              <circle class="food d1" cx="150" cy="90" r="4.2" />
+              <circle class="food d2" cx="160" cy="88" r="4.2" />
+              <circle class="food d3" cx="169" cy="91" r="3.4" />
+            </g>
+            <!-- chef (mascota flat, sin carita) -->
+            <g class="chef">
+              <path class="jacket" d="M49 124 C49 100 59 92 68 92 C77 92 87 100 87 124 Z" />
+              <path class="collar" d="M62 94 L68 104 L74 94" />
+              <circle class="button" cx="68" cy="109" r="1.6" />
+              <circle class="button" cx="68" cy="116" r="1.6" />
+              <path class="arm-outline" d="M83 100 C95 96 106 94 116 94" />
+              <path class="arm" d="M83 100 C95 96 106 94 116 94" />
+              <circle class="hand" cx="116" cy="94" r="4" />
+              <rect class="neck" x="65" y="83" width="6" height="10" rx="3" />
+              <circle class="skin" cx="68" cy="75" r="11" />
+              <path class="toque" d="M54 69 C47 69 47 57 56 57 C55 47 68 45 69 54 C72 45 85 48 83 57 C93 57 93 69 83 69 Z" />
+              <rect class="toque-band" x="56" y="67" width="24" height="6" rx="3" />
+            </g>
+          </svg>
+        </span>
+      </button>
+    </div>
 
   </div>
 
@@ -76,7 +116,7 @@
           </div>
         </div>
         <div class="chart-wrapper">
-          <p-chart type="line" [data]="proTendLineData" [options]="proTendLineOptions"></p-chart>
+          <p-chart type="line" [data]="salesPeriodData()" [options]="proTendLineOptions"></p-chart>
         </div>
       </div>
 
@@ -87,18 +127,18 @@
         <div class="sub-kpi-card">
           <div class="sub-kpi-info">
             <span class="sub-kpi-label">Total Clientes</span>
-            <h3 class="sub-kpi-value">78</h3>
-            <span class="sub-kpi-badge positive">▲ +0.5% vs mes anterior</span>
+            <h3 class="sub-kpi-value">{{ totalClientes() ?? 0 }}</h3>
+            <span class="sub-kpi-badge positive">{{ clientesNuevosPeriodo() }} nuevos</span>
           </div>
-          <div class="circle-progress"><span>76%</span></div>
+          <div class="circle-progress"><span>{{ (identifiedVsGeneral()?.identifiedPercentage ?? 0) | number:'1.0-0' }}%</span></div>
         </div>
 
         <!-- Tarjeta 2: Comandas Finalizadas -->
         <div class="sub-kpi-card">
           <div class="sub-kpi-info">
             <span class="sub-kpi-label">Comandas Finalizadas</span>
-            <h3 class="sub-kpi-value">34</h3>
-            <span class="sub-kpi-caption">87 restan para la meta</span>
+            <h3 class="sub-kpi-value">{{ comandasFinalizadas() }}</h3>
+            <span class="sub-kpi-caption">{{ totalOrdenes() }} órdenes en el periodo</span>
           </div>
           <div class="icon-box-kpi green"><span>✅</span></div>
         </div>
@@ -107,8 +147,8 @@
         <div class="sub-kpi-card">
           <div class="sub-kpi-info">
             <span class="sub-kpi-label">Nuevos Clientes</span>
-            <h3 class="sub-kpi-value">565</h3>
-            <span class="sub-kpi-badge positive">▲ +0.5% vs mes anterior</span>
+            <h3 class="sub-kpi-value">{{ clientesNuevosPeriodo() }}</h3>
+            <span class="sub-kpi-badge positive">en el periodo</span>
           </div>
           <div class="sparkline-box purple"><span>👥</span></div>
         </div>
@@ -117,8 +157,8 @@
         <div class="sub-kpi-card">
           <div class="sub-kpi-info">
             <span class="sub-kpi-label">Recompensas Canjeadas</span>
-            <h3 class="sub-kpi-value">142</h3>
-            <span class="sub-kpi-badge positive">▲ +12% esta semana</span>
+            <h3 class="sub-kpi-value">{{ cuponesCanjeados() }}</h3>
+            <span class="sub-kpi-badge positive">{{ cuponesEmitidos() }} emitidas</span>
           </div>
           <div class="sparkline-box orange"><span>🎁</span></div>
         </div>
@@ -144,9 +184,9 @@
       <!-- Tarjeta de Balance / Ingresos semanales -->
       <div class="side-card balance-card">
         <div class="balance-header">
-          <span class="balance-title">Ingresos Semanales</span>
-          <h2 class="balance-amount">$25,456.44</h2>
-          <span class="balance-trend positive">▲ +3.2% vs semana pasada</span>
+          <span class="balance-title">Ingresos del Periodo</span>
+          <h2 class="balance-amount">${{ ingresosSemana() | number:'1.2-2' }}</h2>
+          <span class="balance-trend">Últimos periodos</span>
         </div>
 
         <div class="weekly-plot">
@@ -155,10 +195,10 @@
           </div>
           <div class="plot-area">
             <div class="weekly-css-chart">
-              <div class="week-group" *ngFor="let d of weeklyBalanceData.labels; let i = index">
+              <div class="week-group" *ngFor="let d of weeklyBalanceData().labels; let i = index">
                 <div class="week-bars">
-                  <div class="bar done" [style.height.%]="weeklyBalanceData.datasets[0].data[i]"></div>
-                  <div class="bar proc" [style.height.%]="weeklyBalanceData.datasets[1].data[i]"></div>
+                  <div class="bar done" [style.height.%]="weeklyBalanceData().datasets[0].data[i]"></div>
+                  <div class="bar proc" [style.height.%]="weeklyBalanceData().datasets[1].data[i]"></div>
                 </div>
                 <span class="week-label">{{ d }}</span>
               </div>
@@ -171,17 +211,13 @@
       <div class="side-card daily-tasks-card">
         <h3 class="daily-title">Comandas del Día</h3>
         <ul class="task-list">
-          <li class="task-item completed">
+          <li class="task-item" [ngClass]="c.cls" *ngFor="let c of comandasDelDia()">
+            <span class="dot" [ngClass]="{ completed: 'green', 'in-progress': 'yellow', new: 'blue' }[c.cls]"></span>
+            <span class="task-name">Pedido #{{ c.id }} — {{ c.label }}</span>
+          </li>
+          <li class="task-item" *ngIf="comandasDelDia().length === 0">
             <span class="dot green"></span>
-            <span class="task-name">Pedido #0048 — Completado</span>
-          </li>
-          <li class="task-item in-progress">
-            <span class="dot yellow"></span>
-            <span class="task-name">Pedido #0049 — En preparación</span>
-          </li>
-          <li class="task-item new">
-            <span class="dot blue"></span>
-            <span class="task-name">Pedido #0050 — Nuevo</span>
+            <span class="task-name">Sin comandas por ahora</span>
           </li>
         </ul>
       </div>

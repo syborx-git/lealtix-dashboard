@@ -19,6 +19,22 @@ export class KitchenOrderFacadeService implements OnDestroy {
 
     private readonly destroy$ = new Subject<void>();
     private pollingTimer: ReturnType<typeof setInterval> | null = null;
+
+    /** Pausa el polling en segundo plano; lo reanuda al volver a la pestaña. */
+    private readonly onVisibility = (): void => {
+        if (typeof document === 'undefined') {
+            return;
+        }
+        if (document.visibilityState === 'visible') {
+            void this.loadOrders(false);
+            if (this.pollingTimer === null && this.tenantId > 0) {
+                this.startPolling();
+            }
+        } else if (this.pollingTimer !== null) {
+            clearInterval(this.pollingTimer);
+            this.pollingTimer = null;
+        }
+    };
     private tenantId = 0;
     private knownOrderIds = new Set<string>();
     private pollingBusy = false;
@@ -53,6 +69,9 @@ export class KitchenOrderFacadeService implements OnDestroy {
         this.loadOrders();
         this.startPolling();
         this.startRealtime();
+        if (typeof document !== 'undefined') {
+            document.addEventListener('visibilitychange', this.onVisibility);
+        }
     }
 
     ngOnDestroy(): void {
@@ -63,6 +82,9 @@ export class KitchenOrderFacadeService implements OnDestroy {
         if (this.pollingTimer !== null) {
             clearInterval(this.pollingTimer);
             this.pollingTimer = null;
+        }
+        if (typeof document !== 'undefined') {
+            document.removeEventListener('visibilitychange', this.onVisibility);
         }
         this.destroy$.next();
     }

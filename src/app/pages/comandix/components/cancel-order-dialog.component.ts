@@ -32,7 +32,7 @@ export class CancelOrderDialogComponent {
   }
 
   onConfirm(): void {
-    if (this.cancellationReason.trim().length > 0) {
+    if (this.cancellationReason.trim().length >= 3) {
       this.confirmed.emit(this.cancellationReason);
     }
   }

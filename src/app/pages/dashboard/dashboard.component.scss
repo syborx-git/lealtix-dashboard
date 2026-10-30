@@ -1601,7 +1601,7 @@
 /* ===== Correcciones finales ProTend (legibilidad y alturas) ===== */
 .kpi-row {
   display: grid !important;
-  grid-template-columns: repeat(4, 1fr) 190px !important;
+  grid-template-columns: repeat(4, 1fr) 200px !important;
   gap: 16px !important;
   align-items: stretch !important;
   margin-bottom: 24px !important;
@@ -3000,3 +3000,398 @@
 .dashboard-content-wrapper {
   background-color: #ffffff !important;
 }
+
+/* ============================================================================
+   RESPONSIVE MÓVIL/TABLET (override final: gana por orden de aparición)
+   Corrige el apretado del dashboard en teléfono: el KPI row tenía una columna
+   fija de 180px y el grid principal quedaba 1.5fr/1fr sin apilar.
+   ============================================================================ */
+@media (max-width: 1200px) {
+  .dashboard-grid-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .kpi-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .kpi-row .btn-primary-action {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .dashboard-container {
+    padding: 16px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .kpi-row {
+    grid-template-columns: 1fr !important;
+  }
+  .kpi-card {
+    padding: 14px 16px !important;
+  }
+  .kpis-quad-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .dashboard-container {
+    padding: 12px !important;
+  }
+  .chart-wrapper {
+    height: 220px !important;
+  }
+  .promo-banner-card {
+    padding: 20px !important;
+    min-height: auto !important;
+  }
+}
+
+/* ============================================================
+   Botón "Nuevo Pedido" — Opción 3 (Dorado Lealtix)
+   ============================================================ */
+.btn-primary-action {
+  background: linear-gradient(135deg, #f6c877 0%, #DA9F5B 52%, #c8882a 100%) !important;
+  background-color: #DA9F5B !important;
+  color: #3a2410 !important;
+  border: none !important;
+  box-shadow: 0 14px 28px -10px rgba(200, 136, 42, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+  transition: box-shadow 0.2s ease, transform 0.1s ease, background 0.2s ease !important;
+}
+
+.btn-primary-action:hover {
+  background: linear-gradient(135deg, #ffd98a 0%, #e6b06c 52%, #d09434 100%) !important;
+  box-shadow: 0 18px 34px -10px rgba(200, 136, 42, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+  transform: translateY(-2px) !important;
+}
+
+.btn-primary-action .btn-plus-icon {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  background: #3a2410 !important;
+  color: #f6c877 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1.35rem !important;
+  line-height: 1 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 10px -2px rgba(58, 36, 16, 0.55) !important;
+}
+
+.btn-primary-action > span:last-child {
+  color: #3a2410 !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.01em !important;
+}
+
+/* ============================================================
+   Botón "Nuevo Pedido" — plato con vapor animado (solo local)
+   ============================================================ */
+.btn-steam-plate {
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-steam-plate .steam-plate {
+  width: 46px;
+  height: 46px;
+  overflow: visible;
+}
+
+.btn-steam-plate .plate { fill: #3a2410; }
+.btn-steam-plate .plate-inner { fill: #5b3a1e; }
+
+.btn-steam-plate .steam {
+  fill: none;
+  stroke: #fff3da;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: steamRise 2.6s ease-in-out infinite;
+}
+.btn-steam-plate .s1 { animation-delay: 0s; }
+.btn-steam-plate .s2 { animation-delay: 0.45s; }
+.btn-steam-plate .s3 { animation-delay: 0.9s; }
+
+@keyframes steamRise {
+  0%   { opacity: 0;    transform: translateY(5px)  scaleY(0.75); }
+  25%  { opacity: 0.95; }
+  60%  { opacity: 0.5; }
+  100% { opacity: 0;    transform: translateY(-9px) scaleY(1.2); }
+}
+
+.btn-action-label {
+  color: #3a2410 !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.01em;
+}
+
+/* ============================================================
+   Escena "Chef cocinando" — Nuevo Pedido (animada, solo local)
+   ============================================================ */
+.kpi-action-cell {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.btn-chef-action {
+  position: relative;
+  width: 100%;
+  min-height: 108px;
+  border: none;
+  padding: 0;
+  border-radius: 18px;
+  cursor: pointer;
+  overflow: hidden;
+  background: linear-gradient(160deg, #fff6e2 0%, #ffe6ba 55%, #f6cd8a 100%);
+  box-shadow: 0 16px 34px -18px rgba(200, 136, 42, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.btn-chef-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 22px 44px -18px rgba(200, 136, 42, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+.btn-chef-action:active { transform: scale(0.99); }
+
+.btn-chef-action .chef-scene { position: absolute; inset: 0; display: block; }
+.btn-chef-action .chef-scene svg { width: 100%; height: 100%; display: block; }
+
+.btn-chef-action .btn-action-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 7px;
+  text-align: center;
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #5a3a1e !important;
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+/* Colores del chef (estilo flat profesional) */
+.chef-scene .jacket { fill: #ffffff; stroke: #5a3a1e; stroke-width: 2; stroke-linejoin: round; }
+.chef-scene .collar { fill: none; stroke: #cdb590; stroke-width: 2; stroke-linejoin: round; }
+.chef-scene .button { fill: #bda979; }
+.chef-scene .toque { fill: #ffffff; stroke: #5a3a1e; stroke-width: 2; stroke-linejoin: round; }
+.chef-scene .toque-band { fill: #f0e6d2; stroke: #5a3a1e; stroke-width: 1.6; }
+.chef-scene .skin { fill: #f3c9a2; stroke: #5a3a1e; stroke-width: 2; }
+.chef-scene .hair { fill: #7a4a22; }
+.chef-scene .eye-line { fill: none; stroke: #3a2410; stroke-width: 1.7; stroke-linecap: round; }
+.chef-scene .smile { fill: none; stroke: #3a2410; stroke-width: 1.7; stroke-linecap: round; }
+.chef-scene .arm-outline { fill: none; stroke: #5a3a1e; stroke-width: 11; stroke-linecap: round; }
+.chef-scene .arm { fill: none; stroke: #ffffff; stroke-width: 7; stroke-linecap: round; }
+.chef-scene .hand { fill: #f3c9a2; stroke: #5a3a1e; stroke-width: 2; }
+.chef-scene .pan { fill: #4a2f16; }
+.chef-scene .pan-rim { fill: #6b4423; }
+.chef-scene .pan-handle { fill: #6b4423; }
+.chef-scene .food { fill: #e05328; }
+.chef-scene .food.d2 { fill: #f59e0b; }
+.chef-scene .food.d3 { fill: #10b981; }
+.chef-scene .flame { fill: #f59e0b; }
+.chef-scene .flame.fl2 { fill: #fb923c; }
+.chef-scene .flame.fl3 { fill: #fbbf24; }
+.chef-scene .steam .w { fill: none; stroke: #ffffff; stroke-width: 3.2; stroke-linecap: round; opacity: 0.85; }
+.chef-scene .stove { fill: #cbb38c; }
+.chef-scene .neck { fill: #f3c9a2; stroke: #5a3a1e; stroke-width: 2; }
+
+/* Animaciones */
+.chef-scene .steam .w {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: chefSteam 2.4s ease-in-out infinite;
+}
+.chef-scene .steam .w2 { animation-delay: 0.5s; }
+.chef-scene .steam .w3 { animation-delay: 1s; }
+@keyframes chefSteam {
+  0% { opacity: 0; transform: translateY(5px) scaleY(0.7); }
+  30% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(-11px) scaleY(1.25); }
+}
+
+.chef-scene .flame {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: flameFlick 0.45s ease-in-out infinite alternate;
+}
+.chef-scene .fl2 { animation-delay: 0.15s; }
+.chef-scene .fl3 { animation-delay: 0.3s; }
+@keyframes flameFlick {
+  from { transform: scaleY(0.85) scaleX(0.95); opacity: 0.88; }
+  to { transform: scaleY(1.15) scaleX(1.06); opacity: 1; }
+}
+
+.chef-scene .pan-group {
+  transform-box: fill-box;
+  transform-origin: 14% 50%;
+  animation: panToss 1.7s ease-in-out infinite;
+}
+@keyframes panToss {
+  0%, 100% { transform: rotate(0deg); }
+  32% { transform: rotate(-8deg); }
+  52% { transform: rotate(2deg); }
+}
+
+.chef-scene .food {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: tossFood 1.7s ease-in-out infinite;
+}
+.chef-scene .food.d1 { animation-delay: 0s; }
+.chef-scene .food.d2 { animation-delay: 0.1s; }
+.chef-scene .food.d3 { animation-delay: 0.2s; }
+@keyframes tossFood {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  34% { transform: translate(-7px, -34px) rotate(210deg); }
+  58% { transform: translate(3px, -13px) rotate(340deg); }
+  100% { transform: translate(0, 0) rotate(360deg); }
+}
+
+.chef-scene .chef {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: chefBob 2s ease-in-out infinite;
+}
+@keyframes chefBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2.5px); }
+}
+
+.chef-scene .chef .arm {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: armStir 1.7s ease-in-out infinite;
+}
+@keyframes armStir {
+  0%, 100% { transform: rotate(0deg); }
+  34% { transform: rotate(-6deg); }
+}
+
+/* ============================================================================
+   MODO OSCURO — Dashboard completo (tarjetas, gráfico, textos legibles).
+   Se coloca al final para ganar en cascada sobre los estilos claros previos.
+   ============================================================================ */
+::ng-deep {
+:root[class*='app-dark'],
+.app-dark {
+  /* Superficies: todas las tarjetas a oscuro */
+  .kpi-card,
+  .kpi-card.bg-white,
+  .kpi-card.bg-cream,
+  .kpi-card.bg-mint,
+  .kpi-card.bg-lavender,
+  .chart-card,
+  .side-card,
+  .balance-card,
+  .daily-tasks-card,
+  .sub-kpi-card,
+  .insights-grid > *,
+  .skeleton-card {
+    background-color: var(--surface-card) !important;
+    background-image: none !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 14px 34px -28px rgba(0, 0, 0, 0.7) !important;
+  }
+
+  /* El contenedor del dashboard estaba forzado a blanco con !important */
+  .dashboard-container,
+  .dashboard-content-wrapper {
+    background-color: var(--surface-ground) !important;
+    background-image: none !important;
+  }
+
+  /* Fichas decorativas de iconos (pastel) → tenues acordes al tema oscuro */
+  .kpi-icon-circle.yellow { background-color: rgba(245, 158, 11, 0.22) !important; }
+  .kpi-icon-circle.green { background-color: rgba(16, 185, 129, 0.22) !important; }
+  .kpi-icon-circle.purple { background-color: rgba(139, 92, 246, 0.22) !important; }
+  .kpi-icon-circle.orange { background-color: rgba(249, 115, 22, 0.22) !important; }
+  .icon-box-kpi, .icon-box-kpi.green, .icon-box-kpi.purple, .icon-box-kpi.orange,
+  .sparkline-box, .sparkline-box.green, .sparkline-box.purple, .sparkline-box.orange {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+  }
+  /* Iconos/emojis de las fichas: color claro (no afecta a los emojis) */
+  .kpi-icon-circle span,
+  .icon-box-kpi span,
+  .sparkline-box span { color: #e6e8ef !important; }
+
+  /* Botón del banner promocional: de blanco sólido a "glass" acorde al tema */
+  .promo-btn {
+    background-color: rgba(255, 255, 255, 0.16) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    box-shadow: none !important;
+  }
+  .promo-btn:hover {
+    background-color: rgba(255, 255, 255, 0.26) !important;
+  }
+
+  /* Textos principales */
+  .kpi-value,
+  .sub-kpi-value,
+  .balance-amount,
+  .chart-value,
+  .side-card-value,
+  .daily-title,
+  .chart-title,
+  .balance-title,
+  .insights-title,
+  .section-title,
+  .welcome-title {
+    color: #ffffff !important;
+  }
+
+  /* Textos secundarios */
+  .kpi-label,
+  .kpi-subtext,
+  .sub-kpi-label,
+  .sub-kpi-caption,
+  .chart-subtitle,
+  .balance-trend,
+  .week-label,
+  .y-labels span,
+  .task-name,
+  .legend-chip,
+  .legend-label {
+    color: #cbd5e1 !important;
+  }
+
+  .sub-kpi-badge,
+  .sub-kpi-badge.positive,
+  .balance-trend.positive { color: #34d399 !important; }
+
+  .sub-kpi-icon-box { background-color: rgba(99, 102, 241, 0.18) !important; }
+  .circle-progress { border-color: #818cf8 !important; color: #a5b4fc !important; }
+
+  .time-filters { background-color: rgba(255, 255, 255, 0.06) !important; }
+  .product-item { background-color: rgba(255, 255, 255, 0.04) !important; }
+
+  /* Filtros de periodo */
+  .time-btn {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: #cbd5e1 !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+  .time-btn.active {
+    background: linear-gradient(135deg, var(--lealtix-primary-500, #6366f1) 0%, var(--lealtix-primary-600, #4f46e5) 100%) !important;
+    color: #ffffff !important;
+    border-color: transparent !important;
+  }
+
+  /* Separadores internos de tarjetas */
+  .balance-header,
+  .daily-tasks-card .daily-title,
+  .task-item {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+  .task-item + .task-item { border-top-color: rgba(255, 255, 255, 0.06) !important; }
+}
+}
+

@@ -1,26 +1,108 @@
-name: Deploy Dashboard to Hetzner
+name: CI/CD Dashboard Hetzner
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - main
 
+concurrency:
+  group: hetzner-deploy-dashboard
+  cancel-in-progress: false
+
 jobs:
-  deploy:
+  # -------------------------------------------------------------
+  # 1. CI: Validación en Pull Requests y Pushes
+  # -------------------------------------------------------------
+  build-check:
+    name: Validar Compilación Angular Dashboard
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy via SSH
+      - name: Descargar código (Checkout)
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+
+      - name: Compilar Angular para producción
+        run: npm run build
+
+  # -------------------------------------------------------------
+  # 2. CD: Despliegue en Hetzner (Sólo al fusionar o empujar a 'main')
+  # -------------------------------------------------------------
+  deploy:
+    name: Desplegar en Hetzner (Main)
+    needs: build-check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Desplegar vía SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HETZNER_HOST }}
           username: ${{ secrets.HETZNER_USER }}
           key: ${{ secrets.HETZNER_SSH_KEY }}
           script: |
-            BRANCH="${{ github.ref_name }}"
-            echo "🚀 Desplegando Dashboard desde rama $BRANCH..."
-            cd /var/www/lealtix/lealtix-dashboard
-            git checkout $BRANCH
-            git pull origin $BRANCH
-            cd /var/www/lealtix
-            docker compose up -d --build lealtix-dashboard
-            echo "✅ Dashboard actualizado con éxito!"
+            set -e
+            echo "🚀 [Dashboard] Desplegando Dashboard desde rama main..."
+
+            REPO_DIR="/var/www/lealtix/lealtix-dashboard"
+            if [ ! -d "$REPO_DIR" ]; then
+              REPO_DIR="$(find /home /root /opt /srv /app /var /usr/local -maxdepth 8 -type d -name 'lealtix-dashboard' 2>/dev/null | head -n 1)"
+            fi
+            if [ -z "$REPO_DIR" ] || [ ! -d "$REPO_DIR" ]; then
+              echo "❌ No se encontró el repo lealtix-dashboard en el servidor"; exit 1
+            fi
+            echo "REPO_DIR=$REPO_DIR"
+            cd "$REPO_DIR"
+
+            # Forzar sincronización exacta con origin/main
+            git fetch origin main
+            git checkout -f main
+            git reset --hard origin/main
+            echo "HEAD del Dashboard: $(git rev-parse --short HEAD)"
+
+            COMPOSE_DIR="$(dirname "$REPO_DIR")"
+            if [ ! -f "$COMPOSE_DIR/docker-compose.yml" ]; then
+              COMPOSE_FILE="$(grep -rl 'lealtix-dashboard' /var/www /root /home /opt /srv /app --include='docker-compose.yml' 2>/dev/null | head -n 1)"
+              if [ -n "$COMPOSE_FILE" ]; then COMPOSE_DIR="$(dirname "$COMPOSE_FILE")"; fi
+            fi
+            cd "$COMPOSE_DIR"
+
+            # Liberar puerto 4201 si quedó contenedor colgado
+            docker rm -f lealtix_dashboard lealtix_dashboard_container 2>/dev/null || true
+
+            echo "===== Reconstruyendo contenedor lealtix-dashboard ====="
+            docker compose build lealtix-dashboard
+            docker compose up -d --force-recreate --no-deps lealtix-dashboard
+
+            echo "===== Monitoreo y logs iniciales ====="
+            sleep 8
+            docker compose ps
+            docker compose logs --tail=40 lealtix-dashboard || true
+
+            echo "===== Healthcheck del Dashboard ====="
+            for i in $(seq 1 20); do
+              code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:4201/ || echo 000)
+              echo "Intento $i: HTTP $code"
+              if [ "$code" = "200" ]; then
+                echo "✅ Dashboard respondiendo con éxito (HTTP 200)!"
+                break
+              fi
+              if [ "$i" = "20" ]; then
+                echo "❌ El dashboard no respondió 200 tras el despliegue."
+                docker compose logs --tail=100 lealtix-dashboard
+                exit 1
+              fi
+              sleep 4
+            done
+            echo "🎉 Dashboard desplegado y activo!"

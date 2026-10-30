@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, computed, ChangeDetectorRef, inject } from '@angular/core';
+import { AfterViewInit, Component, OnInit, OnDestroy, signal, computed, ChangeDetectorRef, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -140,7 +140,7 @@ export interface DisponibilidadItem {
   templateUrl: './comandix.component.html',
   styleUrls: ['./comandix.component.scss']
 })
-export class ComandixComponent implements OnInit, OnDestroy {
+export class ComandixComponent implements OnInit, OnDestroy, AfterViewInit {
   private route = inject(ActivatedRoute);
 
   // ==================== SIGNALS POS (existente) ====================
@@ -392,6 +392,9 @@ export class ComandixComponent implements OnInit, OnDestroy {
   // ==================== MAPA DE MESAS (Modo Mesero: Vista / Consulta / Unión) ====================
   readonly workspaceW = 1200;
   readonly workspaceH = 720;
+  /** Escala responsiva del lienzo para que ocupe el ancho disponible en tablet. */
+  readonly wsZoom = signal<string>('1');
+  private wsObserver: ResizeObserver | null = null;
   private readonly DEFAULT_X = 100;
   private readonly DEFAULT_Y = 100;
   private readonly DEFAULT_STEP = 40;
@@ -888,9 +891,12 @@ export class ComandixComponent implements OnInit, OnDestroy {
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
   private editCountdownTimer: ReturnType<typeof setInterval> | null = null;
   private knownOrderIds = new Set<string>();
-  private readonly POLLING_INTERVAL_MS = 30_000;
+  private readonly POLLING_INTERVAL_MS = 6_000;
   private readonly NOTIFICATION_SOUND = 'assets/sounds/dragon-studio-correct-472358.mp3';
   private readonly ACTIVE_DASHBOARD_STATUSES: OrderStatus[] = ['PENDIENTE', 'CONFIRMADA', 'EN_PREPARACION', 'LISTO', 'PAGADA'];
+  // Estados que se consultan por polling. Incluye CANCELADA para que las
+  // comandas canceladas aparezcan en su pestaña (no solo las activas).
+  private readonly POLL_STATUSES: OrderStatus[] = ['PENDIENTE', 'CONFIRMADA', 'EN_PREPARACION', 'LISTO', 'PAGADA', 'CANCELADA'];
 
   /** Prórroga de edición de comandas enviadas (30 segundos) */
   private readonly EDIT_WINDOW_SECONDS = 30;
@@ -961,17 +967,46 @@ export class ComandixComponent implements OnInit, OnDestroy {
       });
   }
 
+  ngAfterViewInit(): void {
+    this.observeWorkspace();
+  }
+
   ngOnDestroy(): void {
     this.stopPolling();
     if (this.editCountdownTimer) {
       clearInterval(this.editCountdownTimer);
       this.editCountdownTimer = null;
     }
+    this.wsObserver?.disconnect();
+    this.wsObserver = null;
     // NO desconectar el SSE aquí: la conexión es global (AppLayout la mantiene
     // viva en todos los módulos). Desconectarla al salir de esta página cortaría
     // las notificaciones en el resto del dashboard.
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  /**
+   * Escala el lienzo lógico (1200x720) para ocupar el ancho real disponible,
+   * evitando el hueco blanco a la derecha y que las mesas se vean apiladas.
+   * El zoom respeta las coordenadas guardadas (las mesas escalan juntas).
+   */
+  private observeWorkspace(attempt = 0): void {
+    const wrap = document.querySelector('.comandix-mesas-view .plano-wrap') as HTMLElement | null;
+    if (!wrap) {
+      if (attempt < 12) setTimeout(() => this.observeWorkspace(attempt + 1), 250);
+      return;
+    }
+    const compute = () => {
+      const w = wrap.clientWidth;
+      if (!w) return;
+      const scale = Math.max(0.35, Math.min((w - 2) / this.workspaceW, 1.5));
+      this.wsZoom.set(String(scale));
+    };
+    compute();
+    this.wsObserver?.disconnect();
+    this.wsObserver = new ResizeObserver(compute);
+    this.wsObserver.observe(wrap);
   }
 
   // ==================== VISTA ACTIVA ====================
@@ -984,6 +1019,9 @@ export class ComandixComponent implements OnInit, OnDestroy {
     if (view === 'disponibilidad') {
       this.loadStockInfo();
       this.loadBebidas();
+    }
+    if (view === 'mesas') {
+      setTimeout(() => this.observeWorkspace(), 0);
     }
   }
 
@@ -1406,6 +1444,7 @@ export class ComandixComponent implements OnInit, OnDestroy {
           this.areas.set(finalAreas);
           this.mesas.set([]);
         }
+        setTimeout(() => this.observeWorkspace(), 0);
       },
       error: () => {
         const defaultMesas: MesaDTO[] = [
@@ -1415,6 +1454,7 @@ export class ComandixComponent implements OnInit, OnDestroy {
           { id: 4, tenantId: this.tenantId, nombre: 'Barra', numero: 4, capacidad: 2, estado: 'LIBRE', posicionX: 680, posicionY: 200 }
         ];
         this.mesas.set(defaultMesas);
+        setTimeout(() => this.observeWorkspace(), 0);
       }
     });
   }
@@ -1902,7 +1942,7 @@ export class ComandixComponent implements OnInit, OnDestroy {
     try {
       console.log('[Comandix] 🔄 Consultando órdenes activas...');
       const responses = await Promise.all(
-        this.ACTIVE_DASHBOARD_STATUSES.map((status) =>
+        this.POLL_STATUSES.map((status) =>
           firstValueFrom(this.orderService.getOrdersByTenant(this.tenantId, status))
         )
       );
@@ -1957,6 +1997,8 @@ export class ComandixComponent implements OnInit, OnDestroy {
         console.log('[Comandix] ✅ Órdenes pendientes actualizadas:', mergedOrders.length);
         return mergedOrders;
       });
+
+      this.syncEditCountdown();
 
       // Mostrar alerta en primera carga si hay órdenes
       if (isFirstPoll && mappedOrders.length > 0) {
@@ -2190,6 +2232,7 @@ export class ComandixComponent implements OnInit, OnDestroy {
               mesaNumero: sseEvent.order.mesaNumero ?? o.mesaNumero
             } : o)
           );
+          this.syncEditCountdown();
 
           if (this.selectedOrder()?.id === orderId) {
             this.selectedOrder.update(prev => prev ? {
@@ -2584,43 +2627,35 @@ export class ComandixComponent implements OnInit, OnDestroy {
     return diffMs < 2 * 60 * 1000;
   }
 
-  /** Arranca el timer que refresca nowTick cada segundo para el countdown de edición */
+  /** Timer de edición: ya no hay prórroga, se limpia por compatibilidad. */
   private startEditCountdown(): void {
+    this.syncEditCountdown();
+  }
+
+  private syncEditCountdown(): void {
     if (this.editCountdownTimer) {
       clearInterval(this.editCountdownTimer);
+      this.editCountdownTimer = null;
     }
-    this.editCountdownTimer = setInterval(() => {
-      this.nowTick.set(Date.now());
-    }, 1000);
   }
 
-  /** True si la comanda aún puede editarse (estado pendiente/confirmada y dentro de la prórroga) */
+  /**
+   * La comanda puede editarse en cualquier momento mientras NO esté pagada ni
+   * cancelada (permite agregar platillos si llega otro comensal o piden más).
+   */
   canEditOrder(order: PendingOrder): boolean {
     if (!order) return false;
-    if (!this.editableStates.includes(order.estado as OrderStatus)) return false;
-    if (!order.fechaCreacion) return false;
-    const created = new Date(order.fechaCreacion).getTime();
-    const now = this.nowTick();
-    const diffMs = now - created;
-    return diffMs >= 0 && diffMs < this.EDIT_WINDOW_SECONDS * 1000;
+    return this.editableStates.includes(order.estado as OrderStatus);
   }
 
-  /** Segundos restantes de la prórroga para la orden (0 si venció) */
-  private getEditableRemainingSeconds(order: PendingOrder): number {
-    if (!order?.fechaCreacion) return 0;
-    const created = new Date(order.fechaCreacion).getTime();
-    const diffMs = this.nowTick() - created;
-    const remainingSec = Math.ceil((this.EDIT_WINDOW_SECONDS * 1000 - diffMs) / 1000);
-    return remainingSec > 0 ? remainingSec : 0;
-  }
-
-  /** Etiqueta "Editable por mm:ss" para la tarjeta de la comanda */
+  /** Etiqueta de prórroga para la tarjeta de la comanda (vacía si no aplica) */
   editCountdownLabel(order: PendingOrder): string {
-    const seconds = this.getEditableRemainingSeconds(order);
-    if (seconds <= 0) return '';
-    const mm = Math.floor(seconds / 60).toString().padStart(2, '0');
-    const ss = (seconds % 60).toString().padStart(2, '0');
-    return `Editable por ${mm}:${ss}`;
+    return '';
+  }
+
+  /** Solo el ADMIN puede cancelar/rechazar comandas (anti-robo). */
+  get isAdmin(): boolean {
+    return this.authService.getUserRole?.() === 'ADMIN';
   }
 
   /** Nombre legible del cliente para mostrar en la tarjeta */
@@ -2855,7 +2890,8 @@ export class ComandixComponent implements OnInit, OnDestroy {
         life: 3000
       });
 
-      this.removeOrderFromList(order.id);
+      // La comanda cancelada debe pasar a la pestaña "Canceladas" (no desaparecer).
+      this.patchOrderStatus(order.id, 'CANCELADA' as OrderStatus);
       this.showCancelOrderDialog.set(false);
       this.selectedOrderForCancellation.set(null);
       this.cancellationComment = '';
@@ -3891,6 +3927,14 @@ export class ComandixComponent implements OnInit, OnDestroy {
 
 trackByProductId = (index: number, item: CartItem): string => {
     return this.cartItemKey(item);
+  };
+
+  trackByProductGrid = (index: number, product: any): number | string => {
+    return product?.id ?? index;
+  };
+
+  trackByCategoryId = (index: number, cat: any): number | string => {
+    return cat?.id ?? index;
   };
 
   trackByOrderId(index: number, order: PendingOrder): string {

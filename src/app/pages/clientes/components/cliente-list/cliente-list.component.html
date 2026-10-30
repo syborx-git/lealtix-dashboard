@@ -100,11 +100,11 @@
   [first]="first"
   (onLazyLoad)="onLazyLoad($event)">
   <ng-template #caption>
-    <div class="flex items-center justify-between">
+    <div class="flex flex-wrap items-center justify-between gap-2">
       <h5 class="m-0">Clientes</h5>
-      <p-iconfield>
+      <p-iconfield class="w-full sm:w-auto">
         <p-inputicon styleClass="pi pi-search" />
-        <input pInputText type="text" (input)="onGlobalFilter(dt, $event)" />
+        <input pInputText type="text" class="w-full" (input)="onGlobalFilter(dt, $event)" />
       </p-iconfield>
     </div>
   </ng-template>

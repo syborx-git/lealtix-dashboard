@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { AfterViewInit, Component, OnDestroy, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ToolbarModule } from 'primeng/toolbar';
@@ -97,9 +97,12 @@ interface EstadoOption {
     templateUrl: './mapeo-mesas.component.html',
     styleUrls: ['./mapeo-mesas.component.scss']
 })
-export class MapeoMesasComponent implements OnInit {
+export class MapeoMesasComponent implements OnInit, AfterViewInit, OnDestroy {
     readonly workspaceW = WORKSPACE_W;
     readonly workspaceH = WORKSPACE_H;
+    /** Escala responsiva del lienzo para ocupar el ancho disponible en tablet. */
+    readonly wsZoom = signal<string>('1');
+    private wsObserver: ResizeObserver | null = null;
     readonly Math = Math;
     readonly formaOptions = MESA_FORMA_OPTIONS;
 
@@ -225,6 +228,37 @@ export class MapeoMesasComponent implements OnInit {
         }
     }
 
+    ngAfterViewInit(): void {
+        this.observeWorkspace();
+    }
+
+    ngOnDestroy(): void {
+        this.wsObserver?.disconnect();
+        this.wsObserver = null;
+    }
+
+    /**
+     * Escala el lienzo lógico (1200x720) para ocupar el ancho real disponible,
+     * evitando el hueco blanco a la derecha y que las mesas se vean apiladas.
+     */
+    private observeWorkspace(attempt = 0): void {
+        const wrap = document.querySelector('.mapeo-layout .plano-wrap') as HTMLElement | null;
+        if (!wrap) {
+            if (attempt < 12) setTimeout(() => this.observeWorkspace(attempt + 1), 250);
+            return;
+        }
+        const compute = () => {
+            const w = wrap.clientWidth;
+            if (!w) return;
+            const scale = Math.max(0.35, Math.min((w - 2) / WORKSPACE_W, 1.5));
+            this.wsZoom.set(String(scale));
+        };
+        compute();
+        this.wsObserver?.disconnect();
+        this.wsObserver = new ResizeObserver(compute);
+        this.wsObserver.observe(wrap);
+    }
+
     // ==========================================================================
     // CARGA DE DATOS
     // ==========================================================================
@@ -264,6 +298,7 @@ export class MapeoMesasComponent implements OnInit {
                 this.areas.set(areasList);
                 this.saveStoredAreas(areasList);
                 this.loading.set(false);
+                setTimeout(() => this.observeWorkspace(), 0);
             },
             error: () => {
                 this.mesas.set([]);

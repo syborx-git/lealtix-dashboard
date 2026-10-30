@@ -171,3 +171,74 @@
   background: #eff6ff;
   color: #2563eb;
 }
+
+/* ============================================================================
+   RESPONSIVE: tabla de facturas con scroll horizontal en móvil/tablet
+   ============================================================================ */
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 900px) {
+  .invoices-table {
+    min-width: 640px;
+  }
+}
+
+/* ============================================================================
+   MODO OSCURO: tabla y controles legibles (antes quedaban blancos con texto
+   claro = tenue).
+   ============================================================================ */
+::ng-deep {
+  :root[class*='app-dark'],
+  .app-dark {
+    .facturacion-header h2 { color: #e6e8ef !important; }
+    .facturacion-header p,
+    .state-msg { color: #b8c0d0 !important; }
+
+    .refresh-btn {
+      background: var(--surface-card) !important;
+      color: #e6e8ef !important;
+      border-color: rgba(255, 255, 255, 0.12) !important;
+    }
+    .refresh-btn:hover { background: rgba(255, 255, 255, 0.06) !important; }
+    .create-btn { background: #4f46e5 !important; }
+    .create-btn:hover { background: #4338ca !important; }
+
+    .search-input {
+      background: rgba(255, 255, 255, 0.04) !important;
+      border-color: rgba(255, 255, 255, 0.12) !important;
+      color: #e6e8ef !important;
+    }
+    .search-input::placeholder { color: #94a3b8 !important; }
+
+    .status-tabs .tab {
+      background: var(--surface-card) !important;
+      border-color: rgba(255, 255, 255, 0.12) !important;
+      color: #cbd5e1 !important;
+    }
+    .status-tabs .tab.active { background: #4f46e5 !important; border-color: #4f46e5 !important; color: #fff !important; }
+
+    .invoices-table {
+      background: var(--surface-card) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+    .invoices-table th,
+    .invoices-table td {
+      border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+      color: #e6e8ef !important;
+    }
+    .invoices-table th { background: rgba(255, 255, 255, 0.04) !important; color: #cbd5e1 !important; }
+
+    .action-btn {
+      background: var(--surface-card) !important;
+      border-color: rgba(255, 255, 255, 0.12) !important;
+      color: #e6e8ef !important;
+    }
+    .action-btn:hover { background: rgba(255, 255, 255, 0.06) !important; }
+
+    .badge { background: rgba(255, 255, 255, 0.06) !important; color: #cbd5e1 !important; }
+  }
+}

@@ -31,7 +31,8 @@
   <p *ngIf="loading" class="state-msg">Cargando facturas...</p>
   <p *ngIf="error" class="state-msg error">{{ error }}</p>
 
-  <table *ngIf="!loading && filteredInvoices.length > 0" class="invoices-table">
+  <div class="table-scroll" *ngIf="!loading && filteredInvoices.length > 0">
+  <table class="invoices-table">
     <thead>
       <tr>
         <th>Tipo</th>
@@ -58,6 +59,7 @@
       </tr>
     </tbody>
   </table>
+  </div>
 
   <p *ngIf="!loading && !error && filteredInvoices.length === 0" class="state-msg">
     No hay facturas para mostrar.

@@ -2179,7 +2179,20 @@ export class CajaComponent implements OnInit, OnDestroy {
 
   // ==================== CANCELACIÓN DE COMANDAS ====================
 
+  /** Solo el ADMIN puede cancelar/anular comandas (anti-robo). */
+  get canCancelOrders(): boolean {
+    return this.userRole === 'ADMIN';
+  }
+
   abrirModalCancelar(order: PendingOrder | ComandaCajaRow): void {
+    if (!this.canCancelOrders) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Sin autorización',
+        detail: 'Solo un administrador puede cancelar comandas.'
+      });
+      return;
+    }
     const total = 'total' in order ? (order.total as number) : (order.totalFinal ?? order.subtotal ?? 0);
     const folio = 'folioComanda' in order ? order.folioComanda : (order.id.length > 8 ? order.id.slice(0, 8).toUpperCase() : order.id);
     this.comandaACancelar.set({

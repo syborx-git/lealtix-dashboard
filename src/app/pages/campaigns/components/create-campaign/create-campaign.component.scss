@@ -824,6 +824,7 @@
   }
 }
 
+::ng-deep {
 :root[class*='app-dark'],
 .app-dark {
   ::ng-deep .email-confirmation-dialog {
@@ -1016,4 +1017,20 @@
   ::ng-deep .p-card {
     border-color: rgba(255, 255, 255, 0.08) !important;
   }
+
+  /* Formulario: textos legibles y tarjetas oscuras */
+  .create-campaign-container h1,
+  .create-campaign-container h2,
+  .create-campaign-container h3,
+  .create-campaign-container label,
+  .create-campaign-container .section-title,
+  .create-campaign-container .form-label,
+  .create-campaign-container .field-label { color: var(--text-color) !important; }
+  .create-campaign-container .card,
+  .create-campaign-container .form-card,
+  .create-campaign-container .benefit-card {
+    background: var(--surface-card) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+}
 }
