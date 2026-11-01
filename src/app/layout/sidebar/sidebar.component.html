@@ -1,83 +1,534 @@
-<!--
-  SIDEBAR DE ESCRITORIO (lg y superior)
-
-  - Ancho fluido entre w-64 (completo) y w-20 (solo iconos) con
-    transition-all duration-300, gobernado por layoutService.isSidebarCollapsed().
-  - El texto usa siempre `whitespace-nowrap overflow-hidden` dentro de un
-    contenedor flex `min-w-0`: así no se parte ni desborda al estrechar la barra.
-  - Cuando está colapsado, el texto pasa a `w-0 opacity-0` (sale del flujo) y
-    los items quedan en `justify-center`, dejando el icono perfectamente centrado.
-  - El menú (con sus submenús independientes) se delega a <app-menu-list>.
--->
+<!-- ==========================================================================
+     DOCK CÁPSULA FLOTANTE (ESTÉTICA BLANCO Y MORADO / ÍNDIGO LEALTIX)
+     ========================================================================== -->
 <aside
-    class="flex h-full flex-col overflow-hidden border-r border-slate-200 bg-white transition-all duration-300 ease-in-out dark:border-slate-700 dark:bg-slate-900"
-    [ngClass]="[layoutService.sidebarWidthClass(), collapsed() ? 'px-2' : 'px-3']"
-    aria-label="Barra lateral"
+    class="sidebar-capsule hidden lg:flex h-full flex-col transition-all duration-300 ease-in-out"
+    [ngClass]="layoutService.sidebarWidthClass()"
+    aria-label="Barra lateral de navegación"
 >
-    <!-- ============ Marca + botón de colapso ============ -->
-    <div class="flex shrink-0 items-center border-b border-slate-100 py-3 dark:border-slate-800" [ngClass]="collapsed() ? 'justify-center px-0' : 'gap-2 px-1'">
-
-        <a
-            routerLink="/dashboard"
-            class="flex min-w-0 items-center overflow-hidden transition-all duration-300"
-            [ngClass]="collapsed() ? 'justify-center' : 'gap-2.5'"
-            title="Lealtix"
-        >
-            <img
-                src="https://res.cloudinary.com/lealtix-media/image/upload/q_auto/f_auto/v1759897289/lealtix_logo_transp_qcp5h9.png"
-                alt="Lealtix"
-                class="h-9 w-9 shrink-0 object-contain"
-            />
-
-            <!-- Texto del logo: mismo tratamiento antidesbordamiento que los items -->
-            <span
-                class="min-w-0 overflow-hidden whitespace-nowrap text-base font-extrabold tracking-wide text-slate-700 transition-all duration-300 dark:text-slate-100"
-                [ngClass]="collapsed() ? 'w-0 opacity-0' : 'w-auto opacity-100'"
+    <!-- ==================== ESTADO COLAPSADO: SOLO ÍCONOS ==================== -->
+    <ng-container *ngIf="collapsed()">
+        <!-- Encabezado superior: Flecha para desplegar + Logo + Buscador -->
+        <div class="flex flex-col items-center gap-3 pt-3.5 pb-2 shrink-0">
+            <!-- Botón circular flecha derecha -> expande menú -->
+            <button
+                type="button"
+                class="sidebar-circle-btn"
+                (click)="onToggle()"
+                pTooltip="Expandir menú"
+                tooltipPosition="right"
+                aria-label="Expandir menú lateral"
             >
-                LEALTIX
-            </span>
-        </a>
+                <i class="pi pi-arrow-right text-xs"></i>
+            </button>
 
-        <!-- El botón de colapso solo existe con la barra completa: colapsado, el
-             header queda en w-20 y solo cabe el logo (el control pasa al pie). -->
-        <button
-            *ngIf="!collapsed()"
-            type="button"
-            class="ml-auto hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-indigo-600 lg:flex dark:hover:bg-slate-800"
-            (click)="onToggle()"
-            aria-label="Colapsar barra lateral"
-            title="Colapsar barra lateral"
-        >
-            <i class="pi pi-angle-double-left text-sm"></i>
-        </button>
-    </div>
+            <!-- Logo Lealtix -->
+            <a
+                routerLink="/dashboard"
+                class="sidebar-logo-mark"
+                pTooltip="Lealtix Dashboard"
+                tooltipPosition="right"
+                aria-label="Inicio Dashboard"
+            >
+                <img
+                    src="https://res.cloudinary.com/lealtix-media/image/upload/q_auto/f_auto/v1759897289/lealtix_logo_transp_qcp5h9.png"
+                    alt="Lealtix"
+                    class="h-7 w-7 object-contain"
+                />
+            </a>
 
-    <!-- ============ Navegación ============ -->
-    <div class="sidebar-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-3">
-        <app-menu-list></app-menu-list>
-    </div>
+            <!-- Botón circular de búsqueda -->
+            <button
+                type="button"
+                class="sidebar-circle-icon-btn"
+                (click)="onSearchClick()"
+                pTooltip="Buscar (Ctrl + K)"
+                tooltipPosition="right"
+                aria-label="Buscar en el menú"
+            >
+                <i class="pi pi-search text-xs"></i>
+            </button>
+        </div>
 
-    <!-- ============ Pie ============ -->
-    <div class="shrink-0 border-t border-slate-100 px-1 py-2.5 dark:border-slate-800">
-        <!-- Colapsado: el control para volver a expandir (el header no tiene espacio) -->
-        <button
-            *ngIf="collapsed()"
-            type="button"
-            class="flex w-full items-center justify-center gap-2 rounded-xl py-2 text-xs font-semibold text-slate-500 transition-colors hover:bg-slate-100 hover:text-indigo-600 dark:hover:bg-slate-800 dark:hover:text-indigo-400"
-            (click)="onToggle()"
-            title="Expandir barra lateral"
-            aria-label="Expandir barra lateral"
-        >
-            <i class="pi pi-angle-double-right shrink-0 text-xs"></i>
-            <span class="w-0 overflow-hidden whitespace-nowrap opacity-0">Expandir</span>
-        </button>
+        <!-- Centro: Íconos verticales centrados con efecto píldora activa morada -->
+        <div class="sidebar-scroll flex-1 overflow-y-auto overflow-x-hidden flex flex-col items-center gap-2 py-2 px-2">
+            <button
+                *ngFor="let section of visibleSections()"
+                type="button"
+                class="sidebar-icon-item"
+                [ngClass]="{ 'sidebar-icon-active': isSectionActive(section) }"
+                (click)="onSectionIconClick(section)"
+                [pTooltip]="section.label"
+                tooltipPosition="right"
+                [attr.aria-label]="section.label"
+            >
+                <i class="pi text-base" [ngClass]="section.icon"></i>
 
-        <p
-            *ngIf="!collapsed()"
-            class="m-0 truncate overflow-hidden whitespace-nowrap px-2 text-[0.7rem] text-slate-400"
-            title="Lealtix · Sistema POS"
-        >
-            Lealtix · Sistema POS
-        </p>
-    </div>
+                <!-- Dot indicador de estado en morado -->
+                <span
+                    *ngIf="section.id === 'promociones' || section.id === 'equipo'"
+                    class="sidebar-status-dot"
+                ></span>
+            </button>
+        </div>
+
+        <!-- Pie inferior: Tema + Notificaciones + Avatar de usuario -->
+        <div class="shrink-0 flex flex-col items-center gap-2.5 pt-2.5 pb-3 border-t border-slate-200/80 dark:border-slate-800">
+            <!-- Botón Modo Oscuro / Claro -->
+            <button
+                type="button"
+                class="sidebar-circle-icon-btn"
+                (click)="toggleDarkMode()"
+                [pTooltip]="isDarkTheme() ? 'Activar modo claro' : 'Activar modo oscuro'"
+                tooltipPosition="right"
+                [attr.aria-label]="isDarkTheme() ? 'Activar modo claro' : 'Activar modo oscuro'"
+            >
+                <i class="pi text-xs" [ngClass]="isDarkTheme() ? 'pi-sun text-amber-500' : 'pi-moon text-indigo-600'"></i>
+            </button>
+
+            <!-- Botón Notificaciones con badge -->
+            <div class="relative">
+                <button
+                    type="button"
+                    class="sidebar-circle-icon-btn"
+                    [class.active-btn]="isNotifPanelOpen()"
+                    (click)="toggleNotifications()"
+                    pTooltip="Notificaciones"
+                    tooltipPosition="right"
+                    aria-label="Ver notificaciones"
+                >
+                    <i class="pi pi-bell text-xs"></i>
+                </button>
+                <span
+                    *ngIf="unreadCount() > 0"
+                    class="sidebar-notif-badge"
+                >
+                    {{ unreadCount() > 9 ? '9+' : unreadCount() }}
+                </span>
+            </div>
+
+            <!-- Avatar de usuario clickeable -->
+            <button
+                type="button"
+                class="sidebar-avatar-btn relative group"
+                [class.active-avatar]="isUserMenuOpen()"
+                (click)="toggleUserMenu()"
+                [pTooltip]="userDisplayName() + ' - Opciones de cuenta'"
+                tooltipPosition="right"
+                aria-label="Opciones de perfil de usuario"
+            >
+                <div class="sidebar-avatar-circle">
+                    {{ userInitials() }}
+                </div>
+                <span class="sidebar-online-indicator"></span>
+            </button>
+        </div>
+    </ng-container>
+
+    <!-- ==================== ESTADO EXPANDIDO: MENÚ COMPLETO ==================== -->
+    <ng-container *ngIf="!collapsed()">
+        <!-- Encabezado superior: Logo + Marca + Flecha para colapsar <- -->
+        <div class="flex flex-col gap-3.5 pt-3.5 px-3.5 pb-2 shrink-0">
+            <div class="flex items-center justify-between min-w-0">
+                <a routerLink="/dashboard" class="flex items-center gap-2.5 min-w-0 group" title="Lealtix">
+                    <div class="sidebar-logo-mark-small">
+                        <img
+                            src="https://res.cloudinary.com/lealtix-media/image/upload/q_auto/f_auto/v1759897289/lealtix_logo_transp_qcp5h9.png"
+                            alt="Lealtix"
+                            class="h-6 w-6 object-contain"
+                        />
+                    </div>
+                    <span class="font-extrabold text-sm tracking-wide text-slate-800 dark:text-white truncate group-hover:text-indigo-600 transition-colors">
+                        LEALTIX
+                    </span>
+                </a>
+
+                <!-- Botón circular flecha izquierda <- colapsa menú -->
+                <button
+                    type="button"
+                    class="sidebar-circle-btn"
+                    (click)="onToggle()"
+                    pTooltip="Colapsar menú"
+                    tooltipPosition="left"
+                    aria-label="Colapsar menú lateral"
+                >
+                    <i class="pi pi-arrow-left text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Buscador estilo píldora -->
+            <div class="sidebar-search-pill">
+                <i class="pi pi-search text-slate-400 text-xs shrink-0"></i>
+                <input
+                    #searchInput
+                    type="text"
+                    [ngModel]="searchQuery()"
+                    (ngModelChange)="searchQuery.set($event)"
+                    placeholder="Search [Ctrl + K]..."
+                    class="sidebar-search-input"
+                    aria-label="Buscar en el menú"
+                />
+                <button
+                    *ngIf="searchQuery()"
+                    type="button"
+                    (click)="searchQuery.set('')"
+                    class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-xs transition-colors"
+                    title="Limpiar búsqueda"
+                >
+                    <i class="pi pi-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Centro: Lista de navegación completa y opciones desplegadas -->
+        <div class="sidebar-scroll flex-1 overflow-y-auto overflow-x-hidden px-2 py-1.5">
+            <app-menu-list [searchQuery]="searchQuery()" (navigated)="onNavigated()"></app-menu-list>
+        </div>
+
+        <!-- Pie inferior: Tema + Notificaciones + Tarjeta de perfil -->
+        <div class="shrink-0 pt-2.5 px-3 pb-3 border-t border-slate-200/80 dark:border-slate-800 flex flex-col gap-2">
+            <!-- Fila de acciones: Tema y Notificaciones -->
+            <div class="flex items-center gap-2">
+                <!-- Botón Modo Oscuro / Claro con etiqueta -->
+                <button
+                    type="button"
+                    class="sidebar-utility-pill flex-1"
+                    (click)="toggleDarkMode()"
+                    [title]="isDarkTheme() ? 'Activar modo claro' : 'Activar modo oscuro'"
+                >
+                    <i class="pi text-xs shrink-0" [ngClass]="isDarkTheme() ? 'pi-sun text-amber-500' : 'pi-moon text-indigo-600'"></i>
+                    <span class="text-[0.72rem] font-medium truncate">
+                        {{ isDarkTheme() ? 'Modo Claro' : 'Modo Oscuro' }}
+                    </span>
+                </button>
+
+                <!-- Botón Notificaciones con badge -->
+                <button
+                    type="button"
+                    class="sidebar-utility-pill relative flex-1"
+                    [class.active-btn]="isNotifPanelOpen()"
+                    (click)="toggleNotifications()"
+                    title="Notificaciones"
+                >
+                    <i class="pi pi-bell text-xs shrink-0 text-indigo-600 dark:text-indigo-400"></i>
+                    <span class="text-[0.72rem] font-medium truncate">Alertas</span>
+                    <span
+                        *ngIf="unreadCount() > 0"
+                        class="sidebar-notif-badge-inline"
+                    >
+                        {{ unreadCount() > 9 ? '9+' : unreadCount() }}
+                    </span>
+                </button>
+            </div>
+
+            <!-- Tarjeta de perfil clickeable -->
+            <button
+                type="button"
+                class="sidebar-user-card group w-full text-left"
+                [class.active-card]="isUserMenuOpen()"
+                (click)="toggleUserMenu()"
+                title="Opciones de cuenta"
+            >
+                <div class="sidebar-avatar-circle shrink-0">
+                    {{ userInitials() }}
+                </div>
+                <div class="flex flex-col min-w-0 flex-1">
+                    <span class="text-xs font-bold text-slate-800 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
+                        {{ userDisplayName() }}
+                    </span>
+                    <span class="text-[0.7rem] text-slate-500 dark:text-slate-400 truncate">
+                        {{ userRoleName() }}
+                    </span>
+                </div>
+                <i class="pi pi-ellipsis-v text-xs text-slate-400 group-hover:text-slate-700 dark:group-hover:text-white transition-colors"></i>
+            </button>
+        </div>
+    </ng-container>
 </aside>
+
+<!-- ==========================================================================
+     PANELES FLOTANTES (FLYOUTS ANCLADOS FUERA DE LA CÁPSULA)
+     ========================================================================== -->
+
+<!-- ==========================================================================
+     BOTÓN HAMBURGUESA FLOTANTE EN ESQUINA SUPERIOR IZQUIERDA (TABLETS Y MÓVIL)
+     ========================================================================== -->
+<button
+    type="button"
+    class="sidebar-mobile-hamburger lg:hidden"
+    (click)="toggleMobileSidebar()"
+    [attr.aria-expanded]="isMobileSidebarOpen()"
+    aria-label="Abrir menú de navegación"
+    title="Menú"
+>
+    <i class="pi" [ngClass]="isMobileSidebarOpen() ? 'pi-times' : 'pi-bars'"></i>
+</button>
+
+<!-- ==========================================================================
+     DRAWER FLOTANTE PARA TABLETS Y MÓVIL (MENÚ DESPLEGABLE)
+     ========================================================================== -->
+<div
+    *ngIf="isMobileSidebarOpen()"
+    class="fixed inset-0 z-50 lg:hidden pointer-events-auto"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Menú de navegación móvil"
+>
+    <!-- Backdrop oscuro con blur suave -->
+    <div
+        class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm animate-fadein"
+        (click)="closeMobileSidebar()"
+        aria-hidden="true"
+    ></div>
+
+    <!-- Contenedor del Drawer cápsula -->
+    <aside
+        class="sidebar-capsule sidebar-mobile-drawer relative z-10 flex h-[calc(100dvh-1.7rem)] flex-col animate-slideInLeft"
+    >
+        <!-- Encabezado superior: Logo + LEALTIX + Botón cerrar (X) -->
+        <div class="flex flex-col gap-3.5 pt-3.5 px-3.5 pb-2 shrink-0">
+            <div class="flex items-center justify-between min-w-0">
+                <a routerLink="/dashboard" (click)="closeMobileSidebar()" class="flex items-center gap-2.5 min-w-0 group" title="Lealtix">
+                    <div class="sidebar-logo-mark-small">
+                        <img
+                            src="https://res.cloudinary.com/lealtix-media/image/upload/q_auto/f_auto/v1759897289/lealtix_logo_transp_qcp5h9.png"
+                            alt="Lealtix"
+                            class="h-6 w-6 object-contain"
+                        />
+                    </div>
+                    <span class="font-extrabold text-sm tracking-wide text-slate-800 dark:text-white truncate">
+                        LEALTIX
+                    </span>
+                </a>
+
+                <!-- Botón circular cerrar (X) -->
+                <button
+                    type="button"
+                    class="sidebar-circle-btn"
+                    (click)="closeMobileSidebar()"
+                    aria-label="Cerrar menú"
+                >
+                    <i class="pi pi-times text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Buscador estilo píldora -->
+            <div class="sidebar-search-pill">
+                <i class="pi pi-search text-slate-400 text-xs shrink-0"></i>
+                <input
+                    type="text"
+                    [ngModel]="searchQuery()"
+                    (ngModelChange)="searchQuery.set($event)"
+                    placeholder="Buscar en el menú..."
+                    class="sidebar-search-input"
+                    aria-label="Buscar en el menú"
+                />
+                <button
+                    *ngIf="searchQuery()"
+                    type="button"
+                    (click)="searchQuery.set('')"
+                    class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-xs transition-colors"
+                    title="Limpiar búsqueda"
+                >
+                    <i class="pi pi-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Centro: Lista de navegación completa -->
+        <div class="sidebar-scroll flex-1 overflow-y-auto overflow-x-hidden px-2 py-1.5">
+            <app-menu-list [mobile]="true" [searchQuery]="searchQuery()" (navigated)="closeMobileSidebar()"></app-menu-list>
+        </div>
+
+        <!-- Pie inferior: Tema + Notificaciones + Tarjeta de perfil -->
+        <div class="shrink-0 pt-2.5 px-3 pb-3 border-t border-slate-200/80 dark:border-slate-800 flex flex-col gap-2">
+            <!-- Fila de acciones: Tema y Notificaciones -->
+            <div class="flex items-center gap-2">
+                <!-- Modo Claro / Oscuro -->
+                <button
+                    type="button"
+                    class="sidebar-utility-pill flex-1"
+                    (click)="toggleDarkMode()"
+                    [title]="isDarkTheme() ? 'Activar modo claro' : 'Activar modo oscuro'"
+                >
+                    <i class="pi text-xs shrink-0" [ngClass]="isDarkTheme() ? 'pi-sun text-amber-500' : 'pi-moon text-indigo-600'"></i>
+                    <span class="text-[0.72rem] font-medium truncate">
+                        {{ isDarkTheme() ? 'Modo Claro' : 'Modo Oscuro' }}
+                    </span>
+                </button>
+
+                <!-- Notificaciones con badge -->
+                <button
+                    type="button"
+                    class="sidebar-utility-pill relative flex-1"
+                    [class.active-btn]="isNotifPanelOpen()"
+                    (click)="toggleNotifications()"
+                    title="Notificaciones"
+                >
+                    <i class="pi pi-bell text-xs shrink-0 text-indigo-600 dark:text-indigo-400"></i>
+                    <span class="text-[0.72rem] font-medium truncate">Alertas</span>
+                    <span
+                        *ngIf="unreadCount() > 0"
+                        class="sidebar-notif-badge-inline"
+                    >
+                        {{ unreadCount() > 9 ? '9+' : unreadCount() }}
+                    </span>
+                </button>
+            </div>
+
+            <!-- Tarjeta de perfil clickeable -->
+            <button
+                type="button"
+                class="sidebar-user-card group w-full text-left"
+                [class.active-card]="isUserMenuOpen()"
+                (click)="toggleUserMenu()"
+                title="Opciones de cuenta"
+            >
+                <div class="sidebar-avatar-circle shrink-0">
+                    {{ userInitials() }}
+                </div>
+                <div class="flex flex-col min-w-0 flex-1">
+                    <span class="text-xs font-bold text-slate-800 dark:text-white truncate">
+                        {{ userDisplayName() }}
+                    </span>
+                    <span class="text-[0.7rem] text-slate-500 dark:text-slate-400 truncate">
+                        {{ userRoleName() }}
+                    </span>
+                </div>
+                <i class="pi pi-ellipsis-v text-xs text-slate-400 group-hover:text-slate-700 dark:group-hover:text-white transition-colors"></i>
+            </button>
+        </div>
+    </aside>
+</div>
+
+<!-- Backdrop global para cerrar menús al pulsar fuera -->
+<div
+    *ngIf="isUserMenuOpen() || isNotifPanelOpen()"
+    class="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px] animate-fadein pointer-events-auto"
+    (click)="closeAllFlyouts()"
+    aria-hidden="true"
+></div>
+
+<!-- ==================== FLYOUT: MENÚ DE USUARIO ==================== -->
+<div
+    *ngIf="isUserMenuOpen()"
+    class="sidebar-flyout-panel sidebar-user-flyout"
+    [class.dock-expanded]="!collapsed()"
+    role="menu"
+    aria-label="Opciones de usuario"
+>
+    <!-- Encabezado de usuario -->
+    <div class="flex items-center gap-3 p-3.5 border-b border-slate-100 dark:border-slate-800">
+        <div class="sidebar-avatar-circle shrink-0">
+            {{ userInitials() }}
+        </div>
+        <div class="flex flex-col min-w-0 flex-1">
+            <span class="text-xs font-bold text-slate-800 dark:text-white truncate">
+                {{ userDisplayName() }}
+            </span>
+            <span class="text-[0.72rem] text-indigo-600 dark:text-indigo-400 font-semibold truncate">
+                {{ userRoleName() }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Opciones del menú -->
+    <div class="p-1.5 flex flex-col gap-1">
+        <button
+            type="button"
+            class="sidebar-flyout-item group"
+            (click)="onSettings()"
+        >
+            <i class="pi pi-cog text-slate-500 group-hover:text-indigo-600 dark:text-slate-400 dark:group-hover:text-indigo-400 transition-colors"></i>
+            <span class="flex-1 text-left text-xs font-medium text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-white">
+                Configuración
+            </span>
+            <i class="pi pi-angle-right text-[0.65rem] text-slate-400 group-hover:text-indigo-600"></i>
+        </button>
+
+        <div class="my-1 border-t border-slate-100 dark:border-slate-800"></div>
+
+        <button
+            type="button"
+            class="sidebar-flyout-item sidebar-logout-item group"
+            (click)="onLogout()"
+        >
+            <i class="pi pi-power-off text-rose-500 transition-colors"></i>
+            <span class="flex-1 text-left text-xs font-medium text-rose-600 group-hover:text-rose-700">
+                Cerrar Sesión
+            </span>
+            <i class="pi pi-sign-out text-xs text-rose-400 group-hover:text-rose-600"></i>
+        </button>
+    </div>
+</div>
+
+<!-- ==================== FLYOUT: PANEL DE NOTIFICACIONES ==================== -->
+<div
+    *ngIf="isNotifPanelOpen()"
+    class="sidebar-flyout-panel sidebar-notif-flyout"
+    [class.dock-expanded]="!collapsed()"
+    role="region"
+    aria-label="Panel de notificaciones"
+>
+    <!-- Cabecera -->
+    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-2">
+            <i class="pi pi-bell text-indigo-600 dark:text-indigo-400 text-sm"></i>
+            <span class="text-xs font-bold text-slate-800 dark:text-white tracking-wide">Notificaciones</span>
+            <span
+                *ngIf="unreadCount() > 0"
+                class="px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-500/30 dark:text-indigo-300 text-[10px] font-bold border border-indigo-200 dark:border-indigo-500/40"
+            >
+                {{ unreadCount() }} nuevas
+            </span>
+        </div>
+        <button
+            type="button"
+            class="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
+            (click)="notifications.clear()"
+        >
+            Limpiar
+        </button>
+    </div>
+
+    <!-- Lista de notificaciones -->
+    <div class="max-h-[360px] overflow-y-auto sidebar-scroll">
+        <div *ngIf="notifications.notifications().length === 0" class="px-4 py-10 text-center text-xs text-slate-400">
+            <i class="pi pi-bell-slash text-2xl text-slate-300 dark:text-slate-600 block mb-2"></i>
+            Sin notificaciones por ahora
+        </div>
+
+        <div
+            *ngFor="let n of notifications.notifications()"
+            class="sidebar-notif-item flex cursor-pointer gap-3 px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800/60 transition-colors hover:bg-slate-50 dark:hover:bg-white/5"
+            (click)="openNotification(n)"
+        >
+            <div
+                class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+                [ngClass]="{
+                    'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30': n.severity === 'success',
+                    'bg-sky-50 text-sky-600 border border-sky-200 dark:bg-sky-500/20 dark:text-sky-400 dark:border-sky-500/30': n.severity === 'info',
+                    'bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30': n.severity === 'warn',
+                    'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-500/20 dark:text-rose-400 dark:border-rose-500/30': n.severity === 'error'
+                }"
+            >
+                <i class="pi text-xs" [ngClass]="n.icon"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-1">
+                    <span class="truncate text-xs font-semibold text-slate-800 dark:text-white">{{ n.title }}</span>
+                    <span class="shrink-0 text-[10px] text-slate-400">{{ notificationTimeAgo(n.ts) }}</span>
+                </div>
+                <p class="mt-0.5 truncate text-[11px] text-slate-500 dark:text-slate-400">{{ n.message }}</p>
+            </div>
+            <button
+                type="button"
+                class="shrink-0 text-slate-400 hover:text-rose-500 transition-colors p-1"
+                title="Quitar"
+                (click)="$event.stopPropagation(); notifications.remove(n.id)"
+            >
+                <i class="pi pi-times text-[10px]"></i>
+            </button>
+        </div>
+    </div>
+</div>

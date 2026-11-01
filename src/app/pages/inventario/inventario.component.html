@@ -35,36 +35,37 @@
       <ng-template #header>
         <ng-container *ngIf="activeTab() === 'products'">
           <tr>
-            <th pSortableColumn="name" style="width: 45%">
+            <th pSortableColumn="name" style="width: 40%">
               Platillo
               <p-sortIcon field="name" />
             </th>
-            <th pSortableColumn="categoryName" style="width: 30%">
+            <th pSortableColumn="categoryName" style="width: 25%">
               Categoría
               <p-sortIcon field="categoryName" />
             </th>
-            <th pSortableColumn="stock" style="width: 25%">
+            <th pSortableColumn="stock" style="width: 15%">
               Stock
               <p-sortIcon field="stock" />
             </th>
+            <th style="width: 20%" class="text-center">Receta</th>
           </tr>
         </ng-container>
         <ng-container *ngIf="activeTab() === 'bebidas'">
           <tr>
-            <th pSortableColumn="nombre" style="width: 28%">
+            <th pSortableColumn="nombre" style="width: 26%">
               Bebida
               <p-sortIcon field="nombre" />
             </th>
-            <th pSortableColumn="stock" style="width: 18%">
+            <th pSortableColumn="stock" style="width: 16%">
               Stock
               <p-sortIcon field="stock" />
             </th>
-            <th pSortableColumn="precioVenta" style="width: 20%">
+            <th pSortableColumn="precioVenta" style="width: 18%">
               Precio venta
               <p-sortIcon field="precioVenta" />
             </th>
-            <th style="width: 18%">Ubicación</th>
-            <th style="width: 16%">Acciones</th>
+            <th style="width: 16%" class="text-center">Receta</th>
+            <th style="width: 24%">Acciones</th>
           </tr>
         </ng-container>
         <ng-container *ngIf="activeTab() === 'insumos' || activeTab() === 'insumos-bebida'">
@@ -88,56 +89,67 @@
       </ng-template>
       <ng-template pTemplate="body" let-row>
         <ng-container *ngIf="activeTab() === 'products'">
-          <tr>
-            <td style="width: 45%">
+          <tr class="cursor-pointer row-clickable" (click)="openRecipeModal(row)">
+            <td style="width: 40%">
               <div class="font-medium text-900">{{ row.name }}</div>
               <div class="flex flex-wrap gap-1 mt-1" *ngIf="rowCategories(row).length">
                 <span class="cat-chip-mini" *ngFor="let c of visibleRowCategories(row)">{{ c.name }}</span>
                 <button type="button" class="cat-chip-more" *ngIf="hiddenCategoryCount(row) > 0"
-                  (click)="toggleCategories(row)"
+                  (click)="$event.stopPropagation(); toggleCategories(row)"
                   [pTooltip]="isCategoryRowExpanded(row) ? 'Ocultar categorías' : 'Ver todas las categorías'"
                   tooltipPosition="top">
                   {{ isCategoryRowExpanded(row) ? 'ocultar' : '... +' + hiddenCategoryCount(row) }}
                 </button>
               </div>
             </td>
-            <td style="width: 30%">
+            <td style="width: 25%">
               <div class="text-sm text-500">{{ row.categoryName || '—' }}</div>
             </td>
-            <td style="width: 25%">
+            <td style="width: 15%">
               <span class="stock-badge" [ngClass]="productBadgeClass(row)">{{ productBadgeLabel(row) }}</span>
+            </td>
+            <td style="width: 20%" class="text-center">
+              <button pButton label="Ver receta" icon="pi pi-book" size="small" severity="secondary"
+                [outlined]="true" class="ver-receta-btn" (click)="$event.stopPropagation(); openRecipeModal(row)"
+                pTooltip="Ver receta e insumos" tooltipPosition="top"></button>
             </td>
           </tr>
         </ng-container>
         <ng-container *ngIf="activeTab() === 'bebidas'">
-          <tr>
-            <td style="width: 28%">
-              <div class="font-medium text-900">{{ row.nombre }}</div>
+          <tr class="cursor-pointer row-clickable" (click)="openRecipeModal(row)">
+            <td style="width: 26%">
+              <div class="font-medium text-900">{{ row.nombre || row.name }}</div>
               <div class="text-xs text-500">{{ row.unidad || 'pieza' }}</div>
               <div class="flex flex-wrap gap-1 mt-1" *ngIf="rowCategories(row).length">
                 <span class="cat-chip-mini" *ngFor="let c of visibleRowCategories(row)">{{ c.name }}</span>
                 <button type="button" class="cat-chip-more" *ngIf="hiddenCategoryCount(row) > 0"
-                  (click)="toggleCategories(row)"
+                  (click)="$event.stopPropagation(); toggleCategories(row)"
                   [pTooltip]="isCategoryRowExpanded(row) ? 'Ocultar categorías' : 'Ver todas las categorías'"
                   tooltipPosition="top">
                   {{ isCategoryRowExpanded(row) ? 'ocultar' : '... +' + hiddenCategoryCount(row) }}
                 </button>
               </div>
             </td>
-            <td style="width: 18%">
+            <td style="width: 16%">
               <span class="stock-badge" [ngClass]="insumoLowClass(row)">
                 {{ insumoLocalStock(row) }} {{ row.unidad || 'pieza' }}
               </span>
             </td>
-            <td style="width: 20%">
-              <div class="text-sm text-500">{{ row.precioVenta | currency: 'MXN' }}</div>
-            </td>
             <td style="width: 18%">
-              <span class="text-xs text-500">Barra</span>
+              <div class="text-sm text-500">{{ (row.precioVenta || row.price || 0) | currency: 'MXN' }}</div>
             </td>
-            <td style="width: 16%">
-              <button pButton icon="pi pi-trash" size="small" severity="danger" [outlined]="true"
-                pTooltip="Eliminar bebida" tooltipPosition="top" (click)="deleteBebida(row)"></button>
+            <td style="width: 16%" class="text-center">
+              <button pButton label="Receta" icon="pi pi-book" size="small" severity="secondary"
+                [outlined]="true" class="ver-receta-btn" (click)="$event.stopPropagation(); openRecipeModal(row)"
+                pTooltip="Ver receta e insumos" tooltipPosition="top"></button>
+            </td>
+            <td style="width: 24%">
+              <div class="flex gap-2 items-center">
+                <button pButton label="Stock" icon="pi pi-send" size="small" severity="secondary"
+                  class="solicitar-stock-btn" (click)="$event.stopPropagation(); openSolicitud(row)"></button>
+                <button pButton icon="pi pi-trash" size="small" severity="danger" [outlined]="true"
+                  pTooltip="Eliminar bebida" tooltipPosition="top" (click)="$event.stopPropagation(); deleteBebida(row)"></button>
+              </div>
             </td>
           </tr>
         </ng-container>
@@ -243,6 +255,164 @@
           (click)="cerrarSolicitud()" class="solicitud-cancel"></button>
         <button pButton label="Enviar solicitud" icon="pi pi-send" [loading]="enviandoSolicitud"
           [disabled]="!puedeEnviarSolicitud()" (click)="enviarSolicitud()" class="solicitud-submit"></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- Modal de Receta de Preparación e Insumos con Solicitud de Restock -->
+  <p-dialog [(visible)]="recipeModalVisible" [modal]="true"
+    [style]="{ width: '94vw', maxWidth: '52rem' }"
+    styleClass="recipe-dialog"
+    [closable]="true" [dismissableMask]="true" (onHide)="closeRecipeModal()">
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-3">
+        <div class="recipe-modal-icon">
+          <i class="pi pi-book text-xl text-primary"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="m-0 text-xl font-bold text-900">{{ selectedRecipeItem?.name || selectedRecipeItem?.nombre }}</h3>
+            <span class="stock-badge ml-2" [ngClass]="selectedRecipeItem ? (selectedRecipeItem.stock <= 0 ? 'stock-low' : 'stock-ok') : ''">
+              Stock actual: {{ selectedRecipeItem?.stock ?? 0 }} {{ selectedRecipeItem?.unidad || 'piezas' }}
+            </span>
+          </div>
+          <div class="text-xs text-500 mt-1 flex items-center gap-2">
+            <span>{{ mode === 'cocina' ? 'Receta de preparación (Cocina)' : 'Receta de preparación (Barra)' }}</span>
+            <span *ngIf="selectedRecipeItem?.categoryName">• {{ selectedRecipeItem.categoryName }}</span>
+            <span *ngIf="selectedRecipeItem?.price || selectedRecipeItem?.precioVenta">
+              • {{ (selectedRecipeItem.price || selectedRecipeItem.precioVenta) | currency:'MXN' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <div class="p-1">
+      <!-- Indicador de carga -->
+      <div *ngIf="loadingRecipeModal" class="flex flex-column items-center justify-center py-6">
+        <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
+        <span class="text-sm text-500 mt-2">Cargando receta e insumos disponibles...</span>
+      </div>
+
+      <!-- Contenido de la receta -->
+      <div *ngIf="!loadingRecipeModal">
+        <div *ngIf="recipeLines.length > 0" class="surface-ground border-round-lg p-3 mb-3 flex items-center justify-between text-sm">
+          <div class="flex items-center gap-2 text-700">
+            <i class="pi pi-info-circle text-primary"></i>
+            <span>Insumos necesarios para preparar <strong>1 porción</strong> de este platillo</span>
+          </div>
+          <span class="text-xs text-500 font-semibold">{{ recipeLines.length }} insumo(s)</span>
+        </div>
+
+        <!-- Tabla de Insumos -->
+        <div *ngIf="recipeLines.length > 0" class="border-round-lg overflow-hidden border-1 surface-border">
+          <table class="w-full recipe-table">
+            <thead>
+              <tr class="surface-100 text-left text-xs font-semibold text-600 uppercase border-bottom-1 surface-border">
+                <th class="p-3">Insumo</th>
+                <th class="p-3 text-center">Cantidad requerida</th>
+                <th class="p-3 text-center">Disponible en {{ mode === 'cocina' ? 'Cocina' : 'Barra' }}</th>
+                <th class="p-3 text-center">Disponible en Bodega</th>
+                <th class="p-3 text-center" style="width: 150px;">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let r of recipeLines" class="border-bottom-1 surface-border hover:surface-50 transition-colors">
+                <td class="p-3">
+                  <div class="font-medium text-900">{{ r.nombre }}</div>
+                  <div class="text-xs text-500 mt-1 flex items-center gap-1">
+                    <span>Unidad: {{ r.unidad }}</span>
+                    <span *ngIf="r.modificable" class="badge-modificable">Modificable</span>
+                  </div>
+                </td>
+                <td class="p-3 text-center">
+                  <span class="font-semibold text-900">{{ r.cantidad }}</span>
+                  <span class="text-xs text-500 ml-1">{{ r.unidad }}</span>
+                </td>
+                <td class="p-3 text-center">
+                  <span class="stock-badge" [ngClass]="r.sufficient ? 'stock-ok' : 'stock-low'">
+                    {{ r.areaStock }} {{ r.unidad }}
+                  </span>
+                  <div *ngIf="!r.sufficient" class="text-xs text-red-500 font-medium mt-1">
+                    Insuficiente
+                  </div>
+                </td>
+                <td class="p-3 text-center">
+                  <span class="stock-badge stock-bodega">
+                    {{ r.stockBodega }} {{ r.unidad }}
+                  </span>
+                </td>
+                <td class="p-3 text-center">
+                  <button pButton label="Solicitar restock" icon="pi pi-send" size="small"
+                    severity="secondary" class="solicitar-restock-btn"
+                    (click)="solicitarRestockDeInsumo(r, $event)"
+                    pTooltip="Solicitar restock a Bodega" tooltipPosition="top"></button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Sub-recetas si las tiene -->
+        <div *ngIf="selectedRecipeItem?.subRecetas?.length" class="mt-4">
+          <h5 class="text-sm font-semibold text-700 mb-2 flex items-center gap-2">
+            <i class="pi pi-share-alt text-primary"></i>
+            Sub-recetas / Preparaciones asignadas
+          </h5>
+          <div class="border-round-lg overflow-hidden border-1 surface-border">
+            <table class="w-full recipe-table">
+              <thead>
+                <tr class="surface-100 text-left text-xs font-semibold text-600 uppercase border-bottom-1 surface-border">
+                  <th class="p-3">Sub-receta</th>
+                  <th class="p-3 text-center">Porción requerida</th>
+                  <th class="p-3 text-center">Stock disponible</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let s of selectedRecipeItem.subRecetas" class="border-bottom-1 surface-border">
+                  <td class="p-3 font-medium text-900">{{ s.name }}</td>
+                  <td class="p-3 text-center font-semibold">{{ s.cantidad }} {{ s.unidad || 'pza' }}</td>
+                  <td class="p-3 text-center">
+                    <span class="stock-badge" [ngClass]="s.stock > 0 ? 'stock-ok' : 'stock-low'">
+                      {{ s.stock }} {{ s.unidad || 'pza' }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Caso sin receta configurada -->
+        <div *ngIf="recipeLines.length === 0 && (!selectedRecipeItem?.subRecetas || selectedRecipeItem?.subRecetas?.length === 0)"
+          class="surface-50 border-round-xl p-5 text-center my-3">
+          <i class="pi pi-box text-4xl text-400 mb-2"></i>
+          <h4 class="m-0 text-lg font-semibold text-800">Sin receta BOM configurada</h4>
+          <p class="text-sm text-600 mt-1 mb-4">
+            Este artículo no tiene insumos asignados en su receta. Se controla como producto directo de stock.
+          </p>
+          <div class="flex items-center justify-center gap-3">
+            <div class="surface-card p-3 border-round-lg border-1 surface-border text-left">
+              <div class="text-xs text-500">Stock en {{ mode === 'cocina' ? 'Cocina' : 'Barra' }}</div>
+              <div class="text-lg font-bold text-900">{{ selectedRecipeItem?.stock ?? 0 }} {{ selectedRecipeItem?.unidad || 'piezas' }}</div>
+            </div>
+            <div class="surface-card p-3 border-round-lg border-1 surface-border text-left" *ngIf="selectedRecipeItem?.stockBodega != null">
+              <div class="text-xs text-500">Stock en Bodega</div>
+              <div class="text-lg font-bold text-primary">{{ selectedRecipeItem.stockBodega }} {{ selectedRecipeItem?.unidad || 'piezas' }}</div>
+            </div>
+            <button pButton label="Solicitar restock" icon="pi pi-send" severity="secondary"
+              (click)="solicitarRestockDeInsumo(selectedRecipeItem, $event)"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-between items-center w-full">
+        <span class="text-xs text-500">
+          Haz clic en <strong>Solicitar restock</strong> para pedir insumos a la Bodega central.
+        </span>
+        <button pButton label="Cerrar" severity="secondary" (click)="closeRecipeModal()"></button>
       </div>
     </ng-template>
   </p-dialog>

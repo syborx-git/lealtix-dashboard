@@ -8,6 +8,17 @@
    ============================================================================ */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
+/* ==========================================================================
+   DESACTIVACIÓN GLOBAL DE ZOOM (TABLET / POS / KIOSK)
+   Evita pinch-to-zoom y doble-tap zoom a nivel motor de renderizado
+   ========================================================================== */
+html, body {
+  touch-action: pan-x pan-y;
+  -ms-touch-action: pan-x pan-y;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 /* ============================================================================
    LEALTIX - Sistema de Diseño Global Premium
    "Transformar ventas en relaciones"
@@ -900,29 +911,237 @@ h6 { font-size: 1rem; }
   border-color: var(--surface-border) !important;
 }
 
-/* === TOASTS — PREMIUM === */
-.p-toast .p-toast-message {
-  border-radius: var(--lealtix-radius-lg) !important;
-  box-shadow: var(--lealtix-shadow-xl) !important;
-  animation: lealtix-slideInRight 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  border-left: 4px solid;
-  backdrop-filter: blur(8px);
+/* ============================================================================
+   SISTEMA DE NOTIFICACIONES (TOASTS) — ULTRA COMPACTO (50% ESCALA) & SIN APILAMIENTO
+   ============================================================================ */
+
+/* Contenedor principal de toasts */
+.p-toast {
+  width: 14rem !important; /* ~224px, 50% del tamaño habitual (25rem / 400px) */
+  max-width: calc(100vw - 1.5rem) !important;
+  font-size: 0.75rem !important;
+  pointer-events: none; /* No bloquear clics fuera de la tarjeta visible */
+  z-index: 999999 !important;
+
+  &.p-toast-top-right {
+    top: 75px !important;
+    right: 14px !important;
+  }
+
+  &.p-toast-top-left {
+    top: 75px !important;
+    left: 14px !important;
+  }
+
+  &.p-toast-top-center {
+    top: 75px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+
+  @media (max-width: 640px) {
+    width: 13rem !important;
+    &.p-toast-top-right {
+      top: 60px !important;
+      right: 8px !important;
+    }
+  }
+
+  /* REGLA CRÍTICA: Solo mostrar la notificación más reciente (NUNCA apilar) */
+  p-toastitem:not(:last-child),
+  p-toast-item:not(:last-child),
+  .p-toast-message-wrapper:not(:last-child),
+  & > div > div:not(:last-child),
+  .p-toast-message:not(:last-child) {
+    display: none !important;
+  }
+
+  p-toastitem,
+  p-toast-item,
+  .p-toast-message {
+    pointer-events: auto;
+  }
 }
 
+/* Tarjeta individual del mensaje */
+.p-toast .p-toast-message {
+  margin: 0 !important; /* Cero margen inferior para no ocupar espacio muerto */
+  border-radius: 12px !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border-left-width: 3.5px !important;
+  border-left-style: solid !important;
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.12), 0 2px 6px -1px rgba(0, 0, 0, 0.05) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  overflow: hidden !important;
+  animation: lealtix-toast-pop 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* Contenido interior: padding 50% menor, flex alineado */
+.p-toast .p-toast-message .p-toast-message-content {
+  padding: 0.42rem 0.6rem !important; /* Reducido al 50% (antes 1rem - 1.25rem) */
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+}
+
+/* Ícono de la notificación */
+.p-toast .p-toast-message .p-toast-message-content .p-toast-message-icon {
+  font-size: 0.95rem !important; /* Reducido de 1.5rem */
+  width: 1.15rem !important;
+  height: 1.15rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+/* Bloque de texto */
+.p-toast .p-toast-message .p-toast-message-content .p-toast-message-text {
+  margin: 0 !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Título / Summary */
+.p-toast .p-toast-summary {
+  font-size: 0.74rem !important; /* ~11.8px (antes 16px) */
+  font-weight: 700 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.01em !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: block !important;
+}
+
+/* Detalle / Mensaje descriptivo */
+.p-toast .p-toast-detail {
+  font-size: 0.67rem !important; /* ~10.7px (antes 14px) */
+  font-weight: 500 !important;
+  line-height: 1.25 !important;
+  margin-top: 0.12rem !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  word-break: break-word !important;
+}
+
+/* Botón de cerrar (X) */
+.p-toast .p-toast-icon-close {
+  width: 1.15rem !important;
+  height: 1.15rem !important;
+  min-width: 1.15rem !important;
+  border-radius: 6px !important;
+  margin: 0 0 0 0.15rem !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 0.6 !important;
+  transition: all 0.15s ease !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+
+  &:hover {
+    opacity: 1 !important;
+    background: rgba(0, 0, 0, 0.06) !important;
+  }
+
+  .p-toast-icon-close-icon,
+  svg,
+  i {
+    font-size: 0.6rem !important;
+    width: 0.6rem !important;
+    height: 0.6rem !important;
+  }
+}
+
+/* Paleta de Severidades (Modo Claro) */
 .p-toast .p-toast-message.p-toast-message-success {
-  border-left-color: #10B981;
+  background: rgba(240, 253, 244, 0.97) !important;
+  border-color: rgba(187, 247, 208, 0.7) !important;
+  border-left-color: #10b981 !important;
+
+  .p-toast-message-icon,
+  .p-toast-summary {
+    color: #047857 !important;
+  }
+  .p-toast-detail {
+    color: #1f2937 !important;
+  }
+  .p-toast-icon-close {
+    color: #059669 !important;
+  }
 }
 
 .p-toast .p-toast-message.p-toast-message-error {
-  border-left-color: #EF4444;
+  background: rgba(254, 242, 242, 0.97) !important;
+  border-color: rgba(254, 202, 202, 0.7) !important;
+  border-left-color: #ef4444 !important;
+
+  .p-toast-message-icon,
+  .p-toast-summary {
+    color: #b91c1c !important;
+  }
+  .p-toast-detail {
+    color: #1f2937 !important;
+  }
+  .p-toast-icon-close {
+    color: #dc2626 !important;
+  }
 }
 
 .p-toast .p-toast-message.p-toast-message-warn {
-  border-left-color: #F59E0B;
+  background: rgba(255, 251, 235, 0.97) !important;
+  border-color: rgba(254, 240, 138, 0.7) !important;
+  border-left-color: #f59e0b !important;
+
+  .p-toast-message-icon,
+  .p-toast-summary {
+    color: #b45309 !important;
+  }
+  .p-toast-detail {
+    color: #1f2937 !important;
+  }
+  .p-toast-icon-close {
+    color: #d97706 !important;
+  }
 }
 
 .p-toast .p-toast-message.p-toast-message-info {
-  border-left-color: #3B82F6;
+  background: rgba(239, 246, 255, 0.97) !important;
+  border-color: rgba(191, 219, 254, 0.7) !important;
+  border-left-color: #3b82f6 !important;
+
+  .p-toast-message-icon,
+  .p-toast-summary {
+    color: #1d4ed8 !important;
+  }
+  .p-toast-detail {
+    color: #1f2937 !important;
+  }
+  .p-toast-icon-close {
+    color: #2563eb !important;
+  }
+}
+
+/* Animación de entrada suave y limpia */
+@keyframes lealtix-toast-pop {
+  0% {
+    opacity: 0;
+    transform: translate3d(16px, 0, 0) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
 }
 
 /* === SKELETON — SHIMMER PREMIUM === */
@@ -1514,8 +1733,19 @@ i.pi-whatsapp { color: #25D366 !important; }
 
   /* === TOASTS OSCUROS === */
   .p-toast .p-toast-message {
-    background-color: rgba(36,44,64,0.92) !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
+    background-color: rgba(23, 28, 38, 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+
+    .p-toast-detail {
+      color: #cbd5e1 !important;
+    }
+    .p-toast-icon-close {
+      color: #94a3b8 !important;
+      &:hover {
+        background: rgba(255, 255, 255, 0.1) !important;
+        color: #ffffff !important;
+      }
+    }
   }
 
   /* === SKELETON OSCURO === */
@@ -2286,6 +2516,38 @@ body.modulo-fullscreen-active .layout-main {
    padding sobra y descuadra la página a pantalla completa, así que se anula. */
 body.modulo-fullscreen-active .app-content {
   padding-left: 0 !important;
+}
+
+/* ==========================================================================
+   PADDING DEL CONTENIDO PARA EL SIDEBAR FLOTANTE
+   - En pantallas grandes (>= 1024px): la barra lateral flotante se mantiene fija
+     en la izquierda con espacio estático (6.5rem colapsada, 20.25rem expandida).
+   - En tablets y móviles (< 1024px): la barra lateral fija desaparece y se abre
+     a demanda mediante el botón hamburguesa en la esquina superior izquierda.
+     El contenido principal aprovecha el 100% del ancho de pantalla.
+   ========================================================================== */
+@media (min-width: 1024px) {
+  .sidebar-content-collapsed {
+    padding-left: 6.5rem !important;
+    transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .sidebar-content-expanded {
+    padding-left: 20.25rem !important;
+    transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+@media (max-width: 1023px) {
+  .sidebar-content-collapsed,
+  .sidebar-content-expanded {
+    padding-left: 0 !important;
+  }
+
+  /* En páginas regulares, deja espacio superior para el botón de hamburguesa flotante */
+  .app-main:not(.app-main--flush) {
+    padding-top: 4.25rem !important;
+  }
 }
 
 /* ===== Ticket de compra (impresión térmica 58 mm / área imprimible 48 mm / margen 5 mm) ===== */

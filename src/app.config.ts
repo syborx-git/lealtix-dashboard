@@ -6,6 +6,7 @@ import { provideServiceWorker } from '@angular/service-worker';
 import Aura from '@primeuix/themes/aura';
 import { providePrimeNG } from 'primeng/config';
 import { MessageService, ConfirmationService } from 'primeng/api';
+import { AppMessageService } from './app/shared/services/app-message.service';
 import { appRoutes } from './app.routes';
 import { AuthInterceptor } from './app/interceptors/auth.interceptor';
 import { ErrorInterceptor } from './app/interceptors/error.interceptor';
@@ -23,7 +24,7 @@ export const appConfig: ApplicationConfig = {
         ),
         provideAnimationsAsync(),
         providePrimeNG({ theme: { preset: Aura, options: { darkModeSelector: '.app-dark' } } }),
-        MessageService,
+        { provide: MessageService, useClass: AppMessageService },
         ConfirmationService,
 
         // Registrar interceptores

@@ -13,6 +13,7 @@ import { AutoCompleteModule } from 'primeng/autocomplete';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { MessageService } from 'primeng/api';
+import { AppMessageService } from '../../shared/services/app-message.service';
 import { ToastModule } from 'primeng/toast';
 import { DividerModule } from 'primeng/divider';
 import { DialogModule } from 'primeng/dialog';
@@ -136,7 +137,7 @@ export interface DisponibilidadItem {
     RegistrarMermaModalComponent,
     SplitOrderModalComponent
   ],
-  providers: [MessageService],
+  providers: [{ provide: MessageService, useClass: AppMessageService }],
   templateUrl: './comandix.component.html',
   styleUrls: ['./comandix.component.scss']
 })
@@ -4045,14 +4046,53 @@ trackByProductId = (index: number, item: CartItem): string => {
 
   getCategoryIcon(name: string): string {
     const n = (name || '').toLowerCase();
-    if (n.includes('desayun') || n.includes('huevo') || n.includes('morning')) return 'pi-sun';
-    if (n.includes('enchilada') || n.includes('chilaquil') || n.includes('taco') || n.includes('fuerte')) return 'pi-bolt';
+    if (n.includes('desayun') || n.includes('morning')) return 'pi-sun';
+    if (n.includes('enchilada') || n.includes('fuerte') || n.includes('carne')) return 'pi-bolt';
+    if (n.includes('chilaquil') || n.includes('verde')) return 'pi-sparkles';
+    if (n.includes('huevo') || n.includes('omelet')) return 'pi-sun';
     if (n.includes('bebida') || n.includes('drink') || n.includes('cafe') || n.includes('café') || n.includes('jugo') || n.includes('cerveza')) return 'pi-coffee';
     if (n.includes('postre') || n.includes('dulce') || n.includes('cake') || n.includes('helado')) return 'pi-heart';
     if (n.includes('entrada') || n.includes('snack') || n.includes('botana') || n.includes('appetizer')) return 'pi-compass';
-    if (n.includes('ensalada') || n.includes('salad') || n.includes('verde')) return 'pi-check-circle';
-    if (n.includes('especial') || n.includes('promo') || n.includes('chef')) return 'pi-star';
+    if (n.includes('ensalada') || n.includes('salad')) return 'pi-check-circle';
+    if (n.includes('especial') || n.includes('promo') || n.includes('chef')) return 'pi-star-fill';
+    if (n.includes('taco') || n.includes('antojit')) return 'pi-tag';
+    if (n.includes('marisco') || n.includes('pescado')) return 'pi-compass';
     return 'pi-bookmark';
+  }
+
+  /** Retorna la clase de tema con color de fondo distintivo para la tarjeta de categoría */
+  getCategoryThemeClass(cat: MenuCategory, index: number = 0): string {
+    const n = (cat?.name || '').toLowerCase();
+    if (n.includes('desayun') || n.includes('morning')) return 'cat-theme-amber';
+    if (n.includes('enchilad') || n.includes('fuerte') || n.includes('carne') || n.includes('corte') || n.includes('chile')) return 'cat-theme-rose';
+    if (n.includes('chilaquil') || n.includes('verde') || n.includes('ensalada') || n.includes('saludable')) return 'cat-theme-emerald';
+    if (n.includes('huevo') || n.includes('omelet') || n.includes('queso')) return 'cat-theme-yellow';
+    if (n.includes('especial') || n.includes('chef') || n.includes('gourmet') || n.includes('promo')) return 'cat-theme-purple';
+    if (n.includes('bebida') || n.includes('refresco') || n.includes('jugo') || n.includes('agua') || n.includes('coctel') || n.includes('cerveza') || n.includes('drink')) return 'cat-theme-sky';
+    if (n.includes('taco') || n.includes('antojit') || n.includes('botana') || n.includes('snack') || n.includes('entrada')) return 'cat-theme-orange';
+    if (n.includes('postre') || n.includes('dulce') || n.includes('helado') || n.includes('cake') || n.includes('pan')) return 'cat-theme-pink';
+    if (n.includes('cafe') || n.includes('café') || n.includes('te') || n.includes('té') || n.includes('frappe')) return 'cat-theme-cyan';
+    if (n.includes('marisco') || n.includes('pescado') || n.includes('mar') || n.includes('camaron')) return 'cat-theme-teal';
+    if (n.includes('sopa') || n.includes('caldo') || n.includes('crema')) return 'cat-theme-lime';
+    if (n.includes('pizza') || n.includes('pasta') || n.includes('hamburguesa') || n.includes('burger')) return 'cat-theme-indigo';
+
+    // Paleta rotativa curada para cualquier otra categoría personalizada
+    const themes = [
+      'cat-theme-amber',
+      'cat-theme-rose',
+      'cat-theme-emerald',
+      'cat-theme-sky',
+      'cat-theme-orange',
+      'cat-theme-purple',
+      'cat-theme-teal',
+      'cat-theme-yellow',
+      'cat-theme-pink',
+      'cat-theme-cyan',
+      'cat-theme-lime',
+      'cat-theme-indigo'
+    ];
+    const key = Math.abs(cat?.id ?? index);
+    return themes[key % themes.length];
   }
 
   async validarCupon(): Promise<void> {
