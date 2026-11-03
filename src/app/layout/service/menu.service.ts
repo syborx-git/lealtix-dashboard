@@ -118,6 +118,7 @@ export class MenuService {
                     { label: 'Mi Página', icon: 'pi pi-fw pi-qrcode', routerLink: ['/dashboard/mi-pagina'], visible: false, roles: ['ADMIN'], requiredPermissions: ['view_products'] },
                     { label: 'Dashboard Cocina', icon: 'pi pi-fw pi-chart-line', routerLink: ['/dashboard/cocina-dashboard'], roles: ['ADMIN', 'COCINA'], requiredPermissions: ['dashboard_kitchen'] },
                     { label: 'Gestión de Clientes', icon: 'pi pi-fw pi-users', routerLink: ['/dashboard/clientes'], roles: ['ADMIN'], requiredPermissions: ['view_customers'] },
+                    { label: 'Kiosco de Autoservicio', icon: 'pi pi-fw pi-desktop', routerLink: ['/dashboard/kiosk'], roles: ['ADMIN'], requiredPermissions: ['view_dashboard'] },
                     { label: 'Prueba Mercado Pago', icon: 'pi pi-fw pi-credit-card', routerLink: ['/dashboard/mp-test'], roles: ['ADMIN'], requiredPermissions: ['view_dashboard'] }
                 ]
             },

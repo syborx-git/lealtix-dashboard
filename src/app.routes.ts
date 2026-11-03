@@ -21,6 +21,16 @@ export const appRoutes: Routes = [
                 loadComponent: () => import('@/auth/error/error').then(m => m.Error)
             },
 
+            // Kiosco de autoservicio (modo cliente, pantalla completa sin menú admin).
+            // Cobra el carrito con la terminal Mercado Pago Point y genera la orden.
+            {
+                path: 'kiosk',
+                loadComponent: () => import('@/pages/kiosk/kiosk.component').then(m => m.KioskComponent),
+                canActivate: [AuthGuard, RoleGuard],
+                data: { roles: ['ADMIN'] },
+                title: 'Kiosco de Autoservicio'
+            },
+
             // Protected application routes: require authentication
             {
                 path: '',
