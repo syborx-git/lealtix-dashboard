@@ -46,8 +46,14 @@ export class ProductService {
         return this.http.post<any>(`${this.apiUrlCreateProduct}`, payload);
     }
 
-    getProductsByTenantId(tenantId: number) {
-        return this.http.get<any>(`${this.apiUrlProductsByTenant}/${tenantId}`);
+    getProductsByTenantId(tenantId: number, bustCache = false) {
+        if (!bustCache) {
+            return this.http.get<any>(`${this.apiUrlProductsByTenant}/${tenantId}`);
+        }
+        // Evita respuestas cacheadas (HTTP/SW): URL única + cabeceras no-cache.
+        return this.http.get<any>(`${this.apiUrlProductsByTenant}/${tenantId}?_t=${Date.now()}`, {
+            headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' }
+        });
     }
 
     deleteProductById(productId: number) {

@@ -64,6 +64,7 @@
       <div class="state-block" *ngIf="!loading() && !loadError() && visibleProducts().length === 0">
         <i class="pi pi-inbox"></i>
         <span>No hay productos disponibles en esta categoría.</span>
+        <button type="button" class="btn-ghost" (click)="refreshCatalog()">Recargar menú</button>
       </div>
 
       <div class="product-grid" *ngIf="!loading() && !loadError() && visibleProducts().length > 0">

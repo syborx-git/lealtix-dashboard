@@ -86,24 +86,83 @@ export class KioskComponent implements OnDestroy {
   readonly orderError = signal<string | null>(null);
   readonly countdown = signal(0);
 
-  private readonly tenantId: number;
+  private tenantId = 0;
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private countdownTimer: ReturnType<typeof setInterval> | null = null;
   private attempts = 0;
   private orderCreating = false;
 
+  private readonly onWindowFocus = () => this.refreshIfIdle();
+  private readonly onVisibilityChange = () => {
+    if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+      this.refreshIfIdle();
+    }
+  };
+
   constructor() {
-    const user = this.authService.getCurrentUser();
-    this.tenantId = user?.tenantId ?? this.authService.getTenantId() ?? 0;
+    this.tenantId = this.resolveTenantId();
     this.loadCatalog();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', this.onWindowFocus);
+      document.addEventListener('visibilitychange', this.onVisibilityChange);
+    }
+  }
+
+  /** Reintenta recargar el catálogo sin salir del kiosco. */
+  refreshCatalog(): void {
+    if (this.stage() !== 'browse') return;
+    this.loadCatalog();
+  }
+
+  private refreshIfIdle(): void {
+    if (this.stage() !== 'browse' || this.loading()) return;
+    this.loadCatalog();
+  }
+
+  /**
+   * El tenant se resuelve de forma robusta: usuario en storage, localStorage,
+   * claim del JWT y, por último, AuthService. Así evitamos consultar tenant 0/1
+   * por una sesión vieja sin tenantId.
+   */
+  private resolveTenantId(): number {
+    const user = this.authService.getCurrentUser();
+    const candidates = [
+      Number(user?.tenantId),
+      Number(typeof localStorage !== 'undefined' ? localStorage.getItem('tenantId') : 0),
+      this.tenantFromJwt(),
+      Number(this.authService.getTenantId?.()),
+    ];
+    for (const value of candidates) {
+      if (Number.isFinite(value) && value > 0) return value;
+    }
+    return 0;
+  }
+
+  private tenantFromJwt(): number {
+    try {
+      const token = this.authService.getToken?.();
+      const parts = typeof token === 'string' ? token.split('.') : [];
+      if (parts.length < 2) return 0;
+      const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(atob(b64));
+      return Number(payload?.tenantId ?? payload?.tenant_id ?? 0) || 0;
+    } catch {
+      return 0;
+    }
   }
 
   // -------------------- Carga de catálogo --------------------
   loadCatalog(): void {
+    if (!this.tenantId || this.tenantId <= 0) {
+      this.loading.set(false);
+      this.loadError.set('No se pudo identificar el negocio de la sesión. Cierra sesión y vuelve a entrar.');
+      return;
+    }
+
     this.loading.set(true);
     this.loadError.set(null);
 
-    this.productService.getProductsByTenantId(this.tenantId).subscribe({
+    this.productService.getProductsByTenantId(this.tenantId, true).subscribe({
       next: (resp: any) => {
         const obj = resp?.object;
         const paged = obj?.content ?? resp?.content;
@@ -112,6 +171,7 @@ export class KioskComponent implements OnDestroy {
           .filter((p) => p?.isActive !== false && p?.esVariable !== true)
           .map((p) => this.mapProduct(p))
           .filter((p) => p.price > 0);
+        console.log('[Kiosk] tenant', this.tenantId, 'productos crudos', list.length, 'visibles', mapped.length);
         this.products.set(mapped);
         this.loading.set(false);
       },
@@ -469,5 +529,9 @@ export class KioskComponent implements OnDestroy {
   ngOnDestroy(): void {
     this.stopPoll();
     this.clearCountdown();
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('focus', this.onWindowFocus);
+      document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    }
   }
 }
