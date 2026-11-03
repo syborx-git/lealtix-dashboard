@@ -11,26 +11,18 @@
 :host {
   display: block;
   width: 100%;
-  min-height: 100%;
 }
 
 .comandix-main-content {
   display: grid;
-  // Catálogo flexible + comanda de ancho acotado: se aprovecha el horizontal
-  // en tablet landscape en lugar de encoger la comanda proporcionalmente.
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+  grid-template-columns: minmax(0, 7fr) minmax(320px, 3fr);
   align-items: start;
   gap: 1.25rem;
   width: 100%;
   max-width: 100%;
   margin: 0;
-  // Contexto de consulta para repartir el POS según el ancho real disponible.
-  container-type: inline-size;
-  container-name: comandix;
 
-  // Solo se apila en teléfonos (<768). En tablet horizontal (>=768) se mantiene
-  // distribuido en dos columnas.
-  @media (max-width: 767px) {
+  @media (max-width: 1024px) {
     grid-template-columns: 1fr;
   }
 
@@ -39,86 +31,7 @@
   }
 }
 
-// ==================== HEADER ====================
-.comandix-header {
-  background: linear-gradient(135deg, #4f46e5 0%, #818cf8 100%);
-  border-radius: 16px;
-  padding: 1.5rem;
-  color: white;
-  box-shadow: 0 2px 12px rgba(79, 70, 229, 0.15);
-
-  .comandix-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-
-  .comandix-title {
-    color: white;
-  }
-
-  .header-tags {
-    flex-wrap: wrap;
-    position: relative;
-
-    .cart-button-mobile {
-      display: none;
-      background: rgba(255, 255, 255, 0.2);
-      border: none;
-      border-radius: 8px;
-      color: white;
-      padding: 0.5rem 0.75rem;
-      cursor: pointer;
-      font-size: 1rem;
-      transition: all 0.2s ease;
-      position: relative;
-      align-items: center;
-      gap: 0.5rem;
-
-      &:hover {
-        background: rgba(255, 255, 255, 0.3);
-        transform: scale(1.05);
-      }
-
-      &:active {
-        transform: scale(0.95);
-      }
-
-      i {
-        font-size: 1.2rem;
-      }
-
-      .cart-count {
-        background: #ef4444;
-        color: white;
-        border-radius: 50%;
-        width: 24px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.75rem;
-        font-weight: bold;
-        margin-left: 0.25rem;
-      }
-
-      @media (min-width: 992px) {
-        display: none !important;
-      }
-    }
-
-    @media (max-width: 991px) {
-      .cart-button-mobile {
-        display: flex !important;
-      }
-    }
-  }
-}
+// ==================== HEADER (REMOVIDO / SUSTITUIDO POR DYNAMIC TOPBAR) ====================
 
 // ==================== LOADING ====================
 .loading-container {
@@ -139,175 +52,6 @@
   min-width: 0;
 }
 
-// ==================== RAIL DE CATEGORÍAS ====================
-// Barra de categorías: horizontal en móvil, rail vertical en tablet (como un
-// sistema de punto de venta).
-.pos-categories-rail {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 1rem;
-  padding: 0.75rem;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
-  min-width: 0;
-}
-
-.pos-categories-rail-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.6rem;
-  padding: 0 0.25rem;
-  font-size: 0.7rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: #64748b;
-
-  i { color: #7c3aed; }
-}
-
-.pos-categories-list {
-  display: flex;
-  flex-direction: row;
-  gap: 0.5rem;
-  overflow-x: auto;
-  padding-bottom: 0.15rem;
-}
-
-.pos-category-pill {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.65rem 0.9rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
-  background: #f8fafc;
-  color: #475569;
-  font-size: 0.875rem;
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
-
-  .pos-category-bar {
-    width: 4px;
-    height: 18px;
-    border-radius: 999px;
-    background: #cbd5e1;
-    flex-shrink: 0;
-    transition: background 0.18s ease;
-  }
-
-  &:hover {
-    background: #eef2ff;
-    border-color: #c7d2fe;
-    color: #4338ca;
-  }
-
-  // Color de acento por categoría (rotación de 5 colores).
-  &:nth-child(5n + 1) .pos-category-bar { background: #f59e0b; }
-  &:nth-child(5n + 2) .pos-category-bar { background: #10b981; }
-  &:nth-child(5n + 3) .pos-category-bar { background: #ef4444; }
-  &:nth-child(5n + 4) .pos-category-bar { background: #3b82f6; }
-  &:nth-child(5n + 5) .pos-category-bar { background: #8b5cf6; }
-
-  &.active {
-    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-    border-color: #4f46e5;
-    color: #fff;
-    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.28);
-
-    .pos-category-bar { background: rgba(255, 255, 255, 0.9); }
-  }
-}
-
-// ==================== POS EN TABLET HORIZONTAL ====================
-// Reparte el POS en 3 paneles como un sistema de punto de venta:
-// categorías (izquierda) · platillos (centro) · comanda (derecha).
-@container comandix (min-width: 900px) {
-  .pos-left-column {
-    display: grid;
-    grid-template-columns: 132px minmax(0, 1fr);
-    grid-template-areas:
-      'rail header'
-      'rail seats'
-      'rail catalog';
-    align-items: start;
-    gap: 0.5rem;
-  }
-
-  .pos-compact-header-card { grid-area: header; min-width: 0; }
-  .pos-seats-tabs-card { grid-area: seats; min-width: 0; }
-  .pos-catalog-card { grid-area: catalog; min-width: 0; }
-
-  .pos-categories-rail {
-    grid-area: rail;
-    align-self: start;
-    position: sticky;
-    top: 1rem;
-    max-height: calc(100vh - 2rem);
-    display: flex;
-    flex-direction: column;
-  }
-
-  .pos-categories-list {
-    flex-direction: column;
-    overflow-x: hidden;
-    overflow-y: auto;
-    flex: 1 1 auto;
-    min-height: 0;
-  }
-
-  .pos-category-pill {
-    width: 100%;
-    justify-content: flex-start;
-  }
-}
-
-// ==================== GRID DE PLATILLOS POR ANCHO DISPONIBLE ====================
-// El número de columnas se adapta al ancho real del panel central, no al del
-// viewport (que incluye la barra lateral del dashboard).
-.pos-catalog-card {
-  container-type: inline-size;
-}
-
-// Base: 1 columna; se sube según el ancho real del panel central.
-.pos-products-grid {
-  grid-template-columns: 1fr;
-}
-
-@container (min-width: 340px) {
-  .pos-products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
-@container (min-width: 720px) {
-  .pos-products-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-
-@container (min-width: 1120px) {
-  .pos-products-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
-
-// Reduce la altura del header en tablet landscape para liberar área de venta.
-@media (min-width: 768px) and (max-width: 1399px) {
-  .comandix-header {
-    padding: 1rem 1.25rem;
-    border-radius: 14px;
-
-    .comandix-icon {
-      width: 46px;
-      height: 46px;
-      border-radius: 10px;
-    }
-
-    .comandix-title {
-      font-size: 1.6rem;
-    }
-  }
-}
-
 .comandix-right-column {
   display: block;
   width: 100%;
@@ -320,7 +64,7 @@
     display: flex;
     flex-direction: column;
 
-    @media (max-width: 767px) {
+    @media (max-width: 1024px) {
       position: relative;
       top: 0;
       max-height: none;
@@ -405,6 +149,27 @@
     &:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 20px -4px rgba(124, 58, 237, 0.1);
+    }
+  }
+
+  .category-pos-card {
+    min-height: 140px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 24px -4px rgba(124, 58, 237, 0.12);
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+
+    &.card-all-products {
+      &:hover {
+        box-shadow: 0 10px 24px -4px rgba(124, 58, 237, 0.2);
+      }
     }
   }
 }
@@ -1400,97 +1165,698 @@
   }
 }
 
-// ==================== VIEW TOGGLE (LEALTIX) ====================
-.view-toggle {
-  background: var(--lealtix-slate-100, #f1f5f9);
-  border: 1px solid var(--lealtix-slate-200, #e2e8f0);
-  border-radius: var(--lealtix-radius-lg, 0.75rem);
-  padding: 0.3rem;
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 0.3rem;
+// ==================== BARRA DE NAVEGACIÓN DINÁMICA SUPERIOR (DYNAMIC TOPBAR) ====================
+.comandix-dynamic-topbar {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 9999px;
+  box-shadow: 0 4px 18px -2px rgba(79, 70, 229, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
+  padding: 0.35rem 0.5rem;
   width: 100%;
-  max-width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-.view-toggle-refresh {
+  position: relative;
+  z-index: 10;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 34px;
-  margin-left: 0;
-  border: none;
-  border-radius: var(--lealtix-radius-md, 0.5rem);
-  background: transparent;
-  color: var(--lealtix-slate-600, #475569);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
 
-  &:hover {
-    background: var(--lealtix-primary-100, #e0e7ff);
-    color: var(--lealtix-primary-700, #4338ca);
+  @media (max-width: 640px) {
+    border-radius: 20px;
+    padding: 0.3rem 0.4rem;
   }
 
-  i {
-    font-size: 0.9rem;
+  // ---------- MODO 1: SLIDER DE MENÚS Y VISTAS ----------
+  .views-slider-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    animation: fadeInSlider 0.22s ease;
+
+    @media (max-width: 900px) {
+      justify-content: flex-start;
+    }
+
+    .slider-close-btn {
+      border: 1px solid #e2e8f0;
+      color: #64748b;
+      &:hover {
+        background: #f1f5f9;
+        color: #0f172a;
+      }
+    }
+
+    .slider-refresh-btn {
+      border: 1px solid #e2e8f0;
+      color: #64748b;
+      &:hover {
+        background: #eef2ff;
+        color: #4f46e5;
+        transform: rotate(45deg);
+      }
+    }
+
+    .view-slider-pill {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.5rem 0.9rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 9999px;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 0.825rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      white-space: nowrap;
+
+      i {
+        font-size: 0.85rem;
+      }
+
+      &:hover {
+        background: #f1f5f9;
+        color: #1e293b;
+        border-color: #cbd5e1;
+      }
+
+      &.active {
+        background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+        color: #ffffff;
+        border-color: #4f46e5;
+        font-weight: 700;
+        box-shadow: 0 2px 10px rgba(79, 70, 229, 0.3);
+      }
+
+      .orders-badge-mini {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 9999px;
+        font-size: 0.68rem;
+        font-weight: 800;
+      }
+    }
+  }
+
+  // ---------- MODO 2: ISLA DINÁMICA DE ÍCONOS ----------
+  .icons-dock-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    animation: fadeInDock 0.22s ease;
+
+    .dock-icon-capsule {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.25rem 0.35rem;
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      white-space: nowrap;
+      position: relative;
+      user-select: none;
+      flex-shrink: 0;
+
+      &:hover {
+        border-color: #cbd5e1;
+        background: #f8fafc;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+
+      &:active {
+        transform: scale(0.97);
+      }
+
+      // Dynamic circular ring
+      .dynamic-ring {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+
+        .ring-svg {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          transform: rotate(-90deg);
+
+          .ring-bg {
+            fill: none;
+            stroke: #e2e8f0;
+            stroke-width: 3;
+          }
+
+          .ring-fill {
+            fill: none;
+            stroke-width: 3;
+            stroke-linecap: round;
+            transition: stroke-dasharray 0.4s ease, stroke 0.3s ease;
+          }
+        }
+
+        i {
+          font-size: 0.9rem;
+          z-index: 2;
+        }
+
+        .allergy-ring-dot {
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #f59e0b;
+          border: 1.5px solid #ffffff;
+          box-shadow: 0 0 5px #f59e0b;
+          animation: badge-pulse 1.5s infinite;
+          z-index: 3;
+        }
+
+        .seat-badge-dot,
+        .cart-badge-dot {
+          position: absolute;
+          top: -2px;
+          right: -2px;
+          min-width: 16px;
+          height: 16px;
+          padding: 0 3px;
+          border-radius: 9999px;
+          background: #7c3aed;
+          color: #ffffff;
+          font-size: 0.62rem;
+          font-weight: 800;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1.5px solid #ffffff;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+          z-index: 3;
+        }
+
+        .cart-badge-dot {
+          background: #e11d48;
+        }
+      }
+
+      .dock-collapsed-hint {
+        font-size: 0.725rem;
+        font-weight: 700;
+        color: #475569;
+        padding-right: 0.4rem;
+      }
+
+      // VISTA EXPANDIDA
+      .capsule-expanded-body {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding-right: 0.35rem;
+        animation: pillExpand 0.25s ease;
+
+        .capsule-info {
+          display: flex;
+          flex-direction: column;
+          line-height: 1.15;
+
+          .capsule-label {
+            font-size: 0.55rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #64748b;
+          }
+
+          .capsule-value {
+            font-size: 0.925rem;
+            font-weight: 800;
+            color: #0f172a;
+            max-width: 170px;
+          }
+
+          .capsule-sub {
+            font-size: 0.7rem;
+            color: #64748b;
+            font-weight: 600;
+          }
+        }
+
+        .capsule-action-btn {
+          width: 26px;
+          height: 26px;
+          border-radius: 50%;
+          border: 1px solid #cbd5e1;
+          background: #ffffff;
+          color: #475569;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.15s ease;
+
+          &:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+          }
+        }
+
+        .capsule-close-pill-btn {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          border: none;
+          background: rgba(0, 0, 0, 0.06);
+          color: #64748b;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.15s ease;
+
+          &:hover {
+            background: rgba(0, 0, 0, 0.14);
+            color: #0f172a;
+          }
+        }
+
+        .capsule-micro-seats {
+          display: flex;
+          align-items: center;
+          gap: 0.35rem;
+
+          .micro-seat-chip {
+            min-width: 36px;
+            height: 34px;
+            padding: 0 0.55rem;
+            border-radius: 9px;
+            border: 1.5px solid #cbd5e1;
+            background: #ffffff;
+            color: #334155;
+            font-size: 0.85rem;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+
+            &:hover {
+              background: #f3e8ff;
+              color: #7c3aed;
+              border-color: #a855f7;
+            }
+
+            &.active {
+              background: #7c3aed;
+              border-color: #6d28d9;
+              color: #ffffff;
+              box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35);
+            }
+          }
+
+          .micro-seat-add {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            border: 1.5px dashed #7c3aed;
+            background: #faf5ff;
+            color: #7c3aed;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.15s ease;
+
+            &:hover {
+              background: #7c3aed;
+              color: #ffffff;
+              transform: scale(1.06);
+            }
+          }
+        }
+      }
+
+      // COLORES POR TIPO
+      &.capsule-menu {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+        &:hover {
+          background: #eef2ff;
+          border-color: #c7d2fe;
+        }
+        .dynamic-ring {
+          background: #eef2ff;
+        }
+      }
+
+      &.capsule-mesa {
+        &.has-mesa {
+          .ring-fill-mesa { stroke: #10b981; }
+          i { color: #10b981; }
+        }
+        &.no-mesa {
+          border-color: #fde68a;
+          background: #fffbeb;
+          .ring-fill-mesa { stroke: #f59e0b; }
+          i { color: #f59e0b; }
+        }
+        &.expanded {
+          background: #f0fdf4;
+          border-color: #86efac;
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);
+        }
+      }
+
+      &.capsule-cliente {
+        .ring-fill-cliente { stroke: #0284c7; }
+        i { color: #0284c7; }
+        &.expanded {
+          background: #f0f9ff;
+          border-color: #7dd3fc;
+          box-shadow: 0 4px 12px rgba(2, 132, 199, 0.12);
+        }
+      }
+
+      &.capsule-asiento {
+        .ring-fill-asiento { stroke: #7c3aed; }
+        i { color: #7c3aed; }
+        &.expanded {
+          background: #faf5ff;
+          border-color: #d8b4fe;
+          box-shadow: 0 4px 12px rgba(124, 58, 237, 0.12);
+        }
+      }
+
+      &.capsule-tiempo {
+        &.tiempo-1 {
+          .ring-fill-tiempo { stroke: #10b981; }
+          i { color: #10b981; }
+          &.expanded {
+            background: #ecfdf5;
+            border-color: #6ee7b7;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);
+          }
+        }
+        &.tiempo-2 {
+          .ring-fill-tiempo { stroke: #f59e0b; }
+          i { color: #d97706; }
+          &.expanded {
+            background: #fffbeb;
+            border-color: #fcd34d;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.12);
+          }
+        }
+        &.tiempo-3 {
+          .ring-fill-tiempo { stroke: #7c3aed; }
+          i { color: #7c3aed; }
+          &.expanded {
+            background: #faf5ff;
+            border-color: #d8b4fe;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.12);
+          }
+        }
+      }
+
+      &.capsule-cart {
+        background: #fff1f2;
+        border-color: #fecdd3;
+        .ring-fill-cart { stroke: #e11d48; }
+        i { color: #e11d48; }
+        &.expanded {
+          background: #ffe4e6;
+          border-color: #fda4af;
+          box-shadow: 0 4px 12px rgba(225, 29, 72, 0.12);
+        }
+      }
+    }
+  }
+
+  // ---------- MODO 3: BARRA UNIFICADA MAPA DE MESAS ----------
+  .mesas-unified-dock {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 0.75rem;
+    animation: fadeInDock 0.22s ease;
+
+    .capsule-area {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.4rem 0.2rem 0.25rem;
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 9999px;
+      transition: all 0.2s ease;
+
+      .ring-area {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #eff6ff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+
+        i {
+          font-size: 0.95rem;
+          color: #2563eb;
+        }
+      }
+
+      .area-dock-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.6rem;
+        border-radius: 9999px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #475569;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        cursor: pointer;
+        transition: all 0.18s ease;
+        white-space: nowrap;
+
+        .area-chip-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #cbd5e1;
+
+          &.has-libres {
+            background: #10b981;
+          }
+        }
+
+        .area-chip-badge {
+          font-size: 0.68rem;
+          font-weight: 800;
+          padding: 0 4px;
+          border-radius: 999px;
+          background: #e2e8f0;
+          color: #334155;
+        }
+
+        &:hover {
+          background: #f1f5f9;
+          color: #1e293b;
+          border-color: #cbd5e1;
+        }
+
+        &.active {
+          background: #2563eb;
+          color: #ffffff;
+          border-color: #1d4ed8;
+          box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+
+          .area-chip-dot {
+            background: #ffffff;
+          }
+
+          .area-chip-badge {
+            background: rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+          }
+        }
+      }
+    }
+
+    // Contadores de mesas (lado derecho)
+    .mesas-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.3rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #334155;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      user-select: none;
+      white-space: nowrap;
+
+      .badge-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+
+        &.dot-libre { background: #16a34a; }
+        &.dot-ocupada { background: #dc2626; }
+        &.dot-reservada { background: #d97706; }
+        &.dot-unida { background: #2563eb; }
+      }
+
+      .badge-count {
+        font-weight: 800;
+        font-size: 0.72rem;
+        padding: 0.05rem 0.45rem;
+        border-radius: 999px;
+
+        &.count-libre { background: #dcfce7; color: #15803d; }
+        &.count-ocupada { background: #fee2e2; color: #b91c1c; }
+        &.count-reservada { background: #fef3c7; color: #b45309; }
+        &.count-unida { background: #dbeafe; color: #1d4ed8; }
+      }
+    }
+
+    .mesas-dock-action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      white-space: nowrap;
+
+      &.btn-unir {
+        color: #1d4ed8;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+
+        &:hover {
+          background: #dbeafe;
+          border-color: #93c5fd;
+        }
+      }
+
+      &.btn-confirmar-union {
+        color: #ffffff;
+        background: #2563eb;
+        border: 1px solid #1d4ed8;
+
+        &:hover:not(:disabled) {
+          background: #1d4ed8;
+        }
+
+        &:disabled {
+          background: #cbd5e1;
+          border-color: #cbd5e1;
+          cursor: not-allowed;
+        }
+      }
+
+      &.btn-cancelar-union {
+        color: #475569;
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+
+        &:hover {
+          background: #e2e8f0;
+          color: #0f172a;
+        }
+      }
+    }
+
+    .mesas-dock-refresh-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      color: #64748b;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      flex-shrink: 0;
+
+      &:hover {
+        background: #f1f5f9;
+        color: #0f172a;
+        transform: rotate(45deg);
+      }
+    }
   }
 }
 
-.view-toggle-btn {
-  flex: 1 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.3rem;
-  padding: 0.55rem 0.6rem;
-  border: none;
-  border-radius: var(--lealtix-radius-md, 0.5rem);
-  background: transparent;
-  color: var(--lealtix-slate-600, #475569);
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-  white-space: nowrap;
-  flex-shrink: 0;
+@keyframes fadeInSlider {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
 
-  i {
-    font-size: 0.8rem;
-    flex-shrink: 0;
+@keyframes fadeInDock {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pillExpand {
+  from { opacity: 0; transform: scaleX(0.9); }
+  to { opacity: 1; transform: scaleX(1); }
+}
+
+// Dialogs
+:host ::ng-deep .island-dialog {
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
+
+  .p-dialog-header {
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    padding: 1.25rem 1.5rem;
+    background: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
   }
 
-  &:hover {
-    background: rgba(255, 255, 255, 0.7);
-    color: var(--lealtix-primary-600, #4f46e5);
+  .p-dialog-content {
+    padding: 1.25rem 1.5rem;
+    background: #ffffff;
   }
 
-  &.active {
-    background: linear-gradient(135deg, var(--lealtix-primary-500, #6366f1) 0%, var(--lealtix-primary-600, #4f46e5) 100%);
-    color: #fff;
-    font-weight: 700;
-    box-shadow: var(--lealtix-shadow-sm, 0 2px 8px rgba(79, 70, 229, 0.2));
-  }
-
-  @media (max-width: 1024px) {
-    padding: 0.5rem 0.5rem;
-    font-size: 0.78rem;
-  }
-
-  @media (max-width: 600px) {
-    padding: 0.45rem 0.4rem;
-    font-size: 0.72rem;
+  .p-dialog-footer {
+    border-bottom-left-radius: 24px;
+    border-bottom-right-radius: 24px;
+    padding: 1rem 1.5rem;
+    background: #f8fafc;
+    border-top: 1px solid #f1f5f9;
   }
 }
 
@@ -2171,55 +2537,6 @@
       background: var(--surface-ground);
     }
 
-    // Tarjetas del POS en oscuro: antes quedaban blancas (color fijo) y el texto
-    // claro se veía tenue. Ahora van oscuras como el resto del tema.
-    .pos-categories-rail,
-    .pos-catalog-card,
-    .pos-compact-header-card,
-    .pos-seats-tabs-card,
-    .ticket-receipt-card,
-    .dish-pos-card {
-      background: var(--surface-card) !important;
-      border-color: rgba(255, 255, 255, 0.08) !important;
-    }
-
-    .pos-categories-rail-title { color: #94a3b8 !important; }
-
-    // Botón "ver detalle" del platillo: de gris claro a oscuro translúcido
-    .pos-catalog-card .dish-pos-card button[aria-label^='Ver detalles'] {
-      background: rgba(255, 255, 255, 0.08) !important;
-      color: #cbd5e1 !important;
-    }
-    .pos-catalog-card .dish-pos-card .aspect-video {
-      background: rgba(255, 255, 255, 0.04) !important;
-    }
-
-    .pos-category-pill:not(.active) {
-      background: rgba(255, 255, 255, 0.04) !important;
-      border-color: rgba(255, 255, 255, 0.1) !important;
-      color: #e6e8ef !important;
-    }
-
-    // Ticket: cabecera/pie e ítems también oscuros (quedaban blancos).
-    .ticket-receipt-header,
-    .ticket-receipt-bottom {
-      background: var(--surface-card) !important;
-      border-color: rgba(255, 255, 255, 0.08) !important;
-    }
-
-    .ticket-receipt-card [class*='bg-slate-'],
-    .ticket-receipt-card [class*='bg-white'],
-    .ticket-receipt-card [class*='bg-amber-'] {
-      background-color: rgba(255, 255, 255, 0.04) !important;
-    }
-
-    // Textos oscuros de Tailwind → claros en modo oscuro (precios, cantidades,
-    // nombres, etc. que antes quedaban casi invisibles sobre tarjetas oscuras).
-    .comandix-container .text-slate-600 { color: #cbd5e1 !important; }
-    .comandix-container .text-slate-700 { color: #e2e8f0 !important; }
-    .comandix-container .text-slate-800 { color: #e6e8ef !important; }
-    .comandix-container .text-slate-900 { color: #ffffff !important; }
-
     @media (max-width: 768px) {
       .comandix-container {
         background: var(--surface-ground) !important;
@@ -2443,71 +2760,6 @@
     .order-detail-totals {
       background: rgba(255, 255, 255, 0.03);
       border-color: rgba(218, 159, 91, 0.2);
-    }
-
-    /* --- Tarjetas de comanda (Activas / Cerradas / Canceladas) --- */
-    .order-card-id,
-    .order-card-client,
-    .order-card-id *,
-    .order-card-client * {
-      color: var(--text-color) !important;
-    }
-    .order-card-items-count,
-    .order-card-items-count *,
-    .order-card-total,
-    .order-card-total * {
-      color: var(--text-color-secondary) !important;
-    }
-    .orders-empty-state h3 { color: var(--text-color) !important; }
-    .orders-empty-state p { color: var(--text-color-secondary) !important; }
-
-    /* ==================== REPORTE GENERAL DE VENTAS (oscuro) ==================== */
-    .report-view-container {
-      .report-header-card,
-      .report-kpi-card,
-      .search-input-wrapper,
-      .report-table-card {
-        background: var(--surface-card) !important;
-        border-color: rgba(255, 255, 255, 0.08) !important;
-      }
-
-      .report-filter-pill {
-        background: rgba(255, 255, 255, 0.05) !important;
-        border-color: rgba(255, 255, 255, 0.12) !important;
-        color: #e6e8ef !important;
-      }
-      .report-filter-pill:hover { background: rgba(255, 255, 255, 0.1) !important; }
-      .report-filter-pill.active {
-        background: #4f46e5 !important;
-        border-color: #4f46e5 !important;
-        color: #ffffff !important;
-      }
-
-      .kpi-label { color: #a9b4c7 !important; }
-      .report-search-field { color: var(--text-color) !important; background: transparent !important; }
-
-      .minimal-report-table {
-        th {
-          background: rgba(255, 255, 255, 0.04) !important;
-          color: #cbd5e1 !important;
-          border-bottom-color: rgba(255, 255, 255, 0.1) !important;
-        }
-        td {
-          color: var(--text-color) !important;
-          border-bottom-color: rgba(255, 255, 255, 0.06) !important;
-        }
-        tr:hover td { background: rgba(255, 255, 255, 0.04) !important; }
-      }
-
-      .report-client-registered { color: var(--text-color) !important; }
-      .report-client-unregistered {
-        background: rgba(255, 255, 255, 0.08) !important;
-        color: #cbd5e1 !important;
-      }
-      .subcomanda-badge {
-        background: rgba(99, 102, 241, 0.18) !important;
-        color: #a5b4fc !important;
-      }
     }
   }
 }
@@ -3401,13 +3653,13 @@
 .plano-container {
   .plano-wrap {
     width: 100%;
-    overflow: visible;
+    overflow: auto;
     border-radius: 14px;
     border: 1px solid #e2e8f0;
     background: #eef2f7;
     position: relative;
-    max-height: none;
-    min-height: 0;
+    max-height: calc(100vh - 170px);
+    min-height: 540px;
   }
 }
 
@@ -3542,6 +3794,82 @@
   &.seleccionada {
     box-shadow: 0 0 0 4px #fff, 0 0 0 8px #2563eb, 0 8px 22px rgba(0, 0, 0, 0.4) !important;
     z-index: 10;
+  }
+
+  // Modo cambio de mesa
+  &.modo-cambio-candidata {
+    cursor: pointer;
+    box-shadow: 0 0 0 3px #fff, 0 0 0 6px #10b981, 0 8px 20px rgba(16, 185, 129, 0.4) !important;
+    animation: pulseCandidata 1.8s infinite ease-in-out;
+
+    &:hover {
+      box-shadow: 0 0 0 4px #fff, 0 0 0 8px #059669, 0 12px 28px rgba(16, 185, 129, 0.6) !important;
+      transform: translate(-50%, -50%) scale(1.08) !important;
+      z-index: 10;
+    }
+  }
+
+  &.modo-cambio-bloqueada {
+    opacity: 0.38;
+    cursor: not-allowed;
+    filter: grayscale(0.5);
+
+    &:hover {
+      transform: translate(-50%, -50%) scale(1) !important;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18) !important;
+    }
+  }
+}
+
+.mesa-cambio-indicator {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #10b981;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  animation: bounceMini 1.5s infinite;
+  z-index: 6;
+}
+
+.cambio-mesa-banner {
+  animation: fadeInDown 0.22s ease-out;
+}
+
+@keyframes pulseCandidata {
+  0%, 100% {
+    box-shadow: 0 0 0 3px #fff, 0 0 0 6px #10b981, 0 6px 16px rgba(16, 185, 129, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 4px #fff, 0 0 0 9px #059669, 0 10px 24px rgba(16, 185, 129, 0.55);
+  }
+}
+
+@keyframes bounceMini {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -4381,3 +4709,161 @@
   }
 }
 
+// ==================== NOTIFICACIONES ULTRA COMPACTAS (50%) & SIN APILAMIENTO ====================
+:host ::ng-deep .p-toast {
+  width: 14rem !important;
+  max-width: calc(100vw - 1.5rem) !important;
+  pointer-events: none;
+
+  p-toastitem:not(:last-child),
+  p-toast-item:not(:last-child),
+  .p-toast-message-wrapper:not(:last-child),
+  & > div > div:not(:last-child),
+  .p-toast-message:not(:last-child) {
+    display: none !important;
+  }
+
+  p-toastitem,
+  p-toast-item,
+  .p-toast-message {
+    pointer-events: auto;
+  }
+}
+
+// ============================================================================
+// TEMAS DE COLOR DE CATEGORÍAS (IDENTIFICACIÓN VISUAL RÁPIDA POR COLORES)
+// ============================================================================
+.category-pos-card {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  background: linear-gradient(135deg, var(--cat-bg1, #ffffff) 0%, var(--cat-bg2, #f8fafc) 100%) !important;
+  border-color: var(--cat-border, #e2e8f0) !important;
+
+  &:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, var(--cat-bg2, #f8fafc) 0%, var(--cat-border, #e2e8f0) 100%) !important;
+    border-color: var(--cat-accent, #6366f1) !important;
+    box-shadow: 0 10px 24px -4px var(--cat-glow, rgba(99, 102, 241, 0.25));
+
+    .cat-card-title {
+      color: var(--cat-title-hover, #0f172a);
+    }
+  }
+
+  .cat-icon-box {
+    background: linear-gradient(135deg, var(--cat-accent, #6366f1), var(--cat-accent-dark, #4f46e5)) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 10px var(--cat-glow, rgba(99, 102, 241, 0.35));
+  }
+
+  .cat-count-badge {
+    background: var(--cat-badge-bg, #f1f5f9) !important;
+    color: var(--cat-badge-txt, #334155) !important;
+    border: 1px solid var(--cat-border, #cbd5e1) !important;
+  }
+
+  .cat-card-title {
+    color: #1e293b;
+    transition: color 0.2s;
+  }
+
+  .cat-card-subtitle {
+    color: var(--cat-accent-dark, #475569);
+    i { color: var(--cat-accent, #64748b); }
+  }
+
+  // Tarjeta Todos los Productos
+  &.card-all-products {
+    --cat-bg1: #f5f3ff;
+    --cat-bg2: #ede9fe;
+    --cat-border: #ddd6fe;
+    --cat-accent: #a855f7;
+    --cat-accent-dark: #9333ea;
+    --cat-glow: rgba(168, 85, 247, 0.25);
+    --cat-badge-bg: rgba(237, 233, 254, 0.95);
+    --cat-badge-txt: #6b21a8;
+    --cat-title-hover: #581c87;
+  }
+
+  // 12 Temas de Color Curados
+  &.cat-theme-amber {
+    --cat-bg1: #fffbeb; --cat-bg2: #fef3c7; --cat-border: #fde68a; --cat-accent: #f59e0b; --cat-accent-dark: #d97706; --cat-glow: rgba(245, 158, 11, 0.25); --cat-badge-bg: rgba(254, 243, 199, 0.95); --cat-badge-txt: #92400e; --cat-title-hover: #78350f;
+  }
+  &.cat-theme-rose {
+    --cat-bg1: #fff1f2; --cat-bg2: #ffe4e6; --cat-border: #fecdd3; --cat-accent: #f43f5e; --cat-accent-dark: #e11d48; --cat-glow: rgba(244, 63, 94, 0.25); --cat-badge-bg: rgba(255, 228, 230, 0.95); --cat-badge-txt: #9f1239; --cat-title-hover: #881337;
+  }
+  &.cat-theme-emerald {
+    --cat-bg1: #f0fdf4; --cat-bg2: #dcfce7; --cat-border: #bbf7d0; --cat-accent: #10b981; --cat-accent-dark: #059669; --cat-glow: rgba(16, 185, 129, 0.25); --cat-badge-bg: rgba(220, 252, 231, 0.95); --cat-badge-txt: #065f46; --cat-title-hover: #064e3b;
+  }
+  &.cat-theme-purple {
+    --cat-bg1: #faf5ff; --cat-bg2: #f3e8ff; --cat-border: #e9d5ff; --cat-accent: #9333ea; --cat-accent-dark: #7e22ce; --cat-glow: rgba(147, 51, 234, 0.25); --cat-badge-bg: rgba(243, 232, 255, 0.95); --cat-badge-txt: #581c87; --cat-title-hover: #4c1d95;
+  }
+  &.cat-theme-yellow {
+    --cat-bg1: #fefce8; --cat-bg2: #fef9c3; --cat-border: #fef08a; --cat-accent: #eab308; --cat-accent-dark: #ca8a04; --cat-glow: rgba(234, 179, 8, 0.25); --cat-badge-bg: rgba(254, 249, 195, 0.95); --cat-badge-txt: #854d0e; --cat-title-hover: #713f12;
+  }
+  &.cat-theme-sky {
+    --cat-bg1: #f0f9ff; --cat-bg2: #e0f2fe; --cat-border: #bae6fd; --cat-accent: #0284c7; --cat-accent-dark: #0369a1; --cat-glow: rgba(2, 132, 199, 0.25); --cat-badge-bg: rgba(224, 242, 254, 0.95); --cat-badge-txt: #075985; --cat-title-hover: #0c4a6e;
+  }
+  &.cat-theme-orange {
+    --cat-bg1: #fff7ed; --cat-bg2: #ffedd5; --cat-border: #fed7aa; --cat-accent: #f97316; --cat-accent-dark: #c2410c; --cat-glow: rgba(249, 115, 22, 0.25); --cat-badge-bg: rgba(255, 237, 213, 0.95); --cat-badge-txt: #9a3412; --cat-title-hover: #7c2d12;
+  }
+  &.cat-theme-pink {
+    --cat-bg1: #fdf2f8; --cat-bg2: #fce7f3; --cat-border: #fbcfe8; --cat-accent: #db2777; --cat-accent-dark: #be185d; --cat-glow: rgba(219, 39, 119, 0.25); --cat-badge-bg: rgba(252, 231, 243, 0.95); --cat-badge-txt: #831843; --cat-title-hover: #701a75;
+  }
+  &.cat-theme-teal {
+    --cat-bg1: #f0fdfa; --cat-bg2: #ccfbf1; --cat-border: #99f6e4; --cat-accent: #0d9488; --cat-accent-dark: #0f766e; --cat-glow: rgba(13, 148, 136, 0.25); --cat-badge-bg: rgba(204, 251, 241, 0.95); --cat-badge-txt: #115e59; --cat-title-hover: #134e4a;
+  }
+  &.cat-theme-indigo {
+    --cat-bg1: #eef2ff; --cat-bg2: #e0e7ff; --cat-border: #c7d2fe; --cat-accent: #4f46e5; --cat-accent-dark: #3730a3; --cat-glow: rgba(79, 70, 229, 0.25); --cat-badge-bg: rgba(224, 231, 255, 0.95); --cat-badge-txt: #312e81; --cat-title-hover: #1e1b4b;
+  }
+  &.cat-theme-lime {
+    --cat-bg1: #f7fee7; --cat-bg2: #ecfccb; --cat-border: #d9f99d; --cat-accent: #65a30d; --cat-accent-dark: #4d7c0f; --cat-glow: rgba(101, 163, 13, 0.25); --cat-badge-bg: rgba(236, 252, 203, 0.95); --cat-badge-txt: #365314; --cat-title-hover: #1a2e05;
+  }
+  &.cat-theme-cyan {
+    --cat-bg1: #ecfeff; --cat-bg2: #cffafe; --cat-border: #a5f3fc; --cat-accent: #0891b2; --cat-accent-dark: #0e7490; --cat-glow: rgba(8, 145, 178, 0.25); --cat-badge-bg: rgba(207, 250, 254, 0.95); --cat-badge-txt: #155e75; --cat-title-hover: #164e63;
+  }
+}
+
+// Soporte Modo Oscuro para temas de categorías
+:host-context(.app-dark) .category-pos-card,
+.app-dark .category-pos-card {
+  .cat-card-title { color: #f1f5f9 !important; }
+
+  &.cat-theme-amber {
+    --cat-bg1: rgba(245, 158, 11, 0.16); --cat-bg2: rgba(217, 119, 6, 0.24); --cat-border: rgba(245, 158, 11, 0.45); --cat-badge-bg: rgba(245, 158, 11, 0.25); --cat-badge-txt: #fde68a; --cat-accent-dark: #fbbf24;
+  }
+  &.cat-theme-rose {
+    --cat-bg1: rgba(244, 63, 94, 0.16); --cat-bg2: rgba(225, 29, 72, 0.24); --cat-border: rgba(244, 63, 94, 0.45); --cat-badge-bg: rgba(244, 63, 94, 0.25); --cat-badge-txt: #fecdd3; --cat-accent-dark: #fb7185;
+  }
+  &.cat-theme-emerald {
+    --cat-bg1: rgba(16, 185, 129, 0.16); --cat-bg2: rgba(5, 150, 105, 0.24); --cat-border: rgba(16, 185, 129, 0.45); --cat-badge-bg: rgba(16, 185, 129, 0.25); --cat-badge-txt: #a7f3d0; --cat-accent-dark: #34d399;
+  }
+  &.cat-theme-purple {
+    --cat-bg1: rgba(147, 51, 234, 0.16); --cat-bg2: rgba(126, 34, 206, 0.24); --cat-border: rgba(147, 51, 234, 0.45); --cat-badge-bg: rgba(147, 51, 234, 0.25); --cat-badge-txt: #e9d5ff; --cat-accent-dark: #c084fc;
+  }
+  &.cat-theme-yellow {
+    --cat-bg1: rgba(234, 179, 8, 0.16); --cat-bg2: rgba(202, 138, 4, 0.24); --cat-border: rgba(234, 179, 8, 0.45); --cat-badge-bg: rgba(234, 179, 8, 0.25); --cat-badge-txt: #fef08a; --cat-accent-dark: #facc15;
+  }
+  &.cat-theme-sky {
+    --cat-bg1: rgba(2, 132, 199, 0.16); --cat-bg2: rgba(3, 105, 161, 0.24); --cat-border: rgba(2, 132, 199, 0.45); --cat-badge-bg: rgba(2, 132, 199, 0.25); --cat-badge-txt: #bae6fd; --cat-accent-dark: #38bdf8;
+  }
+  &.cat-theme-orange {
+    --cat-bg1: rgba(249, 115, 22, 0.16); --cat-bg2: rgba(194, 65, 12, 0.24); --cat-border: rgba(249, 115, 22, 0.45); --cat-badge-bg: rgba(249, 115, 22, 0.25); --cat-badge-txt: #fed7aa; --cat-accent-dark: #fb923c;
+  }
+  &.cat-theme-pink {
+    --cat-bg1: rgba(219, 39, 119, 0.16); --cat-bg2: rgba(190, 24, 93, 0.24); --cat-border: rgba(219, 39, 119, 0.45); --cat-badge-bg: rgba(219, 39, 119, 0.25); --cat-badge-txt: #fbcfe8; --cat-accent-dark: #f472b6;
+  }
+  &.cat-theme-teal {
+    --cat-bg1: rgba(13, 148, 136, 0.16); --cat-bg2: rgba(15, 118, 110, 0.24); --cat-border: rgba(13, 148, 136, 0.45); --cat-badge-bg: rgba(13, 148, 136, 0.25); --cat-badge-txt: #99f6e4; --cat-accent-dark: #2dd4bf;
+  }
+  &.cat-theme-indigo {
+    --cat-bg1: rgba(79, 70, 229, 0.16); --cat-bg2: rgba(55, 48, 163, 0.24); --cat-border: rgba(79, 70, 229, 0.45); --cat-badge-bg: rgba(79, 70, 229, 0.25); --cat-badge-txt: #c7d2fe; --cat-accent-dark: #818cf8;
+  }
+  &.cat-theme-lime {
+    --cat-bg1: rgba(101, 163, 13, 0.16); --cat-bg2: rgba(77, 124, 15, 0.24); --cat-border: rgba(101, 163, 13, 0.45); --cat-badge-bg: rgba(101, 163, 13, 0.25); --cat-badge-txt: #d9f99d; --cat-accent-dark: #a3e635;
+  }
+  &.cat-theme-cyan {
+    --cat-bg1: rgba(8, 145, 178, 0.16); --cat-bg2: rgba(14, 116, 144, 0.24); --cat-border: rgba(8, 145, 178, 0.45); --cat-badge-bg: rgba(8, 145, 178, 0.25); --cat-badge-txt: #a5f3fc; --cat-accent-dark: #22d3ee;
+  }
+}

@@ -24,14 +24,14 @@ interface MenuChangeEvent {
 
 /** Clases de ancho del sidebar: completo (w-64) y reducido (w-20, solo iconos). */
 export const SIDEBAR_CLASS = {
-    expanded: 'w-64',
-    collapsed: 'w-20'
+    expanded: 'w-72',
+    collapsed: 'w-[4.75rem]'
 } as const;
 
-/** Breakpoint `lg` del proyecto (992px) en píxeles, usado para decidir desktop vs móvil. */
-export const DESKTOP_BREAKPOINT = 992;
+/** Breakpoint `lg` del proyecto (1024px) en píxeles, usado para decidir desktop vs tablet/móvil. */
+export const DESKTOP_BREAKPOINT = 1024;
 
-const SIDEBAR_COLLAPSED_STORAGE_KEY = 'lealtix.sidebar.collapsed';
+const SIDEBAR_COLLAPSED_STORAGE_KEY = 'lealtix.sidebar.dock.v2';
 
 @Injectable({
     providedIn: 'root'
@@ -105,11 +105,11 @@ export class LayoutService {
      */
     private readonly openSubmenus = signal<Record<string, boolean>>({});
 
-    /** Clases de ancho a aplicar al contenedor del sidebar. */
-    readonly sidebarWidthClass = computed(() => (this.isSidebarCollapsed() ? SIDEBAR_CLASS.collapsed : SIDEBAR_CLASS.expanded));
+    /** Clases de ancho a aplicar al contenedor del sidebar (definidas en SCSS para evitar purga de CSS). */
+    readonly sidebarWidthClass = computed(() => (this.isSidebarCollapsed() ? 'sidebar-collapsed' : 'sidebar-expanded'));
 
-    /** Padding izquierdo del área de contenido, sincronizado con el ancho del sidebar. */
-    readonly contentPaddingClass = computed(() => (this.isSidebarCollapsed() ? 'lg:pl-20' : 'lg:pl-64'));
+    /** Padding izquierdo del área de contenido, sincronizado con el ancho del sidebar flotante + márgenes. */
+    readonly contentPaddingClass = computed(() => (this.isSidebarCollapsed() ? 'sidebar-content-collapsed' : 'sidebar-content-expanded'));
 
     private initialized = false;
 
@@ -212,6 +212,7 @@ export class LayoutService {
      * dejar al usuario con un icono pulsado que no parece hacer nada.
      */
     openGroupFromCollapsed(id: string): void {
+        this.closeAllSubmenus();
         this.expandSidebar();
         this.setSubmenuOpen(id, true);
     }
@@ -241,9 +242,11 @@ export class LayoutService {
 
     private static readCollapsedFromStorage(): boolean {
         try {
-            return localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === '1';
+            const val = localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY);
+            if (val === null) return true; // Por defecto colapsado (solo iconos)
+            return val === '1';
         } catch {
-            return false;
+            return true;
         }
     }
 
