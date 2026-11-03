@@ -238,4 +238,18 @@
   .pilar-nav__item.is-selected {
     background: rgba(167, 139, 250, 0.14);
   }
+
+  .reporte-nota {
+    background: rgba(167, 139, 250, 0.1);
+    border-color: rgba(167, 139, 250, 0.25);
+    color: #cbd5e1;
+
+    i {
+      color: #a78bfa;
+    }
+
+    strong {
+      color: #f8fafc;
+    }
+  }
 }

@@ -4830,6 +4830,30 @@
 .app-dark .category-pos-card {
   .cat-card-title { color: #f1f5f9 !important; }
 
+  &.card-all-products {
+    --cat-bg1: rgba(168, 85, 247, 0.16);
+    --cat-bg2: rgba(147, 51, 234, 0.24);
+    --cat-border: rgba(168, 85, 247, 0.45);
+    --cat-badge-bg: rgba(168, 85, 247, 0.25);
+    --cat-badge-txt: #e9d5ff;
+    --cat-accent-dark: #c084fc;
+    --cat-title-hover: #f3e8ff;
+
+    h4 {
+      color: #f8fafc !important;
+    }
+
+    p {
+      color: #d8b4fe !important;
+    }
+
+    span {
+      background: rgba(168, 85, 247, 0.25) !important;
+      color: #e9d5ff !important;
+      border-color: rgba(168, 85, 247, 0.45) !important;
+    }
+  }
+
   &.cat-theme-amber {
     --cat-bg1: rgba(245, 158, 11, 0.16); --cat-bg2: rgba(217, 119, 6, 0.24); --cat-border: rgba(245, 158, 11, 0.45); --cat-badge-bg: rgba(245, 158, 11, 0.25); --cat-badge-txt: #fde68a; --cat-accent-dark: #fbbf24;
   }
@@ -4865,5 +4889,553 @@
   }
   &.cat-theme-cyan {
     --cat-bg1: rgba(8, 145, 178, 0.16); --cat-bg2: rgba(14, 116, 144, 0.24); --cat-border: rgba(8, 145, 178, 0.45); --cat-badge-bg: rgba(8, 145, 178, 0.25); --cat-badge-txt: #a5f3fc; --cat-accent-dark: #22d3ee;
+  }
+}
+
+// ==================== MODO OSCURO INTEGRAL COMANDIX (POS, TOPBAR, CARRITO, MESAS) ====================
+:host-context(.app-dark) {
+  .comandix-container {
+    background: transparent !important;
+  }
+
+  // 1. Barra de navegación dinámica superior (Dynamic Topbar / Isla)
+  .comandix-dynamic-topbar {
+    background: var(--surface-card, #242c40);
+    border-color: var(--surface-border, rgba(255, 255, 255, 0.1));
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+
+    .views-slider-container {
+      .slider-close-btn,
+      .slider-refresh-btn {
+        background: #1a2130;
+        border-color: rgba(255, 255, 255, 0.12);
+        color: #94a3b8;
+
+        &:hover {
+          background: #2d374e;
+          color: #f8fafc;
+        }
+      }
+
+      .view-slider-pill {
+        background: #1a2130;
+        border-color: rgba(255, 255, 255, 0.1);
+        color: #cbd5e1;
+
+        &:hover {
+          background: #2d374e;
+          color: #f8fafc;
+          border-color: rgba(255, 255, 255, 0.22);
+        }
+
+        &.active {
+          background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+          color: #ffffff;
+          border-color: #6366f1;
+        }
+      }
+    }
+
+    .icons-dock-container {
+      .dock-icon-capsule {
+        background: #1a2130;
+        border-color: rgba(255, 255, 255, 0.12);
+
+        &:hover {
+          background: #283248;
+          border-color: rgba(255, 255, 255, 0.22);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .dynamic-ring {
+          .ring-svg .ring-bg {
+            stroke: rgba(255, 255, 255, 0.12);
+          }
+
+          .allergy-ring-dot,
+          .seat-badge-dot,
+          .cart-badge-dot {
+            border-color: #1a2130;
+          }
+        }
+
+        .dock-collapsed-hint {
+          color: #cbd5e1;
+        }
+
+        .capsule-expanded-body {
+          .capsule-info {
+            .capsule-label {
+              color: #94a3b8;
+            }
+
+            .capsule-value {
+              color: #f8fafc;
+            }
+
+            .capsule-sub {
+              color: #cbd5e1;
+            }
+          }
+
+          .capsule-action-btn {
+            background: #242c40;
+            border-color: rgba(255, 255, 255, 0.15);
+            color: #cbd5e1;
+
+            &:hover {
+              background: #334155;
+              color: #ffffff;
+            }
+          }
+
+          .capsule-close-pill-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: #94a3b8;
+
+            &:hover {
+              background: rgba(255, 255, 255, 0.16);
+              color: #ffffff;
+            }
+          }
+
+          .capsule-micro-seats {
+            .micro-seat-chip {
+              background: #242c40;
+              border-color: rgba(255, 255, 255, 0.15);
+              color: #e2e8f0;
+
+              &:hover {
+                background: rgba(124, 58, 237, 0.25);
+                color: #d8b4fe;
+                border-color: #a855f7;
+              }
+
+              &.active {
+                background: #7c3aed;
+                border-color: #6d28d9;
+                color: #ffffff;
+              }
+            }
+
+            .micro-seat-add {
+              background: rgba(124, 58, 237, 0.15);
+              border-color: #a855f7;
+              color: #c084fc;
+
+              &:hover {
+                background: #7c3aed;
+                color: #ffffff;
+              }
+            }
+          }
+        }
+
+        &.capsule-menu {
+          background: #1a2130;
+          border-color: rgba(255, 255, 255, 0.12);
+
+          &:hover {
+            background: rgba(99, 102, 241, 0.18);
+            border-color: rgba(129, 140, 248, 0.4);
+          }
+
+          .dynamic-ring {
+            background: rgba(99, 102, 241, 0.18);
+          }
+        }
+
+        &.capsule-mesa {
+          &.no-mesa {
+            background: rgba(245, 158, 11, 0.14);
+            border-color: rgba(245, 158, 11, 0.4);
+          }
+
+          &.expanded {
+            background: rgba(16, 185, 129, 0.16);
+            border-color: rgba(52, 211, 153, 0.45);
+          }
+        }
+
+        &.capsule-cliente.expanded {
+          background: rgba(2, 132, 199, 0.16);
+          border-color: rgba(56, 189, 248, 0.45);
+        }
+
+        &.capsule-asiento.expanded {
+          background: rgba(124, 58, 237, 0.18);
+          border-color: rgba(192, 132, 252, 0.45);
+        }
+
+        &.capsule-tiempo {
+          &.tiempo-1.expanded {
+            background: rgba(16, 185, 129, 0.16);
+            border-color: rgba(52, 211, 153, 0.45);
+          }
+
+          &.tiempo-2.expanded {
+            background: rgba(245, 158, 11, 0.16);
+            border-color: rgba(251, 191, 36, 0.45);
+          }
+
+          &.tiempo-3.expanded {
+            background: rgba(124, 58, 237, 0.18);
+            border-color: rgba(192, 132, 252, 0.45);
+          }
+        }
+
+        &.capsule-cart {
+          background: rgba(225, 29, 72, 0.15);
+          border-color: rgba(244, 63, 94, 0.4);
+
+          &.expanded {
+            background: rgba(225, 29, 72, 0.24);
+            border-color: rgba(251, 113, 133, 0.5);
+          }
+        }
+      }
+    }
+
+    .mesas-unified-dock {
+      .capsule-area {
+        background: #1a2130;
+        border-color: rgba(255, 255, 255, 0.12);
+
+        .ring-area {
+          background: rgba(37, 99, 235, 0.2);
+
+          i {
+            color: #60a5fa;
+          }
+        }
+
+        .area-dock-chip {
+          background: #242c40;
+          border-color: rgba(255, 255, 255, 0.1);
+          color: #cbd5e1;
+
+          .area-chip-badge {
+            background: rgba(255, 255, 255, 0.1);
+            color: #cbd5e1;
+          }
+
+          &:hover {
+            background: #2d374e;
+            color: #f8fafc;
+            border-color: rgba(255, 255, 255, 0.2);
+          }
+
+          &.active {
+            background: #2563eb;
+            color: #ffffff;
+            border-color: #3b82f6;
+          }
+        }
+      }
+
+      .mesas-status-badge {
+        background: #1a2130;
+        border-color: rgba(255, 255, 255, 0.1);
+        color: #e2e8f0;
+
+        .badge-count {
+          &.count-libre { background: rgba(22, 163, 74, 0.25); color: #86efac; }
+          &.count-ocupada { background: rgba(220, 38, 38, 0.25); color: #fca5a5; }
+          &.count-reservada { background: rgba(217, 119, 6, 0.25); color: #fde68a; }
+          &.count-unida { background: rgba(37, 99, 235, 0.25); color: #93c5fd; }
+        }
+      }
+
+      .mesas-dock-action-btn {
+        &.btn-unir {
+          background: rgba(37, 99, 235, 0.2);
+          border-color: rgba(59, 130, 246, 0.4);
+          color: #93c5fd;
+
+          &:hover {
+            background: rgba(37, 99, 235, 0.3);
+          }
+        }
+
+        &.btn-cancelar-union {
+          background: #1a2130;
+          border-color: rgba(255, 255, 255, 0.15);
+          color: #cbd5e1;
+
+          &:hover {
+            background: #2d374e;
+            color: #ffffff;
+          }
+        }
+      }
+
+      .mesas-dock-refresh-btn {
+        background: #1a2130;
+        border-color: rgba(255, 255, 255, 0.12);
+        color: #94a3b8;
+
+        &:hover {
+          background: #2d374e;
+          color: #f8fafc;
+        }
+      }
+    }
+  }
+
+  // 2. Catálogo en Comanda (.pos-catalog-card)
+  .pos-catalog-card {
+    background: var(--surface-card, #242c40) !important;
+    border-color: var(--surface-border, rgba(255, 255, 255, 0.08)) !important;
+
+    input[pInputText] {
+      background: #1a2130 !important;
+      border-color: rgba(255, 255, 255, 0.14) !important;
+      color: #f1f5f9 !important;
+
+      &::placeholder {
+        color: #94a3b8 !important;
+      }
+
+      &:focus {
+        background: #141a26 !important;
+        border-color: #8b5cf6 !important;
+      }
+    }
+
+    .dish-pos-card {
+      background: #1a2130 !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+
+      &:hover {
+        background: #1f283a !important;
+        border-color: rgba(167, 139, 250, 0.4) !important;
+      }
+
+      h4 {
+        color: #f1f5f9 !important;
+      }
+
+      p {
+        color: #94a3b8 !important;
+      }
+
+      span.text-slate-900 {
+        color: #f8fafc !important;
+      }
+
+      .bg-slate-100 {
+        background: #242c40 !important;
+        color: #a78bfa !important;
+      }
+    }
+  }
+
+  // 3. Carrito / Ticket Comanda (.ticket-receipt-card)
+  .ticket-receipt-card {
+    background: var(--surface-card, #242c40) !important;
+    border-color: var(--surface-border, rgba(255, 255, 255, 0.1)) !important;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+
+    .ticket-receipt-header {
+      background: linear-gradient(180deg, #242c40 0%, #1e2638 100%) !important;
+      border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+
+      h3 {
+        color: #f8fafc !important;
+      }
+
+      span.text-slate-400 {
+        color: #94a3b8 !important;
+      }
+
+      .bg-purple-50 {
+        background: rgba(168, 85, 247, 0.2) !important;
+        border-color: rgba(168, 85, 247, 0.35) !important;
+        color: #c084fc !important;
+      }
+    }
+
+    .ticket-receipt-items {
+      background: #1a2130 !important;
+
+      // Empty cart icon box
+      .bg-white.border-slate-100 {
+        background: #242c40 !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+      }
+
+      p.text-slate-700 {
+        color: #f1f5f9 !important;
+      }
+
+      p.text-slate-400 {
+        color: #94a3b8 !important;
+      }
+
+      // Cart item cards
+      .rounded-xl.p-2\.5.border {
+        background: #242c40 !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+
+        h5.text-slate-800 {
+          color: #f8fafc !important;
+        }
+
+        span.text-slate-900,
+        span.text-slate-800 {
+          color: #f8fafc !important;
+        }
+
+        span.text-slate-400 {
+          color: #94a3b8 !important;
+        }
+
+        .bg-slate-50 {
+          background: #1a2130 !important;
+          border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        button.bg-white {
+          background: #242c40 !important;
+          border-color: rgba(255, 255, 255, 0.12) !important;
+          color: #cbd5e1 !important;
+
+          &:hover {
+            color: #ffffff !important;
+          }
+        }
+
+        input[pInputText] {
+          background: #1a2130 !important;
+          border-color: rgba(255, 255, 255, 0.12) !important;
+          color: #f1f5f9 !important;
+
+          &::placeholder {
+            color: #94a3b8 !important;
+          }
+        }
+      }
+    }
+
+    .ticket-receipt-bottom {
+      background: #242c40 !important;
+      border-top-color: rgba(255, 255, 255, 0.08) !important;
+
+      input[pInputText] {
+        background: #1a2130 !important;
+        border-color: rgba(255, 255, 255, 0.12) !important;
+        color: #f1f5f9 !important;
+      }
+
+      .bg-slate-50 {
+        background: #1a2130 !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+
+        span.text-slate-500 {
+          color: #94a3b8 !important;
+        }
+
+        span.text-slate-700,
+        span.text-slate-800,
+        span.text-slate-900 {
+          color: #f8fafc !important;
+        }
+      }
+    }
+  }
+
+  // 4. Vista de Mesas dentro de Comandix (.comandix-mesas-view)
+  .comandix-mesas-view {
+    .comandix-areas-bar {
+      background: var(--surface-card, #242c40);
+      border-color: var(--surface-border, rgba(255, 255, 255, 0.08));
+
+      .area-pill-btn {
+        background: #1a2130;
+        border-color: rgba(255, 255, 255, 0.12);
+        color: #cbd5e1;
+
+        .area-pill-count {
+          background: rgba(255, 255, 255, 0.1);
+          color: #cbd5e1;
+        }
+
+        &:hover {
+          background: #2d374e;
+          color: #f8fafc;
+        }
+
+        &.active {
+          background: #10b981;
+          border-color: #059669;
+          color: #ffffff;
+        }
+      }
+    }
+
+    .cambio-mesa-banner {
+      background: linear-gradient(90deg, rgba(120, 53, 15, 0.35), rgba(146, 64, 14, 0.25));
+      border-color: rgba(245, 158, 11, 0.45);
+      color: #fde68a;
+
+      strong {
+        color: #fef3c7;
+      }
+    }
+
+    .plano-container {
+      background: var(--surface-card, #242c40) !important;
+      border-color: var(--surface-border, rgba(255, 255, 255, 0.08)) !important;
+    }
+
+    .plano-wrap {
+      background: #141a26;
+      border-color: rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.35);
+    }
+
+    .workspace {
+      background-color: #182030;
+      background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.07) 1px, transparent 0);
+    }
+
+    .workspace-grid {
+      background-image:
+        linear-gradient(to right, rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+    }
+
+    .workspace-empty-canvas {
+      background: rgba(36, 44, 64, 0.94);
+      border-color: rgba(255, 255, 255, 0.14);
+      color: #94a3b8;
+
+      i {
+        color: #64748b;
+      }
+
+      p {
+        color: #f1f5f9;
+      }
+    }
+  }
+
+  // 5. Modales de Comandix (island-dialog, mesa-consultar-dialog, modal-grupo-opciones-dialog)
+  :host ::ng-deep .island-dialog,
+  ::ng-deep .island-dialog {
+    .p-dialog-header {
+      background: #242c40;
+      border-bottom-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .p-dialog-content {
+      background: #242c40;
+      color: #f1f5f9;
+    }
+
+    .p-dialog-footer {
+      background: #1a2130;
+      border-top-color: rgba(255, 255, 255, 0.08);
+    }
   }
 }

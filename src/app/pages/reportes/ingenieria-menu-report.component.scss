@@ -274,3 +274,160 @@
   cursor: pointer;
 }
 
+/* ============ MODO OSCURO (.app-dark) ============ */
+:host-context(.app-dark) {
+  .area-selector {
+    background: #1e293b;
+    border-color: #334155;
+
+    &__btn {
+      color: #94a3b8;
+
+      &:hover:not(.area-selector__btn--active) {
+        color: #f8fafc;
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      &--active {
+        background: #334155 !important;
+        color: #c4b5fd !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+      }
+    }
+  }
+
+  .cuadrante-card {
+    background: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+
+    &:hover {
+      border-color: #475569;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.38);
+    }
+
+    &--activo {
+      background: #243248;
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.35), 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    &__title {
+      color: #f8fafc;
+    }
+
+    &__badge {
+      background: #0f172a;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+    }
+
+    &__kpis {
+      background: #151e2e;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    &__kpi-item {
+      .label {
+        color: #94a3b8;
+      }
+
+      .value {
+        color: #f8fafc;
+      }
+    }
+
+    &__estrategia {
+      background: #151e2e;
+      color: #cbd5e1;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+
+      strong {
+        color: #f8fafc;
+      }
+    }
+  }
+
+  .tag-cuadrante {
+    &--estrella {
+      background: rgba(16, 185, 129, 0.2);
+      color: #6ee7b7;
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+
+    &--caballo {
+      background: rgba(59, 130, 246, 0.2);
+      color: #93c5fd;
+      border-color: rgba(59, 130, 246, 0.4);
+    }
+
+    &--rompecabezas {
+      background: rgba(139, 92, 246, 0.2);
+      color: #c4b5fd;
+      border-color: rgba(139, 92, 246, 0.4);
+    }
+
+    &--perro {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+  }
+
+  .area-tag {
+    &--cocina {
+      background: rgba(37, 99, 235, 0.2);
+      color: #93c5fd;
+      border-color: rgba(59, 130, 246, 0.4);
+    }
+
+    &--barra {
+      background: rgba(192, 38, 211, 0.2);
+      color: #f0abfc;
+      border-color: rgba(217, 70, 239, 0.4);
+    }
+  }
+
+  .text-slate-800,
+  .text-slate-700 {
+    color: #f1f5f9 !important;
+  }
+
+  .text-slate-600,
+  .text-slate-500 {
+    color: #94a3b8 !important;
+  }
+
+  .text-purple-700 {
+    color: #c4b5fd !important;
+  }
+
+  .modal-cuadrante-banner {
+    border-color: rgba(255, 255, 255, 0.12);
+
+    &.modal-banner--estrella {
+      background: rgba(16, 185, 129, 0.16);
+      border-left-color: #10b981;
+      color: #a7f3d0;
+    }
+
+    &.modal-banner--caballo {
+      background: rgba(59, 130, 246, 0.16);
+      border-left-color: #3b82f6;
+      color: #bfdbfe;
+    }
+
+    &.modal-banner--rompecabezas {
+      background: rgba(139, 92, 246, 0.16);
+      border-left-color: #8b5cf6;
+      color: #ddd6fe;
+    }
+
+    &.modal-banner--perro {
+      background: rgba(239, 68, 68, 0.16);
+      border-left-color: #ef4444;
+      color: #fecaca;
+    }
+  }
+}
+
