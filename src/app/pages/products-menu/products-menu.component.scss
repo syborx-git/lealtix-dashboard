@@ -1310,3 +1310,185 @@
     line-height: 1.35;
   }
 }
+
+// ==================== MODO OSCURO PRODUCTOS (.app-dark) ====================
+:host-context(.app-dark) {
+  .catalog-filter-bar {
+    background: var(--surface-card, #242c40);
+    border-color: var(--surface-border, rgba(255, 255, 255, 0.08));
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+
+    .filter-dropdowns ::ng-deep .filter-dropdown {
+      background: #1a2130 !important;
+      border-color: rgba(255, 255, 255, 0.14) !important;
+      color: #f1f5f9 !important;
+
+      .p-select-label {
+        color: #f1f5f9 !important;
+
+        &.p-placeholder {
+          color: #94a3b8 !important;
+        }
+      }
+
+      .p-select-dropdown {
+        color: #94a3b8 !important;
+      }
+
+      &:hover,
+      &.p-focus {
+        border-color: #8b5cf6 !important;
+      }
+    }
+
+    .filter-search-container {
+      i.pi-search {
+        color: #94a3b8 !important;
+      }
+
+      input.search-input {
+        background: #1a2130 !important;
+        border-color: rgba(255, 255, 255, 0.14) !important;
+        color: #f1f5f9 !important;
+
+        &::placeholder {
+          color: #94a3b8 !important;
+        }
+
+        &:focus {
+          background: #141a26 !important;
+          border-color: #8b5cf6 !important;
+        }
+      }
+    }
+
+    .pills-container {
+      border-top-color: rgba(255, 255, 255, 0.08);
+
+      .pills-label {
+        color: #94a3b8;
+      }
+
+      .filter-pill {
+        &.pill-type {
+          background: rgba(37, 99, 235, 0.2);
+          color: #93c5fd;
+          border-color: rgba(59, 130, 246, 0.4);
+        }
+
+        &.pill-category {
+          background: rgba(124, 58, 237, 0.2);
+          color: #d8b4fe;
+          border-color: rgba(168, 85, 247, 0.4);
+        }
+
+        &.pill-search {
+          background: #1a2130;
+          color: #e2e8f0;
+          border-color: rgba(255, 255, 255, 0.14);
+        }
+      }
+
+      .filter-count-badge {
+        background: #1a2130;
+        border-color: rgba(255, 255, 255, 0.12);
+        color: #94a3b8;
+      }
+    }
+  }
+
+  // Badges y chips de la tabla en Modo Oscuro
+  .item-type-badge {
+    &.type-alimento {
+      background: rgba(37, 99, 235, 0.18);
+      color: #93c5fd;
+      border-color: rgba(59, 130, 246, 0.38);
+    }
+
+    &.type-bebida {
+      background: rgba(13, 148, 136, 0.18);
+      color: #5eead4;
+      border-color: rgba(20, 184, 166, 0.38);
+    }
+
+    &.type-insumo {
+      background: rgba(217, 119, 6, 0.18);
+      color: #fcd34d;
+      border-color: rgba(245, 158, 11, 0.38);
+    }
+  }
+
+  .cat-chip-mini {
+    background: rgba(99, 102, 241, 0.18);
+    color: #c7d2fe;
+    border-color: rgba(129, 140, 248, 0.35);
+  }
+
+  .cat-chip-more {
+    background: rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+  }
+
+  .stock-kitchen {
+    background: #1a2130;
+    color: #cbd5e1;
+    border-color: rgba(255, 255, 255, 0.14);
+  }
+
+  .stock-ok {
+    background: rgba(22, 163, 74, 0.18);
+    color: #86efac;
+    border-color: rgba(34, 197, 94, 0.38);
+  }
+
+  .stock-low {
+    background: rgba(220, 38, 38, 0.2);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+
+  // Modal de creación/edición manual
+  ::ng-deep .manual-create-dialog {
+    .type-card {
+      background: #1a2130;
+      border-color: rgba(255, 255, 255, 0.12);
+
+      &:hover {
+        border-color: #818cf8;
+      }
+
+      &.type-card-active {
+        background: linear-gradient(180deg, rgba(99, 102, 241, 0.18) 0%, rgba(79, 70, 229, 0.26) 100%);
+        border-color: #6366f1;
+      }
+    }
+
+    .type-card-title {
+      color: #f8fafc;
+    }
+
+    .type-card-desc {
+      color: #94a3b8;
+    }
+
+    .type-area-badge {
+      &.area-cocina {
+        background: rgba(37, 99, 235, 0.2);
+        color: #93c5fd;
+        border-color: rgba(59, 130, 246, 0.4);
+      }
+
+      &.area-barra {
+        background: rgba(13, 148, 136, 0.2);
+        color: #5eead4;
+        border-color: rgba(20, 184, 166, 0.4);
+      }
+
+      &.area-almacen {
+        background: rgba(217, 119, 6, 0.2);
+        color: #fcd34d;
+        border-color: rgba(245, 158, 11, 0.4);
+      }
+    }
+  }
+}

@@ -10,7 +10,7 @@
     cierra el panel al pulsar fuera, y el panel `z-50` que entra desde la
     izquierda replicando las opciones del sidebar.
 -->
-<div class="sticky top-0 z-20">
+<div class="sticky top-0 transition-all duration-200" [ngClass]="isMobileMenuOpen() ? 'z-[1000]' : 'z-20'">
 
     <header class="border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95">
         <div class="flex items-center gap-3 px-3 py-2.5 md:px-4">
@@ -27,10 +27,10 @@
                 <i class="pi pi-bars text-lg"></i>
             </button>
 
-            <!-- ============ Colapsar / expandir sidebar (escritorio) ============ -->
+            <!-- ============ Colapsar / expandir sidebar (el botón vive directamente dentro del dock flotante) ============ -->
             <button
                 type="button"
-                class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100 hover:text-indigo-600 lg:flex dark:text-slate-300 dark:hover:bg-slate-800"
+                class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100 hover:text-indigo-600 dark:text-slate-300 dark:hover:bg-slate-800"
                 (click)="onToggleSidebar()"
                 [attr.aria-pressed]="collapsed()"
                 [attr.aria-label]="collapsed() ? 'Expandir barra lateral' : 'Colapsar barra lateral'"
@@ -141,7 +141,7 @@
     <!-- Capa oscura: cierra el menú al hacer clic fuera del panel -->
     <div
         *ngIf="isMobileMenuOpen()"
-        class="fixed inset-0 z-40 bg-black/50 animate-fadein lg:hidden"
+        class="fixed inset-0 z-[1010] bg-black/50 animate-fadein lg:hidden"
         (click)="onBackdropClick()"
         aria-hidden="true"
     ></div>
@@ -151,7 +151,7 @@
          mientras está cerrado (en escritorio nunca se abre con lg:hidden). -->
     <aside
         id="lealtix-mobile-drawer"
-        class="fixed inset-y-0 left-0 z-50 flex w-[17rem] max-w-[85vw] flex-col overflow-hidden border-r border-slate-200 bg-white shadow-2xl transition-transform duration-300 ease-out lg:hidden dark:border-slate-700 dark:bg-slate-900"
+        class="fixed inset-y-0 left-0 z-[1020] flex w-[17rem] max-w-[85vw] flex-col overflow-hidden border-r border-slate-200 bg-white shadow-2xl transition-transform duration-300 ease-out lg:hidden dark:border-slate-700 dark:bg-slate-900"
         [ngClass]="isMobileMenuOpen() ? 'translate-x-0 pointer-events-auto visible' : '-translate-x-full pointer-events-none invisible'"
         [attr.role]="isMobileMenuOpen() ? 'dialog' : null"
         [attr.aria-modal]="isMobileMenuOpen() ? 'true' : null"

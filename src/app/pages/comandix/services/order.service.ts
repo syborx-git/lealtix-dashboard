@@ -360,4 +360,26 @@ export class OrderService {
   createFacturapiInvoice(payload: any): Observable<any> {
     return this.http.post<any>(`${environment.apiUrl}/facturapi/invoices`, payload);
   }
+
+  /**
+   * Cambia la mesa asociada a una comanda activa.
+   * PATCH /api/tenant-client-orders/{orderId}/cambiar-mesa
+   */
+  cambiarMesa(orderId: string, nuevaMesaId: number): Observable<TenantClientOrderResponse> {
+    return this.http.patch<{ object?: TenantClientOrderResponse } | TenantClientOrderResponse>(
+      `${this.baseUrl}/${orderId}/cambiar-mesa`,
+      { nuevaMesaId }
+    ).pipe(
+      map((response): TenantClientOrderResponse =>
+        'object' in response && response.object
+          ? response.object
+          : (response as TenantClientOrderResponse)
+      ),
+      catchError((error) => {
+        console.error('Error al cambiar de mesa:', error);
+        return throwError(() => error);
+      })
+    );
+  }
 }
+

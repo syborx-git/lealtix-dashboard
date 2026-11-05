@@ -6,7 +6,6 @@ import { filter } from 'rxjs/operators';
 import confetti from 'canvas-confetti';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
-import { HeaderComponent } from '../header/header.component';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { AppFooter } from './app.footer';
 import { LayoutService } from '../service/layout.service';
@@ -19,7 +18,7 @@ import { InventoryService } from '@/pages/inventario/service/inventory.service';
 @Component({
     selector: 'app-layout',
     standalone: true,
-    imports: [CommonModule, HeaderComponent, SidebarComponent, RouterModule, AppFooter, ToastModule],
+    imports: [CommonModule, SidebarComponent, RouterModule, AppFooter, ToastModule],
     styles: [`
         :host {
             display: block;
@@ -75,9 +74,8 @@ import { InventoryService } from '@/pages/inventario/service/inventory.service';
 
         <!-- El padding izquierdo sigue al ancho del sidebar (w-64 / w-20) -->
         <div class="app-content transition-all duration-300 ease-in-out" [ngClass]="layoutService.contentPaddingClass()">
-            <app-topbar></app-topbar>
             <main class="app-main"
-                  [ngClass]="isFullBleed() ? 'app-main--flush' : 'min-h-[calc(100vh-8rem)] p-3 md:p-4 lg:p-6'">
+                  [ngClass]="isFullBleed() ? 'app-main--flush' : 'min-h-[calc(100vh-4rem)] p-3 md:p-5 lg:p-6'">
                 <router-outlet></router-outlet>
             </main>
             <app-footer *ngIf="!isFullBleed()"></app-footer>

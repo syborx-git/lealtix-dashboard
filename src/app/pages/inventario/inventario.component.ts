@@ -22,12 +22,23 @@ import { AuthService } from '@/auth/auth.service';
 interface InvItem {
   id: number;
   name: string;
+  nombre?: string;
+  description?: string;
+  categoryId?: number;
   categoryName?: string;
   categories?: { id: number; name: string }[];
   stock: number;
+  stockMinimo?: number;
+  unidad?: string;
+  price?: number;
   lowStock: boolean;
   outOfStock: boolean;
   esSubReceta?: boolean;
+  esPlatillo?: boolean;
+  esBebida?: boolean;
+  insumos?: any[];
+  subRecetas?: any[];
+  adicionales?: any[];
 }
 
 interface Insumo {
@@ -38,6 +49,7 @@ interface Insumo {
   stockMinimo: number;
   stockCocina?: number;
   stockBarra?: number;
+  stockBodega?: number;
 }
 
 type TabKey = 'products' | 'insumos' | 'bebidas' | 'insumos-bebida';
@@ -132,7 +144,13 @@ export class InventarioComponent implements OnInit {
     this.loading.set(true);
     this.inventoryService.getByTenant(this.tenantId).subscribe({
       next: (res) => {
-        this.items.set(res.object || []);
+        const products: InvItem[] = res.object || [];
+        this.items.set(products);
+        for (const p of products) {
+          if (p.id != null && (p.esBebida === true || this.isBeverage(p))) {
+            this.beverageProductIds.add(Number(p.id));
+          }
+        }
         this.loading.set(false);
       },
       error: () => {
@@ -162,7 +180,6 @@ export class InventarioComponent implements OnInit {
       next: (res) => {
         const bebidas = res.object || [];
         this.bebidas.set(bebidas);
-        this.beverageProductIds = new Set<number>();
         for (const b of bebidas) {
           const pid = Number(b?.productoId);
           if (Number.isFinite(pid) && pid > 0) this.beverageProductIds.add(pid);
@@ -176,23 +193,112 @@ export class InventarioComponent implements OnInit {
     });
   }
 
+  /* ============ Helpers de clasificación de bebidas vs platillos ============ */
+
+  private normalizeText(str: string): string {
+    return (str || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  }
+
+  isBeverageCategoryName(name: string): boolean {
+    if (!name) return false;
+    const n = this.normalizeText(name);
+    const keywords = [
+      'bebida', 'cerveza', 'licor', 'coctel', 'bar', 'barra', 'vino', 'cafeteria', 'cafe',
+      'refresco', 'agua', 'trago', 'destilado', 'botella', 'jugo', 'malteada', 'shake', 'smoothie'
+    ];
+    return keywords.some((k) => n.includes(k));
+  }
+
+  isBeverageProductName(name: string): boolean {
+    if (!name) return false;
+    const n = this.normalizeText(name);
+    const keywords = [
+      'cerveza', 'heineken', 'bohemia', 'amstel', 'corona', 'victoria', 'modelo', 'pacifico',
+      'indio', 'tecate', 'ultra', 'ginebra', 'gin', 'vodka', 'tequila', 'ron', 'whisky',
+      'whiskey', 'mezcal', 'brandy', 'cognac', 'licor', 'vino', 'champagne', 'refresco',
+      'coca cola', 'coca', 'pepsi', 'sprite', 'fanta', 'squirt', 'sidral', 'agua', 'mineral',
+      'ciel', 'epura', 'bonafont', 'jugo', 'naranjada', 'limonada', 'coctel', 'margarita',
+      'mojito', 'michelada', 'carajillo', 'clamato', 'soda', 'jarrito', 'boing', 'cafe',
+      'café', 'espresso', 'capuchino', 'latte', 'frappe', 'te helado', 'bebida'
+    ];
+    return keywords.some((k) => n.includes(k));
+  }
+
+  isBeverage(item: any): boolean {
+    if (!item) return false;
+    if (item.esBebida === true) return true;
+    const pid = Number(item.id || item.productoId);
+    if (Number.isFinite(pid) && pid > 0 && this.beverageProductIds.has(pid)) return true;
+
+    const cats = this.rowCategories(item);
+    for (const c of cats) {
+      if (this.isBeverageCategoryName(c.name)) return true;
+    }
+    if (item.categoryName && this.isBeverageCategoryName(item.categoryName)) return true;
+
+    const name = item.name || item.nombre || '';
+    return this.isBeverageProductName(name);
+  }
+
   /* ============ Helpers de la tabla según modo/pestaña ============ */
 
-  // Platillos visibles en Cocina: productos de menú que no son bebidas ni sub-recetas
+  // Platillos visibles en Cocina: productos de menú que NO son bebidas ni sub-recetas
   platillos(): InvItem[] {
     return this.items().filter(
-      (p) => p.id != null && !this.beverageProductIds.has(Number(p.id)) && p.esSubReceta !== true
+      (p) => p.id != null && !this.isBeverage(p) && p.esSubReceta !== true
     );
   }
 
-  // Filas según la pestaña activa. Las bebidas NUNCA aparecen en pestañas de insumos
-// (el backend ya excluye es_bebida de /insumos): 'insumos-bebida' muestra materia prima.
+  // Bebidas visibles en Barra: catálogo de bebidas registradas + productos del menú que son bebidas
+  bebidasCatalogo(): any[] {
+    const list: any[] = [...this.bebidas()];
+    const seenNames = new Set(list.map((b) => this.normalizeText(b.nombre || b.name || '')));
+    const seenPids = new Set(
+      list.map((b) => Number(b.productoId)).filter((id) => Number.isFinite(id) && id > 0)
+    );
+
+    for (const p of this.items()) {
+      if (p.id != null && this.isBeverage(p) && p.esSubReceta !== true) {
+        const pid = Number(p.id);
+        const pName = this.normalizeText(p.name || p.nombre || '');
+        if (!seenPids.has(pid) && !seenNames.has(pName)) {
+          list.push({
+            id: p.id,
+            productoId: p.id,
+            nombre: p.name,
+            name: p.name,
+            unidad: p.unidad || 'pieza',
+            stock: p.stock ?? 0,
+            stockBarra: (p as any).stockBarra ?? p.stock ?? 0,
+            stockBodega: (p as any).stockBodega ?? 0,
+            stockCocina: (p as any).stockCocina ?? 0,
+            stockMinimo: p.stockMinimo ?? 0,
+            precioVenta: p.price ?? 0,
+            categories: p.categories,
+            categoryName: p.categoryName,
+            insumos: (p as any).insumos,
+            subRecetas: (p as any).subRecetas,
+            esBebida: true,
+            isMenuProduct: true
+          });
+          seenNames.add(pName);
+        }
+      }
+    }
+    return list;
+  }
+
+  // Filas según la pestaña activa
   tableRows(): any[] {
     switch (this.activeTab()) {
       case 'products':
-        return this.platillos();
+        return this.mode === 'cocina' ? this.platillos() : this.bebidasCatalogo();
       case 'bebidas':
-        return this.bebidas();
+        return this.bebidasCatalogo();
       case 'insumos-bebida':
       case 'insumos':
       default:
@@ -252,12 +358,112 @@ export class InventarioComponent implements OnInit {
   tableColspan(): number {
     switch (this.activeTab()) {
       case 'products':
-        return 3;
+        return 4;
       case 'bebidas':
         return 5;
       default:
         return 5;
     }
+  }
+
+  /* ============ Modal de Receta de Preparación ============ */
+
+  recipeModalVisible = false;
+  selectedRecipeItem: any = null;
+  recipeLines: any[] = [];
+  loadingRecipeModal = false;
+
+  openRecipeModal(item: any): void {
+    if (!item) return;
+    this.selectedRecipeItem = item;
+    this.recipeModalVisible = true;
+    this.loadingRecipeModal = true;
+
+    // Precargar líneas si ya vienen en el item
+    if (Array.isArray(item.insumos) && item.insumos.length > 0) {
+      this.recipeLines = this.enrichRecipeLines(item.insumos);
+    } else {
+      this.recipeLines = [];
+    }
+
+    const dishId = Number(item.productoId || item.id);
+    if (dishId && dishId > 0) {
+      this.inventoryService.getRecipes(dishId).subscribe({
+        next: (res) => {
+          this.loadingRecipeModal = false;
+          const lines = res.object || [];
+          if (Array.isArray(lines) && lines.length > 0) {
+            this.recipeLines = this.enrichRecipeLines(lines);
+          } else if (Array.isArray(item.insumos) && item.insumos.length > 0) {
+            this.recipeLines = this.enrichRecipeLines(item.insumos);
+          }
+        },
+        error: () => {
+          this.loadingRecipeModal = false;
+          if (Array.isArray(item.insumos) && item.insumos.length > 0) {
+            this.recipeLines = this.enrichRecipeLines(item.insumos);
+          }
+        }
+      });
+    } else {
+      this.loadingRecipeModal = false;
+    }
+  }
+
+  closeRecipeModal(): void {
+    this.recipeModalVisible = false;
+    this.selectedRecipeItem = null;
+    this.recipeLines = [];
+    this.loadingRecipeModal = false;
+  }
+
+  enrichRecipeLines(lines: any[]): any[] {
+    return lines.map((r) => {
+      const insumoId = Number(r.insumoId || r.id);
+      const match = this.insumos().find((i) => Number(i.id) === insumoId);
+
+      const stockCocina = match?.stockCocina ?? r.stockCocina ?? 0;
+      const stockBarra = match?.stockBarra ?? r.stockBarra ?? 0;
+      const stockBodega = match?.stockBodega ?? r.stockBodega ?? 0;
+      const stockMinimo = match?.stockMinimo ?? r.stockMinimo ?? 0;
+      const stock = match?.stock ?? r.stock ?? (stockCocina + stockBarra);
+
+      const areaStock = this.mode === 'cocina' ? stockCocina : stockBarra;
+      const required = Number(r.cantidad) || 0;
+      const sufficient = required > 0 ? areaStock >= required : areaStock > 0;
+
+      return {
+        ...r,
+        insumoId,
+        nombre: r.insumoName || r.nombre || match?.nombre || 'Insumo',
+        unidad: r.insumoUnit || r.unidad || match?.unidad || 'pieza',
+        cantidad: required,
+        stockCocina,
+        stockBarra,
+        stockBodega,
+        stockMinimo,
+        stock,
+        areaStock,
+        sufficient
+      };
+    });
+  }
+
+  solicitarRestockDeInsumo(r: any, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    const insumoPayload = {
+      id: r.insumoId || r.id,
+      nombre: r.insumoName || r.nombre || r.name,
+      unidad: r.insumoUnit || r.unidad || 'pieza',
+      stock: r.stock ?? 0,
+      stockCocina: r.stockCocina ?? 0,
+      stockBarra: r.stockBarra ?? 0,
+      stockBodega: r.stockBodega ?? 0,
+      stockMinimo: r.stockMinimo ?? 0
+    };
+    this.openSolicitud(insumoPayload);
   }
 
   /* ============ Badges de stock (estilo products-menu) ============ */
@@ -345,6 +551,10 @@ export class InventarioComponent implements OnInit {
         this.messageService.add({ severity: 'success', summary: 'Solicitud enviada', detail: `La bodega recibirá la solicitud de ${this.solicitudInsumo.nombre}` });
         this.solicitudVisible = false;
         this.solicitudInsumo = null;
+        this.loadInsumos();
+        if (this.selectedRecipeItem) {
+          this.openRecipeModal(this.selectedRecipeItem);
+        }
       },
       error: () => {
         this.enviandoSolicitud = false;

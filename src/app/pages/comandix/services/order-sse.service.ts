@@ -50,6 +50,8 @@ export interface SseOrderStatusEvent {
     total?: number;
     subtotal?: number;
     mesaId?: number;
+    mesaNombre?: string;
+    mesaNumero?: number;
     items?: any[];
   };
 }

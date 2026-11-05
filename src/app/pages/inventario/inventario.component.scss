@@ -496,3 +496,86 @@
   }
 }
 }
+
+/* === FILAS CLICKEABLES Y RECETA === */
+.row-clickable {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background-color: var(--lealtix-slate-50, #f8fafc) !important;
+  }
+}
+
+.ver-receta-btn {
+  font-size: 0.8125rem !important;
+  padding: 0.35rem 0.75rem !important;
+  border-radius: 9999px !important;
+  font-weight: 600 !important;
+  border-color: var(--lealtix-primary-400, #818cf8) !important;
+  color: var(--lealtix-primary-700, #4338ca) !important;
+  background: rgba(99, 102, 241, 0.06) !important;
+
+  &:hover {
+    background: rgba(99, 102, 241, 0.15) !important;
+    border-color: var(--lealtix-primary-600, #4f46e5) !important;
+  }
+}
+
+.solicitar-restock-btn {
+  font-size: 0.75rem !important;
+  padding: 0.35rem 0.65rem !important;
+  font-weight: 600 !important;
+  border-radius: var(--lealtix-radius-md, 8px) !important;
+  background: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+
+  &:hover {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+    border-color: #94a3b8 !important;
+  }
+}
+
+.stock-bodega {
+  background: rgba(14, 165, 233, 0.12) !important;
+  color: #0369a1 !important;
+  border: 1px solid rgba(14, 165, 233, 0.25) !important;
+}
+
+.badge-modificable {
+  font-size: 0.6875rem;
+  padding: 0.1rem 0.4rem;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 9999px;
+  font-weight: 600;
+}
+
+/* === MODAL DE RECETA === */
+.recipe-modal-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 12px;
+  background: rgba(99, 102, 241, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--lealtix-primary-600, #4f46e5);
+}
+
+.recipe-table {
+  border-collapse: collapse;
+  font-size: 0.875rem;
+
+  th {
+    background-color: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+  }
+
+  td {
+    color: #1e293b;
+  }
+}
