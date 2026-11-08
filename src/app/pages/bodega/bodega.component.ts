@@ -383,6 +383,7 @@ export class BodegaComponent implements OnInit {
   autoRestockVisible = false;
   autoRestockLoading = signal(false);
   autoRestockSaving = signal(false);
+  autoRestockError = signal<string | null>(null);
   autoRestockFactor = 1.5;
   autoRestockFolio = '';
   autoRestockItems = signal<any[]>([]);
@@ -425,9 +426,11 @@ export class BodegaComponent implements OnInit {
   cargarSugerenciaRestock(factor: number) {
     this.autoRestockFactor = factor;
     this.autoRestockLoading.set(true);
+    this.autoRestockError.set(null);
     this.inventoryService.getRestockSugerido(this.tenantId, factor).subscribe({
       next: (res) => {
         this.autoRestockLoading.set(false);
+        this.autoRestockError.set(null);
         const data = res.object || {};
         this.autoRestockFolio = data.folioSugerido || '';
         const rawItems = (data.items || []).map((it: any) => ({
@@ -439,12 +442,17 @@ export class BodegaComponent implements OnInit {
         }));
         this.autoRestockItems.set(rawItems);
       },
-      error: () => {
+      error: (err) => {
         this.autoRestockLoading.set(false);
+        this.autoRestockItems.set([]);
+        const errorMsg = err?.status === 404
+          ? 'El servicio de cálculo de compras no está disponible temporalmente (404 Not Found).'
+          : (err?.error?.message || 'No se pudo calcular la sugerencia de compra.');
+        this.autoRestockError.set(errorMsg);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo calcular la sugerencia de restock'
+          detail: errorMsg
         });
       }
     });
@@ -716,6 +724,7 @@ export class BodegaComponent implements OnInit {
   distribuirVisible = false;
   distribuirLoading = signal(false);
   distribuirSaving = signal(false);
+  distribuirError = signal<string | null>(null);
   distribuirFactor = 1.5;
   distribuirItems = signal<any[]>([]);
   filtroAreaDistribucion: 'TODAS' | 'COCINA' | 'BARRA' = 'TODAS';
@@ -754,9 +763,11 @@ export class BodegaComponent implements OnInit {
   cargarDistribucionSugerida(factor: number) {
     this.distribuirFactor = factor;
     this.distribuirLoading.set(true);
+    this.distribuirError.set(null);
     this.inventoryService.getDistribucionSugerida(this.tenantId, factor).subscribe({
       next: (res) => {
         this.distribuirLoading.set(false);
+        this.distribuirError.set(null);
         const rawItems = (res.object || []).map((it: any) => ({
           ...it,
           selected: (Number(it.cantidadSugerida) > 0 && Number(it.stockBodega) > 0),
@@ -764,12 +775,17 @@ export class BodegaComponent implements OnInit {
         }));
         this.distribuirItems.set(rawItems);
       },
-      error: () => {
+      error: (err) => {
         this.distribuirLoading.set(false);
+        this.distribuirItems.set([]);
+        const errorMsg = err?.status === 404
+          ? 'El servicio de distribución no está disponible temporalmente (404 Not Found).'
+          : (err?.error?.message || 'No se pudo calcular la sugerencia de distribución a áreas.');
+        this.distribuirError.set(errorMsg);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo calcular la sugerencia de distribución a áreas'
+          detail: errorMsg
         });
       }
     });

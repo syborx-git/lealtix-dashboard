@@ -516,8 +516,18 @@
         </div>
       </div>
 
+      <!-- Estado de Error de Conexión -->
+      <div class="empty-restock-state error-restock-state" *ngIf="autoRestockError() && !autoRestockLoading()">
+        <div class="empty-icon error-icon"><i class="pi pi-exclamation-triangle"></i></div>
+        <h3>No se pudo cargar la sugerencia de compra</h3>
+        <p>{{ autoRestockError() }}</p>
+        <button type="button" class="btn-retry" (click)="cargarSugerenciaRestock(autoRestockFactor)">
+          <i class="pi pi-refresh"></i> Reintentar
+        </button>
+      </div>
+
       <!-- Estado Vacío -->
-      <div class="empty-restock-state" *ngIf="autoRestockItems().length === 0">
+      <div class="empty-restock-state" *ngIf="!autoRestockError() && autoRestockItems().length === 0 && !autoRestockLoading()">
         <div class="empty-icon"><i class="pi pi-check-circle"></i></div>
         <h3>¡Todo el inventario está en orden!</h3>
         <p>No se encontraron insumos por debajo de su stock mínimo. Todas las áreas cuentan con suficiente inventario operativo.</p>
@@ -709,8 +719,18 @@
         </div>
       </div>
 
+      <!-- Estado de Error de Conexión -->
+      <div class="empty-distribuir-state empty-restock-state error-restock-state" *ngIf="distribuirError() && !distribuirLoading()">
+        <div class="empty-icon error-icon"><i class="pi pi-exclamation-triangle"></i></div>
+        <h3>No se pudo cargar la distribución de áreas</h3>
+        <p>{{ distribuirError() }}</p>
+        <button type="button" class="btn-retry" (click)="cargarDistribucionSugerida(distribuirFactor)">
+          <i class="pi pi-refresh"></i> Reintentar
+        </button>
+      </div>
+
       <!-- Estado Vacío -->
-      <div class="empty-distribuir-state empty-restock-state" *ngIf="distribuirItems().length === 0">
+      <div class="empty-distribuir-state empty-restock-state" *ngIf="!distribuirError() && distribuirItems().length === 0 && !distribuirLoading()">
         <div class="empty-icon text-emerald-500"><i class="pi pi-check-circle"></i></div>
         <h3>¡Cocina y Barra están 100% abastecidas!</h3>
         <p>No se encontraron insumos de cocina o barra en su stock mínimo. Todas las áreas tienen suficiente nivel de seguridad.</p>
