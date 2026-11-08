@@ -1,0 +1,232 @@
+<div class="kiosk">
+  <!-- Header -->
+  <header class="kiosk-header">
+    <div class="brand">
+      <div class="brand-logo"><i class="pi pi-shopping-bag"></i></div>
+      <div class="brand-text">
+        <h1>Kiosco de Autoservicio</h1>
+        <p>Arma tu pedido y paga en la terminal</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="terminal-pill"><span class="dot"></span> Point Smart 2</span>
+      <a class="exit-btn" routerLink="/dashboard/comandix">
+        <i class="pi pi-sign-out"></i> Salir
+      </a>
+    </div>
+  </header>
+
+  <!-- Body -->
+  <main class="kiosk-body">
+    <!-- Categorías -->
+    <aside class="kiosk-cats">
+      <button
+        type="button"
+        class="cat-btn"
+        [class.active]="activeCategory() === '__all__'"
+        (click)="selectCategory('__all__')"
+      >
+        <i class="pi pi-th-large"></i>
+        <span>Todos</span>
+      </button>
+      <button
+        type="button"
+        class="cat-btn"
+        *ngFor="let category of categories(); trackBy: trackByCategory"
+        [class.active]="activeCategory() === category"
+        (click)="selectCategory(category)"
+      >
+        <i class="pi pi-tag"></i>
+        <span>{{ category }}</span>
+      </button>
+    </aside>
+
+    <!-- Catálogo -->
+    <section class="kiosk-catalog">
+      <div class="catalog-head">
+        <div>
+          <h2>{{ activeCategory() === '__all__' ? 'Nuestro menú' : activeCategory() }}</h2>
+          <p>{{ visibleProducts().length }} producto(s) disponible(s)</p>
+        </div>
+      </div>
+
+      <div class="state-block" *ngIf="loading()">
+        <i class="pi pi-spinner spin"></i>
+        <span>Cargando menú…</span>
+      </div>
+
+      <div class="state-block error" *ngIf="!loading() && loadError()">
+        <i class="pi pi-exclamation-triangle"></i>
+        <span>{{ loadError() }}</span>
+        <button type="button" class="btn-ghost" (click)="loadCatalog()">Reintentar</button>
+      </div>
+
+      <div class="state-block" *ngIf="!loading() && !loadError() && visibleProducts().length === 0">
+        <i class="pi pi-inbox"></i>
+        <span>No hay productos disponibles en esta categoría.</span>
+        <button type="button" class="btn-ghost" (click)="refreshCatalog()">Recargar menú</button>
+      </div>
+
+      <div class="product-grid" *ngIf="!loading() && !loadError() && visibleProducts().length > 0">
+        <article class="product-card" *ngFor="let product of visibleProducts(); trackBy: trackById">
+          <div class="product-img">
+            <img
+              *ngIf="product.imageUrl"
+              [src]="product.imageUrl"
+              [alt]="product.name"
+              loading="lazy"
+            />
+            <div class="product-img-fallback" *ngIf="!product.imageUrl">
+              <i class="pi pi-image"></i>
+            </div>
+            <span class="qty-badge" *ngIf="qtyOf(product) > 0">{{ qtyOf(product) }}</span>
+          </div>
+          <div class="product-info">
+            <h3>{{ product.name }}</h3>
+            <p class="desc" *ngIf="product.description">{{ product.description }}</p>
+            <div class="product-bottom">
+              <span class="price">{{ mxn(product.price) }}</span>
+              <button
+                type="button"
+                class="add-btn"
+                (click)="addToCart(product)"
+                [attr.aria-label]="'Agregar ' + product.name"
+              >
+                <i class="pi pi-plus"></i>
+                <span>Agregar</span>
+              </button>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Carrito -->
+    <aside class="kiosk-cart">
+      <div class="cart-head">
+        <h2><i class="pi pi-shopping-cart"></i> Tu pedido</h2>
+        <span class="cart-count">{{ cartCount() }} art.</span>
+      </div>
+
+      <div class="cart-empty" *ngIf="cart().length === 0">
+        <i class="pi pi-shopping-cart"></i>
+        <p>Tu carrito está vacío</p>
+        <span>Agrega productos del menú para comenzar</span>
+      </div>
+
+      <div class="cart-lines" *ngIf="cart().length > 0">
+        <div class="cart-line" *ngFor="let line of cart(); trackBy: trackByLine">
+          <div class="line-top">
+            <span class="line-name">{{ line.product.name }}</span>
+            <button
+              type="button"
+              class="line-remove"
+              (click)="removeLine(line)"
+              aria-label="Quitar producto"
+            >
+              <i class="pi pi-times"></i>
+            </button>
+          </div>
+          <div class="line-bottom">
+            <div class="stepper">
+              <button type="button" (click)="decLine(line)" aria-label="Quitar uno">
+                <i class="pi pi-minus"></i>
+              </button>
+              <span>{{ line.qty }}</span>
+              <button type="button" (click)="incLine(line)" aria-label="Agregar uno">
+                <i class="pi pi-plus"></i>
+              </button>
+            </div>
+            <span class="line-total">{{ mxn(line.product.price * line.qty) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="cart-footer">
+        <div class="totals">
+          <div class="total-row">
+            <span>Subtotal</span>
+            <b>{{ mxn(subtotal()) }}</b>
+          </div>
+          <div class="total-row grand">
+            <span>Total a pagar</span>
+            <b>{{ mxn(subtotal()) }}</b>
+          </div>
+        </div>
+
+        <button type="button" class="pay-btn" [disabled]="!canPay()" (click)="payWithTerminal()">
+          <i class="pi pi-credit-card"></i>
+          <span class="pay-main">Pagar en Terminal</span>
+          <span class="pay-sub">Tarjeta débito / crédito</span>
+        </button>
+
+        <button type="button" class="clear-btn" *ngIf="cart().length > 0" (click)="clearCart()">
+          Vaciar carrito
+        </button>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Overlay: esperando terminal -->
+  <div class="overlay" *ngIf="stage() === 'waiting'">
+    <div class="overlay-card">
+      <div class="pulse-terminal">
+        <i class="pi pi-credit-card"></i>
+      </div>
+      <h2>Acerca o inserta tu tarjeta</h2>
+      <p class="overlay-sub">
+        Usa la terminal <b>Mercado Pago Point Smart 2</b> para completar el pago.
+      </p>
+      <div class="amount">{{ mxn(subtotal()) }} <span>MXN</span></div>
+      <div class="waiting-status">
+        <i class="pi pi-spinner spin"></i>
+        <span>{{ intent()?.state === 'ON_TERMINAL' ? 'Esperando tarjeta en la terminal…' : 'Esperando confirmación de la terminal…' }}</span>
+      </div>
+      <button type="button" class="btn-ghost" (click)="cancelPayment()">Cancelar cobro</button>
+    </div>
+  </div>
+
+  <!-- Overlay: pago aprobado -->
+  <div class="overlay" *ngIf="stage() === 'success'">
+    <div class="overlay-card success">
+      <div class="success-check"><i class="pi pi-check"></i></div>
+      <h2>¡Pago Aprobado!</h2>
+      <p class="overlay-sub">Tu pedido se está preparando. ¡Buen provecho!</p>
+
+      <div class="receipt">
+        <div class="receipt-row">
+          <span>Total pagado</span>
+          <b>{{ mxn(paidTotal()) }}</b>
+        </div>
+        <div class="receipt-row" *ngIf="paidOrderId()">
+          <span>Pedido</span>
+          <b>#{{ paidOrderId() }}</b>
+        </div>
+      </div>
+
+      <div class="order-warning" *ngIf="orderError()">{{ orderError() }}</div>
+
+      <div class="countdown">Volviendo al inicio en <b>{{ countdown() }}</b> s</div>
+      <button type="button" class="pay-btn" (click)="newOrder()">
+        <i class="pi pi-plus"></i>
+        <span class="pay-main">Nuevo Pedido</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Overlay: error -->
+  <div class="overlay" *ngIf="stage() === 'error'">
+    <div class="overlay-card error">
+      <div class="error-icon"><i class="pi pi-exclamation-triangle"></i></div>
+      <h2>No se pudo completar el pago</h2>
+      <p class="overlay-sub">{{ errorMsg() }}</p>
+      <div class="overlay-actions">
+        <button type="button" class="pay-btn" (click)="retryPayment()">
+          <i class="pi pi-refresh"></i>
+          <span class="pay-main">Intentar de nuevo</span>
+        </button>
+        <button type="button" class="btn-ghost" (click)="backToCart()">Volver al carrito</button>
+      </div>
+    </div>
+  </div>
+</div>
