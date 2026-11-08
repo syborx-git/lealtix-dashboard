@@ -1039,6 +1039,110 @@ export class ComandixComponent implements OnInit, OnDestroy, AfterViewInit {
     });
   }
 
+  eliminarAsiento(idParaEliminar?: string, event?: Event): void {
+      if (event) {
+        event.stopPropagation();
+      }
+  
+      const list = this.asientos();
+      if (list.length <= 1) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Atención',
+          detail: 'La comanda debe tener al menos un comensal',
+          life: 2500
+        });
+        return;
+      }
+  
+      // Identificar comensal objetivo a eliminar
+      let target = idParaEliminar
+        ? list.find((a) => a.id === idParaEliminar)
+        : this.asientoActivo();
+  
+      // Si se pulsa '-' en la píldora y el activo tiene items pero el último comensal está vacío,
+      // eliminamos preferentemente el último comensal vacío (caso comensal agregado por error).
+      if (!idParaEliminar && target) {
+        const activeCount = this.countItemsPorAsiento(target.id);
+        if (activeCount > 0) {
+          const lastSeat = list[list.length - 1];
+          if (lastSeat && lastSeat.id !== target.id && this.countItemsPorAsiento(lastSeat.id) === 0) {
+            target = lastSeat;
+          }
+        }
+      }
+  
+      if (!target) {
+        target = list[list.length - 1];
+      }
+  
+      const targetId = target.id;
+      const targetAlias = target.alias;
+      const targetIndex = list.findIndex((a) => a.id === targetId);
+      const updatedList = list.filter((a) => a.id !== targetId);
+  
+      // Renumerar asientos restantes manteniendo alias personalizados si existen
+      const reindexedList: ComandaAsiento[] = updatedList.map((a, idx) => {
+        const newNum = idx + 1;
+        const isGeneric = !a.alias || /^Persona\s+\d+$/i.test(a.alias.trim());
+        return {
+          ...a,
+          numero: newNum,
+          alias: isGeneric ? `Persona ${newNum}` : a.alias
+        };
+      });
+  
+      // Reasignar platillos si el comensal eliminado tenía items en el carrito
+      const itemsEnAsiento = this.cart().filter((i) => i.asientoId === targetId);
+      const fallback = reindexedList[Math.max(0, targetIndex - 1)] ?? reindexedList[0];
+  
+      if (itemsEnAsiento.length > 0 && fallback) {
+        this.cart.update((items) =>
+          items.map((i) =>
+            i.asientoId === targetId
+              ? { ...i, asientoId: fallback.id, asientoAlias: fallback.alias }
+              : i
+          )
+        );
+      }
+  
+      // Sincronizar alias de asientos renumerados en el carrito
+      this.cart.update((items) =>
+        items.map((i) => {
+          const matching = reindexedList.find((s) => s.id === i.asientoId);
+          return matching ? { ...i, asientoAlias: matching.alias } : i;
+        })
+      );
+  
+      this.asientos.set(reindexedList);
+  
+      // Si el asiento activo fue el eliminado, cambiar al asiento previo o fallback
+      if (this.asientoActivoId() === targetId) {
+        const newActive = reindexedList[Math.min(targetIndex, reindexedList.length - 1)] ?? fallback;
+        this.asientoActivoId.set(newActive ? newActive.id : 'seat-1');
+      }
+  
+      this.persistCartDraft();
+      this.cdr.detectChanges();
+  
+      if (itemsEnAsiento.length > 0 && fallback) {
+        this.messageService.add({
+          severity: 'info',
+          summary: 'Comensal eliminado',
+          detail: `${targetAlias} eliminado. Sus ${itemsEnAsiento.length} platillos fueron reasignados a ${fallback.alias}`,
+          life: 3000
+        });
+      } else {
+        this.messageService.add({
+          severity: 'info',
+          summary: 'Comensal eliminado',
+          detail: `${targetAlias} eliminado de la comanda`,
+          life: 2000
+        });
+      }
+    }
+  
+    
   seleccionarAsiento(id: string): void {
     this.asientoActivoId.set(id);
   }

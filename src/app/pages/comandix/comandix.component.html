@@ -298,6 +298,15 @@
             >
               <i class="pi pi-plus"></i>
             </button>
+            <button
+              *ngIf="asientos().length > 1"
+              type="button"
+              class="micro-seat-remove"
+              (click)="eliminarAsiento()"
+              [title]="'Eliminar comensal (' + asientoActivo().alias + ')'"
+            >
+              <i class="pi pi-minus"></i>
+            </button>
           </div>
 
           <button
@@ -3698,6 +3707,15 @@
             >
               {{ countItemsPorAsiento(a.id) }} items · ${{ totalPorAsiento(a.id) | number:'1.2-2' }}
             </span>
+            <button
+              *ngIf="asientos().length > 1"
+              type="button"
+              class="w-7 h-7 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 flex items-center justify-center transition-colors cursor-pointer"
+              (click)="eliminarAsiento(a.id, $event)"
+              [title]="'Eliminar ' + a.alias"
+            >
+              <i class="pi pi-trash text-xs"></i>
+            </button>
             <i *ngIf="a.id === asientoActivoId()" class="pi pi-check text-purple-600 text-sm font-bold"></i>
           </div>
         </div>
