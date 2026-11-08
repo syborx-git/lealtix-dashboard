@@ -185,4 +185,48 @@ export class InventoryService {
   removeVariantDish(id: number): Observable<any> {
     return this.http.delete<any>(`${this.baseUrl}/variant-dish/${id}`);
   }
+
+
+  /* ============ Órdenes de Compra y Restock Automático ============ */
+
+  getRestockSugerido(tenantId: number, factor: number = 1.5): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/ordenes-compra/sugerencia/${tenantId}?factor=${factor}`);
+  }
+
+  generarOrdenCompra(data: { tenantId: number; titulo?: string; notas?: string; factor?: number; items?: any[] }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/ordenes-compra/generar`, data);
+  }
+
+  listarOrdenesCompra(tenantId: number, estado?: string): Observable<any> {
+    const url = estado
+      ? `${this.baseUrl}/ordenes-compra/tenant/${tenantId}?estado=${estado}`
+      : `${this.baseUrl}/ordenes-compra/tenant/${tenantId}`;
+    return this.http.get<any>(url);
+  }
+
+  obtenerOrdenCompra(id: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/ordenes-compra/${id}`);
+  }
+
+  surtirOrdenCompra(id: number, data: { tenantId: number; notas?: string; items?: any[] }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/ordenes-compra/${id}/surtir`, data);
+  }
+
+  restockDirecto(data: { tenantId: number; titulo?: string; notas?: string; items: any[] }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/ordenes-compra/restock-directo`, data);
+  }
+
+  cancelarOrdenCompra(id: number, motivo?: string): Observable<any> {
+    return this.http.put<any>(`${this.baseUrl}/ordenes-compra/${id}/cancelar`, { motivo });
+  }
+
+  /* ============ Distribución a Áreas desde Bodega (Cocina / Barra en 1 Clic) ============ */
+
+  getDistribucionSugerida(tenantId: number, factor: number = 1.5): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/bodega/distribucion-sugerida/${tenantId}?factor=${factor}`);
+  }
+
+  distribuirBatch(data: { tenantId: number; items: any[] }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/bodega/distribuir-batch`, data);
+  }
 }

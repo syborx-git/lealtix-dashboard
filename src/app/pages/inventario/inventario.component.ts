@@ -18,6 +18,7 @@ import { MessageModule } from 'primeng/message';
 import { InventoryService } from './service/inventory.service';
 import { StockRequestService } from './service/stock-request.service';
 import { AuthService } from '@/auth/auth.service';
+import { isBeverageCategoryName as checkBeverageCategory, isBeverageProductName as checkBeverageProduct } from '../kitchen/services/order-beverage-utils';
 
 interface InvItem {
   id: number;
@@ -204,28 +205,11 @@ export class InventarioComponent implements OnInit {
   }
 
   isBeverageCategoryName(name: string): boolean {
-    if (!name) return false;
-    const n = this.normalizeText(name);
-    const keywords = [
-      'bebida', 'cerveza', 'licor', 'coctel', 'bar', 'barra', 'vino', 'cafeteria', 'cafe',
-      'refresco', 'agua', 'trago', 'destilado', 'botella', 'jugo', 'malteada', 'shake', 'smoothie'
-    ];
-    return keywords.some((k) => n.includes(k));
+    return checkBeverageCategory(name);
   }
 
   isBeverageProductName(name: string): boolean {
-    if (!name) return false;
-    const n = this.normalizeText(name);
-    const keywords = [
-      'cerveza', 'heineken', 'bohemia', 'amstel', 'corona', 'victoria', 'modelo', 'pacifico',
-      'indio', 'tecate', 'ultra', 'ginebra', 'gin', 'vodka', 'tequila', 'ron', 'whisky',
-      'whiskey', 'mezcal', 'brandy', 'cognac', 'licor', 'vino', 'champagne', 'refresco',
-      'coca cola', 'coca', 'pepsi', 'sprite', 'fanta', 'squirt', 'sidral', 'agua', 'mineral',
-      'ciel', 'epura', 'bonafont', 'jugo', 'naranjada', 'limonada', 'coctel', 'margarita',
-      'mojito', 'michelada', 'carajillo', 'clamato', 'soda', 'jarrito', 'boing', 'cafe',
-      'café', 'espresso', 'capuchino', 'latte', 'frappe', 'te helado', 'bebida'
-    ];
-    return keywords.some((k) => n.includes(k));
+    return checkBeverageProduct(name);
   }
 
   isBeverage(item: any): boolean {

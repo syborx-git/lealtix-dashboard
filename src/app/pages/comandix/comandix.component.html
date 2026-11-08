@@ -18,7 +18,7 @@
     <!-- MODO 1: SLIDER DE MENÚS Y VISTAS (Se muestra al pulsar el botón hamburguesa o en vistas distintas a POS y MESAS) -->
     <div
       *ngIf="showViewsSlider() || (activeView() !== 'pos' && activeView() !== 'mesas')"
-      class="views-slider-container flex items-center justify-start md:justify-center gap-2 w-full overflow-x-auto scrollbar-none py-1 px-1.5"
+      class="views-slider-container flex items-center gap-1.5 md:gap-2 w-full overflow-x-auto scrollbar-none py-1 px-2.5"
     >
       <!-- Botón Volver / Cerrar slider (visible cuando estamos en vista POS o MESAS) -->
       <button
@@ -124,7 +124,7 @@
     <!-- MODO 2: ISLA DINÁMICA DE ÍCONOS (En modo POS cuando el slider no está abierto) -->
     <div
       *ngIf="!showViewsSlider() && activeView() === 'pos'"
-      class="icons-dock-container flex items-center justify-center gap-2 overflow-x-auto scrollbar-none py-1 px-1.5 w-full"
+      class="icons-dock-container flex items-center gap-1.5 md:gap-2 overflow-x-auto scrollbar-none py-1 px-2.5 w-full"
     >
       <!-- Ícono 0: MENÚ DE HAMBURGUESA (Abre el slider de vistas) -->
       <button
@@ -394,7 +394,7 @@
     <!-- MODO 3: BARRA UNIFICADA MAPA DE MESAS (Cuando estamos en vista mesas y el slider no está abierto) -->
     <div
       *ngIf="!showViewsSlider() && activeView() === 'mesas'"
-      class="mesas-unified-dock flex items-center justify-between gap-2.5 w-full py-0.5 px-1 overflow-x-auto scrollbar-none"
+      class="mesas-unified-dock flex items-center justify-between gap-2 md:gap-2.5 w-full py-0.5 px-2.5 overflow-x-auto scrollbar-none"
     >
       <!-- LADO IZQUIERDO: HAMBURGUESA + SELECTOR DE ÁREA -->
       <div class="flex items-center gap-2 flex-shrink-0">

@@ -1,865 +1,879 @@
-import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormsModule } from '@angular/forms';
-import { DialogModule } from 'primeng/dialog';
-import { ButtonModule } from 'primeng/button';
-import { FileUploadModule } from 'primeng/fileupload';
-import { InputTextModule } from 'primeng/inputtext';
-import { TextareaModule } from 'primeng/textarea';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { MessageModule } from 'primeng/message';
-import { CheckboxModule } from 'primeng/checkbox';
-import { SelectModule } from 'primeng/select';
-import { TreeSelectModule } from 'primeng/treeselect';
-import { TooltipModule } from 'primeng/tooltip';
-import { TouchTooltipDirective } from '@/shared/directives/touch-tooltip.directive';
-import { CrossSellingConfig, CrossSellingDraft } from './service/cross-selling.service';
-import { TreeNode } from 'primeng/api';
-
-@Component({
-    selector: 'app-product-dialog',
-    standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, FormsModule, DialogModule, ButtonModule, FileUploadModule, InputTextModule, TextareaModule, InputNumberModule, MessageModule, CheckboxModule, SelectModule, TreeSelectModule, TooltipModule, TouchTooltipDirective],
-    template: `
-    <p-dialog [(visible)]="visible" [style]="{ width: '46rem', maxWidth: '94vw' }" header="Detalle de Producto" [modal]="true" styleClass="product-dialog minimal-modal" contentStyleClass="product-dialog-content" (onHide)="onHide()">
-        <ng-template #content>
-            <div class="product-form-container">
-                <!-- Categories Row -->
-                <div class="mb-4">
-                    <div class="flex align-items-center justify-between mb-2">
-                        <label class="field-label">Categorías</label>
-                        <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Asigna una o varias categorías a este producto. Aparecerá en todas las seleccionadas; la primera será la categoría principal." tooltipPosition="top" appTouchTooltip></button>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="flex-1">
-                            <p-select [(ngModel)]="categoryPicker" (ngModelChange)="addCategory($event)" [options]="availableCategories" optionLabel="label" optionValue="value" placeholder="+ Agregar categoría..." styleClass="w-full"></p-select>
-                        </div>
-                    </div>
-                    <div class="mt-2 flex flex-wrap gap-2" *ngIf="selectedCategories().length">
-                        <span class="cat-chip" *ngFor="let c of selectedCategories()">
-                            <span class="cat-chip-label">{{ c.name }}</span>
-                            <button type="button" class="cat-chip-x" (click)="removeCategory(c.id)" pTooltip="Quitar" tooltipPosition="top"><i class="pi pi-times"></i></button>
-                        </span>
-                    </div>
-                    <div class="mt-2">
-                        <p-message *ngIf="(!selectedCategories().length) && submitted" severity="error" [text]="'Selecciona al menos una categoría'"></p-message>
-                    </div>
-                </div>
-
-                <!-- Product form -->
-                <form [formGroup]="productForm" class="product-form">
-                    <input type="hidden" formControlName="img_url" />
-
-                    <div class="form-field">
-                        <div class="flex align-items-center justify-between mb-2">
-                            <label for="name" class="field-label">Nombre</label>
-                            <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Nombre corto y claro del producto (ej. Café Americano). Será mostrado a tus clientes." tooltipPosition="top" appTouchTooltip></button>
-                        </div>
-                        <input type="text" pInputText id="name" formControlName="name" required autofocus placeholder="Ej: Café Americano" class="w-full" />
-                        <p-message *ngIf="productForm.get('name')?.invalid && (productForm.get('name')?.touched || submitted)" severity="error" [text]="'Nombre es requerido'"></p-message>
-                    </div>
-
-                    <div class="form-field">
-                        <div class="flex align-items-center justify-between mb-2">
-                            <label for="description" class="field-label">Descripción</label>
-                            <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Describe brevemente el producto: ingredientes, tamaño o notas importantes. Esto ayuda a tus clientes a elegir." tooltipPosition="top" appTouchTooltip></button>
-                        </div>
-                        <textarea id="description" pTextarea formControlName="description" rows="3" placeholder="Descripción breve..." class="w-full"></textarea>
-                        <p-message *ngIf="productForm.get('description')?.invalid && (productForm.get('description')?.touched || submitted)" severity="error" [text]="'La descripción es requerida'"></p-message>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-col">
-                            <div class="flex align-items-center justify-between mb-2">
-                                <label for="price" class="field-label">Precio {{ productForm?.get('tieneVariantes')?.value ? '(Definido por variantes)' : '' }}</label>
-                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Ingresa el precio en pesos mexicanos. Si el producto tiene variantes activadas, cada variante establecerá su propio precio." tooltipPosition="top" appTouchTooltip></button>
-                            </div>
-                            <p-inputnumber id="price" formControlName="price" mode="currency" currency="MXN" locale="en-US" class="w-full" [disabled]="productForm?.get('tieneVariantes')?.value" />
-                            <p-message *ngIf="!productForm?.get('tieneVariantes')?.value && productForm?.get('price')?.invalid && (productForm.get('price')?.touched || submitted)" severity="error" [text]="'Precio es requerido'"></p-message>
-                        </div>
-
-                        <div class="form-col form-col-narrow">
-                            <label for="isActive" class="field-label">Activo</label>
-                            <div class="flex align-items-center gap-2">
-                                <p-checkbox formControlName="isActive" binary="true" inputId="isActive" (onChange)="onActiveChange($event.checked)"></p-checkbox>
-                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Activa para mostrar el producto en el menú. Desactiva si quieres ocultarlo temporalmente." tooltipPosition="top" appTouchTooltip></button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-field" style="flex:1">
-                            <label for="autoAvailability" class="field-label">Control de stock automático</label>
-                            <div class="flex align-items-center gap-2">
-                                <p-checkbox formControlName="autoAvailability" binary="true" inputId="autoAvailability" (onChange)="onAutoAvailabilityChange($event.checked)"></p-checkbox>
-                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Si está activo, el producto se oculta automáticamente del menú cuando no hay insumos suficientes para prepararlo, y se vuelve a mostrar cuando se abastece. Desactívalo para controlar 'Activo' manualmente." tooltipPosition="top" appTouchTooltip></button>
-                            </div>
-                        </div>
-
-                        <div class="form-field" style="flex:1">
-                            <label for="tieneVariantes" class="field-label">¿Tiene variantes?</label>
-                            <div class="flex align-items-center gap-2">
-                                <p-checkbox formControlName="tieneVariantes" binary="true" inputId="tieneVariantes" (onChange)="onTieneVariantesChange($event.checked)"></p-checkbox>
-                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Marca si este producto se compone de variantes (ej. Mezcal con marcas/etiquetas como Ojo de Tigre, 400 Conejos). Al marcarlo no requiere precio base y desplegará selector de variantes en Comandix." tooltipPosition="top" appTouchTooltip></button>
-                            </div>
-                        </div>
-
-                        <div class="form-field" style="flex:1">
-                            <label for="esVariable" class="field-label">¿Es artículo variable?</label>
-                            <div class="flex align-items-center gap-2">
-                                <p-checkbox formControlName="esVariable" binary="true" inputId="esVariable"></p-checkbox>
-                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Marca esta opción si este platillo o bebida es una variante de otro producto (ej. Ojo de Tigre Joven como variante de Mezcal). Solo los artículos con esta casilla activada aparecerán en el selector de variables de las recetas." tooltipPosition="top" appTouchTooltip></button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-field">
-                        <div class="flex align-items-center justify-between mb-2">
-                            <label class="field-label">Imagen (URL o subir)</label>
-                            <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Sube una imagen clara del producto o pega la URL. Recomendado: formato PNG/JPG, máximo 2MB." tooltipPosition="top" appTouchTooltip></button>
-                        </div>
-                        <div class="flex align-items-center gap-3">
-                            <p-fileUpload mode="basic" name="productImage" accept="image/*" maxFileSize="2000000" chooseLabel="Seleccionar imagen" chooseIcon="pi pi-upload" (onSelect)="onProductFileSelect.emit($event)">
-                                <ng-template pTemplate="empty"><span>No hay archivo seleccionado</span></ng-template>
-                            </p-fileUpload>
-                            <div *ngIf="productImagePreview || productForm.get('img_url')?.value" class="flex align-items-center gap-2">
-                                <img [src]="productImagePreview || productForm.get('img_url')?.value" alt="Product image preview" class="product-preview" />
-                                <button pButton type="button" icon="pi pi-times" class="p-button-sm p-button-text p-button-danger" (click)="onRemoveImageClick()" pTooltip="Eliminar imagen" tooltipPosition="top"></button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Cross-selling section -->
-                    <div class="cross-selling-section">
-                        <div class="section-header">
-                            <div>
-                                <div class="section-title">Venta cruzada</div>
-                                <div class="section-help">Sugiere hasta {{ crossSellingMax }} productos relacionados para este producto.</div>
-                            </div>
-                            <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="La venta cruzada permite sugerir productos complementarios en el menu." tooltipPosition="top" appTouchTooltip></button>
-                        </div>
-
-                        <p-message *ngIf="!crossSellingEnabled" severity="info" [text]="'Guarda el producto para configurar venta cruzada.'" styleClass="cross-selling-info"></p-message>
-
-                        <div *ngIf="crossSellingEnabled" class="cross-selling-body">
-                            <div class="cross-selling-meta">
-                                <span class="cs-count">{{ crossSellingItems.length || 0 }}/{{ crossSellingMax }}</span>
-                                <span *ngIf="crossSellingLoading" class="cs-loading">Cargando...</span>
-                            </div>
-
-                            <div class="cross-selling-form">
-                                <div class="form-field">
-                                    <label class="field-label">Producto sugerido</label>
-                                    <p-treeSelect
-                                        [(ngModel)]="crossSellingSelectedNode"
-                                        (ngModelChange)="onCrossSellingNodeChange($event)"
-                                        [ngModelOptions]="{ standalone: true }"
-                                        [options]="crossSellingCatalogOptions"
-                                        selectionMode="single"
-                                        placeholder="Selecciona un producto"
-                                        filter="true"
-                                        filterPlaceholder="Buscar producto"
-                                        styleClass="w-full">
-                                    </p-treeSelect>
-                                </div>
-
-                                <div class="form-row">
-                                    <div class="form-col">
-                                        <label class="field-label">Orden</label>
-                                        <p-inputnumber [(ngModel)]="crossSellingDraft.displayOrder" [ngModelOptions]="{ standalone: true }" [min]="1" [max]="crossSellingMax" [useGrouping]="false" class="w-full"></p-inputnumber>
-                                    </div>
-                                    <div class="form-col form-col-narrow cs-active-col">
-                                        <label class="field-label">Activo</label>
-                                        <div class="flex align-items-center gap-2">
-                                            <p-checkbox [(ngModel)]="crossSellingDraft.isActive" [ngModelOptions]="{ standalone: true }" binary="true" inputId="crossSellingActive"></p-checkbox>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="cross-selling-actions">
-                                    <p-button
-                                        [label]="crossSellingEditingId ? 'Actualizar' : 'Agregar'"
-                                        icon="pi pi-check"
-                                        severity="success"
-                                        [disabled]="crossSellingSaving || !canSubmitCrossSelling()"
-                                        (onClick)="submitCrossSelling()"></p-button>
-                                    <p-button
-                                        *ngIf="crossSellingEditingId"
-                                        label="Cancelar"
-                                        severity="secondary"
-                                        [outlined]="true"
-                                        (onClick)="cancelCrossSellingEdit()"></p-button>
-                                </div>
-
-                                <p-message *ngIf="crossSellingError" severity="error" [text]="crossSellingError"></p-message>
-                            </div>
-
-                            <div *ngIf="crossSellingItems.length; else crossSellingEmpty" class="cross-selling-list">
-                                <div class="cross-selling-item" *ngFor="let item of crossSellingItems">
-                                    <div class="cs-item-main">
-                                        <span class="cs-order">#{{ item.displayOrder }}</span>
-                                        <div class="cs-info">
-                                            <div class="cs-name">{{ item.suggestedProductName || 'Producto' }}</div>
-                                            <div class="cs-status" [class.is-active]="item.isActive">{{ item.isActive ? 'Activo' : 'Inactivo' }}</div>
-                                        </div>
-                                    </div>
-                                    <div class="cs-item-actions">
-                                        <button pButton type="button" icon="pi pi-pencil" class="p-button-sm p-button-text" (click)="startCrossSellingEdit(item)" pTooltip="Editar" tooltipPosition="top"></button>
-                                        <button pButton type="button" icon="pi pi-trash" class="p-button-sm p-button-text p-button-danger" (click)="requestCrossSellingDelete(item)" pTooltip="Eliminar" tooltipPosition="top"></button>
-                                    </div>
-                                </div>
-                            </div>
-                            <ng-template #crossSellingEmpty>
-                                <div class="cs-empty">No hay productos sugeridos aun.</div>
-                            </ng-template>
-                        </div>
-                    </div>
-
-                    <!-- Receta (insumos) ahora se gestiona desde el botón "Ver receta" en la tabla -->
-                    <p-message severity="info" [text]="recipeInfoMessage" styleClass="recipe-info"></p-message>
-                </form>
-            </div>
-        </ng-template>
-
-        <ng-template #footer>
-            <div class="product-dialog-footer">
-                <p-button label="Cancelar" icon="pi pi-times" severity="secondary" [outlined]="true" (onClick)="hide.emit()" />
-                <p-button label="Guardar" icon="pi pi-check" severity="success" styleClass="minimal-submit" (onClick)="save.emit()" />
-            </div>
-        </ng-template>
-    </p-dialog>
-    `,
-    styles: [`
-        /* === DIALOGO PRODUCTO (homologado) === */
-        ::ng-deep .product-dialog {
-            border-radius: 1.5rem !important;
-            overflow: hidden;
-            box-shadow: var(--lealtix-shadow-2xl) !important;
-            border: 1px solid var(--lealtix-slate-200) !important;
-        }
-
-        ::ng-deep .product-dialog .p-dialog-header {
-            background: linear-gradient(135deg, var(--lealtix-primary-500, #6366f1) 0%, var(--lealtix-primary-600, #4f46e5) 100%);
-            color: white;
-            padding: 1.5rem 2rem;
-            border-radius: 1.5rem 1.5rem 0 0;
-            border-bottom: none;
-        }
-
-        ::ng-deep .product-dialog .p-dialog-title {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #ffffff !important;
-        }
-
-        ::ng-deep .product-dialog .p-dialog-header-actions button,
-        ::ng-deep .product-dialog .p-dialog-close-button,
-        ::ng-deep .product-dialog .p-dialog-header-close {
-            background: #ffffff !important;
-            color: #4f46e5 !important;
-            border: 1px solid rgba(255, 255, 255, 0.9) !important;
-            border-radius: 9999px !important;
-            width: 2.25rem !important;
-            height: 2.25rem !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18) !important;
-            cursor: pointer !important;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-
-            svg, i {
-                color: #4f46e5 !important;
-                fill: #4f46e5 !important;
-                stroke: #4f46e5 !important;
-                width: 14px !important;
-                height: 14px !important;
-            }
-
-            &:hover {
-                background: #f8fafc !important;
-                color: #3730a3 !important;
-                transform: scale(1.08) !important;
-
-                svg, i {
-                    color: #3730a3 !important;
-                    fill: #3730a3 !important;
-                    stroke: #3730a3 !important;
-                    transform: rotate(90deg) scale(1.1) !important;
-                }
-            }
-        }
-
-        .product-dialog-content { padding: 0 !important; }
-
-        .product-form-container { padding: 2rem; }
-
-        .product-form { display:flex; flex-direction:column; gap:1.5rem; }
-
-        .form-field { display:flex; flex-direction:column; gap:0.6rem; }
-
-        .field-label { font-weight:700; color:var(--lealtix-slate-800); font-size:0.9375rem; }
-
-        .form-row { display:flex; gap:1rem; }
-        .form-col { flex:1; }
-        .form-col-narrow { width:8rem; }
-
-        ::ng-deep .info-button { width:2rem !important; height:2rem !important; padding:0 !important; color:var(--lealtix-primary-500) !important; }
-
-        ::ng-deep .product-dialog .p-dialog-content .p-inputtext,
-        ::ng-deep .product-dialog .p-dialog-content .p-inputtextarea,
-        ::ng-deep .product-dialog .p-dialog-content .p-inputnumber,
-        ::ng-deep .product-dialog .p-dialog-content .p-selectlabel,
-        ::ng-deep .product-dialog .p-dialog-content .p-select {
-            border-radius: 1rem !important;
-            border: 2px solid var(--lealtix-slate-300) !important;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
-        }
-
-        ::ng-deep .product-dialog .p-dialog-content .p-inputtext,
-        ::ng-deep .product-dialog .p-dialog-content .p-inputtextarea,
-        ::ng-deep .product-dialog .p-dialog-content .p-select {
-            font-size: 1rem !important;
-            padding: 0.9rem 1.1rem !important;
-        }
-
-        ::ng-deep .product-dialog .p-dialog-content .p-inputtext:focus,
-        ::ng-deep .product-dialog .p-dialog-content .p-inputtextarea:focus {
-            border-color: var(--lealtix-primary-500) !important;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18) !important;
-        }
-
-        ::ng-deep .p-message { margin-top:0.5rem; }
-
-        .product-dialog-footer { display:flex; justify-content:flex-end; gap:0.75rem; padding:1.25rem 2rem; border-top:1px solid var(--lealtix-slate-200); background:var(--lealtix-slate-50); }
-
-        /* === CHIPS DE CATEGORÍAS === */
-        .cat-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: var(--lealtix-primary-50, #eef2ff);
-            border: 1px solid var(--lealtix-primary-200, #c7d2fe);
-            color: var(--lealtix-primary-700, #4338ca);
-            border-radius: 999px;
-            padding: 0.35rem 0.6rem 0.35rem 0.85rem;
-            font-size: 0.8125rem;
-            font-weight: 600;
-        }
-        .cat-chip-x {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 1.25rem;
-            height: 1.25rem;
-            border: none;
-            background: transparent;
-            color: var(--lealtix-primary-700, #4338ca);
-            border-radius: 999px;
-            cursor: pointer;
-            padding: 0;
-            font-size: 0.75rem;
-        }
-        .cat-chip-x:hover { background: var(--lealtix-primary-200, #c7d2fe); color: #b91c1c; }
-
-        .product-dialog-footer .p-button {
-            padding: 0.85rem 1.75rem !important;
-            font-size: 0.9375rem !important;
-            font-weight: 700 !important;
-            border-radius: 1rem !important;
-            letter-spacing: 0.01em;
-        }
-
-        /* === BOTÓN DANGER HOMOLOGADO === */
-        ::ng-deep .p-button-danger {
-            &.p-button-text {
-                background: transparent !important;
-                color: #dc2626 !important;
-                border: none !important;
-
-                &:hover {
-                    background-color: #fee2e2 !important;
-                    color: #b91c1c !important;
-                }
-
-                &:active {
-                    background-color: #fecaca !important;
-                }
-            }
-        }
-
-        ::ng-deep .product-preview { max-width:100px; max-height:64px; object-fit:contain; border-radius:0.75rem; box-shadow:var(--lealtix-shadow-sm); border:1px solid var(--lealtix-slate-200); }
-
-        /* === VENTA CRUZADA === */
-        .cross-selling-section { margin-top:1.5rem; padding-top:1.25rem; border-top:1px dashed var(--lealtix-slate-200); display:flex; flex-direction:column; gap:1rem; }
-        .section-header { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; }
-        .section-title { font-weight:700; color:var(--lealtix-slate-800); font-size:1rem; }
-        .section-help { color:var(--lealtix-slate-600); font-size:0.85rem; }
-        .cross-selling-body { display:flex; flex-direction:column; gap:1rem; }
-        .cross-selling-meta { display:flex; align-items:center; justify-content:space-between; color:var(--lealtix-slate-600); font-size:0.85rem; }
-        .cs-count { font-weight:600; }
-        .cs-loading { color:var(--lealtix-primary-600); }
-        .cross-selling-form { padding:1rem; border:1px solid var(--lealtix-slate-200); border-radius:0.75rem; background:var(--lealtix-slate-50); display:flex; flex-direction:column; gap:0.75rem; }
-        .cross-selling-actions { display:flex; gap:0.5rem; justify-content:flex-end; }
-        .cross-selling-list { display:flex; flex-direction:column; gap:0.75rem; }
-        .cross-selling-item { display:flex; align-items:center; justify-content:space-between; padding:0.75rem 1rem; border:1px solid var(--lealtix-slate-200); border-radius:0.75rem; background:white; box-shadow:var(--lealtix-shadow-xs); }
-        .cs-item-main { display:flex; align-items:center; gap:0.75rem; }
-        .cs-order { font-weight:700; color:var(--lealtix-primary-600); background:var(--lealtix-primary-50); padding:0.25rem 0.5rem; border-radius:999px; font-size:0.75rem; }
-        .cs-info { display:flex; flex-direction:column; gap:0.25rem; }
-        .cs-name { font-weight:600; color:var(--lealtix-slate-800); }
-        .cs-status { font-size:0.75rem; color:var(--lealtix-slate-500); }
-        .cs-status.is-active { color:var(--lealtix-success-600); font-weight:600; }
-        .cs-item-actions { display:flex; align-items:center; gap:0.25rem; }
-        .cs-empty { text-align:center; color:var(--lealtix-slate-500); padding:0.75rem 0; }
-        .cs-active-col { min-width:7rem; }
-
-        ::ng-deep .cross-selling-info .p-message-text { color: #ffffff !important; }
-
-        /* === RECETA (INSUMOS) === */
-        .recipe-section { margin-top:1.5rem; padding-top:1.25rem; border-top:1px dashed var(--lealtix-slate-200); display:flex; flex-direction:column; gap:1rem; }
-        .recipe-form { padding:1rem; border:1px solid var(--lealtix-slate-200); border-radius:0.75rem; background:var(--lealtix-slate-50); display:flex; flex-direction:column; gap:0.75rem; }
-        .recipe-actions { display:flex; gap:0.5rem; justify-content:flex-end; }
-        .recipe-list { display:flex; flex-direction:column; gap:0.75rem; }
-        .recipe-item { display:flex; align-items:center; justify-content:space-between; padding:0.75rem 1rem; border:1px solid var(--lealtix-slate-200); border-radius:0.75rem; background:white; box-shadow:var(--lealtix-shadow-xs); }
-        .recipe-hint { color:var(--lealtix-slate-500); font-size:0.8rem; }
-    `]
-})
-export class ProductDialogComponent implements OnChanges {
-    @Input() visible: boolean = false;
-    @Output() visibleChange = new EventEmitter<boolean>();
-
-    @Input() product: any = {};
-    @Input() productForm!: any;
-    @Input() categoryForm!: any;
-    @Input() categoryDialog: boolean = false;
-    @Output() categoryDialogChange = new EventEmitter<boolean>();
-    localCategoryVisible: boolean = false;
-    @Input() productImagePreview: string | null = null;
-    @Input() categoriesArrayValue: any[] = [];
-    @Input() submitted: boolean = false;
-
-    @Input() crossSellingEnabled: boolean = false;
-    @Input() crossSellingItems: CrossSellingConfig[] = [];
-    @Input() crossSellingCatalogOptions: any[] = [];
-    @Input() crossSellingLoading: boolean = false;
-    @Input() crossSellingSaving: boolean = false;
-    @Input() crossSellingMax: number = 3;
-
-    @Output() createCrossSelling = new EventEmitter<CrossSellingDraft>();
-    @Output() updateCrossSelling = new EventEmitter<CrossSellingDraft>();
-    @Output() deleteCrossSelling = new EventEmitter<CrossSellingConfig>();
-
-    @Output() save = new EventEmitter<void>();
-    @Output() hide = new EventEmitter<void>();
-    @Output() openNewCategory = new EventEmitter<void>();
-    @Output() openEditCategory = new EventEmitter<void>();
-    @Output() createCategory = new EventEmitter<void>();
-    @Output() onProductFileSelect = new EventEmitter<any>();
-    @Output() categoryChange = new EventEmitter<any>();
-    @Output() activeChange = new EventEmitter<boolean>();
-    @Output() autoAvailabilityChange = new EventEmitter<boolean>();
-    @Output() removeImage = new EventEmitter<void>();
-
-    categoryPicker: any = null;
-
-    get availableCategories(): any[] {
-        const selected = new Set(this.selectedCategoryIds());
-        return (this.categoriesArrayValue || []).filter((c) => !selected.has(Number(c.value)));
-    }
-
-    selectedCategoryIds(): number[] {
-        const product = this.product || {};
-        if (!Array.isArray(product.categoryIds)) return [];
-        return product.categoryIds
-            .map((id: any) => Number(id))
-            .filter((n: number) => !Number.isNaN(n));
-    }
-
-    selectedCategories(): { id: number; name: string }[] {
-        const ids = this.selectedCategoryIds();
-        if (!ids.length) return [];
-
-        const map = new Map<number, { id: number; name: string }>();
-        const product = this.product || {};
-        if (Array.isArray(product.categories)) {
-            product.categories.forEach((c: any) => {
-                if (c && c.id !== null && c.id !== undefined && !map.has(Number(c.id))) {
-                    map.set(Number(c.id), { id: Number(c.id), name: c.name || '' });
-                }
-            });
-        }
-        (this.categoriesArrayValue || []).forEach((c) => {
-            const id = Number(c.value);
-            if (!Number.isNaN(id) && c.label && !map.has(id)) {
-                map.set(id, { id, name: c.label });
-            }
-        });
-
-        return ids
-            .map((id) => map.get(id))
-            .filter((c): c is { id: number; name: string } => !!c && !!c.name);
-    }
-
-    addCategory(value: any) {
-        this.categoryPicker = null;
-        if (value === null || value === undefined) return;
-
-        const id = Number(value);
-        if (Number.isNaN(id)) return;
-
-        const product = this.product = this.product || {};
-        if (!Array.isArray(product.categoryIds)) {
-            product.categoryIds = [];
-        }
-
-        const ids = product.categoryIds.map((v: any) => Number(v)).filter((n: number) => !Number.isNaN(n));
-        if (ids.includes(id)) return;
-
-        product.categoryIds.push(id);
-
-        // La primera categoría agregada se convierte en la categoría principal
-        if (product.categoryId === null || product.categoryId === undefined) {
-            product.categoryId = id;
-            const cat = (this.categoriesArrayValue || []).find((c) => String(c.value) === String(id));
-            product.categoryName = cat?.label ?? product.categoryName;
-        }
-
-        if (!Array.isArray(product.categories)) {
-            product.categories = [];
-        }
-        product.categories = this.selectedCategories();
-    }
-
-    removeCategory(idValue: number) {
-        const id = Number(idValue);
-        const product = this.product = this.product || {};
-
-        if (Array.isArray(product.categoryIds)) {
-            product.categoryIds = product.categoryIds.filter((v: any) => Number(v) !== id);
-        }
-        if (Array.isArray(product.categories)) {
-            product.categories = product.categories.filter((c: any) => Number(c?.id) !== id);
-        }
-
-        // Si se quitó la categoría principal, promover la siguiente
-        if (Number(product.categoryId) === id) {
-            const nextId = Array.isArray(product.categoryIds) && product.categoryIds.length
-                ? Number(product.categoryIds[0])
-                : null;
-            product.categoryId = nextId;
-            const cat = nextId != null
-                ? (this.categoriesArrayValue || []).find((c) => String(c.value) === String(nextId))
-                : null;
-            product.categoryName = cat?.label ?? null;
-        }
-    }
-
-    crossSellingDraft: CrossSellingDraft = {
-        suggestedProductId: null,
-        displayOrder: 1,
-        isActive: true
-    };
-    crossSellingSelectedNode: TreeNode | null = null;
-    crossSellingEditingId: number | null = null;
-    crossSellingError: string | null = null;
-
-    recipeInfoMessage = 'La receta (insumos) se gestiona desde el módulo "Recetas" del menú lateral.';
-
-    onHide() {
-        this.visibleChange.emit(false);
-        this.hide.emit();
-        this.resetCrossSellingDraft();
-    }
-
-    onRemoveImageClick() {
-        // Clear preview and form control, then notify parent so it can persist null
-        try {
-            this.productImagePreview = null;
-            if (this.productForm && this.productForm.get && this.productForm.get('img_url')) {
-                this.productForm.get('img_url').setValue(null);
-            }
-            // Also update the bound product object so parents that read `product` see the change
-            if (this.product) {
-                try {
-                    this.product.img_url = null;
-                } catch (e) {
-                    // ignore
-                }
-            }
-        } catch (e) {
-            // ignore errors
-        }
-        this.removeImage.emit();
-    }
-
-    closeCategoryDialog() {
-        this.localCategoryVisible = false;
-        this.categoryDialogChange.emit(false);
-    }
-
-    onCreateCategory() {
-        this.createCategory.emit();
-        this.closeCategoryDialog();
-    }
-
-    onCategorySelect(_event: any) {
-        // passthrough — parent uses ngModel on product bound object
-    }
-
-    // Prevent the click from changing the p-select internal focus/value
-    onNewCategoryClick(event: Event) {
-        event.stopPropagation();
-        this.openNewCategory.emit();
-    }
-
-    onEditCategoryClick(event: Event) {
-        event.stopPropagation();
-        this.openEditCategory.emit();
-    }
-
-    // Keep product.isActive in sync and seed form control when dialog receives a product
-    ngOnChanges(changes: SimpleChanges) {
-        if (changes['product']) {
-            // Ensure product object exists
-            this.product = this.product || {};
-
-            // If product.isActive is undefined/null, default to true
-            if (this.product.isActive === undefined || this.product.isActive === null) {
-                this.product.isActive = true;
-                this.activeChange.emit(true);
-            }
-
-            // Auto-disponibilidad: default true (null de registros viejos se trata como activado)
-            if (this.product.autoAvailability === undefined || this.product.autoAvailability === null) {
-                this.product.autoAvailability = true;
-                this.autoAvailabilityChange.emit(true);
-            }
-
-            // If a reactive form with 'isActive' control is provided, set its value from the product
-            if (this.productForm && this.productForm.get) {
-                const isActiveControl = this.productForm.get('isActive');
-                if (isActiveControl) {
-                    try {
-                        isActiveControl.setValue(this.product.isActive, { emitEvent: false });
-                    } catch (e) {
-                        // ignore if unable to set
-                    }
-                }
-
-                const autoAvailabilityControl = this.productForm.get('autoAvailability');
-                if (autoAvailabilityControl) {
-                    try {
-                        autoAvailabilityControl.setValue(this.product.autoAvailability, { emitEvent: false });
-                    } catch (e) {
-                        // ignore if unable to set
-                    }
-                }
-
-                const esVariableControl = this.productForm.get('esVariable');
-                if (esVariableControl) {
-                    try {
-                        esVariableControl.setValue(!!this.product.esVariable, { emitEvent: false });
-                    } catch (e) {
-                        // ignore if unable to set
-                    }
-                }
-
-                const tieneVariantesControl = this.productForm.get('tieneVariantes');
-                if (tieneVariantesControl) {
-                    try {
-                        tieneVariantesControl.setValue(!!this.product.tieneVariantes, { emitEvent: false });
-                    } catch (e) {
-                        // ignore if unable to set
-                    }
-                }
-            }
-
-            this.resetCrossSellingDraft();
-        }
-
-        if (changes['crossSellingItems'] && !this.crossSellingEditingId) {
-            this.crossSellingDraft = {
-                suggestedProductId: null,
-                displayOrder: this.getNextDisplayOrder(),
-                isActive: true
-            };
-            this.crossSellingSelectedNode = null;
-        }
-
-        if (changes['crossSellingCatalogOptions']) {
-            this.syncSelectedNode();
-        }
-    }
-
-    onActiveChange(value: boolean) {
-        // If parent form contains the control, write value there; otherwise update product and emit
-        if (this.productForm && this.productForm.get && this.productForm.get('isActive')) {
-            try {
-                this.productForm.get('isActive').setValue(value);
-            } catch (e) {
-                // ignore
-            }
-        } else {
-            this.product = this.product || {};
-            this.product.isActive = value;
-            this.activeChange.emit(value);
-        }
-    }
-
-    onAutoAvailabilityChange(value: boolean) {
-        if (this.productForm && this.productForm.get && this.productForm.get('autoAvailability')) {
-            try {
-                this.productForm.get('autoAvailability').setValue(value);
-            } catch (e) {
-                // ignore
-            }
-        } else {
-            this.product = this.product || {};
-            this.product.autoAvailability = value;
-            this.autoAvailabilityChange.emit(value);
-        }
-    }
-
-    onTieneVariantesChange(value: boolean) {
-        if (this.productForm && this.productForm.get && this.productForm.get('tieneVariantes')) {
-            try {
-                this.productForm.get('tieneVariantes').setValue(value);
-                if (value) {
-                    const priceCtrl = this.productForm.get('price');
-                    if (priceCtrl && (priceCtrl.value == null || priceCtrl.value === 0)) {
-                        priceCtrl.setValue(0);
-                    }
-                }
-            } catch (e) {
-                // ignore
-            }
-        } else {
-            this.product = this.product || {};
-            this.product.tieneVariantes = value;
-        }
-    }
-
-    private getNextDisplayOrder(): number {
-        const used = new Set((this.crossSellingItems || []).map((item) => item.displayOrder));
-        for (let i = 1; i <= this.crossSellingMax; i += 1) {
-            if (!used.has(i)) {
-                return i;
-            }
-        }
-        return 1;
-    }
-
-    resetCrossSellingDraft() {
-        this.crossSellingEditingId = null;
-        this.crossSellingError = null;
-        this.crossSellingDraft = {
-            suggestedProductId: null,
-            displayOrder: this.getNextDisplayOrder(),
-            isActive: true
-        };
-        this.crossSellingSelectedNode = null;
-    }
-
-    canSubmitCrossSelling(): boolean {
-        if (!this.crossSellingEnabled) return false;
-        if (!this.crossSellingDraft.suggestedProductId) return false;
-        if (!this.crossSellingDraft.displayOrder || this.crossSellingDraft.displayOrder < 1) return false;
-        if (!this.crossSellingEditingId && (this.crossSellingItems?.length || 0) >= this.crossSellingMax) return false;
-        return true;
-    }
-
-    submitCrossSelling() {
-        this.crossSellingError = null;
-
-        if (!this.crossSellingEnabled) {
-            return;
-        }
-
-        if (!this.crossSellingDraft.suggestedProductId) {
-            this.crossSellingError = 'Selecciona un producto sugerido.';
-            return;
-        }
-
-        if (!this.crossSellingDraft.displayOrder || this.crossSellingDraft.displayOrder < 1) {
-            this.crossSellingError = 'El orden debe ser mayor o igual a 1.';
-            return;
-        }
-
-        const duplicate = (this.crossSellingItems || []).some((item) =>
-            item.suggestedProductId === this.crossSellingDraft.suggestedProductId && item.id !== this.crossSellingEditingId
-        );
-        if (duplicate) {
-            this.crossSellingError = 'Este producto ya esta agregado.';
-            return;
-        }
-
-        if (this.crossSellingEditingId) {
-            this.updateCrossSelling.emit({
-                id: this.crossSellingEditingId,
-                suggestedProductId: this.crossSellingDraft.suggestedProductId,
-                displayOrder: this.crossSellingDraft.displayOrder,
-                isActive: this.crossSellingDraft.isActive
-            });
-        } else {
-            this.createCrossSelling.emit({
-                suggestedProductId: this.crossSellingDraft.suggestedProductId,
-                displayOrder: this.crossSellingDraft.displayOrder,
-                isActive: this.crossSellingDraft.isActive
-            });
-        }
-
-        this.resetCrossSellingDraft();
-    }
-
-    startCrossSellingEdit(item: CrossSellingConfig) {
-        this.crossSellingEditingId = item.id;
-        this.crossSellingError = null;
-        this.crossSellingDraft = {
-            suggestedProductId: item.suggestedProductId,
-            displayOrder: item.displayOrder,
-            isActive: item.isActive
-        };
-        this.syncSelectedNode();
-    }
-
-    cancelCrossSellingEdit() {
-        this.resetCrossSellingDraft();
-    }
-
-    requestCrossSellingDelete(item: CrossSellingConfig) {
-        this.deleteCrossSelling.emit(item);
-    }
-
-    onCrossSellingNodeChange(node: TreeNode | null) {
-        this.crossSellingSelectedNode = node;
-        const keyValue = node?.key;
-        const idValue = keyValue !== undefined && keyValue !== null ? Number(keyValue) : null;
-        this.crossSellingDraft.suggestedProductId = Number.isNaN(idValue as number) ? null : idValue;
-    }
-
-    private syncSelectedNode() {
-        if (!this.crossSellingDraft.suggestedProductId) {
-            this.crossSellingSelectedNode = null;
-            return;
-        }
-        const targetKey = String(this.crossSellingDraft.suggestedProductId);
-        const node = this.findNodeByKey(this.crossSellingCatalogOptions as TreeNode[], targetKey);
-        this.crossSellingSelectedNode = node;
-    }
-
-    private findNodeByKey(nodes: TreeNode[] | null | undefined, key: string): TreeNode | null {
-        if (!nodes || nodes.length === 0) return null;
-        for (const node of nodes) {
-            if (node.key === key) {
-                return node;
-            }
-            if (node.children && node.children.length > 0) {
-                const found = this.findNodeByKey(node.children, key);
-                if (found) {
-                    return found;
-                }
-            }
-        }
-        return null;
-    }
-}
+import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { DialogModule } from 'primeng/dialog';
+import { ButtonModule } from 'primeng/button';
+import { FileUploadModule } from 'primeng/fileupload';
+import { InputTextModule } from 'primeng/inputtext';
+import { TextareaModule } from 'primeng/textarea';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { MessageModule } from 'primeng/message';
+import { CheckboxModule } from 'primeng/checkbox';
+import { SelectModule } from 'primeng/select';
+import { TreeSelectModule } from 'primeng/treeselect';
+import { TooltipModule } from 'primeng/tooltip';
+import { TouchTooltipDirective } from '@/shared/directives/touch-tooltip.directive';
+import { CrossSellingConfig, CrossSellingDraft } from './service/cross-selling.service';
+import { TreeNode } from 'primeng/api';
+
+@Component({
+    selector: 'app-product-dialog',
+    standalone: true,
+    imports: [CommonModule, ReactiveFormsModule, FormsModule, DialogModule, ButtonModule, FileUploadModule, InputTextModule, TextareaModule, InputNumberModule, MessageModule, CheckboxModule, SelectModule, TreeSelectModule, TooltipModule, TouchTooltipDirective],
+    template: `
+    <p-dialog [(visible)]="visible" [style]="{ width: '46rem', maxWidth: '94vw' }" header="Detalle de Producto" [modal]="true" styleClass="product-dialog minimal-modal" contentStyleClass="product-dialog-content" (onHide)="onHide()">
+        <ng-template #content>
+            <div class="product-form-container">
+                <!-- Categories Row -->
+                <div class="mb-4">
+                    <div class="flex align-items-center justify-between mb-2">
+                        <label class="field-label">Categorías</label>
+                        <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Asigna una o varias categorías a este producto. Aparecerá en todas las seleccionadas; la primera será la categoría principal." tooltipPosition="top" appTouchTooltip></button>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="flex-1">
+                            <p-select [(ngModel)]="categoryPicker" (ngModelChange)="addCategory($event)" [options]="availableCategories" optionLabel="label" optionValue="value" placeholder="+ Agregar categoría..." styleClass="w-full"></p-select>
+                        </div>
+                    </div>
+                    <div class="mt-2 flex flex-wrap gap-2" *ngIf="selectedCategories().length">
+                        <span class="cat-chip" *ngFor="let c of selectedCategories()">
+                            <span class="cat-chip-label">{{ c.name }}</span>
+                            <button type="button" class="cat-chip-x" (click)="removeCategory(c.id)" pTooltip="Quitar" tooltipPosition="top"><i class="pi pi-times"></i></button>
+                        </span>
+                    </div>
+                    <div class="mt-2">
+                        <p-message *ngIf="(!selectedCategories().length) && submitted" severity="error" [text]="'Selecciona al menos una categoría'"></p-message>
+                    </div>
+                </div>
+
+                <!-- Product form -->
+                <form [formGroup]="productForm" class="product-form">
+                    <input type="hidden" formControlName="img_url" />
+
+                    <div class="form-field">
+                        <div class="flex align-items-center justify-between mb-2">
+                            <label for="name" class="field-label">Nombre</label>
+                            <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Nombre corto y claro del producto (ej. Café Americano). Será mostrado a tus clientes." tooltipPosition="top" appTouchTooltip></button>
+                        </div>
+                        <input type="text" pInputText id="name" formControlName="name" required autofocus placeholder="Ej: Café Americano" class="w-full" />
+                        <p-message *ngIf="productForm.get('name')?.invalid && (productForm.get('name')?.touched || submitted)" severity="error" [text]="'Nombre es requerido'"></p-message>
+                    </div>
+
+                    <div class="form-field">
+                        <div class="flex align-items-center justify-between mb-2">
+                            <label for="description" class="field-label">Descripción</label>
+                            <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Describe brevemente el producto: ingredientes, tamaño o notas importantes. Esto ayuda a tus clientes a elegir." tooltipPosition="top" appTouchTooltip></button>
+                        </div>
+                        <textarea id="description" pTextarea formControlName="description" rows="3" placeholder="Descripción breve..." class="w-full"></textarea>
+                        <p-message *ngIf="productForm.get('description')?.invalid && (productForm.get('description')?.touched || submitted)" severity="error" [text]="'La descripción es requerida'"></p-message>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-col">
+                            <div class="flex align-items-center justify-between mb-2">
+                                <label for="price" class="field-label">Precio {{ productForm?.get('tieneVariantes')?.value ? '(Definido por variantes)' : '' }}</label>
+                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Ingresa el precio en pesos mexicanos. Si el producto tiene variantes activadas, cada variante establecerá su propio precio." tooltipPosition="top" appTouchTooltip></button>
+                            </div>
+                            <p-inputnumber id="price" formControlName="price" mode="currency" currency="MXN" locale="en-US" class="w-full" [disabled]="productForm?.get('tieneVariantes')?.value" />
+                            <p-message *ngIf="!productForm?.get('tieneVariantes')?.value && productForm?.get('price')?.invalid && (productForm.get('price')?.touched || submitted)" severity="error" [text]="'Precio es requerido'"></p-message>
+                        </div>
+
+                        <div class="form-col">
+                            <div class="flex align-items-center justify-between mb-2">
+                                <label for="area" class="field-label">Área de destino *</label>
+                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Determina si este artículo se envía a Cocina o Barra en Comandix." tooltipPosition="top" appTouchTooltip></button>
+                            </div>
+                            <p-select id="area" formControlName="area" [options]="areaOptions" optionLabel="label" optionValue="value" styleClass="w-full"></p-select>
+                        </div>
+
+                        <div class="form-col form-col-narrow">
+                            <label for="isActive" class="field-label">Activo</label>
+                            <div class="flex align-items-center gap-2">
+                                <p-checkbox formControlName="isActive" binary="true" inputId="isActive" (onChange)="onActiveChange($event.checked)"></p-checkbox>
+                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Activa para mostrar el producto en el menú. Desactiva si quieres ocultarlo temporalmente." tooltipPosition="top" appTouchTooltip></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-field" style="flex:1">
+                            <label for="autoAvailability" class="field-label">Control de stock automático</label>
+                            <div class="flex align-items-center gap-2">
+                                <p-checkbox formControlName="autoAvailability" binary="true" inputId="autoAvailability" (onChange)="onAutoAvailabilityChange($event.checked)"></p-checkbox>
+                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Si está activo, el producto se oculta automáticamente del menú cuando no hay insumos suficientes para prepararlo, y se vuelve a mostrar cuando se abastece. Desactívalo para controlar 'Activo' manualmente." tooltipPosition="top" appTouchTooltip></button>
+                            </div>
+                        </div>
+
+                        <div class="form-field" style="flex:1">
+                            <label for="tieneVariantes" class="field-label">¿Tiene variantes?</label>
+                            <div class="flex align-items-center gap-2">
+                                <p-checkbox formControlName="tieneVariantes" binary="true" inputId="tieneVariantes" (onChange)="onTieneVariantesChange($event.checked)"></p-checkbox>
+                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Marca si este producto se compone de variantes (ej. Mezcal con marcas/etiquetas como Ojo de Tigre, 400 Conejos). Al marcarlo no requiere precio base y desplegará selector de variantes en Comandix." tooltipPosition="top" appTouchTooltip></button>
+                            </div>
+                        </div>
+
+                        <div class="form-field" style="flex:1">
+                            <label for="esVariable" class="field-label">¿Es artículo variable?</label>
+                            <div class="flex align-items-center gap-2">
+                                <p-checkbox formControlName="esVariable" binary="true" inputId="esVariable"></p-checkbox>
+                                <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Marca esta opción si este platillo o bebida es una variante de otro producto (ej. Ojo de Tigre Joven como variante de Mezcal). Solo los artículos con esta casilla activada aparecerán en el selector de variables de las recetas." tooltipPosition="top" appTouchTooltip></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field">
+                        <div class="flex align-items-center justify-between mb-2">
+                            <label class="field-label">Imagen (URL o subir)</label>
+                            <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="Sube una imagen clara del producto o pega la URL. Recomendado: formato PNG/JPG, máximo 2MB." tooltipPosition="top" appTouchTooltip></button>
+                        </div>
+                        <div class="flex align-items-center gap-3">
+                            <p-fileUpload mode="basic" name="productImage" accept="image/*" maxFileSize="2000000" chooseLabel="Seleccionar imagen" chooseIcon="pi pi-upload" (onSelect)="onProductFileSelect.emit($event)">
+                                <ng-template pTemplate="empty"><span>No hay archivo seleccionado</span></ng-template>
+                            </p-fileUpload>
+                            <div *ngIf="productImagePreview || productForm.get('img_url')?.value" class="flex align-items-center gap-2">
+                                <img [src]="productImagePreview || productForm.get('img_url')?.value" alt="Product image preview" class="product-preview" />
+                                <button pButton type="button" icon="pi pi-times" class="p-button-sm p-button-text p-button-danger" (click)="onRemoveImageClick()" pTooltip="Eliminar imagen" tooltipPosition="top"></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cross-selling section -->
+                    <div class="cross-selling-section">
+                        <div class="section-header">
+                            <div>
+                                <div class="section-title">Venta cruzada</div>
+                                <div class="section-help">Sugiere hasta {{ crossSellingMax }} productos relacionados para este producto.</div>
+                            </div>
+                            <button pButton type="button" icon="pi pi-info-circle" class="p-button-sm p-button-text p-button-plain info-button" pTooltip="La venta cruzada permite sugerir productos complementarios en el menu." tooltipPosition="top" appTouchTooltip></button>
+                        </div>
+
+                        <p-message *ngIf="!crossSellingEnabled" severity="info" [text]="'Guarda el producto para configurar venta cruzada.'" styleClass="cross-selling-info"></p-message>
+
+                        <div *ngIf="crossSellingEnabled" class="cross-selling-body">
+                            <div class="cross-selling-meta">
+                                <span class="cs-count">{{ crossSellingItems.length || 0 }}/{{ crossSellingMax }}</span>
+                                <span *ngIf="crossSellingLoading" class="cs-loading">Cargando...</span>
+                            </div>
+
+                            <div class="cross-selling-form">
+                                <div class="form-field">
+                                    <label class="field-label">Producto sugerido</label>
+                                    <p-treeSelect
+                                        [(ngModel)]="crossSellingSelectedNode"
+                                        (ngModelChange)="onCrossSellingNodeChange($event)"
+                                        [ngModelOptions]="{ standalone: true }"
+                                        [options]="crossSellingCatalogOptions"
+                                        selectionMode="single"
+                                        placeholder="Selecciona un producto"
+                                        filter="true"
+                                        filterPlaceholder="Buscar producto"
+                                        styleClass="w-full">
+                                    </p-treeSelect>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-col">
+                                        <label class="field-label">Orden</label>
+                                        <p-inputnumber [(ngModel)]="crossSellingDraft.displayOrder" [ngModelOptions]="{ standalone: true }" [min]="1" [max]="crossSellingMax" [useGrouping]="false" class="w-full"></p-inputnumber>
+                                    </div>
+                                    <div class="form-col form-col-narrow cs-active-col">
+                                        <label class="field-label">Activo</label>
+                                        <div class="flex align-items-center gap-2">
+                                            <p-checkbox [(ngModel)]="crossSellingDraft.isActive" [ngModelOptions]="{ standalone: true }" binary="true" inputId="crossSellingActive"></p-checkbox>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="cross-selling-actions">
+                                    <p-button
+                                        [label]="crossSellingEditingId ? 'Actualizar' : 'Agregar'"
+                                        icon="pi pi-check"
+                                        severity="success"
+                                        [disabled]="crossSellingSaving || !canSubmitCrossSelling()"
+                                        (onClick)="submitCrossSelling()"></p-button>
+                                    <p-button
+                                        *ngIf="crossSellingEditingId"
+                                        label="Cancelar"
+                                        severity="secondary"
+                                        [outlined]="true"
+                                        (onClick)="cancelCrossSellingEdit()"></p-button>
+                                </div>
+
+                                <p-message *ngIf="crossSellingError" severity="error" [text]="crossSellingError"></p-message>
+                            </div>
+
+                            <div *ngIf="crossSellingItems.length; else crossSellingEmpty" class="cross-selling-list">
+                                <div class="cross-selling-item" *ngFor="let item of crossSellingItems">
+                                    <div class="cs-item-main">
+                                        <span class="cs-order">#{{ item.displayOrder }}</span>
+                                        <div class="cs-info">
+                                            <div class="cs-name">{{ item.suggestedProductName || 'Producto' }}</div>
+                                            <div class="cs-status" [class.is-active]="item.isActive">{{ item.isActive ? 'Activo' : 'Inactivo' }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="cs-item-actions">
+                                        <button pButton type="button" icon="pi pi-pencil" class="p-button-sm p-button-text" (click)="startCrossSellingEdit(item)" pTooltip="Editar" tooltipPosition="top"></button>
+                                        <button pButton type="button" icon="pi pi-trash" class="p-button-sm p-button-text p-button-danger" (click)="requestCrossSellingDelete(item)" pTooltip="Eliminar" tooltipPosition="top"></button>
+                                    </div>
+                                </div>
+                            </div>
+                            <ng-template #crossSellingEmpty>
+                                <div class="cs-empty">No hay productos sugeridos aun.</div>
+                            </ng-template>
+                        </div>
+                    </div>
+
+                    <!-- Receta (insumos) ahora se gestiona desde el botón "Ver receta" en la tabla -->
+                    <p-message severity="info" [text]="recipeInfoMessage" styleClass="recipe-info"></p-message>
+                </form>
+            </div>
+        </ng-template>
+
+        <ng-template #footer>
+            <div class="product-dialog-footer">
+                <p-button label="Cancelar" icon="pi pi-times" severity="secondary" [outlined]="true" (onClick)="hide.emit()" />
+                <p-button label="Guardar" icon="pi pi-check" severity="success" styleClass="minimal-submit" (onClick)="save.emit()" />
+            </div>
+        </ng-template>
+    </p-dialog>
+    `,
+    styles: [`
+        /* === DIALOGO PRODUCTO (homologado) === */
+        ::ng-deep .product-dialog {
+            border-radius: 1.5rem !important;
+            overflow: hidden;
+            box-shadow: var(--lealtix-shadow-2xl) !important;
+            border: 1px solid var(--lealtix-slate-200) !important;
+        }
+
+        ::ng-deep .product-dialog .p-dialog-header {
+            background: linear-gradient(135deg, var(--lealtix-primary-500, #6366f1) 0%, var(--lealtix-primary-600, #4f46e5) 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            border-radius: 1.5rem 1.5rem 0 0;
+            border-bottom: none;
+        }
+
+        ::ng-deep .product-dialog .p-dialog-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #ffffff !important;
+        }
+
+        ::ng-deep .product-dialog .p-dialog-header-actions button,
+        ::ng-deep .product-dialog .p-dialog-close-button,
+        ::ng-deep .product-dialog .p-dialog-header-close {
+            background: #ffffff !important;
+            color: #4f46e5 !important;
+            border: 1px solid rgba(255, 255, 255, 0.9) !important;
+            border-radius: 9999px !important;
+            width: 2.25rem !important;
+            height: 2.25rem !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18) !important;
+            cursor: pointer !important;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+            svg, i {
+                color: #4f46e5 !important;
+                fill: #4f46e5 !important;
+                stroke: #4f46e5 !important;
+                width: 14px !important;
+                height: 14px !important;
+            }
+
+            &:hover {
+                background: #f8fafc !important;
+                color: #3730a3 !important;
+                transform: scale(1.08) !important;
+
+                svg, i {
+                    color: #3730a3 !important;
+                    fill: #3730a3 !important;
+                    stroke: #3730a3 !important;
+                    transform: rotate(90deg) scale(1.1) !important;
+                }
+            }
+        }
+
+        .product-dialog-content { padding: 0 !important; }
+
+        .product-form-container { padding: 2rem; }
+
+        .product-form { display:flex; flex-direction:column; gap:1.5rem; }
+
+        .form-field { display:flex; flex-direction:column; gap:0.6rem; }
+
+        .field-label { font-weight:700; color:var(--lealtix-slate-800); font-size:0.9375rem; }
+
+        .form-row { display:flex; gap:1rem; }
+        .form-col { flex:1; }
+        .form-col-narrow { width:8rem; }
+
+        ::ng-deep .info-button { width:2rem !important; height:2rem !important; padding:0 !important; color:var(--lealtix-primary-500) !important; }
+
+        ::ng-deep .product-dialog .p-dialog-content .p-inputtext,
+        ::ng-deep .product-dialog .p-dialog-content .p-inputtextarea,
+        ::ng-deep .product-dialog .p-dialog-content .p-inputnumber,
+        ::ng-deep .product-dialog .p-dialog-content .p-selectlabel,
+        ::ng-deep .product-dialog .p-dialog-content .p-select {
+            border-radius: 1rem !important;
+            border: 2px solid var(--lealtix-slate-300) !important;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+        }
+
+        ::ng-deep .product-dialog .p-dialog-content .p-inputtext,
+        ::ng-deep .product-dialog .p-dialog-content .p-inputtextarea,
+        ::ng-deep .product-dialog .p-dialog-content .p-select {
+            font-size: 1rem !important;
+            padding: 0.9rem 1.1rem !important;
+        }
+
+        ::ng-deep .product-dialog .p-dialog-content .p-inputtext:focus,
+        ::ng-deep .product-dialog .p-dialog-content .p-inputtextarea:focus {
+            border-color: var(--lealtix-primary-500) !important;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18) !important;
+        }
+
+        ::ng-deep .p-message { margin-top:0.5rem; }
+
+        .product-dialog-footer { display:flex; justify-content:flex-end; gap:0.75rem; padding:1.25rem 2rem; border-top:1px solid var(--lealtix-slate-200); background:var(--lealtix-slate-50); }
+
+        /* === CHIPS DE CATEGORÍAS === */
+        .cat-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--lealtix-primary-50, #eef2ff);
+            border: 1px solid var(--lealtix-primary-200, #c7d2fe);
+            color: var(--lealtix-primary-700, #4338ca);
+            border-radius: 999px;
+            padding: 0.35rem 0.6rem 0.35rem 0.85rem;
+            font-size: 0.8125rem;
+            font-weight: 600;
+        }
+        .cat-chip-x {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: none;
+            background: transparent;
+            color: var(--lealtix-primary-700, #4338ca);
+            border-radius: 999px;
+            cursor: pointer;
+            padding: 0;
+            font-size: 0.75rem;
+        }
+        .cat-chip-x:hover { background: var(--lealtix-primary-200, #c7d2fe); color: #b91c1c; }
+
+        .product-dialog-footer .p-button {
+            padding: 0.85rem 1.75rem !important;
+            font-size: 0.9375rem !important;
+            font-weight: 700 !important;
+            border-radius: 1rem !important;
+            letter-spacing: 0.01em;
+        }
+
+        /* === BOTÓN DANGER HOMOLOGADO === */
+        ::ng-deep .p-button-danger {
+            &.p-button-text {
+                background: transparent !important;
+                color: #dc2626 !important;
+                border: none !important;
+
+                &:hover {
+                    background-color: #fee2e2 !important;
+                    color: #b91c1c !important;
+                }
+
+                &:active {
+                    background-color: #fecaca !important;
+                }
+            }
+        }
+
+        ::ng-deep .product-preview { max-width:100px; max-height:64px; object-fit:contain; border-radius:0.75rem; box-shadow:var(--lealtix-shadow-sm); border:1px solid var(--lealtix-slate-200); }
+
+        /* === VENTA CRUZADA === */
+        .cross-selling-section { margin-top:1.5rem; padding-top:1.25rem; border-top:1px dashed var(--lealtix-slate-200); display:flex; flex-direction:column; gap:1rem; }
+        .section-header { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; }
+        .section-title { font-weight:700; color:var(--lealtix-slate-800); font-size:1rem; }
+        .section-help { color:var(--lealtix-slate-600); font-size:0.85rem; }
+        .cross-selling-body { display:flex; flex-direction:column; gap:1rem; }
+        .cross-selling-meta { display:flex; align-items:center; justify-content:space-between; color:var(--lealtix-slate-600); font-size:0.85rem; }
+        .cs-count { font-weight:600; }
+        .cs-loading { color:var(--lealtix-primary-600); }
+        .cross-selling-form { padding:1rem; border:1px solid var(--lealtix-slate-200); border-radius:0.75rem; background:var(--lealtix-slate-50); display:flex; flex-direction:column; gap:0.75rem; }
+        .cross-selling-actions { display:flex; gap:0.5rem; justify-content:flex-end; }
+        .cross-selling-list { display:flex; flex-direction:column; gap:0.75rem; }
+        .cross-selling-item { display:flex; align-items:center; justify-content:space-between; padding:0.75rem 1rem; border:1px solid var(--lealtix-slate-200); border-radius:0.75rem; background:white; box-shadow:var(--lealtix-shadow-xs); }
+        .cs-item-main { display:flex; align-items:center; gap:0.75rem; }
+        .cs-order { font-weight:700; color:var(--lealtix-primary-600); background:var(--lealtix-primary-50); padding:0.25rem 0.5rem; border-radius:999px; font-size:0.75rem; }
+        .cs-info { display:flex; flex-direction:column; gap:0.25rem; }
+        .cs-name { font-weight:600; color:var(--lealtix-slate-800); }
+        .cs-status { font-size:0.75rem; color:var(--lealtix-slate-500); }
+        .cs-status.is-active { color:var(--lealtix-success-600); font-weight:600; }
+        .cs-item-actions { display:flex; align-items:center; gap:0.25rem; }
+        .cs-empty { text-align:center; color:var(--lealtix-slate-500); padding:0.75rem 0; }
+        .cs-active-col { min-width:7rem; }
+
+        ::ng-deep .cross-selling-info .p-message-text { color: #ffffff !important; }
+
+        /* === RECETA (INSUMOS) === */
+        .recipe-section { margin-top:1.5rem; padding-top:1.25rem; border-top:1px dashed var(--lealtix-slate-200); display:flex; flex-direction:column; gap:1rem; }
+        .recipe-form { padding:1rem; border:1px solid var(--lealtix-slate-200); border-radius:0.75rem; background:var(--lealtix-slate-50); display:flex; flex-direction:column; gap:0.75rem; }
+        .recipe-actions { display:flex; gap:0.5rem; justify-content:flex-end; }
+        .recipe-list { display:flex; flex-direction:column; gap:0.75rem; }
+        .recipe-item { display:flex; align-items:center; justify-content:space-between; padding:0.75rem 1rem; border:1px solid var(--lealtix-slate-200); border-radius:0.75rem; background:white; box-shadow:var(--lealtix-shadow-xs); }
+        .recipe-hint { color:var(--lealtix-slate-500); font-size:0.8rem; }
+    `]
+})
+export class ProductDialogComponent implements OnChanges {
+    @Input() visible: boolean = false;
+    @Output() visibleChange = new EventEmitter<boolean>();
+
+    @Input() product: any = {};
+    @Input() productForm!: any;
+    @Input() categoryForm!: any;
+    @Input() categoryDialog: boolean = false;
+    @Output() categoryDialogChange = new EventEmitter<boolean>();
+    localCategoryVisible: boolean = false;
+    @Input() productImagePreview: string | null = null;
+    @Input() categoriesArrayValue: any[] = [];
+    @Input() submitted: boolean = false;
+
+    @Input() crossSellingEnabled: boolean = false;
+    @Input() crossSellingItems: CrossSellingConfig[] = [];
+    @Input() crossSellingCatalogOptions: any[] = [];
+    @Input() crossSellingLoading: boolean = false;
+    @Input() crossSellingSaving: boolean = false;
+    @Input() crossSellingMax: number = 3;
+
+    @Output() createCrossSelling = new EventEmitter<CrossSellingDraft>();
+    @Output() updateCrossSelling = new EventEmitter<CrossSellingDraft>();
+    @Output() deleteCrossSelling = new EventEmitter<CrossSellingConfig>();
+
+    @Output() save = new EventEmitter<void>();
+    @Output() hide = new EventEmitter<void>();
+    @Output() openNewCategory = new EventEmitter<void>();
+    @Output() openEditCategory = new EventEmitter<void>();
+    @Output() createCategory = new EventEmitter<void>();
+    @Output() onProductFileSelect = new EventEmitter<any>();
+    @Output() categoryChange = new EventEmitter<any>();
+    @Output() activeChange = new EventEmitter<boolean>();
+    @Output() autoAvailabilityChange = new EventEmitter<boolean>();
+    @Output() removeImage = new EventEmitter<void>();
+
+    categoryPicker: any = null;
+
+    areaOptions = [
+        { label: '🍽️ Cocina (Alimentos)', value: 'COCINA' },
+        { label: '🍹 Barra (Bebidas)', value: 'BARRA' },
+        { label: '📦 Almacén (Insumos)', value: 'ALMACEN' }
+    ];
+
+    get availableCategories(): any[] {
+        const selected = new Set(this.selectedCategoryIds());
+        return (this.categoriesArrayValue || []).filter((c) => !selected.has(Number(c.value)));
+    }
+
+    selectedCategoryIds(): number[] {
+        const product = this.product || {};
+        if (!Array.isArray(product.categoryIds)) return [];
+        return product.categoryIds
+            .map((id: any) => Number(id))
+            .filter((n: number) => !Number.isNaN(n));
+    }
+
+    selectedCategories(): { id: number; name: string }[] {
+        const ids = this.selectedCategoryIds();
+        if (!ids.length) return [];
+
+        const map = new Map<number, { id: number; name: string }>();
+        const product = this.product || {};
+        if (Array.isArray(product.categories)) {
+            product.categories.forEach((c: any) => {
+                if (c && c.id !== null && c.id !== undefined && !map.has(Number(c.id))) {
+                    map.set(Number(c.id), { id: Number(c.id), name: c.name || '' });
+                }
+            });
+        }
+        (this.categoriesArrayValue || []).forEach((c) => {
+            const id = Number(c.value);
+            if (!Number.isNaN(id) && c.label && !map.has(id)) {
+                map.set(id, { id, name: c.label });
+            }
+        });
+
+        return ids
+            .map((id) => map.get(id))
+            .filter((c): c is { id: number; name: string } => !!c && !!c.name);
+    }
+
+    addCategory(value: any) {
+        this.categoryPicker = null;
+        if (value === null || value === undefined) return;
+
+        const id = Number(value);
+        if (Number.isNaN(id)) return;
+
+        const product = this.product = this.product || {};
+        if (!Array.isArray(product.categoryIds)) {
+            product.categoryIds = [];
+        }
+
+        const ids = product.categoryIds.map((v: any) => Number(v)).filter((n: number) => !Number.isNaN(n));
+        if (ids.includes(id)) return;
+
+        product.categoryIds.push(id);
+
+        // La primera categoría agregada se convierte en la categoría principal
+        if (product.categoryId === null || product.categoryId === undefined) {
+            product.categoryId = id;
+            const cat = (this.categoriesArrayValue || []).find((c) => String(c.value) === String(id));
+            product.categoryName = cat?.label ?? product.categoryName;
+        }
+
+        if (!Array.isArray(product.categories)) {
+            product.categories = [];
+        }
+        product.categories = this.selectedCategories();
+    }
+
+    removeCategory(idValue: number) {
+        const id = Number(idValue);
+        const product = this.product = this.product || {};
+
+        if (Array.isArray(product.categoryIds)) {
+            product.categoryIds = product.categoryIds.filter((v: any) => Number(v) !== id);
+        }
+        if (Array.isArray(product.categories)) {
+            product.categories = product.categories.filter((c: any) => Number(c?.id) !== id);
+        }
+
+        // Si se quitó la categoría principal, promover la siguiente
+        if (Number(product.categoryId) === id) {
+            const nextId = Array.isArray(product.categoryIds) && product.categoryIds.length
+                ? Number(product.categoryIds[0])
+                : null;
+            product.categoryId = nextId;
+            const cat = nextId != null
+                ? (this.categoriesArrayValue || []).find((c) => String(c.value) === String(nextId))
+                : null;
+            product.categoryName = cat?.label ?? null;
+        }
+    }
+
+    crossSellingDraft: CrossSellingDraft = {
+        suggestedProductId: null,
+        displayOrder: 1,
+        isActive: true
+    };
+    crossSellingSelectedNode: TreeNode | null = null;
+    crossSellingEditingId: number | null = null;
+    crossSellingError: string | null = null;
+
+    recipeInfoMessage = 'La receta (insumos) se gestiona desde el módulo "Recetas" del menú lateral.';
+
+    onHide() {
+        this.visibleChange.emit(false);
+        this.hide.emit();
+        this.resetCrossSellingDraft();
+    }
+
+    onRemoveImageClick() {
+        // Clear preview and form control, then notify parent so it can persist null
+        try {
+            this.productImagePreview = null;
+            if (this.productForm && this.productForm.get && this.productForm.get('img_url')) {
+                this.productForm.get('img_url').setValue(null);
+            }
+            // Also update the bound product object so parents that read `product` see the change
+            if (this.product) {
+                try {
+                    this.product.img_url = null;
+                } catch (e) {
+                    // ignore
+                }
+            }
+        } catch (e) {
+            // ignore errors
+        }
+        this.removeImage.emit();
+    }
+
+    closeCategoryDialog() {
+        this.localCategoryVisible = false;
+        this.categoryDialogChange.emit(false);
+    }
+
+    onCreateCategory() {
+        this.createCategory.emit();
+        this.closeCategoryDialog();
+    }
+
+    onCategorySelect(_event: any) {
+        // passthrough — parent uses ngModel on product bound object
+    }
+
+    // Prevent the click from changing the p-select internal focus/value
+    onNewCategoryClick(event: Event) {
+        event.stopPropagation();
+        this.openNewCategory.emit();
+    }
+
+    onEditCategoryClick(event: Event) {
+        event.stopPropagation();
+        this.openEditCategory.emit();
+    }
+
+    // Keep product.isActive in sync and seed form control when dialog receives a product
+    ngOnChanges(changes: SimpleChanges) {
+        if (changes['product']) {
+            // Ensure product object exists
+            this.product = this.product || {};
+
+            // If product.isActive is undefined/null, default to true
+            if (this.product.isActive === undefined || this.product.isActive === null) {
+                this.product.isActive = true;
+                this.activeChange.emit(true);
+            }
+
+            // Auto-disponibilidad: default true (null de registros viejos se trata como activado)
+            if (this.product.autoAvailability === undefined || this.product.autoAvailability === null) {
+                this.product.autoAvailability = true;
+                this.autoAvailabilityChange.emit(true);
+            }
+
+            // If a reactive form with 'isActive' control is provided, set its value from the product
+            if (this.productForm && this.productForm.get) {
+                const isActiveControl = this.productForm.get('isActive');
+                if (isActiveControl) {
+                    try {
+                        isActiveControl.setValue(this.product.isActive, { emitEvent: false });
+                    } catch (e) {
+                        // ignore if unable to set
+                    }
+                }
+
+                const autoAvailabilityControl = this.productForm.get('autoAvailability');
+                if (autoAvailabilityControl) {
+                    try {
+                        autoAvailabilityControl.setValue(this.product.autoAvailability, { emitEvent: false });
+                    } catch (e) {
+                        // ignore if unable to set
+                    }
+                }
+
+                const esVariableControl = this.productForm.get('esVariable');
+                if (esVariableControl) {
+                    try {
+                        esVariableControl.setValue(!!this.product.esVariable, { emitEvent: false });
+                    } catch (e) {
+                        // ignore if unable to set
+                    }
+                }
+
+                const tieneVariantesControl = this.productForm.get('tieneVariantes');
+                if (tieneVariantesControl) {
+                    try {
+                        tieneVariantesControl.setValue(!!this.product.tieneVariantes, { emitEvent: false });
+                    } catch (e) {
+                        // ignore if unable to set
+                    }
+                }
+            }
+
+            this.resetCrossSellingDraft();
+        }
+
+        if (changes['crossSellingItems'] && !this.crossSellingEditingId) {
+            this.crossSellingDraft = {
+                suggestedProductId: null,
+                displayOrder: this.getNextDisplayOrder(),
+                isActive: true
+            };
+            this.crossSellingSelectedNode = null;
+        }
+
+        if (changes['crossSellingCatalogOptions']) {
+            this.syncSelectedNode();
+        }
+    }
+
+    onActiveChange(value: boolean) {
+        // If parent form contains the control, write value there; otherwise update product and emit
+        if (this.productForm && this.productForm.get && this.productForm.get('isActive')) {
+            try {
+                this.productForm.get('isActive').setValue(value);
+            } catch (e) {
+                // ignore
+            }
+        } else {
+            this.product = this.product || {};
+            this.product.isActive = value;
+            this.activeChange.emit(value);
+        }
+    }
+
+    onAutoAvailabilityChange(value: boolean) {
+        if (this.productForm && this.productForm.get && this.productForm.get('autoAvailability')) {
+            try {
+                this.productForm.get('autoAvailability').setValue(value);
+            } catch (e) {
+                // ignore
+            }
+        } else {
+            this.product = this.product || {};
+            this.product.autoAvailability = value;
+            this.autoAvailabilityChange.emit(value);
+        }
+    }
+
+    onTieneVariantesChange(value: boolean) {
+        if (this.productForm && this.productForm.get && this.productForm.get('tieneVariantes')) {
+            try {
+                this.productForm.get('tieneVariantes').setValue(value);
+                if (value) {
+                    const priceCtrl = this.productForm.get('price');
+                    if (priceCtrl && (priceCtrl.value == null || priceCtrl.value === 0)) {
+                        priceCtrl.setValue(0);
+                    }
+                }
+            } catch (e) {
+                // ignore
+            }
+        } else {
+            this.product = this.product || {};
+            this.product.tieneVariantes = value;
+        }
+    }
+
+    private getNextDisplayOrder(): number {
+        const used = new Set((this.crossSellingItems || []).map((item) => item.displayOrder));
+        for (let i = 1; i <= this.crossSellingMax; i += 1) {
+            if (!used.has(i)) {
+                return i;
+            }
+        }
+        return 1;
+    }
+
+    resetCrossSellingDraft() {
+        this.crossSellingEditingId = null;
+        this.crossSellingError = null;
+        this.crossSellingDraft = {
+            suggestedProductId: null,
+            displayOrder: this.getNextDisplayOrder(),
+            isActive: true
+        };
+        this.crossSellingSelectedNode = null;
+    }
+
+    canSubmitCrossSelling(): boolean {
+        if (!this.crossSellingEnabled) return false;
+        if (!this.crossSellingDraft.suggestedProductId) return false;
+        if (!this.crossSellingDraft.displayOrder || this.crossSellingDraft.displayOrder < 1) return false;
+        if (!this.crossSellingEditingId && (this.crossSellingItems?.length || 0) >= this.crossSellingMax) return false;
+        return true;
+    }
+
+    submitCrossSelling() {
+        this.crossSellingError = null;
+
+        if (!this.crossSellingEnabled) {
+            return;
+        }
+
+        if (!this.crossSellingDraft.suggestedProductId) {
+            this.crossSellingError = 'Selecciona un producto sugerido.';
+            return;
+        }
+
+        if (!this.crossSellingDraft.displayOrder || this.crossSellingDraft.displayOrder < 1) {
+            this.crossSellingError = 'El orden debe ser mayor o igual a 1.';
+            return;
+        }
+
+        const duplicate = (this.crossSellingItems || []).some((item) =>
+            item.suggestedProductId === this.crossSellingDraft.suggestedProductId && item.id !== this.crossSellingEditingId
+        );
+        if (duplicate) {
+            this.crossSellingError = 'Este producto ya esta agregado.';
+            return;
+        }
+
+        if (this.crossSellingEditingId) {
+            this.updateCrossSelling.emit({
+                id: this.crossSellingEditingId,
+                suggestedProductId: this.crossSellingDraft.suggestedProductId,
+                displayOrder: this.crossSellingDraft.displayOrder,
+                isActive: this.crossSellingDraft.isActive
+            });
+        } else {
+            this.createCrossSelling.emit({
+                suggestedProductId: this.crossSellingDraft.suggestedProductId,
+                displayOrder: this.crossSellingDraft.displayOrder,
+                isActive: this.crossSellingDraft.isActive
+            });
+        }
+
+        this.resetCrossSellingDraft();
+    }
+
+    startCrossSellingEdit(item: CrossSellingConfig) {
+        this.crossSellingEditingId = item.id;
+        this.crossSellingError = null;
+        this.crossSellingDraft = {
+            suggestedProductId: item.suggestedProductId,
+            displayOrder: item.displayOrder,
+            isActive: item.isActive
+        };
+        this.syncSelectedNode();
+    }
+
+    cancelCrossSellingEdit() {
+        this.resetCrossSellingDraft();
+    }
+
+    requestCrossSellingDelete(item: CrossSellingConfig) {
+        this.deleteCrossSelling.emit(item);
+    }
+
+    onCrossSellingNodeChange(node: TreeNode | null) {
+        this.crossSellingSelectedNode = node;
+        const keyValue = node?.key;
+        const idValue = keyValue !== undefined && keyValue !== null ? Number(keyValue) : null;
+        this.crossSellingDraft.suggestedProductId = Number.isNaN(idValue as number) ? null : idValue;
+    }
+
+    private syncSelectedNode() {
+        if (!this.crossSellingDraft.suggestedProductId) {
+            this.crossSellingSelectedNode = null;
+            return;
+        }
+        const targetKey = String(this.crossSellingDraft.suggestedProductId);
+        const node = this.findNodeByKey(this.crossSellingCatalogOptions as TreeNode[], targetKey);
+        this.crossSellingSelectedNode = node;
+    }
+
+    private findNodeByKey(nodes: TreeNode[] | null | undefined, key: string): TreeNode | null {
+        if (!nodes || nodes.length === 0) return null;
+        for (const node of nodes) {
+            if (node.key === key) {
+                return node;
+            }
+            if (node.children && node.children.length > 0) {
+                const found = this.findNodeByKey(node.children, key);
+                if (found) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+}

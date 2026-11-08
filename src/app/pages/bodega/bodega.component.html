@@ -6,7 +6,12 @@
       <h2>Bodega</h2>
       <p>Almacén central: registra insumos, guarda el stock de su totalidad y distribúyelo a inventario de cocina o barra. El POS solo consume stock distribuido.</p>
     </div>
-    <button pButton label="Nuevo insumo" icon="pi pi-plus" severity="secondary" (click)="openCreate()"></button>
+    <div class="bodega-header-actions">
+      <button pButton label="Lista de Compras" icon="pi pi-shopping-cart" class="p-button-outlined p-button-info" (click)="openListaCompras()" pTooltip="Consultar e imprimir listas de compras"></button>
+      <button pButton label="Restock Automático" icon="pi pi-bolt" class="p-button-success" (click)="openAutoRestock(1.5)" pTooltip="Calcular reabastecimiento al 1.5x y enviar a Cocina/Barra en 1 clic"></button>
+      <button pButton label="Distribuir a Áreas" icon="pi pi-send" class="p-button-warning" (click)="openDistribuir(1.5)" pTooltip="Detectar insumos en stock mínimo y transferir desde Bodega a Cocina/Barra en 1 clic"></button>
+      <button pButton label="Nuevo insumo" icon="pi pi-plus" severity="secondary" (click)="openCreate()"></button>
+    </div>
   </div>
 
   <div class="solicitudes-bar">
@@ -451,6 +456,553 @@
       <div class="solicitudes-dialog-footer">
         <button pButton label="Cerrar" icon="pi pi-times" class="solicitudes-dialog-cancel"
           [disabled]="aceptandoId !== null" (click)="solicitudesVisible = false"></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  
+  <!-- ==================== MODAL RESTOCK AUTOMÁTICO 1-CLIC ==================== -->
+  <p-dialog
+    [(visible)]="autoRestockVisible"
+    [modal]="true"
+    [closable]="!autoRestockSaving()"
+    [style]="{ width: '92vw', maxWidth: '1150px' }"
+    styleClass="auto-restock-dialog"
+  >
+    <ng-template pTemplate="header">
+      <div class="auto-restock-header">
+        <div class="auto-restock-header-icon">
+          <i class="pi pi-bolt"></i>
+        </div>
+        <div class="auto-restock-header-text">
+          <div class="auto-restock-title">
+            <span>Restock Automático Directo a Áreas</span>
+            <span class="badge-count" *ngIf="!autoRestockLoading()">{{ autoRestockItems().length }} insumos con déficit</span>
+          </div>
+          <div class="auto-restock-sub">
+            Los insumos que están bajo su stock mínimo serán abastecidos directamente en <strong>Cocina</strong> o <strong>Barra</strong> al <strong>1.5x de su nivel de seguridad</strong>.
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <div class="auto-restock-body" *ngIf="autoRestockLoading()">
+      <div class="loading-state">
+        <i class="pi pi-spin pi-spinner" style="font-size: 2.2rem; color: #6366f1;"></i>
+        <p>Analizando existencias y calculando proyección de reposición a Cocina y Barra...</p>
+      </div>
+    </div>
+
+    <div class="auto-restock-body" *ngIf="!autoRestockLoading()">
+      <!-- Toolbar de Controles del Restock -->
+      <div class="auto-restock-toolbar">
+        <div class="toolbar-factor-group">
+          <span class="toolbar-label">Factor de Reposición:</span>
+          <div class="factor-pills">
+            <button type="button" class="factor-pill" [class.active]="autoRestockFactor === 1.0" (click)="cargarSugerenciaRestock(1.0)">1.0x (Mínimo)</button>
+            <button type="button" class="factor-pill" [class.active]="autoRestockFactor === 1.5" (click)="cargarSugerenciaRestock(1.5)">⚡ 1.5x (Óptimo Recomendado)</button>
+            <button type="button" class="factor-pill" [class.active]="autoRestockFactor === 2.0" (click)="cargarSugerenciaRestock(2.0)">2.0x (Doble Turno)</button>
+          </div>
+        </div>
+
+        <div class="toolbar-area-group">
+          <span class="toolbar-label">Filtrar por Área:</span>
+          <div class="area-filter-pills">
+            <button type="button" class="area-pill" [class.active]="filtroAreaRestock === 'TODAS'" (click)="filtroAreaRestock = 'TODAS'">Todas</button>
+            <button type="button" class="area-pill area-pill-cocina" [class.active]="filtroAreaRestock === 'COCINA'" (click)="filtroAreaRestock = 'COCINA'">🍳 Cocina</button>
+            <button type="button" class="area-pill area-pill-barra" [class.active]="filtroAreaRestock === 'BARRA'" (click)="filtroAreaRestock = 'BARRA'">🍸 Barra</button>
+            <button type="button" class="area-pill area-pill-almacen" [class.active]="filtroAreaRestock === 'ALMACEN'" (click)="filtroAreaRestock = 'ALMACEN'">📦 Almacén</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estado Vacío -->
+      <div class="empty-restock-state" *ngIf="autoRestockItems().length === 0">
+        <div class="empty-icon"><i class="pi pi-check-circle"></i></div>
+        <h3>¡Todo el inventario está en orden!</h3>
+        <p>No se encontraron insumos por debajo de su stock mínimo. Todas las áreas cuentan con suficiente inventario operativo.</p>
+      </div>
+
+      <!-- Tabla de Insumos a Reabastecer -->
+      <div class="auto-restock-table-wrap" *ngIf="autoRestockItems().length > 0">
+        <table class="auto-restock-table">
+          <thead>
+            <tr>
+              <th style="width: 44px; text-align: center;">
+                <input type="checkbox" [checked]="todosSeleccionados()" (change)="toggleSelectAllRestock($any($event.target).checked)" title="Seleccionar todos" />
+              </th>
+              <th>Insumo y Destino Directo</th>
+              <th style="text-align: right; width: 110px;">Stock Actual</th>
+              <th style="text-align: right; width: 110px;">Stock Mín.</th>
+              <th style="text-align: center; width: 140px;">Cant. a Ingresar</th>
+              <th style="text-align: center; width: 150px;">Stock Resultante</th>
+              <th style="text-align: right; width: 130px;">Costo Unit.</th>
+              <th style="text-align: right; width: 130px;">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let it of itemsRestockFiltrados()" [class.row-unselected]="!it.selected">
+              <td style="text-align: center;">
+                <input type="checkbox" [(ngModel)]="it.selected" />
+              </td>
+              <td>
+                <div class="insumo-name-wrap">
+                  <span class="insumo-name">{{ it.insumoNombre }}</span>
+                  <span class="area-badge" [ngClass]="'area-badge-' + (it.areaDestino?.toLowerCase() || 'cocina')">
+                    <i [class]="it.areaDestino === 'BARRA' ? 'pi pi-glass' : (it.areaDestino === 'ALMACEN' ? 'pi pi-database' : 'pi pi-box')"></i>
+                    {{ it.areaDestino || 'COCINA' }}
+                  </span>
+                </div>
+              </td>
+              <td style="text-align: right;">
+                <span class="stock-current-val" [class.val-zero]="it.stockActual <= 0">
+                  {{ it.stockActual }} <small>{{ it.unidad }}</small>
+                </span>
+              </td>
+              <td style="text-align: right;">
+                <span class="stock-min-val">{{ it.stockMinimo }} <small>{{ it.unidad }}</small></span>
+              </td>
+              <td style="text-align: center;">
+                <input
+                  type="number"
+                  class="table-qty-input"
+                  [(ngModel)]="it.cantidadComprada"
+                  [min]="0"
+                  step="any"
+                  (input)="onCantidadRestockChange(it)"
+                  placeholder="0"
+                />
+              </td>
+              <td style="text-align: center;">
+                <div class="stock-flow">
+                  <span>{{ it.stockActual }}</span>
+                  <i class="pi pi-arrow-right flow-arrow"></i>
+                  <span class="flow-target">{{ calcularStockResultante(it) }}</span>
+                  <small>{{ it.unidad }}</small>
+                </div>
+              </td>
+              <td style="text-align: right;">
+                <input
+                  type="number"
+                  class="table-cost-input"
+                  [(ngModel)]="it.costoUnitarioReal"
+                  [min]="0"
+                  step="0.5"
+                  (input)="onCostoUnitarioChange(it)"
+                  placeholder="0.00"
+                />
+              </td>
+              <td style="text-align: right;">
+                <strong class="subtotal-val">${{ (it.subtotalReal || 0) | number:'1.2-2' }}</strong>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="auto-restock-footer">
+        <div class="auto-restock-summary">
+          <div class="summary-chip">
+            <i class="pi pi-check"></i>
+            <span><strong>{{ totalItemsSeleccionados() }}</strong> insumos seleccionados</span>
+          </div>
+          <div class="summary-chip">
+            <i class="pi pi-box"></i>
+            <span><strong>{{ totalUnidadesSugeridas() | number:'1.0-2' }}</strong> unidades a ingresar</span>
+          </div>
+          <div class="summary-chip chip-inversion">
+            <i class="pi pi-wallet"></i>
+            <span>Inversión Estimada: <strong>${{ totalInversionEstimada() | number:'1.2-2' }} MXN</strong></span>
+          </div>
+        </div>
+
+        <div class="auto-restock-actions">
+          <button
+            pButton
+            type="button"
+            label="Guardar como Lista de Compras"
+            icon="pi pi-bookmark"
+            class="p-button-outlined p-button-secondary"
+            [disabled]="autoRestockSaving() || totalItemsSeleccionados() === 0"
+            (click)="guardarComoOrdenCompra()"
+            pTooltip="Crea la orden pendiente para salir a comprar antes de surtir"
+          ></button>
+          <button
+            pButton
+            type="button"
+            label="Cancelar"
+            icon="pi pi-times"
+            class="p-button-text"
+            [disabled]="autoRestockSaving()"
+            (click)="autoRestockVisible = false"
+          ></button>
+          <button
+            pButton
+            type="button"
+            label="Autorizar y Enviar a Cocina/Barra"
+            icon="pi pi-check"
+            class="p-button-success"
+            [loading]="autoRestockSaving()"
+            [disabled]="totalItemsSeleccionados() === 0"
+            (click)="ejecutarRestockDirecto()"
+          ></button>
+        </div>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- ==================== MODAL DISTRIBUIR A ÁREAS 1-CLIC ==================== -->
+  <p-dialog
+    [(visible)]="distribuirVisible"
+    [modal]="true"
+    [closable]="!distribuirSaving()"
+    [style]="{ width: '92vw', maxWidth: '1200px' }"
+    styleClass="distribuir-dialog auto-restock-dialog"
+  >
+    <ng-template pTemplate="header">
+      <div class="distribuir-header auto-restock-header">
+        <div class="distribuir-header-icon">
+          <i class="pi pi-send"></i>
+        </div>
+        <div class="distribuir-header-text auto-restock-header-text">
+          <div class="distribuir-title auto-restock-title">
+            <span>Distribuir a Cocina y Barra en 1 Clic</span>
+            <span class="badge-count badge-warning" *ngIf="!distribuirLoading()">
+              {{ itemsDistribucionFiltrados().length }} insumos con déficit en áreas
+            </span>
+          </div>
+          <div class="distribuir-sub auto-restock-sub">
+            Escaneo automático de insumos en <strong>Cocina</strong> y <strong>Barra</strong> por debajo de su stock mínimo. Surtir existencias desde <strong>Bodega Central</strong> de forma inmediata.
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <div class="distribuir-body auto-restock-body" *ngIf="distribuirLoading()">
+      <div class="loading-state">
+        <i class="pi pi-spin pi-spinner" style="font-size: 2.2rem; color: #f59e0b;"></i>
+        <p>Escaneando stock de áreas operativas y disponibilidad en bodega central...</p>
+      </div>
+    </div>
+
+    <div class="distribuir-body auto-restock-body" *ngIf="!distribuirLoading()">
+      <!-- Toolbar de Controles de Distribución -->
+      <div class="distribuir-toolbar auto-restock-toolbar">
+        <div class="toolbar-factor-group">
+          <span class="toolbar-label">Factor Objetivo:</span>
+          <div class="factor-pills">
+            <button type="button" class="factor-pill" [class.active]="distribuirFactor === 1.0" (click)="cargarDistribucionSugerida(1.0)">1.0x (Nivel Mínimo)</button>
+            <button type="button" class="factor-pill" [class.active]="distribuirFactor === 1.5" (click)="cargarDistribucionSugerida(1.5)">⚡ 1.5x (Óptimo Recomendado)</button>
+            <button type="button" class="factor-pill" [class.active]="distribuirFactor === 2.0" (click)="cargarDistribucionSugerida(2.0)">2.0x (Turno Pesado)</button>
+          </div>
+        </div>
+
+        <div class="toolbar-area-group">
+          <span class="toolbar-label">Filtrar por Área:</span>
+          <div class="area-filter-pills">
+            <button type="button" class="area-pill" [class.active]="filtroAreaDistribucion === 'TODAS'" (click)="filtroAreaDistribucion = 'TODAS'">Todas</button>
+            <button type="button" class="area-pill area-pill-cocina" [class.active]="filtroAreaDistribucion === 'COCINA'" (click)="filtroAreaDistribucion = 'COCINA'">🍳 Cocina</button>
+            <button type="button" class="area-pill area-pill-barra" [class.active]="filtroAreaDistribucion === 'BARRA'" (click)="filtroAreaDistribucion = 'BARRA'">🍸 Barra</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estado Vacío -->
+      <div class="empty-distribuir-state empty-restock-state" *ngIf="distribuirItems().length === 0">
+        <div class="empty-icon text-emerald-500"><i class="pi pi-check-circle"></i></div>
+        <h3>¡Cocina y Barra están 100% abastecidas!</h3>
+        <p>No se encontraron insumos de cocina o barra en su stock mínimo. Todas las áreas tienen suficiente nivel de seguridad.</p>
+      </div>
+
+      <!-- Tabla de Insumos a Distribuir -->
+      <div class="distribuir-table-wrap auto-restock-table-wrap" *ngIf="distribuirItems().length > 0">
+        <table class="distribuir-table auto-restock-table">
+          <thead>
+            <tr>
+              <th style="width: 44px; text-align: center;">
+                <input
+                  type="checkbox"
+                  [checked]="distribucionTodosSeleccionados()"
+                  (change)="toggleSelectAllDistribucion($any($event.target).checked)"
+                  title="Seleccionar todos con existencia"
+                />
+              </th>
+              <th>Insumo y Destino</th>
+              <th style="text-align: right; width: 120px;">Stock Área / Mín.</th>
+              <th style="text-align: right; width: 110px;">Stock Bodega</th>
+              <th style="text-align: center; width: 130px;">Cant. a Enviar</th>
+              <th style="text-align: center; width: 150px;">Flujo en Área</th>
+              <th style="text-align: center; width: 150px;">Remanente Bodega</th>
+              <th style="text-align: center; width: 140px;">Disponibilidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              *ngFor="let it of itemsDistribucionFiltrados()"
+              [class.row-unselected]="!it.selected"
+              [class.row-out-of-stock]="it.stockBodega <= 0"
+            >
+              <td style="text-align: center;">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="it.selected"
+                  [disabled]="it.stockBodega <= 0"
+                />
+              </td>
+              <td>
+                <div class="insumo-name-wrap">
+                  <span class="insumo-name">{{ it.insumoNombre }}</span>
+                  <span class="area-badge" [ngClass]="'area-badge-' + (it.areaDestino?.toLowerCase() || 'cocina')">
+                    <i [class]="it.areaDestino === 'BARRA' ? 'pi pi-glass' : 'pi pi-box'"></i>
+                    {{ it.areaDestino || 'COCINA' }}
+                  </span>
+                </div>
+              </td>
+              <td style="text-align: right;">
+                <div class="stock-min-split">
+                  <span class="stock-current-val" [class.val-zero]="it.stockAreaActual <= 0">
+                    {{ it.stockAreaActual }}
+                  </span>
+                  <span class="stock-sep">/</span>
+                  <span class="stock-min-ref">{{ it.stockMinimo }} <small>{{ it.unidad }}</small></span>
+                </div>
+              </td>
+              <td style="text-align: right;">
+                <span class="stock-bodega-val" [class.bodega-zero]="it.stockBodega <= 0">
+                  <i class="pi pi-database mr-1"></i>
+                  <strong>{{ it.stockBodega }}</strong> <small>{{ it.unidad }}</small>
+                </span>
+              </td>
+              <td style="text-align: center;">
+                <input
+                  type="number"
+                  class="table-qty-input"
+                  [(ngModel)]="it.cantidadATransferir"
+                  [min]="0"
+                  [max]="it.stockBodega"
+                  step="any"
+                  [disabled]="it.stockBodega <= 0"
+                  (input)="onCantidadDistribucionChange(it)"
+                  placeholder="0"
+                />
+              </td>
+              <td style="text-align: center;">
+                <div class="stock-flow">
+                  <span>{{ it.stockAreaActual }}</span>
+                  <i class="pi pi-arrow-right flow-arrow"></i>
+                  <span class="flow-target">{{ calcularStockAreaResultante(it) }}</span>
+                  <small>{{ it.unidad }}</small>
+                </div>
+              </td>
+              <td style="text-align: center;">
+                <div class="stock-flow flow-bodega">
+                  <span>{{ it.stockBodega }}</span>
+                  <i class="pi pi-arrow-right flow-arrow"></i>
+                  <span class="flow-remanente" [class.val-zero]="calcularStockBodegaRemanente(it) <= 0">
+                    {{ calcularStockBodegaRemanente(it) }}
+                  </span>
+                  <small>{{ it.unidad }}</small>
+                </div>
+              </td>
+              <td style="text-align: center;">
+                <span
+                  class="disp-badge"
+                  [ngClass]="{
+                    'disp-completo': it.tipoDisponibilidad === 'COMPLETO',
+                    'disp-parcial': it.tipoDisponibilidad === 'PARCIAL',
+                    'disp-agotado': it.tipoDisponibilidad === 'AGOTADO_EN_BODEGA' || it.stockBodega <= 0
+                  }"
+                >
+                  <i [class]="it.tipoDisponibilidad === 'COMPLETO' ? 'pi pi-check' : (it.tipoDisponibilidad === 'PARCIAL' ? 'pi pi-exclamation-triangle' : 'pi pi-times-circle')"></i>
+                  {{ it.tipoDisponibilidad === 'COMPLETO' ? 'Completo' : (it.tipoDisponibilidad === 'PARCIAL' ? 'Parcial' : 'Sin Bodega') }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="distribuir-footer auto-restock-footer">
+        <div class="distribuir-summary auto-restock-summary">
+          <div class="summary-chip">
+            <i class="pi pi-check"></i>
+            <span><strong>{{ totalInsumosADistribuir() }}</strong> insumos listos</span>
+          </div>
+          <div class="summary-chip chip-unidades">
+            <i class="pi pi-send"></i>
+            <span><strong>{{ totalUnidadesADistribuir() | number:'1.0-2' }}</strong> unidades a mover</span>
+          </div>
+          <div class="summary-chip" *ngIf="distribuirItems().length - distribucionConBodegaDisponible() > 0">
+            <i class="pi pi-info-circle text-orange-500"></i>
+            <span><strong>{{ distribuirItems().length - distribucionConBodegaDisponible() }}</strong> sin stock en bodega</span>
+          </div>
+        </div>
+
+        <div class="distribuir-actions auto-restock-actions">
+          <button
+            pButton
+            type="button"
+            label="Cancelar"
+            icon="pi pi-times"
+            class="p-button-text"
+            [disabled]="distribuirSaving()"
+            (click)="distribuirVisible = false"
+          ></button>
+          <button
+            pButton
+            type="button"
+            label="Autorizar y Distribuir a Áreas"
+            icon="pi pi-send"
+            class="p-button-warning"
+            [loading]="distribuirSaving()"
+            [disabled]="totalInsumosADistribuir() === 0"
+            (click)="ejecutarDistribucionBatch()"
+          ></button>
+        </div>
+      </div>
+    </ng-template>
+  </p-dialog>
+
+  <!-- ==================== MODAL LISTA DE COMPRAS Y ÓRDENES ==================== -->
+  <p-dialog
+    [(visible)]="listaComprasVisible"
+    [modal]="true"
+    [style]="{ width: '92vw', maxWidth: '1100px' }"
+    styleClass="lista-compras-dialog"
+  >
+    <ng-template pTemplate="header">
+      <div class="lista-compras-header">
+        <div class="lista-compras-header-icon">
+          <i class="pi pi-shopping-cart"></i>
+        </div>
+        <div>
+          <div class="lista-compras-title">Órdenes de Compra y Reposición</div>
+          <div class="lista-compras-sub">Historial de listas generadas, estatus de surtido e impresión para compras</div>
+        </div>
+      </div>
+    </ng-template>
+
+    <div class="lista-compras-body">
+      <!-- Toolbar Filtros -->
+      <div class="lista-compras-toolbar">
+        <div class="estado-filter-pills">
+          <button type="button" class="estado-pill" [class.active]="filtroEstadoOrden === 'TODAS'" (click)="filtroEstadoOrden = 'TODAS'">Todas</button>
+          <button type="button" class="estado-pill pill-pendiente" [class.active]="filtroEstadoOrden === 'PENDIENTE'" (click)="filtroEstadoOrden = 'PENDIENTE'">⏳ Pendientes</button>
+          <button type="button" class="estado-pill pill-surtida" [class.active]="filtroEstadoOrden === 'SURTIDA'" (click)="filtroEstadoOrden = 'SURTIDA'">✅ Surtidas</button>
+        </div>
+        <button pButton label="Nueva Lista de Compras" icon="pi pi-plus" class="p-button-sm p-button-primary" (click)="openAutoRestock(1.5)"></button>
+      </div>
+
+      <div class="loading-state" *ngIf="ordenesLoading()">
+        <i class="pi pi-spin pi-spinner" style="font-size: 2rem; color: #6366f1;"></i>
+        <p>Cargando órdenes de compra...</p>
+      </div>
+
+      <div class="empty-state" *ngIf="!ordenesLoading() && ordenesFiltradas().length === 0">
+        <i class="pi pi-inbox" style="font-size: 2.5rem; color: #94a3b8;"></i>
+        <p>No se encontraron órdenes de compra registradas</p>
+      </div>
+
+      <!-- Tabla de Órdenes -->
+      <div class="ordenes-table-wrap" *ngIf="!ordenesLoading() && ordenesFiltradas().length > 0">
+        <table class="ordenes-table">
+          <thead>
+            <tr>
+              <th>Folio</th>
+              <th>Título / Notas</th>
+              <th>Fecha</th>
+              <th style="text-align: center;">Artículos</th>
+              <th style="text-align: right;">Total Estimado</th>
+              <th style="text-align: right;">Total Real</th>
+              <th style="text-align: center;">Estado</th>
+              <th style="text-align: center;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let ord of ordenesFiltradas()">
+              <td><strong class="folio-code">{{ ord.folio }}</strong></td>
+              <td>
+                <div class="ord-title">{{ ord.titulo }}</div>
+                <small class="ord-notas" *ngIf="ord.notas">{{ ord.notas }}</small>
+              </td>
+              <td>{{ ord.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td style="text-align: center;">
+                <span class="articulos-badge">{{ ord.totalArticulos || ord.items?.length || 0 }}</span>
+              </td>
+              <td style="text-align: right;">${{ (ord.totalEstimado || 0) | number:'1.2-2' }}</td>
+              <td style="text-align: right;">
+                <strong *ngIf="ord.totalReal && ord.totalReal > 0">${{ ord.totalReal | number:'1.2-2' }}</strong>
+                <span *ngIf="!ord.totalReal || ord.totalReal <= 0" class="text-muted">—</span>
+              </td>
+              <td style="text-align: center;">
+                <span class="status-badge" [ngClass]="'status-' + ord.estado.toLowerCase()">
+                  {{ ord.estado }}
+                </span>
+              </td>
+              <td style="text-align: center;">
+                <div class="action-btn-group">
+                  <button pButton icon="pi pi-eye" class="p-button-text p-button-sm p-button-secondary" (click)="verDetalleOrden(ord)" pTooltip="Ver detalle"></button>
+                  <button pButton icon="pi pi-print" class="p-button-text p-button-sm p-button-info" (click)="imprimirOrden(ord)" pTooltip="Imprimir lista para compras"></button>
+                  <button pButton icon="pi pi-check" class="p-button-sm p-button-success" *ngIf="ord.estado === 'PENDIENTE'" (click)="surtirOrdenDesdeDetalle(ord)" pTooltip="Surtir y enviar stock a Cocina/Barra"></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Detalle de la Orden Seleccionada -->
+      <div class="detalle-orden-card surface-card border-round p-3 mt-3" *ngIf="ordenSeleccionada()">
+        <div class="detalle-orden-header flex justify-content-between align-items-center mb-3">
+          <div>
+            <h4 class="m-0">Detalle de {{ ordenSeleccionada().folio }}</h4>
+            <small class="text-500">{{ ordenSeleccionada().titulo }} · {{ ordenSeleccionada().createdAt | date:'medium' }}</small>
+          </div>
+          <div class="flex gap-2">
+            <button pButton label="Imprimir" icon="pi pi-print" class="p-button-outlined p-button-sm" (click)="imprimirOrden(ordenSeleccionada())"></button>
+            <button pButton label="Surtir a Áreas" icon="pi pi-check" class="p-button-success p-button-sm" *ngIf="ordenSeleccionada().estado === 'PENDIENTE'" (click)="surtirOrdenDesdeDetalle(ordenSeleccionada())"></button>
+            <button pButton icon="pi pi-times" class="p-button-text p-button-sm" (click)="ordenSeleccionada.set(null)"></button>
+          </div>
+        </div>
+
+        <table class="auto-restock-table">
+          <thead>
+            <tr>
+              <th>Insumo</th>
+              <th style="text-align: center;">Área Destino</th>
+              <th style="text-align: right;">Cant. Sugerida</th>
+              <th style="text-align: right;">Costo Est.</th>
+              <th style="text-align: right;">Subtotal</th>
+              <th style="text-align: center;">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let it of ordenSeleccionada().items">
+              <td><strong>{{ it.insumoNombre }}</strong></td>
+              <td style="text-align: center;">
+                <span class="area-badge" [ngClass]="'area-badge-' + (it.areaDestino?.toLowerCase() || 'cocina')">{{ it.areaDestino }}</span>
+              </td>
+              <td style="text-align: right;">{{ it.cantidadSugerida }} {{ it.unidad }}</td>
+              <td style="text-align: right;">${{ (it.costoUnitarioEstimado || 0) | number:'1.2-2' }}</td>
+              <td style="text-align: right;">${{ (it.subtotalEstimado || 0) | number:'1.2-2' }}</td>
+              <td style="text-align: center;">
+                <span class="status-badge" [class.status-surtida]="it.surtido" [class.status-pendiente]="!it.surtido">
+                  {{ it.surtido ? 'Surtido' : 'Pendiente' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex justify-content-end">
+        <button pButton label="Cerrar" icon="pi pi-times" class="p-button-text" (click)="listaComprasVisible = false"></button>
       </div>
     </ng-template>
   </p-dialog>

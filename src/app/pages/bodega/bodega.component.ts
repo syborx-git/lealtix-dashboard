@@ -378,4 +378,484 @@ export class BodegaComponent implements OnInit {
       }
     });
   }
+
+  /* ============ Restock Automático (1-Clic Masivo) ============ */
+  autoRestockVisible = false;
+  autoRestockLoading = signal(false);
+  autoRestockSaving = signal(false);
+  autoRestockFactor = 1.5;
+  autoRestockFolio = '';
+  autoRestockItems = signal<any[]>([]);
+  filtroAreaRestock: 'TODAS' | 'COCINA' | 'BARRA' | 'ALMACEN' = 'TODAS';
+
+  itemsRestockFiltrados = computed(() => {
+    const list = this.autoRestockItems();
+    if (this.filtroAreaRestock === 'TODAS') return list;
+    return list.filter(i => (i.areaDestino || '').toUpperCase() === this.filtroAreaRestock);
+  });
+
+  totalItemsSeleccionados = computed(() =>
+    this.autoRestockItems().filter(i => i.selected).length
+  );
+
+  totalUnidadesSugeridas = computed(() =>
+    this.autoRestockItems()
+      .filter(i => i.selected)
+      .reduce((acc, i) => acc + (Number(i.cantidadComprada) || 0), 0)
+  );
+
+  totalInversionEstimada = computed(() =>
+    this.autoRestockItems()
+      .filter(i => i.selected)
+      .reduce((acc, i) => acc + (Number(i.subtotalReal) || 0), 0)
+  );
+
+  todosSeleccionados = computed(() => {
+    const list = this.itemsRestockFiltrados();
+    return list.length > 0 && list.every(i => i.selected);
+  });
+
+  openAutoRestock(factor: number = 1.5) {
+    this.autoRestockFactor = factor;
+    this.autoRestockLoading.set(true);
+    this.autoRestockVisible = true;
+    this.cargarSugerenciaRestock(factor);
+  }
+
+  cargarSugerenciaRestock(factor: number) {
+    this.autoRestockFactor = factor;
+    this.autoRestockLoading.set(true);
+    this.inventoryService.getRestockSugerido(this.tenantId, factor).subscribe({
+      next: (res) => {
+        this.autoRestockLoading.set(false);
+        const data = res.object || {};
+        this.autoRestockFolio = data.folioSugerido || '';
+        const rawItems = (data.items || []).map((it: any) => ({
+          ...it,
+          selected: true,
+          cantidadComprada: Number(it.cantidadSugerida) || 0,
+          costoUnitarioReal: Number(it.costoUnitarioEstimado) || 0,
+          subtotalReal: Number(it.subtotalEstimado) || 0
+        }));
+        this.autoRestockItems.set(rawItems);
+      },
+      error: () => {
+        this.autoRestockLoading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo calcular la sugerencia de restock'
+        });
+      }
+    });
+  }
+
+  onCantidadRestockChange(item: any) {
+    const cant = Number(item.cantidadComprada) || 0;
+    const costoU = Number(item.costoUnitarioReal) || 0;
+    item.subtotalReal = Math.round(cant * costoU * 100) / 100;
+    this.autoRestockItems.set([...this.autoRestockItems()]);
+  }
+
+  onCostoUnitarioChange(item: any) {
+    const cant = Number(item.cantidadComprada) || 0;
+    const costoU = Number(item.costoUnitarioReal) || 0;
+    item.subtotalReal = Math.round(cant * costoU * 100) / 100;
+    this.autoRestockItems.set([...this.autoRestockItems()]);
+  }
+
+  toggleSelectAllRestock(checked: boolean) {
+    const targetArea = this.filtroAreaRestock;
+    const updated = this.autoRestockItems().map(i => {
+      if (targetArea === 'TODAS' || (i.areaDestino || '').toUpperCase() === targetArea) {
+        return { ...i, selected: checked };
+      }
+      return i;
+    });
+    this.autoRestockItems.set(updated);
+  }
+
+  calcularStockResultante(item: any): number {
+    const act = Number(item.stockActual) || 0;
+    const add = Number(item.cantidadComprada) || 0;
+    return Math.round((act + add) * 1000) / 1000;
+  }
+
+  ejecutarRestockDirecto() {
+    const seleccionados = this.autoRestockItems().filter(i => i.selected && Number(i.cantidadComprada) > 0);
+    if (seleccionados.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Atención',
+        detail: 'Selecciona al menos un insumo con cantidad mayor a 0'
+      });
+      return;
+    }
+
+    this.autoRestockSaving.set(true);
+    const payload = {
+      tenantId: this.tenantId,
+      titulo: `Restock Directo 1-Clic (${seleccionados.length} insumos)`,
+      items: seleccionados.map(i => ({
+        insumoId: i.insumoId,
+        cantidad: Number(i.cantidadComprada),
+        costoTotal: Number(i.subtotalReal) || 0,
+        areaDestino: i.areaDestino || 'COCINA'
+      }))
+    };
+
+    this.inventoryService.restockDirecto(payload).subscribe({
+      next: (res) => {
+        this.autoRestockSaving.set(false);
+        if (res.code === 200) {
+          this.messageService.add({
+            severity: 'success',
+            summary: '¡Restock Exitoso!',
+            detail: `Se reabastecieron ${seleccionados.length} insumos directamente en sus áreas correspondientes.`,
+            life: 5000
+          });
+          this.autoRestockVisible = false;
+          this.load();
+        } else {
+          this.messageService.add({ severity: 'warn', summary: 'Aviso', detail: res.message });
+        }
+      },
+      error: (err) => {
+        this.autoRestockSaving.set(false);
+        const msg = err?.error?.message || 'Error al ejecutar el restock automático';
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+      }
+    });
+  }
+
+  guardarComoOrdenCompra() {
+    const seleccionados = this.autoRestockItems().filter(i => i.selected && Number(i.cantidadComprada) > 0);
+    if (seleccionados.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Atención',
+        detail: 'Selecciona al menos un insumo para guardar la orden'
+      });
+      return;
+    }
+
+    this.autoRestockSaving.set(true);
+    const payload = {
+      tenantId: this.tenantId,
+      factor: this.autoRestockFactor,
+      items: seleccionados.map(i => ({
+        insumoId: i.insumoId,
+        insumoNombre: i.insumoNombre,
+        areaDestino: i.areaDestino,
+        unidad: i.unidad,
+        stockActual: i.stockActual,
+        stockMinimo: i.stockMinimo,
+        cantidadSugerida: Number(i.cantidadComprada),
+        costoUnitarioEstimado: Number(i.costoUnitarioReal) || 0,
+        subtotalEstimado: Number(i.subtotalReal) || 0
+      }))
+    };
+
+    this.inventoryService.generarOrdenCompra(payload).subscribe({
+      next: (res) => {
+        this.autoRestockSaving.set(false);
+        if (res.code === 201 || res.code === 200) {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Lista de Compras Guardada',
+            detail: `Folio generado: ${res.object?.folio || ''}`,
+            life: 4000
+          });
+          this.autoRestockVisible = false;
+          this.openListaCompras();
+        } else {
+          this.messageService.add({ severity: 'warn', summary: 'Aviso', detail: res.message });
+        }
+      },
+      error: () => {
+        this.autoRestockSaving.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo guardar la orden de compra' });
+      }
+    });
+  }
+
+  /* ============ Módulo de Lista de Compras ============ */
+  listaComprasVisible = false;
+  ordenesCompra = signal<any[]>([]);
+  ordenesLoading = signal(false);
+  ordenSeleccionada = signal<any | null>(null);
+  filtroEstadoOrden: 'TODAS' | 'PENDIENTE' | 'SURTIDA' = 'TODAS';
+
+  ordenesFiltradas = computed(() => {
+    const all = this.ordenesCompra();
+    if (this.filtroEstadoOrden === 'TODAS') return all;
+    return all.filter(o => (o.estado || '').toUpperCase() === this.filtroEstadoOrden);
+  });
+
+  openListaCompras() {
+    this.listaComprasVisible = true;
+    this.ordenSeleccionada.set(null);
+    this.cargarOrdenesCompra();
+  }
+
+  cargarOrdenesCompra() {
+    this.ordenesLoading.set(true);
+    this.inventoryService.listarOrdenesCompra(this.tenantId).subscribe({
+      next: (res) => {
+        this.ordenesLoading.set(false);
+        this.ordenesCompra.set(res.object || []);
+      },
+      error: () => {
+        this.ordenesLoading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar las órdenes de compra' });
+      }
+    });
+  }
+
+  verDetalleOrden(orden: any) {
+    this.inventoryService.obtenerOrdenCompra(orden.id).subscribe({
+      next: (res) => {
+        this.ordenSeleccionada.set(res.object);
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo cargar el detalle de la orden' });
+      }
+    });
+  }
+
+  surtirOrdenDesdeDetalle(orden: any) {
+    if (!orden || !orden.items) return;
+    this.autoRestockFolio = orden.folio;
+    this.autoRestockFactor = 1.5;
+    const items = (orden.items || []).map((it: any) => ({
+      ...it,
+      selected: !it.surtido,
+      cantidadComprada: Number(it.cantidadComprada || it.cantidadSugerida) || 0,
+      costoUnitarioReal: Number(it.costoUnitarioReal || it.costoUnitarioEstimado) || 0,
+      subtotalReal: Number(it.subtotalReal || it.subtotalEstimado) || 0
+    }));
+    this.autoRestockItems.set(items);
+    this.autoRestockVisible = true;
+  }
+
+  imprimirOrden(orden: any) {
+    if (!orden) return;
+    const printWindow = window.open('', '_blank', 'width=800,height=900');
+    if (!printWindow) {
+      this.messageService.add({ severity: 'warn', summary: 'Aviso', detail: 'Por favor habilita las ventanas emergentes para imprimir' });
+      return;
+    }
+
+    const itemsHtml = (orden.items || []).map((it: any, idx: number) => `
+      <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${idx + 1}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>${it.insumoNombre}</strong></td>
+        <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${it.areaDestino || 'COCINA'}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;"><strong>${it.cantidadSugerida} ${it.unidad || 'pz'}</strong></td>
+        <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">$${Number(it.costoUnitarioEstimado || 0).toFixed(2)}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">$${Number(it.subtotalEstimado || 0).toFixed(2)}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center; border: 1px dashed #999;">[ &nbsp; ]</td>
+      </tr>
+    `).join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Lista de Compras - ${orden.folio}</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 30px; color: #1e293b; }
+          .header { border-bottom: 2px solid #6366f1; padding-bottom: 15px; margin-bottom: 20px; }
+          .title { font-size: 24px; font-weight: bold; color: #4338ca; }
+          .meta { margin-top: 5px; color: #64748b; font-size: 14px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+          th { background: #f1f5f9; padding: 10px 8px; text-align: left; font-weight: 600; border-bottom: 2px solid #cbd5e1; }
+          .total-box { margin-top: 20px; text-align: right; font-size: 16px; font-weight: bold; }
+          @media print {
+            button { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="title">🛒 LEALTIX - LISTA DE COMPRAS Y RESTOCK</div>
+          <div class="meta">Folio: <strong>${orden.folio}</strong> | Fecha: ${new Date(orden.createdAt).toLocaleString()} | Estado: ${orden.estado}</div>
+          <div class="meta">Destino directo: Insumos separados por área de Cocina y Barra</div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 30px; text-align: center;">#</th>
+              <th>Insumo / Descripción</th>
+              <th style="text-align: center;">Área Destino</th>
+              <th style="text-align: right;">Cant. a Comprar</th>
+              <th style="text-align: right;">Costo Unit. Est.</th>
+              <th style="text-align: right;">Subtotal</th>
+              <th style="width: 60px; text-align: center;">Check</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
+        <div class="total-box">
+          Presupuesto Estimado Total: $${Number(orden.totalEstimado || 0).toFixed(2)} MXN
+        </div>
+        <script>
+          window.onload = function() { window.print(); }
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  }
+
+
+
+  /* ============ Distribuir Áreas desde Bodega (1-Clic) ============ */
+  distribuirVisible = false;
+  distribuirLoading = signal(false);
+  distribuirSaving = signal(false);
+  distribuirFactor = 1.5;
+  distribuirItems = signal<any[]>([]);
+  filtroAreaDistribucion: 'TODAS' | 'COCINA' | 'BARRA' = 'TODAS';
+
+  itemsDistribucionFiltrados = computed(() => {
+    const list = this.distribuirItems();
+    if (this.filtroAreaDistribucion === 'TODAS') return list;
+    return list.filter(i => (i.areaDestino || '').toUpperCase() === this.filtroAreaDistribucion);
+  });
+
+  totalInsumosADistribuir = computed(() =>
+    this.distribuirItems().filter(i => i.selected && Number(i.cantidadATransferir) > 0).length
+  );
+
+  totalUnidadesADistribuir = computed(() =>
+    this.distribuirItems()
+      .filter(i => i.selected)
+      .reduce((acc, i) => acc + (Number(i.cantidadATransferir) || 0), 0)
+  );
+
+  distribucionTodosSeleccionados = computed(() => {
+    const list = this.itemsDistribucionFiltrados();
+    return list.length > 0 && list.every(i => i.selected);
+  });
+
+  distribucionConBodegaDisponible = computed(() =>
+    this.distribuirItems().filter(i => (Number(i.stockBodega) || 0) > 0).length
+  );
+
+  openDistribuir(factor: number = 1.5) {
+    this.distribuirFactor = factor;
+    this.distribuirVisible = true;
+    this.cargarDistribucionSugerida(factor);
+  }
+
+  cargarDistribucionSugerida(factor: number) {
+    this.distribuirFactor = factor;
+    this.distribuirLoading.set(true);
+    this.inventoryService.getDistribucionSugerida(this.tenantId, factor).subscribe({
+      next: (res) => {
+        this.distribuirLoading.set(false);
+        const rawItems = (res.object || []).map((it: any) => ({
+          ...it,
+          selected: (Number(it.cantidadSugerida) > 0 && Number(it.stockBodega) > 0),
+          cantidadATransferir: Number(it.cantidadSugerida) || 0
+        }));
+        this.distribuirItems.set(rawItems);
+      },
+      error: () => {
+        this.distribuirLoading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo calcular la sugerencia de distribución a áreas'
+        });
+      }
+    });
+  }
+
+  onCantidadDistribucionChange(item: any) {
+    const max = Number(item.stockBodega) || 0;
+    if (item.cantidadATransferir < 0) {
+      item.cantidadATransferir = 0;
+    }
+    if (item.cantidadATransferir > max) {
+      item.cantidadATransferir = max;
+    }
+    this.distribuirItems.set([...this.distribuirItems()]);
+  }
+
+  toggleSelectAllDistribucion(checked: boolean) {
+    const targetArea = this.filtroAreaDistribucion;
+    const updated = this.distribuirItems().map(i => {
+      if (targetArea === 'TODAS' || (i.areaDestino || '').toUpperCase() === targetArea) {
+        if (Number(i.stockBodega) > 0 || !checked) {
+          return { ...i, selected: checked };
+        }
+      }
+      return i;
+    });
+    this.distribuirItems.set(updated);
+  }
+
+  calcularStockAreaResultante(item: any): number {
+    const act = Number(item.stockAreaActual) || 0;
+    const add = Number(item.cantidadATransferir) || 0;
+    return Math.round((act + add) * 1000) / 1000;
+  }
+
+  calcularStockBodegaRemanente(item: any): number {
+    const bodega = Number(item.stockBodega) || 0;
+    const add = Number(item.cantidadATransferir) || 0;
+    return Math.max(0, Math.round((bodega - add) * 1000) / 1000);
+  }
+
+  ejecutarDistribucionBatch() {
+    const seleccionados = this.distribuirItems().filter(
+      i => i.selected && Number(i.cantidadATransferir) > 0
+    );
+    if (seleccionados.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Atención',
+        detail: 'Selecciona al menos un insumo con cantidad mayor a 0 y existencia en bodega'
+      });
+      return;
+    }
+
+    this.distribuirSaving.set(true);
+    const payload = {
+      tenantId: this.tenantId,
+      items: seleccionados.map(i => ({
+        insumoId: i.insumoId,
+        cantidad: Number(i.cantidadATransferir),
+        destino: (i.areaDestino || 'cocina').toLowerCase()
+      }))
+    };
+
+    this.inventoryService.distribuirBatch(payload).subscribe({
+      next: (res) => {
+        this.distribuirSaving.set(false);
+        if (res.code === 200) {
+          this.messageService.add({
+            severity: 'success',
+            summary: '¡Distribución Exitosa!',
+            detail: `Se transfirieron existencias a ${seleccionados.length} insumos en Cocina y Barra.`,
+            life: 5000
+          });
+          this.distribuirVisible = false;
+          this.load();
+          this.loadPendientes();
+        } else {
+          this.messageService.add({ severity: 'warn', summary: 'Aviso', detail: res.message });
+        }
+      },
+      error: (err) => {
+        this.distribuirSaving.set(false);
+        const msg = err?.error?.message || 'Error al ejecutar la distribución a áreas';
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+      }
+    });
+  }
 }

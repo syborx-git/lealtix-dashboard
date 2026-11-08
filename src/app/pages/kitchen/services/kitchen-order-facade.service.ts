@@ -54,7 +54,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
         private kitchenNotificationService: KitchenNotificationService,
         private inventoryService: InventoryService,
         private productService: ProductService
-    ) {}
+    ) { }
 
     async init(tenantId: number): Promise<void> {
         if (tenantId <= 0) {
@@ -95,20 +95,59 @@ export class KitchenOrderFacadeService implements OnDestroy {
         return idx !== -1 ? ticketId.substring(0, idx) : ticketId;
     }
 
+    /**
+     * Fija en `ticketStatuses` el estado actual de todos los tickets hermanos (misma comanda y área)
+     * que aún no tengan un estado individual persistido, para evitar que al iniciar o terminar un
+     * tiempo se arrastren los demás tiempos a EN_PREPARACION o LISTO.
+     */
+    private lockSiblingTicketStatuses(
+        parentOrderId: string,
+        area: 'BARRA' | 'COCINA' | undefined,
+        excludeTicketId?: string
+    ): void {
+        if (!parentOrderId) return;
+        let changed = false;
+        for (const order of this.ordersSubject.value) {
+            if (order.parentOrderId !== parentOrderId) continue;
+            if (area && order.area !== area) continue;
+            if (excludeTicketId && order.id === excludeTicketId) continue;
+            if (!this.ticketStatuses.has(order.id)) {
+                this.ticketStatuses.set(order.id, order.status);
+                changed = true;
+            }
+        }
+        if (changed) {
+            this.saveTicketStatuses();
+        }
+    }
+
+    private hasAnyPersistedSiblingStatus(parentOrderId: string, area: 'BARRA' | 'COCINA'): boolean {
+        const prefix = `${parentOrderId}__${area}`;
+        for (const key of this.ticketStatuses.keys()) {
+            if (key === prefix || key.startsWith(`${prefix}__`)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     async startOrder(ticketId: string): Promise<void> {
         const parentId = this.extractParentOrderId(ticketId);
         const ticket = this.ordersSubject.value.find((o) => o.id === ticketId);
-        const area: 'BARRA' | 'COCINA' | undefined = ticket?.area 
+        const area: 'BARRA' | 'COCINA' | undefined = ticket?.area
             || (ticketId.includes('__BARRA') ? 'BARRA' : (ticketId.includes('__COCINA') ? 'COCINA' : undefined));
+
+        // Fijar los estados actuales de los demás tiempos/rondas antes de actualizar este ticket
+        this.lockSiblingTicketStatuses(parentId, area, ticketId);
+        this.ticketStatuses.set(ticketId, 'EN_PREPARACION');
+        this.saveTicketStatuses();
+        this.patchLocalStatus(ticketId, 'EN_PREPARACION');
 
         try {
             await firstValueFrom(this.kitchenApiService.updateStatus(parentId, 'start', area));
         } catch (e) {
             console.warn('[KitchenFacade] Error actualizando backend a start:', e);
         }
-        this.ticketStatuses.set(ticketId, 'EN_PREPARACION');
-        this.saveTicketStatuses();
-        this.patchLocalStatus(ticketId, 'EN_PREPARACION');
     }
 
     async startOrderFromConfirmed(ticketId: string): Promise<void> {
@@ -116,15 +155,17 @@ export class KitchenOrderFacadeService implements OnDestroy {
     }
 
     async finishOrder(ticketId: string): Promise<void> {
+        const parentId = this.extractParentOrderId(ticketId);
+        const ticket = this.ordersSubject.value.find((o) => o.id === ticketId);
+        const area: 'BARRA' | 'COCINA' | undefined = ticket?.area
+            || (ticketId.includes('__BARRA') ? 'BARRA' : (ticketId.includes('__COCINA') ? 'COCINA' : undefined));
+
+        // Fijar el estado actual de los demás tiempos/rondas hermanos para que no se muevan a LISTO
+        this.lockSiblingTicketStatuses(parentId, area, ticketId);
         this.ticketStatuses.set(ticketId, 'LISTO');
         this.saveTicketStatuses();
 
-        const parentId = this.extractParentOrderId(ticketId);
-        const ticket = this.ordersSubject.value.find((o) => o.id === ticketId);
-        const area: 'BARRA' | 'COCINA' | undefined = ticket?.area 
-            || (ticketId.includes('__BARRA') ? 'BARRA' : (ticketId.includes('__COCINA') ? 'COCINA' : undefined));
-
-        // Actualizar el estado local inmediatamente
+        // Actualizar el estado local inmediatamente solo para el ticket seleccionado
         const patched = this.ordersSubject.value.map((order) => {
             if (order.id !== ticketId) {
                 return order;
@@ -137,27 +178,40 @@ export class KitchenOrderFacadeService implements OnDestroy {
         });
         this.emitOrders(patched);
 
+        // Verificar si TODOS los tiempos/rondas activos de esta comanda en la misma área ya están en LISTO
+        const areaTickets = patched.filter(
+            (o) => o.parentOrderId === parentId && (!area || o.area === area)
+        );
+        const allAreaTicketsReady = areaTickets.length === 0 || areaTickets.every((o) => o.status === 'LISTO');
+
         try {
-            await firstValueFrom(this.kitchenApiService.updateStatus(parentId, 'finish', area));
+            if (allAreaTicketsReady) {
+                await firstValueFrom(this.kitchenApiService.updateStatus(parentId, 'finish', area));
+            } else {
+                // Si aún quedan otros tiempos en CONFIRMADA o EN_PREPARACION, mantener el área en EN_PREPARACION en backend
+                await firstValueFrom(this.kitchenApiService.updateStatus(parentId, 'start', area));
+            }
         } catch (e) {
-            console.warn('[KitchenFacade] Error actualizando backend a finish:', e);
+            console.warn('[KitchenFacade] Error actualizando backend en finishOrder:', e);
         }
     }
 
     async returnToConfirmedForSegundoTiempo(ticketId: string): Promise<void> {
         const parentId = this.extractParentOrderId(ticketId);
         const ticket = this.ordersSubject.value.find((o) => o.id === ticketId);
-        const area: 'BARRA' | 'COCINA' | undefined = ticket?.area 
+        const area: 'BARRA' | 'COCINA' | undefined = ticket?.area
             || (ticketId.includes('__BARRA') ? 'BARRA' : (ticketId.includes('__COCINA') ? 'COCINA' : undefined));
+
+        this.lockSiblingTicketStatuses(parentId, area, ticketId);
+        this.ticketStatuses.set(ticketId, 'CONFIRMADA');
+        this.saveTicketStatuses();
+        this.patchLocalStatus(ticketId, 'CONFIRMADA');
 
         try {
             await firstValueFrom(this.kitchenApiService.updateStatus(parentId, 'return-confirmed', area));
         } catch (e) {
             console.warn('[KitchenFacade] Error actualizando backend a return-confirmed:', e);
         }
-        this.ticketStatuses.set(ticketId, 'CONFIRMADA');
-        this.saveTicketStatuses();
-        this.patchLocalStatus(ticketId, 'CONFIRMADA');
     }
 
     parseOrderTime(createdAt: any): number {
@@ -177,8 +231,8 @@ export class KitchenOrderFacadeService implements OnDestroy {
         const d = new Date(time);
         const now = new Date();
         const sameDay = d.getFullYear() === now.getFullYear() &&
-                        d.getMonth() === now.getMonth() &&
-                        d.getDate() === now.getDate();
+            d.getMonth() === now.getMonth() &&
+            d.getDate() === now.getDate();
         const diffMs = Math.abs(now.getTime() - time);
         const withinShift = diffMs <= 24 * 60 * 60 * 1000;
         return sameDay || withinShift;
@@ -327,14 +381,25 @@ export class KitchenOrderFacadeService implements OnDestroy {
             const existingIdx = currentOrders.findIndex((o) => o.id === ticket.id);
             if (existingIdx !== -1) {
                 const prev = currentOrders[existingIdx];
-                // Mantener estado si ya fue progresado localmente (ej: EN_PREPARACION o LISTO)
-                const preservedStatus = (prev.status === 'EN_PREPARACION' || prev.status === 'LISTO') && status === 'CONFIRMADA'
-                    ? prev.status
-                    : ticket.status;
+                // Respetar el estado individual persistido para cada tiempo/ronda (salvo que la orden se pague o cancele)
+                let preservedStatus = ticket.status;
+                if (status !== 'PAGADA') {
+                    if (this.ticketStatuses.has(ticket.id)) {
+                        preservedStatus = this.ticketStatuses.get(ticket.id)!;
+                    } else if ((prev.status === 'EN_PREPARACION' || prev.status === 'LISTO') && status === 'CONFIRMADA') {
+                        preservedStatus = prev.status;
+                    }
+                }
                 if (ticket.area === 'COCINA' && prev.status !== 'CONFIRMADA' && preservedStatus === 'CONFIRMADA') {
                     cocinaBecameConfirmed = true;
                 }
-                currentOrders[existingIdx] = { ...ticket, status: preservedStatus };
+                currentOrders[existingIdx] = {
+                    ...ticket,
+                    status: preservedStatus,
+                    items: preservedStatus === 'LISTO'
+                        ? ticket.items.map((it) => ({ ...it, yaSalio: true }))
+                        : ticket.items
+                };
             } else {
                 // Nuevo ticket generado (ej. 2do o 3er tiempo recién marchado)
                 currentOrders.push(ticket);
@@ -423,21 +488,27 @@ export class KitchenOrderFacadeService implements OnDestroy {
 
         // Detectar rondas de preparación presentes en la orden
         const rondas = Array.from(new Set(allItems.map((it) => it.ronda || 1))).sort((a, b) => a - b);
-        if (rondas.length <= 1) {
-            return this.buildTicketsForItems(order, allItems, 1);
+        const hasMultipleRondas = rondas.length > 1;
+        if (!hasMultipleRondas) {
+            return this.buildTicketsForItems(order, allItems, 1, false);
         }
 
         const tickets: KitchenOrder[] = [];
         for (const r of rondas) {
             const itemsOfRonda = allItems.filter((it) => (it.ronda || 1) === r);
             if (itemsOfRonda.length > 0) {
-                tickets.push(...this.buildTicketsForItems(order, itemsOfRonda, r));
+                tickets.push(...this.buildTicketsForItems(order, itemsOfRonda, r, true));
             }
         }
         return tickets;
     }
 
-    private buildTicketsForItems(order: any, itemsToTicket: KitchenOrderItem[], ronda = 1): KitchenOrder[] {
+    private buildTicketsForItems(
+        order: any,
+        itemsToTicket: KitchenOrderItem[],
+        ronda = 1,
+        hasMultipleRondas = false
+    ): KitchenOrder[] {
         const parentOrderId = String(order?.id ?? '');
         const tenantId = Number(order?.tenantId ?? this.tenantId);
         const backendStatus = this.normalizeStatus(order?.estado);
@@ -484,7 +555,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
             if (!hasT2Barra && !hasT3Barra) {
                 // Comanda de barra sencilla (todas las bebidas en 1er tiempo)
                 const ticketId = `${parentOrderId}__BARRA${rondaSuffix}`;
-                const barraStatus = this.resolveTicketStatus(ticketId, rawBarraStatus, 1);
+                const barraStatus = this.resolveTicketStatus(ticketId, rawBarraStatus, 1, hasMultipleRondas);
                 tickets.push({
                     id: ticketId,
                     parentOrderId,
@@ -504,7 +575,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
                     source,
                     createdAt,
                     marchedAt: createdAt,
-                    items: barraItems,
+                    items: barraStatus === 'LISTO' ? barraItems.map((it) => ({ ...it, yaSalio: true })) : barraItems,
                     subtotal,
                     discount,
                     total,
@@ -517,7 +588,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
                 // Comanda de barra con múltiples tiempos: generar tickets por tiempo
                 if (t1BarraItems.length > 0) {
                     const ticketId = `${parentOrderId}__BARRA${rondaSuffix}__T1`;
-                    const barraStatus = this.resolveTicketStatus(ticketId, rawBarraStatus, 1);
+                    const barraStatus = this.resolveTicketStatus(ticketId, rawBarraStatus, 1, true);
                     tickets.push({
                         id: ticketId,
                         parentOrderId,
@@ -537,7 +608,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
                         source,
                         createdAt,
                         marchedAt: createdAt,
-                        items: t1BarraItems,
+                        items: barraStatus === 'LISTO' ? t1BarraItems.map((it) => ({ ...it, yaSalio: true })) : t1BarraItems,
                         subtotal,
                         discount,
                         total,
@@ -550,7 +621,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
 
                 if (hasT2Barra && t2BarraMarchado) {
                     const ticketId = `${parentOrderId}__BARRA${rondaSuffix}__T2`;
-                    const barraStatus = this.resolveTicketStatus(ticketId, rawBarraStatus, 2);
+                    const barraStatus = this.resolveTicketStatus(ticketId, rawBarraStatus, 2, true);
                     const latestUpdate = t2BarraItems.find((it) => it.updatedAt)?.updatedAt || createdAt;
                     const t2BarraWaiting: string[] = [];
                     if (hasT3Barra && !t3BarraMarchado) {
@@ -575,7 +646,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
                         source,
                         createdAt: latestUpdate,
                         marchedAt: latestUpdate,
-                        items: t2BarraItems,
+                        items: barraStatus === 'LISTO' ? t2BarraItems.map((it) => ({ ...it, yaSalio: true })) : t2BarraItems,
                         subtotal,
                         discount,
                         total,
@@ -588,7 +659,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
 
                 if (hasT3Barra && t3BarraMarchado) {
                     const ticketId = `${parentOrderId}__BARRA${rondaSuffix}__T3`;
-                    const barraStatus = this.resolveTicketStatus(ticketId, rawBarraStatus, 3);
+                    const barraStatus = this.resolveTicketStatus(ticketId, rawBarraStatus, 3, true);
                     const latestUpdate = t3BarraItems.find((it) => it.updatedAt)?.updatedAt || createdAt;
                     tickets.push({
                         id: ticketId,
@@ -609,7 +680,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
                         source,
                         createdAt: latestUpdate,
                         marchedAt: latestUpdate,
-                        items: t3BarraItems,
+                        items: barraStatus === 'LISTO' ? t3BarraItems.map((it) => ({ ...it, yaSalio: true })) : t3BarraItems,
                         subtotal,
                         discount,
                         total,
@@ -648,7 +719,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
             // Si NO hay tiempos 2 ni 3, es una comanda de cocina sencilla
             if (!hasT2 && !hasT3) {
                 const ticketId = `${parentOrderId}__COCINA${rondaSuffix}`;
-                const status = this.resolveTicketStatus(ticketId, rawCocinaStatus);
+                const status = this.resolveTicketStatus(ticketId, rawCocinaStatus, 1, hasMultipleRondas);
                 tickets.push({
                     id: ticketId,
                     parentOrderId,
@@ -668,7 +739,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
                     source,
                     createdAt,
                     marchedAt: createdAt,
-                    items: cocinaItems,
+                    items: status === 'LISTO' ? cocinaItems.map((it) => ({ ...it, yaSalio: true })) : cocinaItems,
                     subtotal,
                     discount,
                     total,
@@ -681,7 +752,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
                 // COMANDA DE COCINA CON MÚLTIPLES TIEMPOS: GENERAR UN TICKET POR TIEMPO
                 if (t1Items.length > 0) {
                     const ticketId = `${parentOrderId}__COCINA${rondaSuffix}__T1`;
-                    const status = this.resolveTicketStatus(ticketId, rawCocinaStatus, 1);
+                    const status = this.resolveTicketStatus(ticketId, rawCocinaStatus, 1, true);
                     tickets.push({
                         id: ticketId,
                         parentOrderId,
@@ -701,7 +772,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
                         source,
                         createdAt,
                         marchedAt: createdAt,
-                        items: t1Items,
+                        items: status === 'LISTO' ? t1Items.map((it) => ({ ...it, yaSalio: true })) : t1Items,
                         subtotal,
                         discount,
                         total,
@@ -714,7 +785,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
 
                 if (hasT2 && t2Marchado) {
                     const ticketId = `${parentOrderId}__COCINA${rondaSuffix}__T2`;
-                    const status = this.resolveTicketStatus(ticketId, rawCocinaStatus, 2);
+                    const status = this.resolveTicketStatus(ticketId, rawCocinaStatus, 2, true);
                     const latestUpdate = t2Items.find((it) => it.updatedAt)?.updatedAt || createdAt;
                     const t2Waiting: string[] = [];
                     if (hasT3 && !t3Marchado) {
@@ -740,7 +811,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
                         source,
                         createdAt: latestUpdate,
                         marchedAt: latestUpdate,
-                        items: t2Items,
+                        items: status === 'LISTO' ? t2Items.map((it) => ({ ...it, yaSalio: true })) : t2Items,
                         subtotal,
                         discount,
                         total,
@@ -753,7 +824,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
 
                 if (hasT3 && t3Marchado) {
                     const ticketId = `${parentOrderId}__COCINA${rondaSuffix}__T3`;
-                    const status = this.resolveTicketStatus(ticketId, rawCocinaStatus, 3);
+                    const status = this.resolveTicketStatus(ticketId, rawCocinaStatus, 3, true);
                     const latestUpdate = t3Items.find((it) => it.updatedAt)?.updatedAt || createdAt;
 
                     tickets.push({
@@ -775,7 +846,7 @@ export class KitchenOrderFacadeService implements OnDestroy {
                         source,
                         createdAt: latestUpdate,
                         marchedAt: latestUpdate,
-                        items: t3Items,
+                        items: status === 'LISTO' ? t3Items.map((it) => ({ ...it, yaSalio: true })) : t3Items,
                         subtotal,
                         discount,
                         total,
@@ -791,37 +862,69 @@ export class KitchenOrderFacadeService implements OnDestroy {
         return tickets;
     }
 
-    private resolveTicketStatus(ticketId: string, backendStatus: KitchenOrderStatus, tiempo = 1): KitchenOrderStatus {
+    private resolveTicketStatus(
+        ticketId: string,
+        backendStatus: KitchenOrderStatus,
+        tiempo = 1,
+        isMultiTicketArea = false
+    ): KitchenOrderStatus {
         if (backendStatus === 'CANCELADA') return 'CANCELADA';
         if (backendStatus === 'PAGADA') return 'PAGADA';
 
-        // Si el ticket ya tiene un estado persistido explícito para este ticketId específico
+        const isMultiCourseOrRound =
+            isMultiTicketArea ||
+            tiempo === 2 ||
+            tiempo === 3 ||
+            ticketId.includes('__T') ||
+            ticketId.includes('__R');
+
+        // 1. Si el ticket ya tiene un estado persistido explícito para este ticketId específico
         if (this.ticketStatuses.has(ticketId)) {
             const persisted = this.ticketStatuses.get(ticketId)!;
-            // Para tiempos 2 y 3, o tickets de rondas posteriores, respetar el estado individual del ticket (no contaminar con el status previo de la comanda)
-            if (tiempo === 2 || tiempo === 3 || ticketId.includes('__R')) {
+            // En comandas con múltiples tiempos (1er, 2do, 3er tiempo) o múltiples rondas,
+            // respetar siempre el estado individual del ticket sin arrastrarlo cuando el backend cambia.
+            if (isMultiCourseOrRound) {
                 return persisted;
             }
             if (backendStatus === 'LISTO') return 'LISTO';
             return persisted;
         }
 
-        // Si el estado general o del área en backend ya está en LISTO, respetarlo siempre
+        // Si es un 1er tiempo (__T1) y existía previamente un estado guardado bajo el ticket base sin __T1,
+        // migrar ese estado para no perder el progreso del 1er tiempo.
+        if (ticketId.endsWith('__T1')) {
+            const baseTicketId = ticketId.slice(0, -4);
+            if (this.ticketStatuses.has(baseTicketId)) {
+                const migrated = this.ticketStatuses.get(baseTicketId)!;
+                this.ticketStatuses.set(ticketId, migrated);
+                this.saveTicketStatuses();
+                return migrated;
+            }
+        }
+
+        // 2. Para comandas con múltiples tiempos (__T1, __T2, __T3) o múltiples rondas (__R*):
+        //    Cada tiempo o ronda debe iniciar en CONFIRMADA y avanzar de forma independiente
+        //    (CONFIRMADA -> EN_PREPARACION -> LISTO), sin heredar EN_PREPARACION ni LISTO de otro tiempo.
+        if (isMultiCourseOrRound) {
+            const parentOrderId = this.extractParentOrderId(ticketId);
+            const area: 'BARRA' | 'COCINA' = ticketId.includes('__BARRA') ? 'BARRA' : 'COCINA';
+            const hasSiblingPersisted = this.hasAnyPersistedSiblingStatus(parentOrderId, area);
+
+            // Solo si ningún tiempo hermano tiene estado local registrado y el backend ya reporta toda el área como LISTO
+            // (por ejemplo, al abrir el navegador con órdenes ya despachadas) y es el 1er tiempo de la ronda 1:
+            if (!hasSiblingPersisted && backendStatus === 'LISTO' && tiempo === 1 && !ticketId.includes('__R')) {
+                return 'LISTO';
+            }
+
+            const initialStatus: KitchenOrderStatus = 'CONFIRMADA';
+            this.ticketStatuses.set(ticketId, initialStatus);
+            this.saveTicketStatuses();
+            return initialStatus;
+        }
+
+        // 3. Comanda sencilla (un solo tiempo y una sola ronda):
         if (backendStatus === 'LISTO') {
             return 'LISTO';
-        }
-
-        // Para tickets de rondas posteriores recién creadas:
-        // Deben empezar en CONFIRMADA y recorrer todo el flujo (CONFIRMADA -> EN_PREPARACION -> LISTO)
-        if (ticketId.includes('__R')) {
-            return 'CONFIRMADA';
-        }
-
-        // Para tickets de 2do y 3er tiempo recién creados o marchados:
-        // Deben empezar en CONFIRMADA y recorrer todo el flujo (CONFIRMADA -> EN_PREPARACION -> LISTO),
-        // sin heredar el estado LISTO del tiempo anterior.
-        if (tiempo === 2 || tiempo === 3) {
-            return 'CONFIRMADA';
         }
 
         return backendStatus;
