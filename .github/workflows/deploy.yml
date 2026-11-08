@@ -85,15 +85,48 @@ jobs:
             docker compose build lealtix-dashboard
             docker compose up -d --force-recreate --no-deps lealtix-dashboard
 
+            echo "===== Inspeccion de /var/www/lealtix ====="
+            ls -la /var/www/lealtix || true
+
+            # Actualizar y desplegar Backend en el mismo servidor de produccion
+            BE_DIR=""
+            for b in /var/www/lealtix/lealtix-BE /var/www/lealtix/lealtix-be /var/www/lealtix/backend /var/www/lealtix/lealtix-backend; do
+              if [ -d "$b" ]; then
+                BE_DIR="$b"
+                break
+              fi
+            done
+
+            if [ -z "$BE_DIR" ]; then
+              echo "Clonando lealtix-BE en /var/www/lealtix/lealtix-BE..."
+              git clone https://github.com/syborx-git/lealtix-BE.git /var/www/lealtix/lealtix-BE || true
+              if [ -d "/var/www/lealtix/lealtix-BE" ]; then BE_DIR="/var/www/lealtix/lealtix-BE"; fi
+            fi
+
+            if [ -n "$BE_DIR" ] && [ -d "$BE_DIR" ]; then
+              echo "BE_DIR=$BE_DIR"
+              cd "$BE_DIR"
+              git fetch origin main
+              git checkout -f main
+              git reset --hard origin/main
+              echo "HEAD del Backend: $(git rev-parse --short HEAD)"
+
+              cd "$COMPOSE_DIR"
+              echo "===== Reconstruyendo contenedor lealtix-backend ====="
+              docker compose build --no-cache lealtix-backend || docker compose build lealtix-backend
+              docker compose up -d --force-recreate --no-deps lealtix-backend
+            fi
+
             echo "===== Monitoreo y logs iniciales ====="
-            sleep 8
+            sleep 12
             docker compose ps
             docker compose logs --tail=40 lealtix-dashboard || true
+            docker compose logs --tail=40 lealtix-backend || true
 
             echo "===== Healthcheck del Dashboard ====="
             for i in $(seq 1 20); do
               code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:4201/ || echo 000)
-              echo "Intento $i: HTTP $code"
+              echo "Dashboard intento $i: HTTP $code"
               if [ "$code" = "200" ]; then
                 echo "✅ Dashboard respondiendo con éxito (HTTP 200)!"
                 break
@@ -105,4 +138,15 @@ jobs:
               fi
               sleep 4
             done
-            echo "🎉 Dashboard desplegado y activo!"
+
+            echo "===== Healthcheck del Backend ====="
+            for i in $(seq 1 25); do
+              code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8082/api/tenant/slug/demo || curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/tenant/slug/demo || echo 000)
+              echo "Backend intento $i: HTTP $code"
+              if [ "$code" = "200" ]; then
+                echo "✅ Backend respondiendo con éxito (HTTP 200)!"
+                break
+              fi
+              sleep 4
+            done
+            echo "🎉 Despliegue completo y activo!"
