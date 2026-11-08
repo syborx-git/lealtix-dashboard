@@ -768,7 +768,9 @@ export class BodegaComponent implements OnInit {
       next: (res) => {
         this.distribuirLoading.set(false);
         this.distribuirError.set(null);
-        const rawItems = (res.object || []).map((it: any) => ({
+        const data = res.object || {};
+        const list = Array.isArray(data) ? data : (data.items || []);
+        const rawItems = list.map((it: any) => ({
           ...it,
           selected: (Number(it.cantidadSugerida) > 0 && Number(it.stockBodega) > 0),
           cantidadATransferir: Number(it.cantidadSugerida) || 0
