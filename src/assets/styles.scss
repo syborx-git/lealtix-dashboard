@@ -2765,3 +2765,60 @@ body.modulo-fullscreen-active .app-content {
   }
 }
 
+
+
+/* ============ DROPDOWNS & SELECTS MODO OSCURO (GLOBAL) ============ */
+:root[class*='app-dark'],
+.app-dark {
+  .p-select.filter-dropdown,
+  p-select.filter-dropdown .p-select,
+  .filter-dropdown {
+    background: #1a2130 !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+    color: #f1f5f9 !important;
+
+    .p-select-label {
+      color: #f1f5f9 !important;
+
+      &.p-placeholder {
+        color: #94a3b8 !important;
+      }
+    }
+
+    .p-select-dropdown {
+      color: #94a3b8 !important;
+    }
+
+    &:hover,
+    &.p-focus {
+      border-color: #8b5cf6 !important;
+    }
+  }
+
+  .p-select-overlay,
+  .p-dropdown-panel {
+    background: #1e293b !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    color: #f1f5f9 !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+
+    .p-select-list-container,
+    .p-select-list,
+    .p-dropdown-items-wrapper,
+    .p-dropdown-items {
+      background: #1e293b !important;
+    }
+
+    .p-select-option,
+    .p-dropdown-item {
+      color: #e2e8f0 !important;
+
+      &:hover,
+      &.p-focus,
+      &.p-highlight {
+        background: rgba(124, 58, 237, 0.25) !important;
+        color: #ffffff !important;
+      }
+    }
+  }
+}

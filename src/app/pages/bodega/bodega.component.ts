@@ -245,13 +245,27 @@ export class BodegaComponent implements OnInit {
 
   /* ============ Alta de insumo en bodega ============ */
 
+  getDefaultStockMinimo(unidad?: string | null): number {
+    if (!unidad) return 10;
+    const u = unidad.trim().toLowerCase();
+    if (u.includes('gram') || u === 'g' || u === 'gr') return 500;
+    if (u.includes('mili') || u === 'ml' || u.includes('litro') || u === 'l') return 500;
+    return 10;
+  }
+
+  onCreateUnidadChange() {
+    if (!this.createStockMinimo || this.createStockMinimo <= 0 || this.createStockMinimo === 10 || this.createStockMinimo === 500) {
+      this.createStockMinimo = this.getDefaultStockMinimo(this.createUnidad);
+    }
+  }
+
   openCreate() {
     this.createVisible = true;
     this.createNombre = '';
     this.createUnidad = 'pieza';
     this.createCantidad = 0;
     this.createCostoTotal = 0;
-    this.createStockMinimo = 0;
+    this.createStockMinimo = this.getDefaultStockMinimo('pieza');
   }
 
   doCreate() {
@@ -263,7 +277,11 @@ export class BodegaComponent implements OnInit {
       this.messageService.add({ severity: 'warn', summary: 'Aviso', detail: 'Indica el costo de la carga (obligatorio)' });
       return;
     }
-    this.inventoryService.createInsumoBodega(this.tenantId, this.createNombre, this.createUnidad, this.createCantidad, this.createCostoTotal, this.createStockMinimo, []).subscribe({
+    const finalStockMinimo = (this.createStockMinimo && this.createStockMinimo > 0)
+      ? this.createStockMinimo
+      : this.getDefaultStockMinimo(this.createUnidad);
+    this.createStockMinimo = finalStockMinimo;
+    this.inventoryService.createInsumoBodega(this.tenantId, this.createNombre, this.createUnidad, this.createCantidad, this.createCostoTotal, finalStockMinimo, []).subscribe({
       next: (res) => {
         if (res.code !== 200) {
           this.messageService.add({ severity: 'warn', summary: 'Aviso', detail: res.message });

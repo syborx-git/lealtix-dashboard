@@ -180,7 +180,7 @@
       <!-- Fila 2: Unidad (select) -->
       <div class="create-block">
         <label class="create-label" for="createUnidad">Unidad de medida</label>
-        <select id="createUnidad" class="create-select" [(ngModel)]="createUnidad">
+        <select id="createUnidad" class="create-select" [(ngModel)]="createUnidad" (change)="onCreateUnidadChange()">
           <option value="" disabled>Selecciona una unidad…</option>
           <option value="pieza">Pieza</option>
           <option value="kg">Kilogramo (kg)</option>
@@ -201,7 +201,8 @@
         </div>
         <div class="create-block">
           <label class="create-label" for="createStockMinimo">Stock mínimo (alerta)</label>
-          <input id="createStockMinimo" pInputText type="number" min="0" [(ngModel)]="createStockMinimo" placeholder="0" />
+          <input id="createStockMinimo" pInputText type="number" min="1" [(ngModel)]="createStockMinimo" [placeholder]="getDefaultStockMinimo(createUnidad).toString()" />
+          <small class="text-xs text-500 mt-1 block">Sugerido: {{ getDefaultStockMinimo(createUnidad) }} {{ createUnidad }} (no puede ser 0)</small>
         </div>
       </div>
 

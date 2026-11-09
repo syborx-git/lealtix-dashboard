@@ -1075,7 +1075,7 @@
             <button
               *ngIf="selectedCategoryId() !== null"
               type="button"
-              class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs sm:text-sm transition-all cursor-pointer border border-purple-200"
+              class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-bold text-xs sm:text-sm transition-all cursor-pointer border border-purple-200 dark:border-purple-800/60"
               (click)="onCategoryFilterChange(null); clearSearch()"
               title="Volver a la selección de categorías"
             >
@@ -1083,11 +1083,11 @@
               <span>Categorías</span>
             </button>
 
-            <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center flex-shrink-0">
+            <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-transparent dark:border-purple-800/60 flex items-center justify-center flex-shrink-0">
               <i class="pi" [ngClass]="selectedCategoryId() === null ? 'pi-th-large' : 'pi-book'"></i>
             </div>
             <div>
-              <h3 class="text-base font-bold text-slate-800 m-0">
+              <h3 class="text-base font-bold text-slate-800 dark:text-white m-0">
                 <ng-container *ngIf="searchQuery().trim().length > 0">
                   Resultados de búsqueda
                 </ng-container>
@@ -1211,7 +1211,7 @@
           </p>
           <button
             type="button"
-            class="px-4 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold text-xs transition-colors cursor-pointer"
+            class="px-4 py-2 rounded-xl bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-transparent dark:border-purple-800/60 font-semibold text-xs transition-colors cursor-pointer"
             (click)="clearSearch(); onCategoryFilterChange(null)"
           >
             ← Volver a categorías
@@ -1225,7 +1225,7 @@
         >
           <div
             *ngFor="let product of filteredProducts()"
-            class="dish-pos-card group bg-white rounded-2xl border border-slate-200/70 hover:border-purple-300 hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col cursor-pointer"
+            class="dish-pos-card group bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/70 dark:border-slate-800 hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col cursor-pointer"
             (click)="addToCart(product)"
           >
             <!-- Imagen con badge de stock -->
@@ -1238,7 +1238,7 @@
                 loading="lazy"
                 (error)="onImageError($event)"
               />
-              <div *ngIf="!product.imageUrl || !product.imageUrl.trim()" class="w-full h-full flex items-center justify-center bg-slate-100 text-slate-300">
+              <div *ngIf="!product.imageUrl || !product.imageUrl.trim()" class="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600">
                 <i class="pi pi-image text-3xl"></i>
               </div>
 
@@ -1266,11 +1266,11 @@
 
             <!-- Detalles del platillo -->
             <div class="p-3.5 flex flex-col flex-1 justify-between">
-              <h4 class="font-bold text-slate-800 text-sm line-clamp-1 group-hover:text-purple-700 transition-colors mb-1" [title]="product.name">
+              <h4 class="font-bold text-slate-800 dark:text-white text-sm line-clamp-1 group-hover:text-purple-700 dark:group-hover:text-purple-400 transition-colors mb-1" [title]="product.name">
                 {{ product.name }}
               </h4>
-              <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-50">
-                <span class="text-base font-extrabold text-slate-900">
+              <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-50 dark:border-slate-800">
+                <span class="text-base font-extrabold text-slate-900 dark:text-white">
                   <ng-container *ngIf="product.variants && product.variants.length > 0">
                     <span class="text-xs text-slate-400 font-normal">Desde </span>${{ product.variants[0].precio | number:'1.2-2' }}
                   </ng-container>
@@ -1281,7 +1281,7 @@
                 <div class="flex items-center gap-1.5">
                   <button
                     type="button"
-                    class="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 hover:bg-purple-100 hover:text-purple-700 flex items-center justify-center transition-colors shadow-xs cursor-pointer"
+                    class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-purple-100 dark:hover:bg-purple-900/50 hover:text-purple-700 dark:hover:text-purple-300 border border-transparent dark:border-slate-700 flex items-center justify-center transition-colors shadow-xs cursor-pointer"
                     title="Ver detalles del platillo"
                     [attr.aria-label]="'Ver detalles de ' + product.name"
                     (click)="$event.stopPropagation(); openProductDetail(product)"
@@ -1290,7 +1290,7 @@
                   </button>
                   <button
                     type="button"
-                    class="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-600 hover:text-white flex items-center justify-center transition-colors shadow-xs cursor-pointer"
+                    class="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 hover:bg-purple-600 hover:text-white dark:hover:bg-purple-600 dark:hover:text-white border border-purple-200 dark:border-purple-800/60 flex items-center justify-center transition-colors shadow-xs cursor-pointer"
                     [attr.aria-label]="(product.variants && product.variants.length > 0 ? 'Ver variantes de ' : 'Agregar ') + product.name"
                     [title]="product.variants && product.variants.length > 0 ? 'Elegir variante' : 'Agregar a la comanda'"
                     (click)="$event.stopPropagation(); addToCart(product)"
@@ -2420,17 +2420,17 @@
 
   <!-- ==================== TEMPLATE CARRITO ==================== -->
   <ng-template #carritoTemplate>
-    <div class="ticket-receipt-card bg-white rounded-2xl border border-slate-200/80 shadow-sm flex flex-col overflow-hidden min-h-[calc(100vh-6rem)] md:min-h-[640px]">
+    <div class="ticket-receipt-card bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden min-h-[calc(100vh-6rem)] md:min-h-[640px]">
       
       <!-- ENCABEZADO TICKET DE COMANDA (RESUMEN DE MESA Y MESERO) -->
-      <div class="ticket-receipt-header p-4 bg-white border-b border-slate-100">
+      <div class="ticket-receipt-header p-4 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
         <div class="flex items-center justify-between gap-2 mb-2.5">
           <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center">
+            <div class="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-transparent dark:border-purple-800/60 flex items-center justify-center">
               <i class="pi pi-receipt text-sm"></i>
             </div>
             <div>
-              <h3 class="text-base font-bold text-slate-800 m-0 leading-tight">Ticket Comanda</h3>
+              <h3 class="text-base font-bold text-slate-800 dark:text-white m-0 leading-tight">Ticket Comanda</h3>
               <span class="text-[11px] text-slate-400 font-medium">Orden en curso</span>
             </div>
           </div>
@@ -2441,8 +2441,8 @@
         </div>
 
         <!-- Resumen de Mesa, Mesero y Comensales -->
-        <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-100 text-xs">
-          <div class="flex items-center justify-between text-slate-700 font-semibold mb-1">
+        <div class="bg-slate-50 dark:bg-slate-800/80 rounded-xl p-2.5 border border-slate-100 dark:border-slate-700 text-xs">
+          <div class="flex items-center justify-between text-slate-700 dark:text-slate-200 font-semibold mb-1">
             <span class="flex items-center gap-1.5">
               <i class="pi pi-table text-purple-600"></i>
               <strong *ngIf="selectedMesa()">#{{ selectedMesa()!.id }} · {{ selectedMesa()!.nombre }} <span *ngIf="selectedMesa()!.numero" class="text-slate-400 font-normal">(M-{{ selectedMesa()!.numero }})</span></strong>
@@ -2481,12 +2481,12 @@
         <div class="flex-1 overflow-y-auto p-3.5 space-y-2.5 max-h-[calc(100vh-390px)]">
           <div *ngFor="let item of cart(); let i = index; trackBy: trackByProductId"
                class="p-3 rounded-xl border transition-colors"
-               [ngClass]="item.tiempo === 3 ? 'bg-purple-50/70 hover:bg-purple-100/50 border-purple-200/90 shadow-2xs' : (item.tiempo === 2 ? 'bg-amber-50/60 hover:bg-amber-100/40 border-amber-200/90 shadow-2xs' : 'bg-slate-50/70 hover:bg-purple-50/30 border-slate-100')">
+               [ngClass]="item.tiempo === 3 ? 'bg-purple-50/70 dark:bg-purple-950/40 hover:bg-purple-100/50 dark:hover:bg-purple-900/40 border-purple-200/90 dark:border-purple-800/60 shadow-2xs' : (item.tiempo === 2 ? 'bg-amber-50/60 dark:bg-amber-950/40 hover:bg-amber-100/40 dark:hover:bg-amber-900/40 border-amber-200/90 dark:border-amber-800/60 shadow-2xs' : 'bg-slate-50/70 dark:bg-slate-800/70 hover:bg-purple-50/30 dark:hover:bg-slate-700/50 border-slate-100 dark:border-slate-700')">
             
             <!-- Fila superior: Tag Comensal + Tag Tiempo + Botón Llevar + Botones acción -->
             <div class="flex items-center justify-between gap-2 mb-1.5">
               <div class="flex items-center gap-1.5 flex-wrap">
-                <span class="bg-purple-100/80 text-purple-800 text-[11px] font-bold px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                <span class="bg-purple-100/80 dark:bg-purple-900/60 text-purple-800 dark:text-purple-200 border border-purple-200/80 dark:border-purple-800/60 text-[11px] font-bold px-2 py-0.5 rounded-md inline-flex items-center gap-1">
                   <i class="pi pi-user text-[10px]"></i>{{ item.asientoAlias || 'Persona 1' }}
                 </span>
 
@@ -2497,10 +2497,10 @@
                   [title]="'Tiempo actual: ' + (item.tiempo === 3 ? '3er Tiempo' : (item.tiempo === 2 ? '2do Tiempo' : '1er Tiempo')) + '. Clic para alternar.'"
                   class="cursor-pointer text-[10px] font-bold px-2 py-0.5 rounded-md inline-flex items-center gap-1 transition-all border"
                   [ngClass]="item.tiempo === 3
-                    ? 'bg-purple-100 text-purple-900 border-purple-300 hover:bg-purple-200'
+                    ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-900 dark:text-purple-200 border-purple-300 dark:border-purple-800/60 hover:bg-purple-200 dark:hover:bg-purple-900/80'
                     : (item.tiempo === 2
-                      ? 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200'
-                      : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100')"
+                      ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-800/60 hover:bg-amber-200 dark:hover:bg-amber-900/80'
+                      : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/80')"
                 >
                   <i class="pi" [ngClass]="item.tiempo === 3 ? 'pi-sparkles' : (item.tiempo === 2 ? 'pi-clock' : 'pi-bolt')"></i>
                   <span>{{ item.tiempo === 3 ? '3er Tiempo 🍰' : (item.tiempo === 2 ? '2do Tiempo ⏱️' : '1er Tiempo') }}</span>
@@ -2513,8 +2513,8 @@
                   [title]="item.paraLlevar ? 'Platillo marcado para llevar. Clic para cambiar a comer en restaurante.' : 'Platillo para comer en restaurante. Clic para cambiar a para llevar.'"
                   class="cursor-pointer text-[10px] font-bold px-2 py-0.5 rounded-md inline-flex items-center gap-1 transition-all border"
                   [ngClass]="item.paraLlevar
-                    ? 'bg-orange-100 text-orange-950 border-orange-300 hover:bg-orange-200 shadow-2xs'
-                    : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'"
+                    ? 'bg-orange-100 dark:bg-orange-950/60 text-orange-950 dark:text-orange-200 border-orange-300 dark:border-orange-800/60 hover:bg-orange-200 dark:hover:bg-orange-900/80 shadow-2xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'"
                 >
                   <span>{{ item.paraLlevar ? '🥡 Para llevar' : '🍽️ En restaurante' }}</span>
                 </button>
@@ -2558,7 +2558,7 @@
 
             <!-- Nombre de platillo y precio unitario -->
             <div class="mb-2">
-              <h4 class="font-bold text-slate-800 text-sm leading-tight m-0">
+              <h4 class="font-bold text-slate-800 dark:text-white text-sm leading-tight m-0">
                 {{ item.product.name }}
                 <span *ngIf="item.selectedVariant" class="text-purple-700 font-extrabold block text-xs mt-1 flex items-center gap-1">
                   <i class="pi pi-tag text-[10px]"></i>
@@ -2571,24 +2571,24 @@
 
             <!-- Stepper de cantidad y total de la línea -->
             <div class="flex items-center justify-between gap-2">
-              <div class="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-xs">
+              <div class="flex items-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-0.5 shadow-xs">
                 <button
                   type="button"
-                  class="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors cursor-pointer"
+                  class="w-6 h-6 rounded flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                   (click)="updateQuantity(item, item.cantidad - 1)"
                 >
                   <i class="pi pi-minus text-[10px]"></i>
                 </button>
-                <span class="w-8 text-center text-xs font-bold text-slate-800">{{ item.cantidad }}</span>
+                <span class="w-8 text-center text-xs font-bold text-slate-800 dark:text-white">{{ item.cantidad }}</span>
                 <button
                   type="button"
-                  class="w-6 h-6 rounded flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors cursor-pointer"
+                  class="w-6 h-6 rounded flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                   (click)="updateQuantity(item, item.cantidad + 1)"
                 >
                   <i class="pi pi-plus text-[10px]"></i>
                 </button>
               </div>
-              <span class="font-extrabold text-slate-900 text-sm">
+              <span class="font-extrabold text-slate-900 dark:text-white text-sm">
                 ${{ (getCartItemUnitPrice(item) * item.cantidad) | number:'1.2-2' }}
               </span>
             </div>
@@ -2599,7 +2599,7 @@
                 pInputText
                 [(ngModel)]="item.comentarios"
                 placeholder="Nota cocina (ej: sin cebolla, salsa aparte)..."
-                class="w-full text-xs p-1.5 rounded-lg border border-slate-200 bg-white"
+                class="w-full text-xs p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
               />
             </div>
 
@@ -2616,10 +2616,10 @@
         </div>
 
         <!-- SECCIÓN INFERIOR TICKET (LÍNEA DE CORTE, TOTALES Y ACCIONES) -->
-        <div class="ticket-receipt-bottom p-3.5 bg-white border-t border-slate-100">
+        <div class="ticket-receipt-bottom p-3.5 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
           
           <!-- Línea punteada de corte estilo recibo -->
-          <div class="border-t-2 border-dashed border-slate-200 -mt-1 mb-3"></div>
+          <div class="border-t-2 border-dashed border-slate-200 dark:border-slate-700 -mt-1 mb-3"></div>
 
           <!-- Cupón de Descuento si hay cliente -->
           <div *ngIf="selectedCliente" class="mb-3">
@@ -2643,9 +2643,9 @@
 
           <!-- Desglose de Totales -->
           <div class="space-y-1.5 mb-3 text-xs">
-            <div class="flex justify-between text-slate-500 font-medium">
+            <div class="flex justify-between text-slate-500 dark:text-slate-400 font-medium">
               <span>Subtotal:</span>
-              <span class="font-bold text-slate-700">${{ subtotal() | number:'1.2-2' }}</span>
+              <span class="font-bold text-slate-700 dark:text-slate-200">${{ subtotal() | number:'1.2-2' }}</span>
             </div>
             <div *ngIf="descuentoAplicado() > 0" class="flex justify-between text-emerald-600 font-semibold">
               <span class="flex items-center gap-1"><i class="pi pi-tag"></i>Descuento:</span>
@@ -2669,12 +2669,12 @@
             </div>
 
             <!-- TOTAL DESTACADO -->
-            <div class="bg-purple-50/70 border border-purple-200/80 rounded-xl p-3 flex items-center justify-between mt-2">
+            <div class="bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200/80 dark:border-purple-800/60 rounded-xl p-3 flex items-center justify-between mt-2">
               <div>
-                <span class="text-[10px] font-bold uppercase tracking-wider text-purple-700 block">Total a Pagar</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300 block">Total a Pagar</span>
                 <span class="text-xs text-slate-400">{{ cart().length }} platillos</span>
               </div>
-              <span class="text-2xl font-black text-purple-900">
+              <span class="text-2xl font-black text-purple-900 dark:text-purple-100">
                 ${{ totalFinal() | number:'1.2-2' }}
               </span>
             </div>
@@ -2697,7 +2697,7 @@
 
             <button
               type="button"
-              class="w-full py-2 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold text-xs text-center transition-all cursor-pointer disabled:opacity-50"
+              class="w-full py-2 px-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold text-xs text-center transition-all cursor-pointer disabled:opacity-50"
               [disabled]="processingOrder()"
               (click)="editingPendingOrder() ? cancelPendingOrderEdition() : (appendingToOrder() ? cancelarAgregarAComanda() : limpiarCarrito())"
             >

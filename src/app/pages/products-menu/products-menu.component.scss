@@ -1312,12 +1312,16 @@
 }
 
 // ==================== MODO OSCURO PRODUCTOS (.app-dark) ====================
-:host-context(.app-dark) {
+:host-context(.app-dark),
+:root.app-dark,
+.app-dark {
   .catalog-filter-bar {
     background: var(--surface-card, #242c40);
     border-color: var(--surface-border, rgba(255, 255, 255, 0.08));
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 
+    ::ng-deep .filter-dropdown,
+    .filter-dropdown,
     .filter-dropdowns ::ng-deep .filter-dropdown {
       background: #1a2130 !important;
       border-color: rgba(255, 255, 255, 0.14) !important;

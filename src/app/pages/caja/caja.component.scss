@@ -421,3 +421,104 @@
   }
 }
 
+
+
+/* ============ MODO OSCURO CAJA (.app-dark) ============ */
+:host-context(.app-dark),
+:root.app-dark,
+.app-dark {
+  .caja-page {
+    background: transparent !important;
+  }
+
+  .caja-ventanas {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+
+    .caja-ventana {
+      color: #94a3b8 !important;
+
+      &:hover {
+        color: #c4b5fd !important;
+        background: rgba(124, 58, 237, 0.15) !important;
+      }
+
+      &.active {
+        color: #ffffff !important;
+        background: #7c3aed !important;
+        box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35) !important;
+      }
+
+      .caja-ventana-badge {
+        background: #312e81 !important;
+        color: #c4b5fd !important;
+      }
+
+      &.active .caja-ventana-badge {
+        background: rgba(255, 255, 255, 0.25) !important;
+        color: #ffffff !important;
+      }
+    }
+  }
+
+  .caja-tabs {
+    border-bottom-color: #334155 !important;
+
+    .caja-tab {
+      color: #94a3b8 !important;
+
+      &:hover {
+        color: #c4b5fd !important;
+        background: rgba(124, 58, 237, 0.15) !important;
+      }
+
+      &.active {
+        color: #c4b5fd !important;
+        background: rgba(124, 58, 237, 0.2) !important;
+        border-color: rgba(124, 58, 237, 0.4) !important;
+      }
+
+      .caja-tab-badge {
+        background: #334155 !important;
+        color: #cbd5e1 !important;
+      }
+
+      &.active .caja-tab-badge {
+        background: #7c3aed !important;
+        color: #ffffff !important;
+      }
+    }
+
+    .caja-tab-note {
+      color: #94a3b8 !important;
+    }
+  }
+
+  .caja-search {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+
+    &:focus {
+      border-color: #a78bfa !important;
+      box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.25) !important;
+    }
+
+    &::placeholder {
+      color: #64748b !important;
+    }
+  }
+
+  .btn-refresh {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    color: #94a3b8 !important;
+
+    &:hover:not(:disabled) {
+      color: #c4b5fd !important;
+      border-color: #7c3aed !important;
+      background: rgba(124, 58, 237, 0.15) !important;
+    }
+  }
+}

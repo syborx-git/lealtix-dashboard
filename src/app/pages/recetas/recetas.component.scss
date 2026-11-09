@@ -948,3 +948,131 @@
     min-width: 720px;
   }
 }
+
+
+/* ============ MODO OSCURO RECETAS MODAL ============ */
+:host-context(.app-dark),
+:root.app-dark,
+.app-dark {
+  ::ng-deep .recetas-recipe-dialog,
+  .recetas-recipe-dialog {
+    background: #1e293b !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+
+    .p-dialog-header {
+      background: #1e293b !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+      color: #f8fafc !important;
+
+      .p-dialog-header-actions button,
+      .p-dialog-close-button,
+      .p-dialog-header-icon,
+      .p-dialog-header-close {
+        color: #94a3b8 !important;
+        background: #0f172a !important;
+        border: 1px solid #334155 !important;
+
+        svg, i {
+          color: #94a3b8 !important;
+          fill: #94a3b8 !important;
+          stroke: #94a3b8 !important;
+        }
+
+        &:hover {
+          color: #ffffff !important;
+          background: #334155 !important;
+
+          svg, i {
+            color: #ffffff !important;
+            fill: #ffffff !important;
+            stroke: #ffffff !important;
+          }
+        }
+      }
+    }
+
+    .p-dialog-content {
+      background: #1e293b !important;
+      color: #f8fafc !important;
+    }
+
+    .p-select,
+    .custom-box-select {
+      background: #0f172a !important;
+      border: 1px solid #334155 !important;
+      color: #f8fafc !important;
+
+      &:hover {
+        border-color: #475569 !important;
+        background: #161f30 !important;
+      }
+
+      &.p-focus,
+      &:focus-within {
+        background: #0f172a !important;
+        border-color: #a855f7 !important;
+        box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.25) !important;
+      }
+
+      .p-select-label {
+        color: #f8fafc !important;
+
+        &.p-placeholder {
+          color: #94a3b8 !important;
+        }
+      }
+
+      .p-select-dropdown {
+        color: #94a3b8 !important;
+      }
+    }
+
+    .p-inputnumber,
+    .custom-box-input {
+      input,
+      .p-inputnumber-input {
+        background: #0f172a !important;
+        border: 1px solid #334155 !important;
+        color: #f8fafc !important;
+
+        &::placeholder {
+          color: #94a3b8 !important;
+        }
+
+        &:hover {
+          border-color: #475569 !important;
+          background: #161f30 !important;
+        }
+
+        &:focus {
+          background: #0f172a !important;
+          border-color: #a855f7 !important;
+          box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.25) !important;
+        }
+      }
+    }
+
+    input.p-inputtext,
+    .p-inputtext {
+      background: #0f172a !important;
+      border: 1px solid #334155 !important;
+      color: #f8fafc !important;
+
+      &::placeholder {
+        color: #94a3b8 !important;
+      }
+
+      &:hover {
+        border-color: #475569 !important;
+        background: #161f30 !important;
+      }
+
+      &:focus {
+        background: #0f172a !important;
+        border-color: #a855f7 !important;
+        box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.25) !important;
+      }
+    }
+  }
+}

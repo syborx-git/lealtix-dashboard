@@ -128,7 +128,7 @@
     <!-- BARRA DE FILTROS SUPERIOR Y BUSCADOR -->
     <div class="catalog-filter-bar mb-3">
         <div class="filter-controls-row flex flex-wrap align-items-center justify-content-between gap-3">
-            <div class="flex flex-wrap align-items-center gap-2 flex-1">
+            <div class="filter-dropdowns flex flex-wrap align-items-center gap-2 flex-1">
                 <!-- Dropdown selector de Tipo -->
                 <p-select
                     [options]="availableTypeFilterOptions"
@@ -648,7 +648,7 @@
         </div>
         <div>
             <label class="block text-sm font-medium mb-1">Unidad</label>
-            <p-select [options]="unidades" [(ngModel)]="insumoUnidad" styleClass="w-full" />
+            <p-select [options]="unidades" [(ngModel)]="insumoUnidad" (ngModelChange)="onInsumoUnidadChange($event)" styleClass="w-full" />
         </div>
         <div>
             <label class="block text-sm font-medium mb-1">Stock inicial</label>
@@ -656,7 +656,8 @@
         </div>
         <div>
             <label class="block text-sm font-medium mb-1">Stock mínimo</label>
-            <p-inputnumber [(ngModel)]="insumoMin" [min]="0" [step]="1" styleClass="w-full" />
+            <p-inputnumber [(ngModel)]="insumoMin" [min]="1" [step]="1" styleClass="w-full" />
+            <small class="text-xs text-500 mt-1 block">Mínimo sugerido: {{ getDefaultStockMinimo(insumoUnidad) }} {{ insumoUnidad || 'pieza' }} (no puede ser 0)</small>
         </div>
         <div>
             <label class="block text-sm font-medium mb-1">Categorías</label>
@@ -697,7 +698,7 @@
         </div>
         <div>
             <label class="block text-sm font-medium mb-1">Tipo</label>
-            <p-select [options]="bebidaUnidades" [(ngModel)]="bebidaUnidad" styleClass="w-full" />
+            <p-select [options]="bebidaUnidades" [(ngModel)]="bebidaUnidad" (ngModelChange)="onBebidaUnidadChange($event)" styleClass="w-full" />
         </div>
         <div>
             <label class="block text-sm font-medium mb-1">Stock inicial</label>
@@ -705,7 +706,8 @@
         </div>
         <div>
             <label class="block text-sm font-medium mb-1">Stock mínimo</label>
-            <p-inputnumber [(ngModel)]="bebidaMin" [min]="0" [step]="1" styleClass="w-full" />
+            <p-inputnumber [(ngModel)]="bebidaMin" [min]="1" [step]="1" styleClass="w-full" />
+            <small class="text-xs text-500 mt-1 block">Mínimo sugerido: {{ getDefaultStockMinimo(bebidaUnidad) }} {{ bebidaUnidad || 'pieza' }} (no puede ser 0)</small>
         </div>
         <div>
             <label class="block text-sm font-medium mb-1">Precio de venta</label>

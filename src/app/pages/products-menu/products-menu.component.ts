@@ -537,6 +537,28 @@ export class ProductMenuComponent implements OnInit {
         return `${item.stock} ${item.unidad ?? ''}`.trim();
     }
 
+    getDefaultStockMinimo(unidad?: string | null): number {
+        if (!unidad) return 10;
+        const u = unidad.trim().toLowerCase();
+        if (u.includes('gram') || u === 'g' || u === 'gr') return 500;
+        if (u.includes('mili') || u === 'ml' || u.includes('litro') || u === 'l') return 500;
+        return 10;
+    }
+
+    onInsumoUnidadChange(nuevaUnidad: string) {
+        this.insumoUnidad = nuevaUnidad;
+        if (!this.insumoMin || this.insumoMin <= 0 || this.insumoMin === 10 || this.insumoMin === 500) {
+            this.insumoMin = this.getDefaultStockMinimo(nuevaUnidad);
+        }
+    }
+
+    onBebidaUnidadChange(nuevaUnidad: string) {
+        this.bebidaUnidad = nuevaUnidad;
+        if (!this.bebidaMin || this.bebidaMin <= 0 || this.bebidaMin === 10 || this.bebidaMin === 500) {
+            this.bebidaMin = this.getDefaultStockMinimo(nuevaUnidad);
+        }
+    }
+
     /* ============ Insumos (crear/editar/almacenar) ============ */
 
     openNewInsumo() {
@@ -544,7 +566,7 @@ export class ProductMenuComponent implements OnInit {
         this.insumoNombre = '';
         this.insumoUnidad = 'pieza';
         this.insumoStock = 0;
-        this.insumoMin = 0;
+        this.insumoMin = this.getDefaultStockMinimo('pieza');
         this.insumoCategoryIds = [];
         this.insumoCategoryPicker = null;
         this.insumoDialogVisible = true;
@@ -555,7 +577,7 @@ export class ProductMenuComponent implements OnInit {
         this.insumoNombre = insumo.nombre;
         this.insumoUnidad = insumo.unidad || 'pieza';
         this.insumoStock = insumo.stock;
-        this.insumoMin = insumo.stockMinimo;
+        this.insumoMin = (insumo.stockMinimo && insumo.stockMinimo > 0) ? insumo.stockMinimo : this.getDefaultStockMinimo(insumo.unidad || 'pieza');
         this.insumoCategoryIds = Array.isArray(insumo.categoryIds)
             ? insumo.categoryIds.map((n: any) => Number(n)).filter((n: number) => !Number.isNaN(n))
             : [];
@@ -586,6 +608,9 @@ export class ProductMenuComponent implements OnInit {
 
     saveInsumo() {
         if (!this.insumoNombre.trim()) return;
+        if (!this.insumoMin || this.insumoMin <= 0) {
+            this.insumoMin = this.getDefaultStockMinimo(this.insumoUnidad);
+        }
         const done = () => {
             this.insumoDialogVisible = false;
             this.loadInsumos();
@@ -660,7 +685,7 @@ export class ProductMenuComponent implements OnInit {
         this.bebidaNombre = '';
         this.bebidaUnidad = 'pieza';
         this.bebidaStock = 0;
-        this.bebidaMin = 0;
+        this.bebidaMin = this.getDefaultStockMinimo('pieza');
         this.bebidaPrecioVenta = 0;
         this.bebidaCategoryIds = [];
         this.bebidaCategoryPicker = null;
@@ -673,7 +698,7 @@ export class ProductMenuComponent implements OnInit {
         this.bebidaNombre = bebida.nombre;
         this.bebidaUnidad = bebida.unidad || 'pieza';
         this.bebidaStock = bebida.stock;
-        this.bebidaMin = bebida.stockMinimo;
+        this.bebidaMin = (bebida.stockMinimo && bebida.stockMinimo > 0) ? bebida.stockMinimo : this.getDefaultStockMinimo(bebida.unidad || 'pieza');
         this.bebidaPrecioVenta = bebida.precioVenta ?? 0;
         this.bebidaCategoryIds = Array.isArray(bebida.categoryIds)
             ? bebida.categoryIds.map((n: any) => Number(n)).filter((n: number) => !Number.isNaN(n))
@@ -708,6 +733,9 @@ export class ProductMenuComponent implements OnInit {
         if (!this.bebidaNombre?.trim()) {
             this.messageService.add({ severity: 'warn', summary: 'Aviso', detail: 'Escribe el nombre de la bebida', life: 3000 });
             return;
+        }
+        if (!this.bebidaMin || this.bebidaMin <= 0) {
+            this.bebidaMin = this.getDefaultStockMinimo(this.bebidaUnidad);
         }
         const done = () => {
             this.bebidaDialogVisible = false;
