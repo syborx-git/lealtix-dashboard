@@ -1197,7 +1197,7 @@
         <div class="grid grid-cols-3 gap-2">
           <button
             type="button"
-            *ngFor="let m of ['EFECTIVO', 'VISA', 'MASTERCARD', 'TRANSFERENCIA', 'VALES']"
+            *ngFor="let m of ['EFECTIVO', 'VISA', 'MASTERCARD', 'TRANSFERENCIA', 'VALES', 'AMEX']"
             (click)="metodoPagoSeleccionado = m; onMontoCuentaChange()"
             [class]="metodoPagoSeleccionado === m
               ? 'bg-purple-600 text-white border-purple-600 font-bold shadow-xs'
@@ -1209,56 +1209,106 @@
         </div>
       </div>
 
-      <!-- Entrada de Propina Rápida y Manual -->
+      <!-- Entrada de Propina Rápida y Personalizada -->
       <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
         <div class="flex justify-between items-center">
           <label class="text-xs font-bold text-slate-700 uppercase flex items-center gap-1.5">
             <i class="pi pi-heart text-purple-600"></i>
-            <span>Propina ($)</span>
+            <span>Propina</span>
           </label>
           <span class="text-xs font-black text-purple-700">+${{ (montoPropinaInput || 0) | number:'1.2-2' }}</span>
         </div>
-        <div class="grid grid-cols-4 gap-1.5">
+
+        <!-- Botones Predefinidos con Resaltado Morado Activo -->
+        <div class="grid grid-cols-3 gap-2">
           <button
             type="button"
-            (click)="aplicarPropinaRapida(0.10)"
-            class="py-1.5 text-xs bg-white text-purple-700 font-bold rounded-lg border border-purple-200 hover:bg-purple-50 transition-colors cursor-pointer"
+            (click)="aplicarPresetPropina('10%')"
+            [class]="tipoPropinaSeleccionada === '10%'
+              ? 'bg-purple-600 text-white border-purple-600 font-bold shadow-xs'
+              : 'bg-white text-purple-700 font-bold border border-purple-200 hover:bg-purple-50'"
+            class="py-1.5 text-xs rounded-lg transition-all cursor-pointer text-center"
           >
             10%
           </button>
           <button
             type="button"
-            (click)="aplicarPropinaRapida(0.15)"
-            class="py-1.5 text-xs bg-white text-purple-700 font-bold rounded-lg border border-purple-200 hover:bg-purple-50 transition-colors cursor-pointer"
+            (click)="aplicarPresetPropina('15%')"
+            [class]="tipoPropinaSeleccionada === '15%'
+              ? 'bg-purple-600 text-white border-purple-600 font-bold shadow-xs'
+              : 'bg-white text-purple-700 font-bold border border-purple-200 hover:bg-purple-50'"
+            class="py-1.5 text-xs rounded-lg transition-all cursor-pointer text-center"
           >
             15%
           </button>
           <button
             type="button"
-            (click)="aplicarPropinaRapida(0.20)"
-            class="py-1.5 text-xs bg-white text-purple-700 font-bold rounded-lg border border-purple-200 hover:bg-purple-50 transition-colors cursor-pointer"
-          >
-            20%
-          </button>
-          <button
-            type="button"
-            (click)="montoPropinaInput = 0; onPropinaChange()"
-            class="py-1.5 text-xs bg-white text-slate-600 font-bold rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors cursor-pointer"
+            (click)="aplicarPresetPropina('$0')"
+            [class]="tipoPropinaSeleccionada === '$0'
+              ? 'bg-purple-600 text-white border-purple-600 font-bold shadow-xs'
+              : 'bg-white text-slate-600 font-bold border border-slate-200 hover:bg-slate-100'"
+            class="py-1.5 text-xs rounded-lg transition-all cursor-pointer text-center"
           >
             $0
           </button>
         </div>
-        <div class="relative">
-          <span class="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500 text-xs">Propina manual: $</span>
-          <input
-            type="number"
-            [(ngModel)]="montoPropinaInput"
-            (ngModelChange)="onPropinaChange()"
-            min="0"
-            step="any"
-            placeholder="0.00"
-            class="w-full text-right text-xs font-bold pl-28 pr-3 py-1.5 bg-white rounded-lg border border-slate-200 text-slate-800 focus:outline-none focus:ring-1 focus:ring-purple-500"
-          />
+
+        <!-- Propina Personalizada con Conmutador [%] / [$] -->
+        <div class="pt-1 space-y-1">
+          <div class="flex items-center gap-2">
+            <!-- Toggle % o $ -->
+            <div class="inline-flex rounded-lg border border-slate-300 p-0.5 bg-slate-200/70 shadow-2xs shrink-0">
+              <button
+                type="button"
+                (click)="cambiarModoPropina('%')"
+                [class]="modoPropinaPersonalizada === '%' ? 'bg-purple-600 text-white font-black shadow-xs' : 'text-slate-600 font-bold hover:text-slate-900'"
+                class="px-2.5 py-1 text-xs rounded-md transition-all cursor-pointer"
+                title="Calcular por porcentaje (%)"
+              >
+                %
+              </button>
+              <button
+                type="button"
+                (click)="cambiarModoPropina('$')"
+                [class]="modoPropinaPersonalizada === '$' ? 'bg-purple-600 text-white font-black shadow-xs' : 'text-slate-600 font-bold hover:text-slate-900'"
+                class="px-2.5 py-1 text-xs rounded-md transition-all cursor-pointer"
+                title="Ingresar monto fijo en pesos ($)"
+              >
+                $
+              </button>
+            </div>
+
+            <!-- Input numérico -->
+            <div class="relative flex-1">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-xs">
+                {{ modoPropinaPersonalizada === '%' ? 'Propina (%):' : 'Propina ($):' }}
+              </span>
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 font-black text-slate-400 text-xs">
+                {{ modoPropinaPersonalizada === '%' ? '%' : '$' }}
+              </span>
+              <input
+                type="number"
+                [(ngModel)]="valorPropinaPersonalizada"
+                (ngModelChange)="onValorPropinaPersonalizadaChange()"
+                min="0"
+                step="any"
+                placeholder="0"
+                class="w-full text-right text-xs font-black pl-24 pr-7 py-1.5 bg-white rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-1 focus:ring-purple-500 shadow-2xs"
+              />
+            </div>
+          </div>
+
+          <!-- Indicador en tiempo real del cálculo -->
+          <div class="flex justify-between items-center text-[11px] text-slate-500 px-1" *ngIf="montoPropinaInput > 0">
+            <span *ngIf="modoPropinaPersonalizada === '%'">
+              <i class="pi pi-info-circle text-[10px] text-purple-600 mr-1"></i>
+              Equivale a <strong class="text-purple-700">+${{ montoPropinaInput | number:'1.2-2' }}</strong> sobre la cuenta
+            </span>
+            <span *ngIf="modoPropinaPersonalizada === '$' && montoCuentaInput > 0">
+              <i class="pi pi-info-circle text-[10px] text-purple-600 mr-1"></i>
+              Equivale al <strong class="text-purple-700">{{ ((montoPropinaInput / montoCuentaInput) * 100) | number:'1.1-1' }}%</strong> de la cuenta
+            </span>
+          </div>
         </div>
       </div>
 
@@ -1303,7 +1353,7 @@
         <input
           type="text"
           [(ngModel)]="referenciaPagoInput"
-          placeholder="Ej: Autorización #928371"
+          [placeholder]="metodoPagoSeleccionado === 'AMEX' ? 'Ej: Autorización AMEX #928371' : 'Ej: Autorización #928371'"
           class="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-purple-500"
         />
       </div>
@@ -1848,12 +1898,12 @@
           </div>
         </div>
 
-        <!-- 2. Tarjeta -->
+        <!-- 2. Tarjeta (Visa / Mastercard) -->
         <div class="p-3 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors">
           <div class="flex items-center justify-between mb-1.5">
             <span class="font-black text-slate-800 flex items-center gap-1.5">
               <i class="pi pi-credit-card text-purple-600"></i>
-              Tarjetas / Terminales (Vouchers)
+              Tarjetas Visa / Mastercard (Vouchers)
             </span>
             <span class="text-[11px] text-slate-500 font-medium">
               Esperado por sistema: <strong class="text-slate-800">${{ totalTarjetaDia() | number:'1.2-2' }}</strong>
@@ -1883,6 +1933,46 @@
                 [class.text-rose-700]="diferenciaTarjetaCorte() < 0"
               >
                 {{ diferenciaTarjetaCorte() > 0 ? 'Sobrante +' : (diferenciaTarjetaCorte() < 0 ? 'Faltante ' : 'Cuadrado ') }}${{ (diferenciaTarjetaCorte() >= 0 ? diferenciaTarjetaCorte() : -diferenciaTarjetaCorte()) | number:'1.2-2' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. American Express (AMEX) -->
+        <div class="p-3 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="font-black text-slate-800 flex items-center gap-1.5">
+              <i class="pi pi-credit-card text-sky-600"></i>
+              Vouchers American Express (AMEX)
+            </span>
+            <span class="text-[11px] text-slate-500 font-medium">
+              Esperado por sistema: <strong class="text-slate-800">${{ totalAmexDia() | number:'1.2-2' }}</strong>
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="flex-1">
+              <p-inputNumber
+                [ngModel]="inputRealAmex()"
+                (ngModelChange)="inputRealAmex.set($event)"
+                mode="currency"
+                currency="USD"
+                locale="en-US"
+                placeholder="$0.00"
+                styleClass="w-full text-xs"
+                [min]="0"
+              ></p-inputNumber>
+            </div>
+            <div class="w-36 text-right shrink-0">
+              <span
+                class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full"
+                [class.bg-emerald-50]="diferenciaAmexCorte() === 0"
+                [class.text-emerald-700]="diferenciaAmexCorte() === 0"
+                [class.bg-indigo-50]="diferenciaAmexCorte() > 0"
+                [class.text-indigo-700]="diferenciaAmexCorte() > 0"
+                [class.bg-rose-50]="diferenciaAmexCorte() < 0"
+                [class.text-rose-700]="diferenciaAmexCorte() < 0"
+              >
+                {{ diferenciaAmexCorte() > 0 ? 'Sobrante +' : (diferenciaAmexCorte() < 0 ? 'Faltante ' : 'Cuadrado ') }}${{ (diferenciaAmexCorte() >= 0 ? diferenciaAmexCorte() : -diferenciaAmexCorte()) | number:'1.2-2' }}
               </span>
             </div>
           </div>
@@ -2111,11 +2201,19 @@
                 </td>
               </tr>
               <tr>
-                <td class="p-2 font-medium">Tarjeta / Terminal</td>
+                <td class="p-2 font-medium">Tarjeta (Visa/MC)</td>
                 <td class="p-2 text-right text-slate-600">${{ (c.sistemaTarjeta || 0) | number:'1.2-2' }}</td>
                 <td class="p-2 text-right font-bold">${{ (c.realTarjeta || 0) | number:'1.2-2' }}</td>
                 <td class="p-2 text-right font-black" [class.text-emerald-600]="(c.diferenciaTarjeta || 0) == 0" [class.text-indigo-600]="(c.diferenciaTarjeta || 0) > 0" [class.text-rose-600]="(c.diferenciaTarjeta || 0) < 0">
                   {{ (c.diferenciaTarjeta || 0) > 0 ? '+' : '' }}${{ (c.diferenciaTarjeta || 0) | number:'1.2-2' }}
+                </td>
+              </tr>
+              <tr>
+                <td class="p-2 font-medium">American Express (AMEX)</td>
+                <td class="p-2 text-right text-slate-600">${{ (c.sistemaAmex || 0) | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-bold">${{ (c.realAmex || 0) | number:'1.2-2' }}</td>
+                <td class="p-2 text-right font-black" [class.text-emerald-600]="(c.diferenciaAmex || 0) == 0" [class.text-indigo-600]="(c.diferenciaAmex || 0) > 0" [class.text-rose-600]="(c.diferenciaAmex || 0) < 0">
+                  {{ (c.diferenciaAmex || 0) > 0 ? '+' : '' }}${{ (c.diferenciaAmex || 0) | number:'1.2-2' }}
                 </td>
               </tr>
               <tr>

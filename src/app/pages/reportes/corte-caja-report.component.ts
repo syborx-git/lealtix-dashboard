@@ -36,7 +36,7 @@ export class CorteCajaReportComponent extends ReporteBaseComponent {
       datasets: [
         {
           data: filas.map((fila: any) => Number(fila['total'] ?? 0)),
-          backgroundColor: ['#16a34a', '#7c3aed', '#0891b2', '#ea580c', '#94a3b8'],
+          backgroundColor: ['#16a34a', '#7c3aed', '#0284c7', '#0891b2', '#ea580c', '#94a3b8'],
           borderWidth: 0,
         },
       ],

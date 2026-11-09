@@ -434,6 +434,9 @@ export class CajaComponent implements OnInit, OnDestroy {
   metodoPagoSeleccionado = 'EFECTIVO';
   montoCuentaInput = 0;
   montoPropinaInput = 0;
+  tipoPropinaSeleccionada = '$0'; // '10%' | '15%' | '$0' | 'MANUAL'
+  modoPropinaPersonalizada: '%' | '$' = '%';
+  valorPropinaPersonalizada: number | null = null;
   referenciaPagoInput = '';
   efectivoRecibidoInput = 0;
 
@@ -758,6 +761,12 @@ export class CajaComponent implements OnInit, OnDestroy {
       .reduce((sum, m) => sum + m.totalRecaudado, 0);
   });
 
+  totalAmexDia = computed(() => {
+    return this.metodosPagoDia()
+      .filter(m => this.normalizarNombreMetodo(m.metodoPago) === 'AMEX')
+      .reduce((sum, m) => sum + m.totalRecaudado, 0);
+  });
+
   totalTransferenciaDia = computed(() => {
     return this.metodosPagoDia()
       .filter(m => this.normalizarNombreMetodo(m.metodoPago) === 'TRANSFERENCIA')
@@ -768,7 +777,7 @@ export class CajaComponent implements OnInit, OnDestroy {
     return this.metodosPagoDia()
       .filter(m => {
         const nom = this.normalizarNombreMetodo(m.metodoPago);
-        return nom !== 'EFECTIVO' && nom !== 'TARJETA' && nom !== 'TRANSFERENCIA';
+        return nom !== 'EFECTIVO' && nom !== 'TARJETA' && nom !== 'TRANSFERENCIA' && nom !== 'AMEX';
       })
       .reduce((sum, m) => sum + m.totalRecaudado, 0);
   });
@@ -794,6 +803,7 @@ export class CajaComponent implements OnInit, OnDestroy {
   // Inputs ingresados en el modal de arqueo
   inputRealEfectivo = signal<number | null>(null);
   inputRealTarjeta = signal<number | null>(null);
+  inputRealAmex = signal<number | null>(null);
   inputRealTransferencia = signal<number | null>(null);
   inputRealOtros = signal<number | null>(null);
   inputComentariosCorte = signal<string>('');
@@ -802,9 +812,10 @@ export class CajaComponent implements OnInit, OnDestroy {
   totalRealDeclarado = computed(() => {
     const ef = Number(this.inputRealEfectivo() ?? 0);
     const tar = Number(this.inputRealTarjeta() ?? 0);
+    const amex = Number(this.inputRealAmex() ?? 0);
     const trans = Number(this.inputRealTransferencia() ?? 0);
     const ot = Number(this.inputRealOtros() ?? 0);
-    return ef + tar + trans + ot;
+    return ef + tar + amex + trans + ot;
   });
 
   diferenciaTotalCorte = computed(() => {
@@ -817,6 +828,10 @@ export class CajaComponent implements OnInit, OnDestroy {
 
   diferenciaTarjetaCorte = computed(() => {
     return Number(this.inputRealTarjeta() ?? 0) - this.totalTarjetaDia();
+  });
+
+  diferenciaAmexCorte = computed(() => {
+    return Number(this.inputRealAmex() ?? 0) - this.totalAmexDia();
   });
 
   diferenciaTransferenciaCorte = computed(() => {
@@ -850,6 +865,7 @@ export class CajaComponent implements OnInit, OnDestroy {
     }
     this.inputRealEfectivo.set(null);
     this.inputRealTarjeta.set(null);
+    this.inputRealAmex.set(null);
     this.inputRealTransferencia.set(null);
     this.inputRealOtros.set(null);
     this.inputComentariosCorte.set('');
@@ -885,6 +901,7 @@ export class CajaComponent implements OnInit, OnDestroy {
         tenantId: this.tenantId,
         realEfectivo: Number(this.inputRealEfectivo() ?? 0),
         realTarjeta: Number(this.inputRealTarjeta() ?? 0),
+        realAmex: Number(this.inputRealAmex() ?? 0),
         realTransferencia: Number(this.inputRealTransferencia() ?? 0),
         realOtros: Number(this.inputRealOtros() ?? 0),
         comentarios: this.inputComentariosCorte().trim() || undefined
@@ -976,6 +993,9 @@ export class CajaComponent implements OnInit, OnDestroy {
     TARJETA: 'TARJETA',
     VISA: 'TARJETA',
     MASTERCARD: 'TARJETA',
+    AMEX: 'AMEX',
+    'AMERICAN EXPRESS': 'AMEX',
+    AMERICAN_EXPRESS: 'AMEX',
     DEBITO: 'TARJETA',
     CREDITO: 'TARJETA',
     TERMINAL: 'TARJETA',
@@ -1864,18 +1884,82 @@ export class CajaComponent implements OnInit, OnDestroy {
     const total = Number((this.totalCuenta(fila)).toFixed(2));
     this.montoCuentaInput = total;
     this.montoPropinaInput = 0;
+    this.tipoPropinaSeleccionada = '$0';
+    this.modoPropinaPersonalizada = '%';
+    this.valorPropinaPersonalizada = null;
     this.referenciaPagoInput = '';
     this.efectivoRecibidoInput = total;
     this.modalPagoVisible.set(true);
   }
 
-  aplicarPropinaRapida(porcentaje: number): void {
+  aplicarPresetPropina(tipo: '10%' | '15%' | '$0'): void {
+    this.tipoPropinaSeleccionada = tipo;
     const base = Number(this.montoCuentaInput) || 0;
-    this.montoPropinaInput = Math.round(base * porcentaje * 100) / 100;
+    if (tipo === '10%') {
+      this.modoPropinaPersonalizada = '%';
+      this.valorPropinaPersonalizada = 10;
+      this.montoPropinaInput = Math.round(base * 0.10 * 100) / 100;
+    } else if (tipo === '15%') {
+      this.modoPropinaPersonalizada = '%';
+      this.valorPropinaPersonalizada = 15;
+      this.montoPropinaInput = Math.round(base * 0.15 * 100) / 100;
+    } else {
+      this.valorPropinaPersonalizada = 0;
+      this.montoPropinaInput = 0;
+    }
     this.onPropinaChange();
   }
 
+  cambiarModoPropina(modo: '%' | '$'): void {
+    if (this.modoPropinaPersonalizada === modo) return;
+    this.modoPropinaPersonalizada = modo;
+    const base = Number(this.montoCuentaInput) || 0;
+
+    if (modo === '%') {
+      if (base > 0 && this.montoPropinaInput > 0) {
+        this.valorPropinaPersonalizada = Math.round((this.montoPropinaInput / base) * 100 * 10) / 10;
+      } else {
+        this.valorPropinaPersonalizada = 0;
+      }
+    } else {
+      this.valorPropinaPersonalizada = this.montoPropinaInput > 0 ? this.montoPropinaInput : 0;
+    }
+    this.actualizarPresetDesdeValor();
+  }
+
+  onValorPropinaPersonalizadaChange(): void {
+    const base = Number(this.montoCuentaInput) || 0;
+    const val = Number(this.valorPropinaPersonalizada) || 0;
+
+    if (this.modoPropinaPersonalizada === '%') {
+      this.montoPropinaInput = Math.round(base * (val / 100) * 100) / 100;
+    } else {
+      this.montoPropinaInput = Math.round(val * 100) / 100;
+    }
+
+    this.actualizarPresetDesdeValor();
+    this.onPropinaChange();
+  }
+
+  private actualizarPresetDesdeValor(): void {
+    const val = Number(this.valorPropinaPersonalizada) || 0;
+    if (val === 0 && this.montoPropinaInput === 0) {
+      this.tipoPropinaSeleccionada = '$0';
+    } else if (this.modoPropinaPersonalizada === '%' && val === 10) {
+      this.tipoPropinaSeleccionada = '10%';
+    } else if (this.modoPropinaPersonalizada === '%' && val === 15) {
+      this.tipoPropinaSeleccionada = '15%';
+    } else {
+      this.tipoPropinaSeleccionada = 'MANUAL';
+    }
+  }
+
   onMontoCuentaChange(): void {
+    if (this.modoPropinaPersonalizada === '%' && this.valorPropinaPersonalizada != null) {
+      const base = Number(this.montoCuentaInput) || 0;
+      const val = Number(this.valorPropinaPersonalizada) || 0;
+      this.montoPropinaInput = Math.round(base * (val / 100) * 100) / 100;
+    }
     if (this.metodoPagoSeleccionado === 'EFECTIVO' && this.efectivoRecibidoInput < this.totalAPagarModal) {
       this.efectivoRecibidoInput = this.totalAPagarModal;
     }
@@ -1938,6 +2022,8 @@ export class CajaComponent implements OnInit, OnDestroy {
         metodo = 'TRANSFER';
       } else if (metodo === 'VALES') {
         metodo = 'MIXED';
+      } else if (metodo === 'AMEX') {
+        metodo = 'AMEX';
       }
 
       const cajeroId = this.userId > 0 ? this.userId : (this.turnoActivo()?.idCajero || 1);

@@ -166,18 +166,21 @@ export interface CorteCajaDiarioDTO {
 
   sistemaEfectivo: number;
   sistemaTarjeta: number;
+  sistemaAmex?: number;
   sistemaTransferencia: number;
   sistemaOtros: number;
   sistemaTotal: number;
 
   realEfectivo: number;
   realTarjeta: number;
+  realAmex?: number;
   realTransferencia: number;
   realOtros: number;
   realTotal: number;
 
   diferenciaEfectivo: number;
   diferenciaTarjeta: number;
+  diferenciaAmex?: number;
   diferenciaTransferencia: number;
   diferenciaOtros: number;
   diferenciaTotal: number;
@@ -193,6 +196,7 @@ export interface GenerarCorteDiarioRequest {
   tenantId: number;
   realEfectivo: number;
   realTarjeta: number;
+  realAmex?: number;
   realTransferencia: number;
   realOtros: number;
   comentarios?: string;
@@ -202,6 +206,7 @@ export interface ResumenCorteSistemaDTO {
   fecha: string;
   sistemaEfectivo: number;
   sistemaTarjeta: number;
+  sistemaAmex?: number;
   sistemaTransferencia: number;
   sistemaOtros: number;
   sistemaTotal: number;

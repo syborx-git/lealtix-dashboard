@@ -35,7 +35,7 @@ export type OrderStatus =
   | 'RECHAZADO'
   | 'CANCELADA';
 
-export type PaymentMethod = 'CASH' | 'CARD' | 'TRANSFER' | 'MIXED';
+export type PaymentMethod = 'CASH' | 'CARD' | 'TRANSFER' | 'MIXED' | 'AMEX';
 
 export interface PaymentInfo {
   method: PaymentMethod;

@@ -80,6 +80,7 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
   readonly paymentMethods: PaymentMethodOption[] = [
     { value: 'CASH', label: 'CASH', icon: 'pi pi-wallet', hint: 'Sin referencia' },
     { value: 'CARD', label: 'CARD', icon: 'pi pi-credit-card', hint: 'Requiere AUTH-xxxxx' },
+    { value: 'AMEX', label: 'AMEX', icon: 'pi pi-credit-card', hint: 'Requiere AUTH-xxxxx' },
     { value: 'TRANSFER', label: 'TRANSFER', icon: 'pi pi-building-columns', hint: 'Requiere UUID/referencia bancaria' },
     { value: 'MIXED', label: 'MIXED', icon: 'pi pi-sync', hint: 'Describe el mix, ej. 50 CASH + 50 CARD' }
   ];
@@ -99,7 +100,7 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
   couponError = '';
 
   // ==================== PROPINA (capa visual) ====================
-  readonly tipOptions = [10, 15, 20];
+  readonly tipOptions = [10, 15];
   selectedTipPercent = 0;
   customTipMode: 'percent' | 'amount' = 'percent';
   customTipValue: number | null = null;
@@ -403,6 +404,7 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
     const paymentFormMap: Record<PaymentMethod, string> = {
       CASH: '01',
       CARD: '04',
+      AMEX: '04',
       TRANSFER: '03',
       MIXED: '99'
     };
@@ -490,7 +492,7 @@ export class CloseOrderModalComponent implements OnChanges, OnDestroy {
       return;
     }
 
-    if (method === 'CARD') {
+    if (method === 'CARD' || method === 'AMEX') {
       referenceControl.setValidators([
         Validators.required,
         Validators.pattern(/^AUTH-[A-Za-z0-9]{3,}$/)
