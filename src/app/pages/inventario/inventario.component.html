@@ -4,7 +4,10 @@
       <h2>{{ mode === 'cocina' ? 'Inventario de Cocina' : 'Inventario de Barra' }}</h2>
       <p>{{ mode === 'cocina' ? 'Control de stock de platillos e insumos de cocina' : 'Control de stock de bebidas e insumos para bebidas' }}</p>
     </div>
-    <button pButton label="Actualizar" icon="pi pi-refresh" severity="secondary" (click)="load(); loadInsumos(); loadBebidas()"></button>
+    <div class="flex items-center gap-2">
+      <button *ngIf="mode === 'cocina'" pButton label="Restock Sub-recetas" icon="pi pi-bolt" severity="help" class="bg-purple-600 border-purple-600 hover:bg-purple-700 text-white font-medium shadow-sm" (click)="openSubRecetasRestockModal()"></button>
+      <button pButton label="Actualizar" icon="pi pi-refresh" severity="secondary" (click)="load(); loadInsumos(); loadBebidas()"></button>
+    </div>
   </div>
 
   <div class="catalog-panel surface-card border-round-lg p-3">
@@ -419,4 +422,166 @@
 
   <p-confirmdialog [style]="{ width: '450px' }" />
   <p-toast></p-toast>
+
+  <!-- Modal Restock / Preparación Automática de Sub-recetas -->
+  <p-dialog
+    header="Restock y Preparación de Sub-recetas"
+    [(visible)]="subRecetaRestockVisible"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '58rem' }"
+    styleClass="subreceta-restock-dialog"
+    [dismissableMask]="true"
+    (onHide)="closeSubRecetasRestockModal()">
+    
+    <ng-template pTemplate="header">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-950/70 text-purple-600 dark:text-purple-300 flex items-center justify-center text-lg shadow-sm">
+          <i class="pi pi-bolt"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white m-0">Restock Automático de Sub-recetas</h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400 m-0 mt-0.5">
+            Prepara lotes de salsas, guarniciones y bases descontando automáticamente insumos disponibles en cocina.
+          </p>
+        </div>
+      </div>
+    </ng-template>
+
+    <div *ngIf="subRecetaRestockLoading()" class="flex flex-col items-center justify-center p-6 gap-3">
+      <i class="pi pi-spin pi-spinner text-3xl text-purple-600"></i>
+      <span class="text-sm text-gray-500">Analizando sub-recetas e insumos disponibles en cocina...</span>
+    </div>
+
+    <div *ngIf="!subRecetaRestockLoading()" class="flex flex-col gap-4">
+      <!-- KPIs Bar -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="bg-gray-50 dark:bg-slate-800/80 p-3 rounded-xl border border-gray-200 dark:border-slate-700 flex items-center justify-between">
+          <div>
+            <span class="text-xs text-gray-500 dark:text-gray-400">Total Sub-recetas</span>
+            <div class="text-xl font-bold text-gray-900 dark:text-white">{{ subRecetasStats().total }}</div>
+          </div>
+          <i class="pi pi-palette text-purple-500 text-xl"></i>
+        </div>
+        <div class="bg-amber-50 dark:bg-amber-950/30 p-3 rounded-xl border border-amber-200 dark:border-amber-800/50 flex items-center justify-between">
+          <div>
+            <span class="text-xs text-amber-700 dark:text-amber-400 font-medium">Bajo Stock / Agotadas</span>
+            <div class="text-xl font-bold text-amber-800 dark:text-amber-300">{{ subRecetasStats().bajoStock }}</div>
+          </div>
+          <i class="pi pi-exclamation-triangle text-amber-500 text-xl"></i>
+        </div>
+        <div class="bg-emerald-50 dark:bg-emerald-950/30 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800/50 flex items-center justify-between">
+          <div>
+            <span class="text-xs text-emerald-700 dark:text-emerald-400 font-medium">Listas para Producir</span>
+            <div class="text-xl font-bold text-emerald-800 dark:text-emerald-300">{{ subRecetasStats().producibles }}</div>
+          </div>
+          <i class="pi pi-check-circle text-emerald-500 text-xl"></i>
+        </div>
+      </div>
+
+      <!-- Action selector bar -->
+      <div class="flex items-center justify-between flex-wrap gap-2 text-xs">
+        <div class="flex items-center gap-2">
+          <button type="button" class="text-purple-600 hover:text-purple-700 font-semibold cursor-pointer underline" (click)="selectAllProducibles(true)">
+            Seleccionar todas las producibles
+          </button>
+          <span class="text-gray-300">|</span>
+          <button type="button" class="text-gray-500 hover:text-gray-700 cursor-pointer underline" (click)="selectAllProducibles(false)">
+            Deseleccionar todas
+          </button>
+        </div>
+        <div class="text-gray-500 font-medium">
+          Seleccionadas: <strong class="text-purple-600">{{ getSelectedCount() }}</strong> sub-receta(s)
+        </div>
+      </div>
+
+      <!-- Table of Sub-recetas -->
+      <div class="overflow-x-auto max-h-[26rem] rounded-xl border border-gray-200 dark:border-slate-700">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead class="bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 sticky top-0 z-10 font-semibold">
+            <tr>
+              <th class="p-2.5 w-10 text-center">
+                <input type="checkbox" [checked]="isAllProduciblesSelected()" (change)="toggleSelectAll($event)" class="rounded cursor-pointer" />
+              </th>
+              <th class="p-2.5">Sub-receta</th>
+              <th class="p-2.5 w-32">Stock Actual / Mín</th>
+              <th class="p-2.5 w-40">Insumos en Cocina</th>
+              <th class="p-2.5 w-28 text-center">Lotes a Preparar</th>
+              <th class="p-2.5 w-24 text-center">Acción</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 dark:divide-slate-700">
+            <tr *ngFor="let sr of subRecetasSugeridas()" 
+                [ngClass]="{
+                  'bg-purple-50/40 dark:bg-purple-950/20': isSubRecetaSelected(sr.id),
+                  'opacity-60 bg-gray-50/50 dark:bg-slate-900/40': !sr.puedeProducir
+                }"
+                class="hover:bg-gray-50/80 dark:hover:bg-slate-800/50 transition-colors">
+              <td class="p-2.5 text-center">
+                <input type="checkbox" [checked]="isSubRecetaSelected(sr.id)" [disabled]="!sr.puedeProducir"
+                  (change)="toggleSubRecetaSelection(sr.id)" class="rounded cursor-pointer" />
+              </td>
+              <td class="p-2.5">
+                <div class="font-bold text-gray-900 dark:text-white">{{ sr.name }}</div>
+                <div class="text-[11px] text-gray-400 flex items-center gap-1.5 mt-0.5">
+                  <span *ngIf="sr.categoria" class="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300">{{ sr.categoria }}</span>
+                  <span>Rendimiento: 1 lote = {{ sr.tamanoLote }} {{ sr.unidad }}</span>
+                </div>
+              </td>
+              <td class="p-2.5">
+                <div class="flex items-center gap-1.5">
+                  <span class="font-bold" [ngClass]="sr.agotado ? 'text-red-500' : (sr.bajoStock ? 'text-amber-500' : 'text-emerald-500')">
+                    {{ sr.stockActual }} {{ sr.unidad }}
+                  </span>
+                  <span class="text-gray-400">/ {{ sr.stockMinimo }}</span>
+                </div>
+                <span *ngIf="sr.agotado" class="inline-block mt-0.5 text-[10px] font-bold uppercase text-red-600 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 px-1.5 py-0.2 rounded">Agotada</span>
+                <span *ngIf="!sr.agotado && sr.bajoStock" class="inline-block mt-0.5 text-[10px] font-bold uppercase text-amber-600 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 px-1.5 py-0.2 rounded">Bajo stock</span>
+                <span *ngIf="!sr.bajoStock" class="inline-block mt-0.5 text-[10px] font-bold uppercase text-emerald-600 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 px-1.5 py-0.2 rounded">Óptimo</span>
+              </td>
+              <td class="p-2.5">
+                <div *ngIf="sr.puedeProducir" class="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                  <i class="pi pi-check-circle text-xs"></i>
+                  <span>Alcanza para {{ sr.maxLotesProducibles }} lote(s)</span>
+                </div>
+                <div *ngIf="!sr.puedeProducir" class="text-red-500 dark:text-red-400 flex flex-col gap-0.5">
+                  <div class="flex items-center gap-1 font-semibold">
+                    <i class="pi pi-times-circle text-xs"></i>
+                    <span>Faltan insumos</span>
+                  </div>
+                  <span *ngIf="sr.insumosFaltantes?.length" class="text-[10px] text-gray-500 truncate max-w-[14rem]" [pTooltip]="sr.insumosFaltantes.join(', ')" tooltipPosition="top">
+                    {{ sr.insumosFaltantes[0] }}
+                  </span>
+                </div>
+              </td>
+              <td class="p-2.5 text-center">
+                <p-inputnumber [(ngModel)]="sr.lotesSugeridos" [min]="1" [max]="sr.maxLotesProducibles || 999" [showButtons]="true"
+                  buttonLayout="horizontal" spinnerMode="horizontal" [disabled]="!sr.puedeProducir"
+                  styleClass="w-full text-xs" inputStyleClass="w-12 text-center text-xs p-1" />
+              </td>
+              <td class="p-2.5 text-center">
+                <button type="button" pButton icon="pi pi-check" label="Preparar" severity="help" class="p-button-xs text-[11px] py-1 px-2"
+                  [disabled]="!sr.puedeProducir || subRecetaBatchLoading()" (click)="producirSubRecetaIndividual(sr)"></button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="flex items-center justify-between w-full flex-wrap gap-2">
+        <span class="text-xs text-gray-500">
+          Los insumos requeridos serán descontados del inventario de cocina automáticamente.
+        </span>
+        <div class="flex items-center gap-2">
+          <button pButton label="Cerrar" severity="secondary" [text]="true" (click)="closeSubRecetasRestockModal()"></button>
+          <button pButton label="Preparar Seleccionadas (1-Clic)" icon="pi pi-bolt" severity="help"
+            class="bg-purple-600 border-purple-600 hover:bg-purple-700 text-white font-semibold"
+            [loading]="subRecetaBatchLoading()" [disabled]="getSelectedCount() === 0 || subRecetaBatchLoading()"
+            (click)="producirBatchSubRecetas()"></button>
+        </div>
+      </div>
+    </ng-template>
+  </p-dialog>
+
 </div>

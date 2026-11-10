@@ -1100,4 +1100,159 @@ export class RecetasComponent implements OnInit {
     const parsed = typeof id === 'number' ? id : Number(id);
     return Number.isNaN(parsed) ? null : parsed;
   }
+
+  // Restock Automático de Sub-recetas (Batch)
+  subRecetaRestockVisible = signal<boolean>(false);
+  subRecetaRestockLoading = signal<boolean>(false);
+  subRecetaBatchLoading = signal<boolean>(false);
+  subRecetasSugeridas = signal<any[]>([]);
+  subRecetasStats = signal<{ total: number; bajoStock: number; producibles: number }>({ total: 0, bajoStock: 0, producibles: 0 });
+  selectedSubRecetaIds = signal<Set<number>>(new Set());
+
+  openSubRecetasRestockModal(): void {
+    if (!this.tenantId) return;
+    this.subRecetaRestockVisible.set(true);
+    this.subRecetaRestockLoading.set(true);
+    this.inventoryService.getSubRecetasRestockSugerido(this.tenantId).subscribe({
+      next: (res) => {
+        this.subRecetaRestockLoading.set(false);
+        const data = res?.object;
+        const list = Array.isArray(data?.subRecetas) ? data.subRecetas : [];
+        this.subRecetasSugeridas.set(list);
+        this.subRecetasStats.set({
+          total: data?.totalSubRecetas ?? list.length,
+          bajoStock: data?.bajoStockCount ?? list.filter((x: any) => x.bajoStock || x.agotado).length,
+          producibles: data?.produciblesCount ?? list.filter((x: any) => x.puedeProducir).length
+        });
+        const selected = new Set<number>();
+        for (const sr of list) {
+          if (sr.puedeProducir && (sr.bajoStock || sr.agotado)) {
+            selected.add(sr.id);
+          }
+        }
+        if (selected.size === 0) {
+          for (const sr of list) {
+            if (sr.puedeProducir) selected.add(sr.id);
+          }
+        }
+        this.selectedSubRecetaIds.set(selected);
+      },
+      error: (err) => {
+        this.subRecetaRestockLoading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar las sub-recetas: ' + (err?.error?.message || err?.message)
+        });
+      }
+    });
+  }
+
+  closeSubRecetasRestockModal(): void {
+    this.subRecetaRestockVisible.set(false);
+  }
+
+  isSubRecetaSelected(id: number): boolean {
+    return this.selectedSubRecetaIds().has(id);
+  }
+
+  toggleSubRecetaSelection(id: number): void {
+    const current = new Set(this.selectedSubRecetaIds());
+    if (current.has(id)) {
+      current.delete(id);
+    } else {
+      current.add(id);
+    }
+    this.selectedSubRecetaIds.set(current);
+  }
+
+  selectAllProducibles(select: boolean): void {
+    const next = new Set<number>();
+    if (select) {
+      for (const sr of this.subRecetasSugeridas()) {
+        if (sr.puedeProducir) next.add(sr.id);
+      }
+    }
+    this.selectedSubRecetaIds.set(next);
+  }
+
+  toggleSelectAll(event: any): void {
+    this.selectAllProducibles(event.target.checked);
+  }
+
+  isAllProduciblesSelected(): boolean {
+    const producibles = this.subRecetasSugeridas().filter((x) => x.puedeProducir);
+    if (!producibles.length) return false;
+    return producibles.every((x) => this.selectedSubRecetaIds().has(x.id));
+  }
+
+  getSelectedCount(): number {
+    return this.selectedSubRecetaIds().size;
+  }
+
+  producirSubRecetaBatchIndividual(sr: any): void {
+    if (!sr || !sr.id || !sr.puedeProducir) return;
+    const lotes = Number(sr.lotesSugeridos || 1);
+    this.subRecetaBatchLoading.set(true);
+    this.inventoryService.producirLoteSubReceta(sr.id, lotes).subscribe({
+      next: (res) => {
+        this.subRecetaBatchLoading.set(false);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Sub-receta producida',
+          detail: `Se preparó "${sr.name}" (+${sr.tamanoLote * lotes} ${sr.unidad}). Insumos descontados.`
+        });
+        this.loadSubRecetas();
+        this.openSubRecetasRestockModal();
+      },
+      error: (err) => {
+        this.subRecetaBatchLoading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error al preparar sub-receta',
+          detail: err?.error?.message || 'Stock insuficiente de insumos'
+        });
+      }
+    });
+  }
+
+  producirBatchSubRecetas(): void {
+    const selectedIds = this.selectedSubRecetaIds();
+    if (!selectedIds.size) return;
+    const itemsToProduce = this.subRecetasSugeridas()
+      .filter((sr) => selectedIds.has(sr.id) && sr.puedeProducir)
+      .map((sr) => ({
+        subRecetaId: sr.id,
+        lotes: Number(sr.lotesSugeridos || 1)
+      }));
+
+    if (!itemsToProduce.length) return;
+
+    this.subRecetaBatchLoading.set(true);
+    this.inventoryService.producirBatchSubRecetas({
+      tenantId: this.tenantId,
+      items: itemsToProduce
+    }).subscribe({
+      next: (res) => {
+        this.subRecetaBatchLoading.set(false);
+        const data = res?.object;
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Restock de Sub-recetas completado',
+          detail: `Se prepararon ${data?.totalExitosos || itemsToProduce.length} sub-recetas correctamente. Insumos descontados.`
+        });
+        this.closeSubRecetasRestockModal();
+        this.loadSubRecetas();
+      },
+      error: (err) => {
+        this.subRecetaBatchLoading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error en restock de sub-recetas',
+          detail: err?.error?.message || 'Ocurrió un error al procesar el lote'
+        });
+      }
+    });
+  }
+
 }

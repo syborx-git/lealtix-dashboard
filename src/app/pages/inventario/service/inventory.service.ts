@@ -150,6 +150,14 @@ export class InventoryService {
     return this.http.post<any>(`${this.baseUrl}/sub-recetas/${subRecetaId}/producir-lote`, { lotes });
   }
 
+  getSubRecetasRestockSugerido(tenantId: number): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/sub-recetas/sugerencia-restock/${tenantId}`);
+  }
+
+  producirBatchSubRecetas(payload: { tenantId?: number; items: { subRecetaId?: number; id?: number; lotes: number }[] }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/sub-recetas/producir-batch`, payload);
+  }
+
   deleteSubReceta(subRecetaId: number): Observable<any> {
     return this.http.delete<any>(`${this.baseUrl}/sub-recetas/${subRecetaId}`);
   }
