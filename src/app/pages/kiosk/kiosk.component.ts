@@ -22,6 +22,7 @@ interface KioskProduct {
 interface CartLine {
   product: KioskProduct;
   qty: number;
+  notes?: string[];
 }
 
 type KioskStage = 'browse' | 'waiting' | 'success' | 'error';
@@ -76,6 +77,29 @@ export class KioskComponent implements OnDestroy {
   );
   readonly canPay = computed(() => this.cartCount() > 0);
 
+  // -------------------- Drawer / feedback --------------------
+  readonly cartOpen = signal(false);
+  readonly cartPulse = signal(false);
+  readonly addToast = signal<string | null>(null);
+
+  // -------------------- Detalle de producto --------------------
+  readonly detailProduct = signal<KioskProduct | null>(null);
+  readonly detailQty = signal(1);
+  readonly detailNotes = signal<string[]>([]);
+  readonly detailClosing = signal(false);
+  readonly quickNotes = [
+    'Sin cebolla',
+    'Sin picante',
+    'Salsa aparte',
+    'Extra queso',
+    'Para llevar',
+    'Sin hielo',
+  ];
+  readonly detailTotal = computed(() => {
+    const product = this.detailProduct();
+    return product ? Math.round(product.price * this.detailQty() * 100) / 100 : 0;
+  });
+
   // -------------------- Pago --------------------
   readonly stage = signal<KioskStage>('browse');
   readonly intent = signal<any>(null);
@@ -89,6 +113,9 @@ export class KioskComponent implements OnDestroy {
   private tenantId = 0;
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private countdownTimer: ReturnType<typeof setInterval> | null = null;
+  private toastTimer: ReturnType<typeof setTimeout> | null = null;
+  private pulseTimer: ReturnType<typeof setTimeout> | null = null;
+  private detailCloseTimer: ReturnType<typeof setTimeout> | null = null;
   private attempts = 0;
   private orderCreating = false;
 
@@ -98,12 +125,21 @@ export class KioskComponent implements OnDestroy {
       this.refreshIfIdle();
     }
   };
+  private readonly onKeydown = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape') return;
+    if (this.detailProduct()) {
+      this.closeProduct();
+    } else if (this.cartOpen()) {
+      this.closeCart();
+    }
+  };
 
   constructor() {
     this.tenantId = this.resolveTenantId();
     this.loadCatalog();
     if (typeof window !== 'undefined') {
       window.addEventListener('focus', this.onWindowFocus);
+      window.addEventListener('keydown', this.onKeydown);
       document.addEventListener('visibilitychange', this.onVisibilityChange);
     }
   }
@@ -238,17 +274,34 @@ export class KioskComponent implements OnDestroy {
     this.activeCategory.set(category);
   }
 
-  addToCart(product: KioskProduct): void {
+  addToCart(
+    product: KioskProduct,
+    qty = 1,
+    notes: string[] = [],
+    openDrawer = true,
+  ): void {
     if (this.stage() !== 'browse') return;
     const current = this.cart();
+    const wasEmpty = current.length === 0;
     const idx = current.findIndex((l) => l.product.id === product.id);
     if (idx >= 0) {
       const next = [...current];
-      next[idx] = { ...next[idx], qty: next[idx].qty + 1 };
+      const mergedNotes = new Set([...(next[idx].notes || []), ...notes]);
+      next[idx] = {
+        ...next[idx],
+        qty: next[idx].qty + qty,
+        notes: mergedNotes.size ? [...mergedNotes] : undefined,
+      };
       this.cart.set(next);
     } else {
-      this.cart.set([...current, { product, qty: 1 }]);
+      this.cart.set([...current, { product, qty, notes: notes.length ? notes : undefined }]);
     }
+
+    // Abre el carrito automáticamente al agregar el primer producto (desde el botón rápido).
+    if (openDrawer && wasEmpty) {
+      this.cartOpen.set(true);
+    }
+    this.triggerAddFeedback(product.name);
   }
 
   incLine(line: CartLine): void {
@@ -280,6 +333,77 @@ export class KioskComponent implements OnDestroy {
     return this.cart().find((l) => l.product.id === product.id)?.qty ?? 0;
   }
 
+  // -------------------- Drawer del carrito --------------------
+  openCart(): void {
+    this.cartOpen.set(true);
+  }
+
+  closeCart(): void {
+    this.cartOpen.set(false);
+  }
+
+  toggleCart(): void {
+    this.cartOpen.update((open) => !open);
+  }
+
+  private triggerAddFeedback(productName: string): void {
+    this.addToast.set(`¡${productName} añadido a tu pedido!`);
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => this.addToast.set(null), 1800);
+
+    // Reinicia la animación de pulso del ícono aunque se agregue varias veces.
+    this.cartPulse.set(false);
+    if (this.pulseTimer) clearTimeout(this.pulseTimer);
+    setTimeout(() => this.cartPulse.set(true), 10);
+    this.pulseTimer = setTimeout(() => this.cartPulse.set(false), 500);
+  }
+
+  // -------------------- Modal de detalle --------------------
+  openProduct(product: KioskProduct): void {
+    if (this.stage() !== 'browse') return;
+    this.cartOpen.set(false);
+    this.detailProduct.set(product);
+    this.detailQty.set(1);
+    this.detailNotes.set([]);
+    this.detailClosing.set(false);
+  }
+
+  closeProduct(): void {
+    if (!this.detailProduct() || this.detailClosing()) return;
+    this.detailClosing.set(true);
+    if (this.detailCloseTimer) clearTimeout(this.detailCloseTimer);
+    this.detailCloseTimer = setTimeout(() => {
+      this.detailProduct.set(null);
+      this.detailClosing.set(false);
+      this.detailCloseTimer = null;
+    }, 180);
+  }
+
+  incDetailQty(): void {
+    this.detailQty.update((qty) => Math.min(99, qty + 1));
+  }
+
+  decDetailQty(): void {
+    this.detailQty.update((qty) => Math.max(1, qty - 1));
+  }
+
+  isNoteSelected(note: string): boolean {
+    return this.detailNotes().includes(note);
+  }
+
+  toggleNote(note: string): void {
+    this.detailNotes.update((notes) =>
+      notes.includes(note) ? notes.filter((n) => n !== note) : [...notes, note],
+    );
+  }
+
+  confirmAdd(): void {
+    const product = this.detailProduct();
+    if (!product) return;
+    this.addToCart(product, this.detailQty(), this.detailNotes(), false);
+    this.closeProduct();
+  }
+
   // -------------------- Pago en terminal --------------------
   payWithTerminal(): void {
     if (!this.canPay() || this.stage() !== 'browse') return;
@@ -291,6 +415,7 @@ export class KioskComponent implements OnDestroy {
       return;
     }
 
+    this.cartOpen.set(false);
     this.errorMsg.set(null);
     this.orderError.set(null);
     this.paidOrderId.set(null);
@@ -350,6 +475,23 @@ export class KioskComponent implements OnDestroy {
   newOrder(): void {
     this.clearCountdown();
     this.stopPoll();
+    this.cartOpen.set(false);
+    this.cartPulse.set(false);
+    this.addToast.set(null);
+    if (this.toastTimer) {
+      clearTimeout(this.toastTimer);
+      this.toastTimer = null;
+    }
+    if (this.pulseTimer) {
+      clearTimeout(this.pulseTimer);
+      this.pulseTimer = null;
+    }
+    this.detailProduct.set(null);
+    this.detailClosing.set(false);
+    if (this.detailCloseTimer) {
+      clearTimeout(this.detailCloseTimer);
+      this.detailCloseTimer = null;
+    }
     this.cart.set([]);
     this.intent.set(null);
     this.intentId.set(null);
@@ -433,6 +575,7 @@ export class KioskComponent implements OnDestroy {
           productId: line.product.id,
           cantidad: line.qty,
           precioUnitario: line.product.price,
+          comentarios: line.notes?.length ? line.notes.join(', ') : undefined,
         })),
         subtotal: total,
         descuento: 0,
@@ -529,8 +672,12 @@ export class KioskComponent implements OnDestroy {
   ngOnDestroy(): void {
     this.stopPoll();
     this.clearCountdown();
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    if (this.pulseTimer) clearTimeout(this.pulseTimer);
+    if (this.detailCloseTimer) clearTimeout(this.detailCloseTimer);
     if (typeof window !== 'undefined') {
       window.removeEventListener('focus', this.onWindowFocus);
+      window.removeEventListener('keydown', this.onKeydown);
       document.removeEventListener('visibilitychange', this.onVisibilityChange);
     }
   }
