@@ -9,6 +9,16 @@
       </div>
     </div>
     <div class="header-actions">
+      <button
+        type="button"
+        class="cart-fab"
+        [class.pulse]="cartPulse()"
+        (click)="toggleCart()"
+        [attr.aria-label]="'Carrito, ' + cartCount() + ' artículos'"
+      >
+        <i class="pi pi-shopping-cart"></i>
+        <span class="cart-badge" *ngIf="cartCount() > 0">{{ cartCount() }}</span>
+      </button>
       <span class="terminal-pill"><span class="dot"></span> Point Smart 2</span>
       <a class="exit-btn" routerLink="/dashboard/comandix">
         <i class="pi pi-sign-out"></i> Salir
@@ -18,31 +28,31 @@
 
   <!-- Body -->
   <main class="kiosk-body">
-    <!-- Categorías -->
-    <aside class="kiosk-cats">
-      <button
-        type="button"
-        class="cat-btn"
-        [class.active]="activeCategory() === '__all__'"
-        (click)="selectCategory('__all__')"
-      >
-        <i class="pi pi-th-large"></i>
-        <span>Todos</span>
-      </button>
-      <button
-        type="button"
-        class="cat-btn"
-        *ngFor="let category of categories(); trackBy: trackByCategory"
-        [class.active]="activeCategory() === category"
-        (click)="selectCategory(category)"
-      >
-        <i class="pi pi-tag"></i>
-        <span>{{ category }}</span>
-      </button>
-    </aside>
-
     <!-- Catálogo -->
     <section class="kiosk-catalog">
+      <!-- Categorías en barra horizontal -->
+      <nav class="cat-bar" aria-label="Categorías del menú">
+        <button
+          type="button"
+          class="cat-pill"
+          [class.active]="activeCategory() === '__all__'"
+          (click)="selectCategory('__all__')"
+        >
+          <i class="pi pi-th-large"></i>
+          <span>Todos</span>
+        </button>
+        <button
+          type="button"
+          class="cat-pill"
+          *ngFor="let category of categories(); trackBy: trackByCategory"
+          [class.active]="activeCategory() === category"
+          (click)="selectCategory(category)"
+        >
+          <i class="pi pi-tag"></i>
+          <span>{{ category }}</span>
+        </button>
+      </nav>
+
       <div class="catalog-head">
         <div>
           <h2>{{ activeCategory() === '__all__' ? 'Nuestro menú' : activeCategory() }}</h2>
@@ -68,7 +78,13 @@
       </div>
 
       <div class="product-grid" *ngIf="!loading() && !loadError() && visibleProducts().length > 0">
-        <article class="product-card" *ngFor="let product of visibleProducts(); trackBy: trackById">
+        <article
+          class="product-card"
+          *ngFor="let product of visibleProducts(); trackBy: trackById"
+          tabindex="0"
+          (click)="openProduct(product)"
+          (keydown.enter)="openProduct(product)"
+        >
           <div class="product-img">
             <img
               *ngIf="product.imageUrl"
@@ -89,7 +105,7 @@
               <button
                 type="button"
                 class="add-btn"
-                (click)="addToCart(product)"
+                (click)="$event.stopPropagation(); addToCart(product)"
                 [attr.aria-label]="'Agregar ' + product.name"
               >
                 <i class="pi pi-plus"></i>
@@ -101,71 +117,174 @@
       </div>
     </section>
 
-    <!-- Carrito -->
-    <aside class="kiosk-cart">
-      <div class="cart-head">
-        <h2><i class="pi pi-shopping-cart"></i> Tu pedido</h2>
+  </main>
+
+  <!-- Backdrop del carrito -->
+  <div class="cart-backdrop" *ngIf="cartOpen()" (click)="closeCart()"></div>
+
+  <!-- Carrito desplegable (slide-over) -->
+  <aside
+    class="cart-drawer"
+    *ngIf="cartOpen()"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Tu pedido"
+  >
+    <div class="cart-head">
+      <h2><i class="pi pi-shopping-cart"></i> Tu pedido</h2>
+      <div class="cart-head-actions">
         <span class="cart-count">{{ cartCount() }} art.</span>
+        <button type="button" class="drawer-close" (click)="closeCart()" aria-label="Cerrar carrito">
+          <i class="pi pi-times"></i>
+        </button>
       </div>
+    </div>
 
-      <div class="cart-empty" *ngIf="cart().length === 0">
-        <i class="pi pi-shopping-cart"></i>
-        <p>Tu carrito está vacío</p>
-        <span>Agrega productos del menú para comenzar</span>
-      </div>
+    <div class="cart-empty" *ngIf="cart().length === 0">
+      <i class="pi pi-shopping-cart"></i>
+      <p>Tu carrito está vacío</p>
+      <span>Agrega productos del menú para comenzar</span>
+    </div>
 
-      <div class="cart-lines" *ngIf="cart().length > 0">
-        <div class="cart-line" *ngFor="let line of cart(); trackBy: trackByLine">
-          <div class="line-top">
-            <span class="line-name">{{ line.product.name }}</span>
-            <button
-              type="button"
-              class="line-remove"
-              (click)="removeLine(line)"
-              aria-label="Quitar producto"
-            >
-              <i class="pi pi-times"></i>
+    <div class="cart-lines" *ngIf="cart().length > 0">
+      <div class="cart-line" *ngFor="let line of cart(); trackBy: trackByLine">
+        <div class="line-top">
+          <span class="line-name">{{ line.product.name }}</span>
+          <button
+            type="button"
+            class="line-remove"
+            (click)="removeLine(line)"
+            aria-label="Quitar producto"
+          >
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+        <div class="line-notes" *ngIf="line.notes?.length">
+          <i class="pi pi-tag"></i>
+          <span>{{ line.notes?.join(' · ') }}</span>
+        </div>
+        <div class="line-bottom">
+          <div class="stepper">
+            <button type="button" (click)="decLine(line)" aria-label="Quitar uno">
+              <i class="pi pi-minus"></i>
+            </button>
+            <span>{{ line.qty }}</span>
+            <button type="button" (click)="incLine(line)" aria-label="Agregar uno">
+              <i class="pi pi-plus"></i>
             </button>
           </div>
-          <div class="line-bottom">
-            <div class="stepper">
-              <button type="button" (click)="decLine(line)" aria-label="Quitar uno">
+          <span class="line-total">{{ mxn(line.product.price * line.qty) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cart-footer">
+      <div class="totals">
+        <div class="total-row">
+          <span>Subtotal</span>
+          <b>{{ mxn(subtotal()) }}</b>
+        </div>
+        <div class="total-row grand">
+          <span>Total a pagar</span>
+          <b>{{ mxn(subtotal()) }}</b>
+        </div>
+      </div>
+
+      <button type="button" class="pay-btn" [disabled]="!canPay()" (click)="payWithTerminal()">
+        <i class="pi pi-credit-card"></i>
+        <span class="pay-main">Pagar en Terminal</span>
+        <span class="pay-sub">Tarjeta débito / crédito</span>
+      </button>
+
+      <button type="button" class="clear-btn" *ngIf="cart().length > 0" (click)="clearCart()">
+        Vaciar carrito
+      </button>
+    </div>
+  </aside>
+
+  <!-- Toast al agregar producto -->
+  <div class="add-toast" *ngIf="addToast()">{{ addToast() }}</div>
+
+  <!-- Modal: detalle del producto -->
+  <div
+    class="detail-backdrop"
+    *ngIf="detailProduct() as product"
+    [class.closing]="detailClosing()"
+    (click)="closeProduct()"
+  >
+    <div
+      class="detail-modal"
+      [class.closing]="detailClosing()"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="product.name"
+      (click)="$event.stopPropagation()"
+    >
+      <button type="button" class="detail-close" (click)="closeProduct()" aria-label="Cerrar detalle">
+        <i class="pi pi-times"></i>
+      </button>
+
+      <div class="detail-split">
+        <div class="detail-media">
+          <img *ngIf="product.imageUrl" [src]="product.imageUrl" [alt]="product.name" />
+          <div class="detail-media-fallback" *ngIf="!product.imageUrl">
+            <i class="pi pi-image"></i>
+          </div>
+          <span class="detail-cat"><i class="pi pi-tag"></i> {{ product.category }}</span>
+          <span class="detail-avail"><i class="pi pi-check-circle"></i> Disponible</span>
+        </div>
+
+        <div class="detail-body">
+          <h2>{{ product.name }}</h2>
+          <p class="detail-desc">
+            {{ product.description || 'Preparado al momento con ingredientes frescos.' }}
+          </p>
+          <div class="detail-price">{{ mxn(product.price) }} <span>MXN</span></div>
+
+          <div class="detail-section">
+            <h3>Especificaciones / notas</h3>
+            <div class="note-chips">
+              <button
+                type="button"
+                class="note-chip"
+                *ngFor="let note of quickNotes"
+                [class.active]="isNoteSelected(note)"
+                (click)="toggleNote(note)"
+              >
+                <i class="pi" [ngClass]="isNoteSelected(note) ? 'pi-check' : 'pi-plus'"></i>
+                {{ note }}
+              </button>
+            </div>
+          </div>
+
+          <div class="detail-qty">
+            <span>Cantidad</span>
+            <div class="qty-stepper-big">
+              <button
+                type="button"
+                (click)="decDetailQty()"
+                [disabled]="detailQty() <= 1"
+                aria-label="Quitar uno"
+              >
                 <i class="pi pi-minus"></i>
               </button>
-              <span>{{ line.qty }}</span>
-              <button type="button" (click)="incLine(line)" aria-label="Agregar uno">
+              <span>{{ detailQty() }}</span>
+              <button type="button" (click)="incDetailQty()" aria-label="Agregar uno">
                 <i class="pi pi-plus"></i>
               </button>
             </div>
-            <span class="line-total">{{ mxn(line.product.price * line.qty) }}</span>
           </div>
         </div>
       </div>
 
-      <div class="cart-footer">
-        <div class="totals">
-          <div class="total-row">
-            <span>Subtotal</span>
-            <b>{{ mxn(subtotal()) }}</b>
-          </div>
-          <div class="total-row grand">
-            <span>Total a pagar</span>
-            <b>{{ mxn(subtotal()) }}</b>
-          </div>
-        </div>
-
-        <button type="button" class="pay-btn" [disabled]="!canPay()" (click)="payWithTerminal()">
-          <i class="pi pi-credit-card"></i>
-          <span class="pay-main">Pagar en Terminal</span>
-          <span class="pay-sub">Tarjeta débito / crédito</span>
-        </button>
-
-        <button type="button" class="clear-btn" *ngIf="cart().length > 0" (click)="clearCart()">
-          Vaciar carrito
+      <div class="detail-footer">
+        <button type="button" class="detail-add" (click)="confirmAdd()">
+          <span class="detail-add-label"><i class="pi pi-shopping-cart"></i> Agregar a mi pedido</span>
+          <b class="detail-add-total">{{ mxn(detailTotal()) }} MXN</b>
         </button>
       </div>
-    </aside>
-  </main>
+    </div>
+  </div>
 
   <!-- Overlay: esperando terminal -->
   <div class="overlay" *ngIf="stage() === 'waiting'">
