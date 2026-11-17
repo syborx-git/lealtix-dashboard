@@ -1,0 +1,636 @@
+<p-toast></p-toast>
+
+<div class="tarjeta-page">
+  <!-- Header Superior -->
+  <header class="page-header">
+    <div class="header-titles">
+      <div class="title-row">
+        <div class="header-icon-badge">
+          <i class="pi pi-id-card"></i>
+        </div>
+        <div>
+          <div class="title-with-tag">
+            <h1 class="page-title">Tarjeta de Fidelización y Sellos</h1>
+            <span class="status-pill" [class.active]="config.active">
+              <span class="status-dot"></span>
+              {{ config.active ? 'Programa Activo' : 'Programa Pausado' }}
+            </span>
+          </div>
+          <p class="page-desc">Personaliza la tarjeta digital de tu restaurante, define recompensas y audita los sellos de tus clientes.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button type="button" class="btn-save-primary" [disabled]="guardando()" (click)="guardarConfiguracion()">
+        @if (guardando()) {
+          <i class="pi pi-spin pi-spinner"></i>
+          <span>Guardando...</span>
+        } @else {
+          <i class="pi pi-check"></i>
+          <span>Guardar Configuración</span>
+        }
+      </button>
+    </div>
+  </header>
+
+  <!-- Navegación de Pestañas -->
+  <nav class="nav-tabs-bar">
+    <button type="button" class="tab-btn" [class.active]="activeTab() === 'diseno'" (click)="activeTab.set('diseno')">
+      <i class="pi pi-palette"></i>
+      <span>Diseño y Recompensas</span>
+    </button>
+    <button type="button" class="tab-btn" [class.active]="activeTab() === 'clientes'" (click)="activeTab.set('clientes')">
+      <i class="pi pi-users"></i>
+      <span>Clientes y Sellos</span>
+      <span class="tab-counter">{{ customerCards().length }}</span>
+    </button>
+  </nav>
+
+  <!-- PESTAÑA 1: DISEÑO Y CONFIGURACIÓN -->
+  @if (activeTab() === 'diseno') {
+    <div class="tarjeta-main-layout">
+      <!-- Columna Izquierda: Formulario Estructurado -->
+      <div class="tarjeta-form-column">
+
+        <!-- CARD 1: IDENTIDAD -->
+        <section class="config-section-card">
+          <div class="card-section-header">
+            <div class="section-icon-box">
+              <i class="pi pi-pencil"></i>
+            </div>
+            <div>
+              <h3 class="section-title">1. Identidad de la Tarjeta</h3>
+              <p class="section-subtitle">Nombre del programa y estado visible para los comensales.</p>
+            </div>
+          </div>
+
+          <div class="fields-grid-2">
+            <div class="form-field">
+              <label class="field-label">Nombre del Programa / Tarjeta</label>
+              <input type="text" pInputText [(ngModel)]="config.cardTitle" class="custom-input" placeholder="Ej. Petra Club Gourmet" />
+              <span class="field-hint">Aparece en la parte superior del pase.</span>
+            </div>
+
+            <div class="form-field">
+              <label class="field-label">Subtítulo Descriptivo</label>
+              <input type="text" pInputText [(ngModel)]="config.cardSubtitle" class="custom-input" placeholder="Ej. Tarjeta de Sellos y Beneficios" />
+              <span class="field-hint">Acompaña al nombre en el pase digital.</span>
+            </div>
+          </div>
+
+          <!-- Switch Activo -->
+          <div class="program-status-toggle">
+            <div class="status-toggle-info">
+              <span class="toggle-title">Activar Acumulación de Sellos</span>
+              <span class="toggle-desc">Si se pausa, los meseros no podrán sumar sellos a los clientes temporalmente.</span>
+            </div>
+            <p-toggleSwitch [(ngModel)]="config.active"></p-toggleSwitch>
+          </div>
+        </section>
+
+        <!-- CARD 2: COLORES CORPORATIVOS -->
+        <section class="config-section-card">
+          <div class="card-section-header">
+            <div class="section-icon-box">
+              <i class="pi pi-palette"></i>
+            </div>
+            <div>
+              <h3 class="section-title">2. Colores Corporativos</h3>
+              <p class="section-subtitle">Adapta el aspecto visual a la imagen de tu restaurante.</p>
+            </div>
+          </div>
+
+          <!-- Paletas Rápidas -->
+          <div class="mb-3">
+            <label class="field-label-sm">Paletas Rápidas Recomendadas</label>
+            <div class="palettes-row">
+              @for (p of presetPalettes; track p.name) {
+                <button type="button" class="palette-chip" [class.selected]="config.bgColorHex === p.bg" (click)="aplicarPaleta(p)">
+                  <span class="chip-circle" [style.background]="p.bg"></span>
+                  <span class="chip-name">{{ p.name }}</span>
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Pickers de Color -->
+          <div class="color-pickers-row">
+            <div class="color-item-box">
+              <label class="field-label">Fondo de Tarjeta</label>
+              <div class="color-input-wrapper">
+                <input type="color" [(ngModel)]="config.bgColorHex" class="color-swatch-input" />
+                <input type="text" pInputText [(ngModel)]="config.bgColorHex" class="color-hex-text" />
+              </div>
+            </div>
+
+            <div class="color-item-box">
+              <label class="field-label">Texto Principal</label>
+              <div class="color-input-wrapper">
+                <input type="color" [(ngModel)]="config.textColorHex" class="color-swatch-input" />
+                <input type="text" pInputText [(ngModel)]="config.textColorHex" class="color-hex-text" />
+              </div>
+            </div>
+
+            <div class="color-item-box">
+              <label class="field-label">Acento / Sellos</label>
+              <div class="color-input-wrapper">
+                <input type="color" [(ngModel)]="config.accentColorHex" class="color-swatch-input" />
+                <input type="text" pInputText [(ngModel)]="config.accentColorHex" class="color-hex-text" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- CARD 3: MECÁNICA DE SELLOS E ÍCONO -->
+        <section class="config-section-card">
+          <div class="card-section-header">
+            <div class="section-icon-box">
+              <i class="pi pi-check-circle"></i>
+            </div>
+            <div>
+              <h3 class="section-title">3. Mecánica de Sellos</h3>
+              <p class="section-subtitle">Elige cuántas visitas requiere la meta y el ícono característico de tu cocina.</p>
+            </div>
+          </div>
+
+          <!-- Selector de Sellos con Chips -->
+          <div class="mb-4">
+            <label class="field-label">Sellos Necesarios para Completar la Tarjeta</label>
+            <div class="stamps-count-selector">
+              @for (opt of availableStampCounts; track opt.count) {
+                <button type="button" class="stamp-count-chip" [class.selected]="config.totalStamps === opt.count" (click)="seleccionarSellos(opt.count)">
+                  <span class="count-number">{{ opt.count }}</span>
+                  <span class="count-meta">Sellos ({{ opt.desc }})</span>
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Selector de Íconos -->
+          <div>
+            <label class="field-label">Ícono Temático de los Sellos</label>
+            <div class="icons-selector-grid">
+              @for (ico of iconOptions; track ico.value) {
+                <button type="button" class="icon-chip-btn" [class.selected]="config.stampIcon === ico.value" (click)="seleccionarIcono(ico.value)">
+                  <span class="icon-emoji">{{ ico.emoji }}</span>
+                  <span class="icon-label">{{ ico.label }}</span>
+                </button>
+              }
+            </div>
+          </div>
+        </section>
+
+        <!-- CARD 4: RECOMPENSA -->
+        <section class="config-section-card">
+          <div class="card-section-header">
+            <div class="section-icon-box">
+              <i class="pi pi-gift"></i>
+            </div>
+            <div>
+              <h3 class="section-title">4. Definición de la Recompensa</h3>
+              <p class="section-subtitle">El incentivo que el cliente recibirá al completar los sellos requeridos.</p>
+            </div>
+          </div>
+
+          <!-- Selector de Tipo de Premio con Tarjetas -->
+          <div class="mb-4">
+            <label class="field-label">Tipo de Beneficio</label>
+            <div class="reward-types-grid">
+              @for (rt of rewardTypeOptions; track rt.value) {
+                <button type="button" class="reward-card-btn" [class.selected]="config.rewardType === rt.value" (click)="seleccionarTipoRecompensa(rt.value)">
+                  <div class="reward-card-icon">
+                    <i [class]="rt.icon"></i>
+                  </div>
+                  <div class="reward-card-texts">
+                    <span class="reward-card-title">{{ rt.label }}</span>
+                    <span class="reward-card-desc">{{ rt.desc }}</span>
+                  </div>
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Opciones Condicionales -->
+          @if (config.rewardType === 'FREE_PRODUCT') {
+            <div class="form-field mb-3 highlight-field-box">
+              <label class="field-label font-bold text-primary">Platillo de Cortesía del Menú</label>
+              <p-select [options]="menuProducts()" [(ngModel)]="config.rewardProductId" (onChange)="onProductSelect($event)" optionLabel="nombre" optionValue="id" [filter]="true" filterBy="nombre" placeholder="Selecciona un producto del restaurante"></p-select>
+              <span class="field-hint">Al canjearse, el sistema vinculará la cortesía con este platillo en la comanda.</span>
+            </div>
+          }
+
+          @if (config.rewardType === 'PERCENT_DISCOUNT') {
+            <div class="form-field mb-3 highlight-field-box">
+              <label class="field-label font-bold text-primary">Porcentaje de Descuento (%)</label>
+              <p-inputNumber [(ngModel)]="config.rewardValue" [min]="1" [max]="100" suffix="%" [showButtons]="true"></p-inputNumber>
+              <span class="field-hint">Se aplicará directamente sobre el subtotal de la cuenta en caja.</span>
+            </div>
+          }
+
+          @if (config.rewardType === 'FIXED_AMOUNT') {
+            <div class="form-field mb-3 highlight-field-box">
+              <label class="field-label font-bold text-primary">Monto en Efectivo de Descuento ($ MXN)</label>
+              <p-inputNumber [(ngModel)]="config.rewardValue" [min]="10" [max]="5000" prefix="$ " suffix=" MXN" [showButtons]="true"></p-inputNumber>
+              <span class="field-hint">Monto fijo que se deducirá del total de la comanda.</span>
+            </div>
+          }
+
+          <div class="fields-grid-2 mb-3">
+            <div class="form-field">
+              <label class="field-label">Título de la Recompensa (Visible en Wallet)</label>
+              <input type="text" pInputText [(ngModel)]="config.rewardTitle" class="custom-input" placeholder="Ej. Enchiladas Petra o 2x1 en Platillos" />
+              <span class="field-hint">Texto destacado que motivará al cliente a volver.</span>
+            </div>
+
+            <div class="form-field">
+              <label class="field-label">Instrucciones Breves de Canje</label>
+              <input type="text" pInputText [(ngModel)]="config.rewardDescription" class="custom-input" placeholder="Ej. Muestra este pase en tu próxima visita" />
+              <span class="field-hint">Indicaciones para el mesero o cajero.</span>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="field-label">Términos y Condiciones Legales</label>
+            <textarea pInputText [(ngModel)]="config.termsAndConditions" rows="2" class="custom-textarea" placeholder="Ej. Válido en consumo en sucursal. No acumulable con otras promociones. Vigencia de 30 días posteriores al canje."></textarea>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Columna Derecha: Mockup Digital Wallet Sticky -->
+      <div class="tarjeta-preview-column">
+        <div class="sticky-pass-container">
+          <div class="preview-title-box">
+            <span class="preview-badge">VISTA PREVIA EN VIVO</span>
+            <h4 class="preview-heading">Pase Digital de Cliente</h4>
+          </div>
+
+          <!-- MOCKUP OFICIAL DEL PASE DIGITAL -->
+          <div class="digital-wallet-card" [style.background]="config.bgColorHex" [style.color]="config.textColorHex">
+            
+            <!-- Brillo de fondo del pase -->
+            <div class="card-gloss-highlight"></div>
+
+            <!-- Cabecera de Tarjeta -->
+            <div class="card-pass-header">
+              <div class="pass-brand-info">
+                <span class="pass-brand-name">{{ config.cardTitle || 'Nombre del Restaurante' }}</span>
+                <span class="pass-brand-sub">{{ config.cardSubtitle || 'Tarjeta de Fidelización' }}</span>
+              </div>
+              <div class="pass-status-tag">VIP</div>
+            </div>
+
+            <!-- Progreso de Sellos -->
+            <div class="card-pass-body">
+              <div class="pass-progress-header">
+                <span class="progress-txt">Tu Progreso Actual</span>
+                <span class="progress-count">{{ simulatedFilledCount }} / {{ config.totalStamps }} Sellos</span>
+              </div>
+
+              <!-- Rejilla de Sellos -->
+              <div class="pass-stamps-grid">
+                @for (s of getStampsArray(); track s.index) {
+                  <div class="stamp-node" [class.filled]="s.filled" [style.border-color]="config.accentColorHex">
+                    @if (s.filled) {
+                      <span class="stamp-emoji-show">{{ currentEmoji }}</span>
+                    } @else {
+                      <span class="stamp-index-placeholder">{{ s.index }}</span>
+                    }
+                  </div>
+                }
+              </div>
+
+              <!-- Franja de Recompensa -->
+              <div class="pass-reward-callout">
+                <i class="pi pi-gift" [style.color]="config.accentColorHex"></i>
+                <div class="reward-callout-text">
+                  <strong>Meta:</strong> {{ config.rewardTitle || 'Cortesía de la Casa' }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Pie del Pase con Código de Barras / QR -->
+            <div class="card-pass-footer">
+              <div class="pass-holder-info">
+                <span class="holder-name">Jorge Martínez</span>
+                <span class="holder-id">ID: PETRA-9482</span>
+              </div>
+              <div class="pass-barcode-box"></div>
+            </div>
+          </div>
+
+          <!-- Banner Informativo Google Wallet -->
+          <div class="wallet-integration-pill">
+            <div class="wallet-logo-icon">
+              <i class="pi pi-google"></i>
+            </div>
+            <div class="wallet-pill-texts">
+              <span class="wallet-pill-title">Google Wallet Ready</span>
+              <span class="wallet-pill-desc">Tus comensales guardarán este pase en su celular con 1 solo clic.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- PESTAÑA 2: AUDITORÍA DE CLIENTES Y SELLOS -->
+  @if (activeTab() === 'clientes') {
+    <div class="clientes-panel-card">
+      <div class="panel-card-header">
+        <div>
+          <h3 class="panel-card-title">Auditoría de Clientes y Sellos</h3>
+          <p class="panel-card-subtitle">Consulta cuántos sellos tiene cada comensal, cuántas veces ha completado la tarjeta y aplica sellos de cortesía.</p>
+        </div>
+        <button type="button" class="btn-refresh" (click)="cargarDatos()">
+          <i class="pi pi-refresh"></i>
+          <span>Actualizar</span>
+        </button>
+      </div>
+
+      <div class="table-container">
+        <p-table [value]="customerCards()" [paginator]="true" [rows]="10" [responsiveLayout]="'scroll'" styleClass="p-datatable-sm">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>Cliente</th>
+              <th>Contacto</th>
+              <th>Progreso de Sellos</th>
+              <th>Tarjetas Completadas</th>
+              <th>Total Histórico</th>
+              <th>Estado de Premio</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-card>
+            <tr>
+              <td>
+                <div class="font-bold text-900">{{ card.customerName }}</div>
+                <small class="text-500">ID Cliente: #{{ card.customerId }}</small>
+              </td>
+              <td>
+                <div class="font-medium">{{ card.customerPhone || 'Sin teléfono' }}</div>
+                <small class="text-500">{{ card.customerEmail }}</small>
+              </td>
+              <td style="min-width: 14rem;">
+                <div class="flex justify-content-between mb-1 text-sm font-semibold">
+                  <span>{{ card.currentStamps }} / {{ card.totalStampsRequired }} sellos</span>
+                  <span class="text-primary font-bold">{{ (card.currentStamps / card.totalStampsRequired * 100) | number:'1.0-0' }}%</span>
+                </div>
+                <p-progressBar [value]="(card.currentStamps / card.totalStampsRequired * 100)" [showValue]="false" styleClass="h-8px"></p-progressBar>
+              </td>
+              <td>
+                <p-tag [value]="card.completedCardsCount + ' veces'" severity="info" icon="pi pi-check-circle"></p-tag>
+              </td>
+              <td>
+                <span class="font-mono font-bold">{{ card.totalStampsAccumulated }} sellos</span>
+              </td>
+              <td>
+                @if (card.hasPendingReward || card.currentStamps >= card.totalStampsRequired) {
+                  <p-tag value="¡Premio Disponible!" severity="success" icon="pi pi-gift"></p-tag>
+                } @else {
+                  <span class="text-500 text-sm">En progreso</span>
+                }
+              </td>
+              <td class="text-center">
+                <div class="flex justify-content-center gap-2">
+                  <button type="button" class="action-btn-circle add" (click)="abrirModalSello(card)" pTooltip="Sumar Sello">
+                    <i class="pi pi-plus"></i>
+                  </button>
+                  <button type="button" class="action-btn-circle redeem" [disabled]="!card.hasPendingReward && card.currentStamps < card.totalStampsRequired" (click)="canjearRecompensa(card)" pTooltip="Canjear Recompensa">
+                    <i class="pi pi-gift"></i>
+                  </button>
+                  <button type="button" class="action-btn-circle wallet" (click)="abrirGoogleWallet(card)" pTooltip="Guardar / Ver en Google Wallet">
+                    <i class="pi pi-google"></i>
+                  </button>
+                  <button type="button" class="action-btn-circle history" (click)="verHistorial(card)" pTooltip="Ver Historial">
+                    <i class="pi pi-history"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="7" class="text-center p-5 text-500">
+                No hay clientes con tarjeta de lealtad registrados aún.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- MODAL INTERACTIVO: ESTAMPAR SELLO CON SLIDER (Slide-to-Stamp) -->
+<p-dialog 
+  [(visible)]="mostrarDialogSello" 
+  [modal]="true" 
+  [dismissableMask]="!isStampAnimating()" 
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '470px', maxWidth: '95vw' }" 
+  [showHeader]="false"
+  styleClass="artisan-stamp-dialog">
+
+  @if (selectedCard) {
+    <div class="stamp-modal-wrapper">
+      
+      <!-- Barra Superior del Modal -->
+      <div class="stamp-modal-topbar">
+        <div class="customer-info-box">
+          <div class="customer-avatar-badge">
+            <i class="pi pi-user"></i>
+          </div>
+          <div class="customer-details">
+            <h4 class="customer-fullname">{{ selectedCard.customerName }}</h4>
+            <span class="customer-subtitle">
+              ID: #{{ selectedCard.customerId }} • {{ selectedCard.customerPhone || 'Cliente Leal' }}
+            </span>
+          </div>
+        </div>
+        <button type="button" class="btn-close-circle" (click)="mostrarDialogSello = false" [disabled]="isStampAnimating()">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <!-- TARJETA DE FIDELIZACIÓN ARTESANAL REFLEJADA -->
+      <div class="modal-loyalty-card" [style.background]="config.bgColorHex" [style.color]="config.textColorHex">
+        <!-- Efecto de textura y luz -->
+        <div class="card-artisan-glow"></div>
+
+        <!-- Encabezado de la Tarjeta -->
+        <div class="card-inner-header">
+          <div class="card-brand-row">
+            <span class="card-vintage-badge">LOYALTY PASS</span>
+            <span class="card-vintage-counter">
+              {{ isStamped() ? (selectedCard.currentStamps + 1) : selectedCard.currentStamps }} / {{ selectedCard.totalStampsRequired }} SELLOS
+            </span>
+          </div>
+          <h3 class="card-establishment-title" [style.color]="config.textColorHex">
+            {{ config.cardTitle || 'Petra Club Gourmet' }}
+          </h3>
+          <p class="card-encouragement-text">
+            ¡GRACIAS POR TU PREFERENCIA!
+          </p>
+        </div>
+
+        <!-- Meta y Beneficio -->
+        <div class="card-reward-objective-pill">
+          <i class="pi pi-gift mr-1" [style.color]="config.accentColorHex"></i>
+          <span>Recompensa al completar: <strong>{{ config.rewardTitle || 'Cortesía de la Casa' }}</strong></span>
+        </div>
+
+        <!-- Cuadrícula de Sellos Estilo Tinta Artesanal -->
+        <div class="modal-stamps-grid">
+          @for (s of getClientModalStamps(); track s.index) {
+            <div class="modal-stamp-slot"
+                 [class.slot-filled]="s.isFilled"
+                 [class.slot-next-target]="s.isNextTarget"
+                 [class.slot-animating]="s.isNextTarget && isStampAnimating()"
+                 [class.slot-goal]="s.index === selectedCard.totalStampsRequired"
+                 [style.border-color]="config.accentColorHex">
+
+              @if (s.isFilled) {
+                <!-- Sello Ya Acumulado -->
+                <div class="stamp-ink-mark" [style.color]="config.accentColorHex">
+                  <span class="stamp-icon-glyph">{{ currentEmoji }}</span>
+                  <div class="stamp-ring-border" [style.border-color]="config.accentColorHex"></div>
+                </div>
+              } @else if (s.isNextTarget) {
+                <!-- Próximo Sello a Estampar -->
+                @if (isStamped()) {
+                  <div class="stamp-ink-mark slam-animation" [style.color]="config.accentColorHex">
+                    <span class="stamp-icon-glyph">{{ currentEmoji }}</span>
+                    <div class="stamp-ring-border" [style.border-color]="config.accentColorHex"></div>
+                  </div>
+                } @else {
+                  <div class="stamp-target-preview" [style.color]="config.accentColorHex">
+                    <span class="target-plus-sign">+1</span>
+                    <span class="target-label-mini">PRÓXIMO</span>
+                  </div>
+                }
+              } @else {
+                <!-- Ranura Vacía -->
+                @if (s.index === selectedCard.totalStampsRequired) {
+                  <div class="slot-goal-content">
+                    <i class="pi pi-star-fill text-amber-400"></i>
+                    <span class="goal-text">META</span>
+                  </div>
+                } @else {
+                  <span class="slot-number-index">{{ s.index }}</span>
+                }
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Indicador de Estado del Modal -->
+        <div class="card-status-indicator">
+          @if (isStamped()) {
+            <div class="status-badge-success">
+              <i class="pi pi-check-circle"></i>
+              <span>¡Sello +1 Aplicado con Éxito!</span>
+            </div>
+          } @else if (selectedCard.currentStamps >= selectedCard.totalStampsRequired) {
+            <div class="status-badge-ready">
+              <i class="pi pi-gift"></i>
+              <span>¡Tarjeta completa! Lista para canjear recompensa</span>
+            </div>
+          } @else {
+            <div class="status-badge-info">
+              <span>Sellos actuales: <strong>{{ selectedCard.currentStamps }}</strong> ➔ <strong>{{ selectedCard.currentStamps + 1 }}</strong> para el próximo nivel</span>
+            </div>
+          }
+        </div>
+
+      </div>
+
+      <!-- Nota de la Visita (Opcional) -->
+      <div class="stamp-note-field">
+        <label class="note-field-label">Nota o Mesa (Opcional):</label>
+        <input type="text" pInputText [(ngModel)]="notasSello" placeholder="Ej. Mesa 3 - Visita regular" [disabled]="isStamped()" class="note-field-input" />
+      </div>
+
+      <!-- SLIDER DE VERIFICACIÓN (Slide to Confirm / Swipe to Stamp) -->
+      <div class="swipe-to-stamp-container" [class.swipe-locked]="isStamped()">
+        <div #swipeTrack 
+             class="swipe-track" 
+             (mousedown)="startDragMouse($event)" 
+             (touchstart)="startTouch($event)">
+          
+          <!-- Relleno de progreso arrastrado -->
+          <div class="swipe-progress-bar" [style.width.%]="sliderProgress()"></div>
+
+          <!-- Texto animado de instrucción dentro del track -->
+          <div class="swipe-text-layer" [class.faded]="sliderProgress() > 30">
+            @if (isStamped()) {
+              <span class="swipe-msg-success"><i class="pi pi-check mr-2"></i>¡Sello Registrado!</span>
+            } @else {
+              <span class="swipe-msg-prompt">
+                Desliza para estampar sello
+                <i class="pi pi-angle-double-right swipe-arrows-anim"></i>
+              </span>
+            }
+          </div>
+
+          <!-- Manija Deslizable (Handle arrastrable) -->
+          <div class="swipe-handle"
+               [style.left]="'calc(' + sliderProgress() + '% - ' + (sliderProgress() * 0.52) + 'px)'"
+               [class.is-dragging]="isDragging"
+               [class.is-done]="isStamped()">
+            @if (isStamped()) {
+              <i class="pi pi-check check-pop"></i>
+            } @else {
+              <span class="handle-icon">{{ currentEmoji }}</span>
+            }
+          </div>
+        </div>
+
+        <div class="swipe-bottom-hint">
+          @if (!isStamped()) {
+            <span><i class="pi pi-info-circle mr-1"></i>Arrastra el control de izquierda a derecha para estampar</span>
+          } @else {
+            <span class="text-green-600 font-semibold"><i class="pi pi-spin pi-spinner mr-1"></i>Guardando en el historial del cliente...</span>
+          }
+        </div>
+      </div>
+
+    </div>
+  }
+</p-dialog>
+
+<!-- Modal Historial de Movimientos -->
+<p-dialog [(visible)]="mostrarDialogHistorial" header="Historial de Movimientos" [modal]="true" [style]="{width: '600px'}">
+  <div class="mt-2">
+    <p class="m-0 mb-3 text-500 text-sm">Cliente: <strong class="text-900">{{ selectedCard?.customerName }}</strong></p>
+
+    <p-table [value]="cardHistory()" [rows]="5" [paginator]="true" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Fecha</th>
+          <th>Acción</th>
+          <th>Cambio</th>
+          <th>Saldo</th>
+          <th>Registrado Por</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-h>
+        <tr>
+          <td>{{ h.createdAt | date:'short' }}</td>
+          <td>
+            <p-tag [value]="h.actionType" [severity]="h.actionType === 'ADD_STAMP' ? 'info' : 'success'"></p-tag>
+          </td>
+          <td class="font-bold" [class.text-green-600]="h.stampsChange > 0" [class.text-red-500]="h.stampsChange < 0">
+            {{ h.stampsChange > 0 ? '+' + h.stampsChange : h.stampsChange }}
+          </td>
+          <td>{{ h.stampsAfter }} sellos</td>
+          <td>{{ h.registeredByName }}</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</p-dialog>

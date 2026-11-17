@@ -1,0 +1,1519 @@
+.tarjeta-page {
+  padding: 1.5rem;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+/* ==========================================================================
+   Header Superior
+   ========================================================================== */
+.page-header {
+  background: var(--surface-card, #ffffff);
+  border: 1px solid var(--surface-border, #e2e8f0);
+  border-radius: 16px;
+  padding: 1.25rem 1.75rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+
+  .header-titles {
+    display: flex;
+    align-items: center;
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+
+      .header-icon-badge {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: rgba(99, 102, 241, 0.12);
+        color: var(--primary-color, #6366f1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+      }
+
+      .title-with-tag {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+
+        .page-title {
+          font-size: 1.45rem;
+          font-weight: 800;
+          color: var(--text-color, #0f172a);
+          letter-spacing: -0.02em;
+          margin: 0;
+        }
+
+        .status-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 3px 10px;
+          border-radius: 999px;
+          font-size: 0.75rem;
+          font-weight: 700;
+          background: rgba(245, 158, 11, 0.15);
+          color: #d97706;
+          border: 1px solid rgba(245, 158, 11, 0.3);
+
+          .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #d97706;
+          }
+
+          &.active {
+            background: rgba(16, 185, 129, 0.12);
+            color: #059669;
+            border-color: rgba(16, 185, 129, 0.3);
+
+            .status-dot {
+              background: #10b981;
+              box-shadow: 0 0 6px #10b981;
+            }
+          }
+        }
+      }
+
+      .page-desc {
+        font-size: 0.85rem;
+        color: var(--text-color-secondary, #64748b);
+        margin: 0.25rem 0 0 0;
+      }
+    }
+  }
+
+  .btn-save-primary {
+    background: linear-gradient(135deg, var(--primary-color, #6366f1), #4f46e5);
+    color: #ffffff;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(99, 102, 241, 0.45);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+/* ==========================================================================
+   Navegación de Pestañas
+   ========================================================================== */
+.nav-tabs-bar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+
+  .tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.65rem 1.25rem;
+    border-radius: 999px;
+    border: 1px solid var(--surface-border, #e2e8f0);
+    background: var(--surface-card, #ffffff);
+    color: var(--text-color-secondary, #64748b);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--surface-hover, #f8fafc);
+      color: var(--text-color, #0f172a);
+    }
+
+    &.active {
+      background: var(--primary-color, #6366f1);
+      color: #ffffff;
+      border-color: var(--primary-color, #6366f1);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+
+      .tab-counter {
+        background: rgba(255, 255, 255, 0.25);
+        color: #ffffff;
+      }
+    }
+
+    .tab-counter {
+      background: var(--surface-ground, #f1f5f9);
+      color: var(--text-color-secondary, #64748b);
+      font-size: 0.75rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+  }
+}
+
+/* ==========================================================================
+   Main Layout: 2 Columnas Limpias (Formulario + Preview Sticky)
+   ========================================================================== */
+.tarjeta-main-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 1.75rem;
+  align-items: start;
+
+  @media (max-width: 1080px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tarjeta-form-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ==========================================================================
+   Cards de Configuración
+   ========================================================================== */
+.config-section-card {
+  background: var(--surface-card, #ffffff);
+  border: 1px solid var(--surface-border, #e2e8f0);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+
+  .card-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--surface-border, #f1f5f9);
+    margin-bottom: 1.25rem;
+
+    .section-icon-box {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: rgba(99, 102, 241, 0.1);
+      color: var(--primary-color, #6366f1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      flex-shrink: 0;
+    }
+
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-color, #0f172a);
+      margin: 0;
+    }
+
+    .section-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-color-secondary, #64748b);
+      margin: 0.15rem 0 0 0;
+    }
+  }
+}
+
+/* Campos de Formulario */
+.fields-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+
+  @media (max-width: 680px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  .field-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-color, #334155);
+  }
+
+  .field-label-sm {
+    font-size: 0.775rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-color-secondary, #64748b);
+    letter-spacing: 0.04em;
+    display: block;
+  }
+
+  .field-hint {
+    font-size: 0.75rem;
+    color: var(--text-color-secondary, #94a3b8);
+  }
+
+  .custom-input {
+    width: 100%;
+    border-radius: 8px;
+  }
+
+  .custom-textarea {
+    width: 100%;
+    border-radius: 8px;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 0.85rem;
+  }
+}
+
+.highlight-field-box {
+  background: rgba(99, 102, 241, 0.05);
+  border: 1px dashed rgba(99, 102, 241, 0.3);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+}
+
+/* Switch Activo */
+.program-status-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.15rem;
+  background: var(--surface-ground, #f8fafc);
+  border-radius: 12px;
+  border: 1px solid var(--surface-border, #e2e8f0);
+  margin-top: 1rem;
+
+  .status-toggle-info {
+    display: flex;
+    flex-direction: column;
+
+    .toggle-title {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--text-color, #0f172a);
+    }
+    .toggle-desc {
+      font-size: 0.75rem;
+      color: var(--text-color-secondary, #64748b);
+    }
+  }
+}
+
+/* ==========================================================================
+   Paletas y Colores
+   ========================================================================== */
+.palettes-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+
+  .palette-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--surface-border, #e2e8f0);
+    background: var(--surface-ground, #f8fafc);
+    cursor: pointer;
+    font-size: 0.785rem;
+    font-weight: 600;
+    color: var(--text-color, #334155);
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--surface-hover, #f1f5f9);
+      transform: translateY(-1px);
+    }
+
+    &.selected {
+      border-color: var(--primary-color, #6366f1);
+      background: rgba(99, 102, 241, 0.08);
+      color: var(--primary-color, #6366f1);
+      box-shadow: 0 2px 6px rgba(99, 102, 241, 0.15);
+    }
+
+    .chip-circle {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+    }
+  }
+}
+
+.color-pickers-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+
+  .color-item-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+
+    .color-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      .color-swatch-input {
+        width: 44px;
+        height: 38px;
+        border-radius: 8px;
+        border: 1px solid var(--surface-border, #cbd5e1);
+        cursor: pointer;
+        padding: 0;
+        background: none;
+      }
+
+      .color-hex-text {
+        width: 100%;
+        text-transform: uppercase;
+        font-family: monospace;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+/* ==========================================================================
+   Mecánica de Sellos (Chips Interactivos)
+   ========================================================================== */
+.stamps-count-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.65rem;
+
+  .stamp-count-chip {
+    padding: 0.75rem 0.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--surface-border, #e2e8f0);
+    background: var(--surface-ground, #f8fafc);
+    cursor: pointer;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    transition: all 0.2s ease;
+
+    .count-number {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--text-color, #0f172a);
+    }
+    .count-meta {
+      font-size: 0.7rem;
+      color: var(--text-color-secondary, #64748b);
+      font-weight: 600;
+    }
+
+    &:hover {
+      background: var(--surface-hover, #f1f5f9);
+      border-color: #cbd5e1;
+      transform: translateY(-2px);
+    }
+
+    &.selected {
+      background: rgba(99, 102, 241, 0.08);
+      border-color: var(--primary-color, #6366f1);
+      box-shadow: 0 4px 10px rgba(99, 102, 241, 0.15);
+
+      .count-number {
+        color: var(--primary-color, #6366f1);
+      }
+      .count-meta {
+        color: var(--primary-color, #6366f1);
+      }
+    }
+  }
+}
+
+.icons-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.65rem;
+
+  @media (max-width: 600px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .icon-chip-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.65rem 0.85rem;
+    border-radius: 10px;
+    border: 1px solid var(--surface-border, #e2e8f0);
+    background: var(--surface-ground, #f8fafc);
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    .icon-emoji {
+      font-size: 1.25rem;
+    }
+    .icon-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-color, #334155);
+    }
+
+    &:hover {
+      background: var(--surface-hover, #f1f5f9);
+      transform: translateY(-1px);
+    }
+
+    &.selected {
+      background: rgba(99, 102, 241, 0.1);
+      border-color: var(--primary-color, #6366f1);
+      color: var(--primary-color, #6366f1);
+
+      .icon-label {
+        color: var(--primary-color, #6366f1);
+        font-weight: 700;
+      }
+    }
+  }
+}
+
+/* ==========================================================================
+   Tipos de Recompensa (Cards)
+   ========================================================================== */
+.reward-types-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.65rem;
+
+  .reward-card-btn {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 0.85rem;
+    border-radius: 12px;
+    border: 1px solid var(--surface-border, #e2e8f0);
+    background: var(--surface-ground, #f8fafc);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+
+    .reward-card-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.05);
+      color: var(--text-color-secondary, #64748b);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+    }
+
+    .reward-card-texts {
+      display: flex;
+      flex-direction: column;
+
+      .reward-card-title {
+        font-size: 0.825rem;
+        font-weight: 700;
+        color: var(--text-color, #0f172a);
+      }
+      .reward-card-desc {
+        font-size: 0.7rem;
+        color: var(--text-color-secondary, #64748b);
+        line-height: 1.25;
+        margin-top: 2px;
+      }
+    }
+
+    &:hover {
+      background: var(--surface-hover, #f1f5f9);
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+    }
+
+    &.selected {
+      background: rgba(99, 102, 241, 0.08);
+      border-color: var(--primary-color, #6366f1);
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+
+      .reward-card-icon {
+        background: var(--primary-color, #6366f1);
+        color: #ffffff;
+      }
+      .reward-card-title {
+        color: var(--primary-color, #6366f1);
+      }
+    }
+  }
+}
+
+/* ==========================================================================
+   Columna Derecha: Mockup Digital Wallet
+   ========================================================================== */
+.sticky-pass-container {
+  position: sticky;
+  top: 85px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+
+  .preview-title-box {
+    text-align: center;
+
+    .preview-badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--primary-color, #6366f1);
+      background: rgba(99, 102, 241, 0.1);
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-bottom: 2px;
+    }
+
+    .preview-heading {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--text-color, #0f172a);
+      margin: 0;
+    }
+  }
+}
+
+.digital-wallet-card {
+  width: 320px;
+  border-radius: 22px;
+  padding: 1.35rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  transition: all 0.3s ease;
+
+  .card-gloss-highlight {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 90px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .card-pass-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+    position: relative;
+    z-index: 2;
+
+    .pass-brand-info {
+      display: flex;
+      flex-direction: column;
+
+      .pass-brand-name {
+        font-weight: 800;
+        font-size: 1.05rem;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+      }
+      .pass-brand-sub {
+        font-size: 0.725rem;
+        opacity: 0.85;
+        margin-top: 2px;
+      }
+    }
+
+    .pass-status-tag {
+      font-size: 0.65rem;
+      font-weight: 800;
+      background: rgba(255, 255, 255, 0.22);
+      padding: 2px 8px;
+      border-radius: 999px;
+      letter-spacing: 0.05em;
+    }
+  }
+
+  .card-pass-body {
+    padding: 1rem 0 0.5rem 0;
+    position: relative;
+    z-index: 2;
+
+    .pass-progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.75rem;
+
+      .progress-txt {
+        font-size: 0.75rem;
+        opacity: 0.85;
+        font-weight: 600;
+      }
+      .progress-count {
+        font-size: 1.15rem;
+        font-weight: 800;
+      }
+    }
+
+    .pass-stamps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      margin-bottom: 1rem;
+
+      .stamp-node {
+        aspect-ratio: 1;
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.25);
+        border: 1.5px dashed rgba(255, 255, 255, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+        transition: all 0.25s ease;
+
+        &.filled {
+          background: #ffffff;
+          border-style: solid;
+          color: #111827;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+          transform: scale(1.04);
+        }
+
+        .stamp-index-placeholder {
+          font-size: 0.75rem;
+          opacity: 0.55;
+          font-weight: 700;
+        }
+      }
+    }
+
+    .pass-reward-callout {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      i {
+        font-size: 0.95rem;
+        flex-shrink: 0;
+      }
+
+      .reward-callout-text {
+        line-height: 1.25;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+  }
+
+  .card-pass-footer {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 0.65rem 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.75rem;
+    position: relative;
+    z-index: 2;
+
+    .pass-holder-info {
+      display: flex;
+      flex-direction: column;
+
+      .holder-name {
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: #0f172a;
+      }
+      .holder-id {
+        font-size: 0.65rem;
+        color: #64748b;
+        font-family: monospace;
+      }
+    }
+
+    .pass-barcode-box {
+      width: 44px;
+      height: 44px;
+      background: repeating-conic-gradient(#000 0% 25%, #fff 0% 50%) 50% / 6px 6px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+  }
+}
+
+.wallet-integration-pill {
+  width: 320px;
+  background: var(--surface-card, #ffffff);
+  border: 1px solid var(--surface-border, #e2e8f0);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+
+  .wallet-logo-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--primary-color, #6366f1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  .wallet-pill-texts {
+    display: flex;
+    flex-direction: column;
+
+    .wallet-pill-title {
+      font-size: 0.785rem;
+      font-weight: 700;
+      color: var(--text-color, #0f172a);
+    }
+    .wallet-pill-desc {
+      font-size: 0.685rem;
+      color: var(--text-color-secondary, #64748b);
+      line-height: 1.25;
+    }
+  }
+}
+
+/* ==========================================================================
+   Pestaña 2: Clientes y Sellos
+   ========================================================================== */
+.clientes-panel-card {
+  background: var(--surface-card, #ffffff);
+  border: 1px solid var(--surface-border, #e2e8f0);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+
+  .panel-card-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--surface-border, #f1f5f9);
+
+    .panel-card-title {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--text-color, #0f172a);
+      margin: 0;
+    }
+    .panel-card-subtitle {
+      font-size: 0.825rem;
+      color: var(--text-color-secondary, #64748b);
+      margin: 0.2rem 0 0 0;
+    }
+
+    .btn-refresh {
+      background: var(--surface-ground, #f8fafc);
+      border: 1px solid var(--surface-border, #cbd5e1);
+      color: var(--text-color, #334155);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: var(--surface-hover, #f1f5f9);
+      }
+    }
+  }
+}
+
+.action-btn-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--surface-border, #cbd5e1);
+  background: var(--surface-card, #ffffff);
+  color: var(--text-color, #334155);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  &.add:hover {
+    border-color: var(--primary-color, #6366f1);
+    color: var(--primary-color, #6366f1);
+  }
+
+  &.redeem {
+    background: #10b981;
+    color: #ffffff;
+    border-color: #10b981;
+
+    &:hover:not(:disabled) {
+      background: #059669;
+    }
+
+    &:disabled {
+      background: var(--surface-ground, #f1f5f9);
+      border-color: var(--surface-border, #e2e8f0);
+      color: #94a3b8;
+      cursor: not-allowed;
+    }
+  }
+
+  &.wallet:hover {
+    border-color: #4285f4;
+    color: #4285f4;
+    background: rgba(66, 133, 244, 0.08);
+  }
+
+  &.history:hover {
+    border-color: #64748b;
+    color: #0f172a;
+  }
+}
+
+.h-8px {
+  height: 8px;
+}
+
+/* ==========================================================================
+   MODAL INTERACTIVO: SLIDE TO STAMP & TARJETA ARTESANAL
+   ========================================================================== */
+:host ::ng-deep .artisan-stamp-dialog {
+  .p-dialog-content {
+    padding: 0 !important;
+    border-radius: 24px !important;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35);
+  }
+}
+
+.stamp-modal-wrapper {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  background: #ffffff;
+}
+
+/* Barra Superior */
+.stamp-modal-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.5rem;
+
+  .customer-info-box {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    .customer-avatar-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: rgba(99, 102, 241, 0.12);
+      color: var(--primary-color, #6366f1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .customer-details {
+      display: flex;
+      flex-direction: column;
+
+      .customer-fullname {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #0f172a;
+        letter-spacing: -0.01em;
+      }
+
+      .customer-subtitle {
+        font-size: 0.785rem;
+        color: #64748b;
+        font-weight: 500;
+      }
+    }
+  }
+
+  .btn-close-circle {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      color: #ef4444;
+      transform: rotate(90deg);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+}
+
+/* ==========================================================================
+   TARJETA DE LEALTAD ARTESANAL REFLEJADA
+   ========================================================================== */
+.modal-loyalty-card {
+  border-radius: 20px;
+  padding: 1.4rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+
+  .card-artisan-glow {
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 140px;
+    height: 140px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.25) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .card-inner-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    .card-brand-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      .card-vintage-badge {
+        font-size: 0.685rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        opacity: 0.85;
+      }
+
+      .card-vintage-counter {
+        font-size: 0.725rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        background: rgba(0, 0, 0, 0.25);
+        padding: 2px 8px;
+        border-radius: 999px;
+      }
+    }
+
+    .card-establishment-title {
+      margin: 0;
+      font-size: 1.35rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .card-encouragement-text {
+      margin: 0;
+      font-size: 0.725rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.9;
+    }
+  }
+
+  .card-reward-objective-pill {
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 10px;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.785rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.3;
+
+    strong {
+      color: #ffffff;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+  }
+}
+
+/* Cuadrícula de Sellos estilo Tinta Artesanal */
+.modal-stamps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  padding: 0.5rem 0;
+
+  .modal-stamp-slot {
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.92);
+    border: 2px dashed rgba(255, 255, 255, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+
+    .slot-number-index {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: #94a3b8;
+    }
+
+    /* Sello Lleno (Estampado) */
+    &.slot-filled {
+      background: #ffffff;
+      border: 2.5px solid currentColor;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+
+      .stamp-ink-mark {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        width: 100%;
+        height: 100%;
+        transform: rotate(-6deg);
+
+        .stamp-icon-glyph {
+          font-size: 1.6rem;
+          line-height: 1;
+          filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.15));
+        }
+
+        .stamp-ring-border {
+          position: absolute;
+          inset: 3px;
+          border-radius: 50%;
+          border: 1px dashed currentColor;
+          opacity: 0.45;
+          pointer-events: none;
+        }
+      }
+    }
+
+    /* Próximo Sello a Estampar (+1) */
+    &.slot-next-target {
+      background: rgba(255, 255, 255, 0.22);
+      border: 2.5px dashed #ffffff;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+      animation: pulseNextSlot 1.6s infinite ease-in-out;
+
+      .stamp-target-preview {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        line-height: 1.1;
+
+        .target-plus-sign {
+          font-size: 1.15rem;
+          font-weight: 900;
+          color: #ffffff;
+          filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4));
+        }
+
+        .target-label-mini {
+          font-size: 0.55rem;
+          font-weight: 800;
+          letter-spacing: 0.05em;
+          color: #ffffff;
+          opacity: 0.9;
+        }
+      }
+    }
+
+    /* Meta / Premio Final */
+    &.slot-goal {
+      border-color: #f59e0b;
+
+      .slot-goal-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+
+        i {
+          font-size: 1.1rem;
+        }
+
+        .goal-text {
+          font-size: 0.55rem;
+          font-weight: 800;
+          color: #d97706;
+          letter-spacing: 0.05em;
+        }
+      }
+    }
+  }
+}
+
+/* Animación de Estampado de Golpe (Slam) */
+.slam-animation {
+  animation: stampSlam 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes stampSlam {
+  0% {
+    opacity: 0;
+    transform: scale(2.8) rotate(20deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.9) rotate(-10deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-6deg);
+  }
+}
+
+@keyframes pulseNextSlot {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
+/* Indicador de Estado al Pie de la Tarjeta */
+.card-status-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.785rem;
+
+  .status-badge-success {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #10b981;
+    color: #ffffff;
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-weight: 700;
+    animation: bounceIn 0.3s ease;
+  }
+
+  .status-badge-ready {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f59e0b;
+    color: #ffffff;
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-weight: 700;
+  }
+
+  .status-badge-info {
+    opacity: 0.9;
+    text-align: center;
+    font-size: 0.75rem;
+
+    strong {
+      color: #ffffff;
+    }
+  }
+}
+
+/* Campo de Nota */
+.stamp-note-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  .note-field-label {
+    font-size: 0.785rem;
+    font-weight: 700;
+    color: #475569;
+  }
+
+  .note-field-input {
+    width: 100%;
+    border-radius: 10px;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.85rem;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    transition: all 0.2s ease;
+
+    &:focus {
+      background: #ffffff;
+      border-color: var(--primary-color, #6366f1);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+  }
+}
+
+/* ==========================================================================
+   SLIDER DE CONFIRMACIÓN (SWIPE TO STAMP)
+   ========================================================================== */
+.swipe-to-stamp-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  .swipe-track {
+    height: 56px;
+    border-radius: 28px;
+    background: #f1f5f9;
+    border: 1.5px solid #e2e8f0;
+    position: relative;
+    user-select: none;
+    touch-action: none;
+    cursor: grab;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover {
+      border-color: #cbd5e1;
+    }
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  &.swipe-locked .swipe-track {
+    cursor: default;
+    border-color: #10b981;
+  }
+
+  .swipe-progress-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.25) 0%, rgba(16, 185, 129, 0.5) 100%);
+    border-radius: 28px;
+    pointer-events: none;
+    transition: width 0.05s ease-out;
+  }
+
+  .swipe-text-layer {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+
+    &.faded {
+      opacity: 0.15;
+    }
+
+    .swipe-msg-prompt {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 0.02em;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+
+      .swipe-arrows-anim {
+        font-size: 1rem;
+        color: var(--primary-color, #6366f1);
+        animation: pulseArrows 1.4s infinite ease-in-out;
+      }
+    }
+
+    .swipe-msg-success {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: #059669;
+      display: inline-flex;
+      align-items: center;
+    }
+  }
+
+  .swipe-handle {
+    width: 52px;
+    height: 52px;
+    position: absolute;
+    top: 1px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    transition: transform 0.15s ease, background-color 0.25s ease, box-shadow 0.2s ease;
+    z-index: 5;
+
+    &:active,
+    &.is-dragging {
+      cursor: grabbing;
+      transform: scale(1.08);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+    }
+
+    .handle-icon {
+      font-size: 1.55rem;
+      line-height: 1;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+    }
+
+    &.is-done {
+      background: #10b981;
+      border-color: #10b981;
+      color: #ffffff;
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+
+      .check-pop {
+        font-size: 1.4rem;
+        font-weight: 900;
+        animation: checkBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+    }
+  }
+
+  .swipe-bottom-hint {
+    text-align: center;
+    font-size: 0.725rem;
+    color: #94a3b8;
+    margin-top: 0.15rem;
+  }
+}
+
+@keyframes pulseArrows {
+  0% {
+    transform: translateX(0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateX(5px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 0.4;
+  }
+}
+
+@keyframes checkBounce {
+  0% {
+    transform: scale(0);
+  }
+  60% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

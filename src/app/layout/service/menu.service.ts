@@ -149,7 +149,8 @@ export class MenuService {
                 items: [
                     { label: 'Campañas', icon: 'pi pi-fw pi-id-card', routerLink: ['/dashboard/campaigns'], roles: ['ADMIN', 'MARKETING'], requiredPermissions: ['manage_campaigns'] },
                     { label: 'Plantillas', icon: 'pi pi-fw pi-file', routerLink: ['/dashboard/campaign-templates'], roles: ['ADMIN', 'MARKETING'], requiredPermissions: ['manage_campaign_templates'] },
-                    { label: 'Redención', icon: 'pi pi-fw pi-ticket', routerLink: ['/dashboard/manual-redemption'], roles: ['ADMIN', 'MARKETING'], requiredPermissions: ['process_redemption'] }
+                    { label: 'Redención', icon: 'pi pi-fw pi-ticket', routerLink: ['/dashboard/manual-redemption'], roles: ['ADMIN', 'MARKETING'], requiredPermissions: ['process_redemption'] },
+                    { label: 'Tarjeta de Lealtad', icon: 'pi pi-fw pi-id-card', routerLink: ['/dashboard/tarjeta-lealtad'], roles: ['ADMIN', 'MARKETING'], requiredPermissions: ['manage_campaigns'] }
                 ]
             }
         ];
