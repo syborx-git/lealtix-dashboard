@@ -87,14 +87,30 @@ export class KioskComponent implements OnDestroy {
   readonly detailQty = signal(1);
   readonly detailNotes = signal<string[]>([]);
   readonly detailClosing = signal(false);
-  readonly quickNotes = [
-    'Sin cebolla',
-    'Sin picante',
-    'Salsa aparte',
-    'Extra queso',
-    'Para llevar',
-    'Sin hielo',
-  ];
+  readonly detailCustomNote = signal('');
+
+  /**
+   * Chips de notas rápidas según la categoría del producto: evita opciones
+   * de comida salada en bebidas/postres y viceversa.
+   */
+  readonly detailNoteOptions = computed<string[]>(() => {
+    const category = (this.detailProduct()?.category || '').toLowerCase();
+    if (category.includes('bebida')) {
+      return ['Sin hielo', 'Sin popote', 'Para llevar', 'Vaso extra'];
+    }
+    if (category.includes('postre')) {
+      return ['Sin cubiertos', 'Cubiertos extra', 'Sin crema', 'Para llevar'];
+    }
+    if (
+      category.includes('entrada') ||
+      category.includes('platillo') ||
+      category.includes('combo') ||
+      category.includes('comida')
+    ) {
+      return ['Sin cebolla', 'Sin picante', 'Salsa aparte', 'Extra queso', 'Para llevar'];
+    }
+    return ['Para llevar', 'Sin cubiertos', 'Cubiertos extra'];
+  });
   readonly detailTotal = computed(() => {
     const product = this.detailProduct();
     return product ? Math.round(product.price * this.detailQty() * 100) / 100 : 0;
@@ -365,6 +381,7 @@ export class KioskComponent implements OnDestroy {
     this.detailProduct.set(product);
     this.detailQty.set(1);
     this.detailNotes.set([]);
+    this.detailCustomNote.set('');
     this.detailClosing.set(false);
   }
 
@@ -400,7 +417,10 @@ export class KioskComponent implements OnDestroy {
   confirmAdd(): void {
     const product = this.detailProduct();
     if (!product) return;
-    this.addToCart(product, this.detailQty(), this.detailNotes(), false);
+    const notes = [...this.detailNotes()];
+    const custom = this.detailCustomNote().trim();
+    if (custom) notes.push(custom);
+    this.addToCart(product, this.detailQty(), notes, false);
     this.closeProduct();
   }
 
@@ -488,6 +508,7 @@ export class KioskComponent implements OnDestroy {
     }
     this.detailProduct.set(null);
     this.detailClosing.set(false);
+    this.detailCustomNote.set('');
     if (this.detailCloseTimer) {
       clearTimeout(this.detailCloseTimer);
       this.detailCloseTimer = null;
