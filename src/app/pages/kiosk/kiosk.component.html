@@ -235,30 +235,40 @@
         </div>
 
         <div class="detail-body">
-          <h2>{{ product.name }}</h2>
-          <p class="detail-desc">
-            {{ product.description || 'Preparado al momento con ingredientes frescos.' }}
-          </p>
-          <div class="detail-price">{{ mxn(product.price) }} <span>MXN</span></div>
+          <div class="detail-scroll">
+            <h2>{{ product.name }}</h2>
+            <p class="detail-desc">
+              {{ product.description || 'Preparado al momento con ingredientes frescos.' }}
+            </p>
+            <div class="detail-price">{{ mxn(product.price) }} <span>MXN</span></div>
 
-          <div class="detail-section">
-            <h3>Especificaciones / notas</h3>
-            <div class="note-chips">
-              <button
-                type="button"
-                class="note-chip"
-                *ngFor="let note of quickNotes"
-                [class.active]="isNoteSelected(note)"
-                (click)="toggleNote(note)"
-              >
-                <i class="pi" [ngClass]="isNoteSelected(note) ? 'pi-check' : 'pi-plus'"></i>
-                {{ note }}
-              </button>
+            <div class="detail-section" *ngIf="detailNoteOptions().length">
+              <h3>Especificaciones / notas</h3>
+              <div class="note-chips">
+                <button
+                  type="button"
+                  class="note-chip"
+                  *ngFor="let note of detailNoteOptions()"
+                  [class.active]="isNoteSelected(note)"
+                  (click)="toggleNote(note)"
+                >
+                  <i class="pi" [ngClass]="isNoteSelected(note) ? 'pi-check' : 'pi-plus'"></i>
+                  {{ note }}
+                </button>
+              </div>
+            </div>
+
+            <div class="detail-custom">
+              <textarea
+                rows="2"
+                placeholder="Nota adicional para cocina (opcional)..."
+                [value]="detailCustomNote()"
+                (input)="detailCustomNote.set($any($event.target).value)"
+              ></textarea>
             </div>
           </div>
 
-          <div class="detail-qty">
-            <span>Cantidad</span>
+          <div class="detail-actions">
             <div class="qty-stepper-big">
               <button
                 type="button"
@@ -273,15 +283,12 @@
                 <i class="pi pi-plus"></i>
               </button>
             </div>
+
+            <button type="button" class="detail-add" (click)="confirmAdd()">
+              Agregar • {{ mxn(detailTotal()) }}
+            </button>
           </div>
         </div>
-      </div>
-
-      <div class="detail-footer">
-        <button type="button" class="detail-add" (click)="confirmAdd()">
-          <span class="detail-add-label"><i class="pi pi-shopping-cart"></i> Agregar a mi pedido</span>
-          <b class="detail-add-total">{{ mxn(detailTotal()) }} MXN</b>
-        </button>
       </div>
     </div>
   </div>
