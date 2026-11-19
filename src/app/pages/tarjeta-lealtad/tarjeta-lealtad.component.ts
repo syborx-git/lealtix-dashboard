@@ -438,11 +438,6 @@ export class TarjetaLealtadComponent implements OnInit {
   }
 
   abrirGoogleWallet(card: CustomerLoyaltyCard): void {
-    if (card.googleWalletSaveUrl) {
-      window.open(card.googleWalletSaveUrl, '_blank');
-      return;
-    }
-
     this.loyaltyService.getGoogleWalletPassUrl(this.tenantId(), card.customerId).subscribe({
       next: (res) => {
         if (res?.saveUrl) {
