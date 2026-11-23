@@ -4,9 +4,9 @@
 @use './demo/demo.scss';
 
 /* ============================================================================
-   IMPORTACIÓN DE TIPOGRAFÍA MODERNA
+   TIPOGRAFÍA MODERNA (Inter)
+   Cargada de forma optimizada en src/index.html con preconnect
    ============================================================================ */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 /* ==========================================================================
    DESACTIVACIÓN GLOBAL DE ZOOM (TABLET / POS / KIOSK)
