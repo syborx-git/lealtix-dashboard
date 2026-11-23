@@ -230,6 +230,11 @@
                         <i class="pi" [ngClass]="row.itemType === 'alimento' ? 'pi-compass' : (row.itemType === 'bebida' ? 'pi-glass' : 'pi-box')"></i>
                         <span>{{ row.typeLabel }} · {{ row.areaLabel }}</span>
                     </span>
+                    <div class="mt-1" *ngIf="row.rawItem?.disponibleKiosko">
+                        <span class="cat-chip-mini" style="background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;" pTooltip="Disponible en autoservicio Kiosko" tooltipPosition="top">
+                            <i class="pi pi-desktop text-xs"></i> Kiosko
+                        </span>
+                    </div>
                 </td>
 
                 <!-- Columna 2: Artículo, Precio y Categorías -->
@@ -499,6 +504,12 @@
                     <p-checkbox [(ngModel)]="manualAlimentoEsVariable" [binary]="true" inputId="chkManualVariable"></p-checkbox>
                     <label for="chkManualVariable" class="text-sm text-700 cursor-pointer">
                         ¿Es artículo variable / variante de otro platillo? (Opcional, para recetas)
+                    </label>
+                </div>
+                <div class="flex align-items-center gap-2 mt-1">
+                    <p-checkbox [(ngModel)]="manualAlimentoDisponibleKiosko" [binary]="true" inputId="chkManualAlimentoKiosko"></p-checkbox>
+                    <label for="chkManualAlimentoKiosko" class="text-sm text-700 cursor-pointer font-semibold">
+                        ¿Apto para venta en Kiosko / Autoservicio?
                     </label>
                 </div>
                 <small class="text-500 block -mt-1 ml-6 text-xs" *ngIf="manualAlimentoEsVariable">

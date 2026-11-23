@@ -14,4 +14,5 @@ export interface Product {
     categories?: { id: number; name: string }[];
     esVariable?: boolean;
     tieneVariantes?: boolean;
+    disponibleKiosko?: boolean;
 }
