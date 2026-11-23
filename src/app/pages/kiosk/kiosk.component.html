@@ -101,7 +101,8 @@
             <h3>{{ product.name }}</h3>
             <p class="desc" *ngIf="product.description">{{ product.description }}</p>
             <div class="product-bottom">
-              <span class="price">{{ mxn(product.price) }}</span>
+              <span class="price" *ngIf="product.cup && product.bottle">Desde {{ mxn(product.price) }}</span>
+              <span class="price" *ngIf="!(product.cup && product.bottle)">{{ mxn(product.price) }}</span>
               <button
                 type="button"
                 class="add-btn"
@@ -149,7 +150,12 @@
     <div class="cart-lines" *ngIf="cart().length > 0">
       <div class="cart-line" *ngFor="let line of cart(); trackBy: trackByLine">
         <div class="line-top">
-          <span class="line-name">{{ line.product.name }}</span>
+          <span class="line-name">
+            {{ line.product.name }}
+            <span class="line-pres" *ngIf="line.presentation">
+              ({{ line.presentation }}{{ line.presentation === 'Botella' && line.size ? ' ' + line.size : '' }})
+            </span>
+          </span>
           <button
             type="button"
             class="line-remove"
@@ -240,7 +246,35 @@
             <p class="detail-desc">
               {{ product.description || 'Preparado al momento con ingredientes frescos.' }}
             </p>
-            <div class="detail-price">{{ mxn(product.price) }} <span>MXN</span></div>
+            <div class="detail-price">{{ mxn(detailUnitPrice()) }} <span>MXN</span></div>
+
+            <div class="detail-presentations" *ngIf="product.cup || product.bottle">
+              <h3>Presentación</h3>
+              <div class="pres-options">
+                <button
+                  *ngIf="product.cup as cup"
+                  type="button"
+                  class="pres-option"
+                  [class.active]="detailPresentation() === 'Copa'"
+                  (click)="selectPresentation('Copa')"
+                >
+                  <span class="pres-name">Copa</span>
+                  <span class="pres-price">{{ mxn(cup.price) }}</span>
+                </button>
+                <button
+                  *ngIf="product.bottle as bottle"
+                  type="button"
+                  class="pres-option"
+                  [class.active]="detailPresentation() === 'Botella'"
+                  (click)="selectPresentation('Botella')"
+                >
+                  <span class="pres-name">
+                    Botella{{ bottle.size ? ' (' + bottle.size + ')' : '' }}
+                  </span>
+                  <span class="pres-price">{{ mxn(bottle.price) }}</span>
+                </button>
+              </div>
+            </div>
 
             <div class="detail-section" *ngIf="detailNoteOptions().length">
               <h3>Especificaciones / notas</h3>

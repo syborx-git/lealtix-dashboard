@@ -10,6 +10,12 @@ import { TenantClientOrderCreateRequest } from '@/pages/comandix/models/order.mo
 import { MpPointTestService } from '@/pages/mp-test/mp-point-test.service';
 import { environment } from '@/pages/commons/environment';
 
+interface ProductPresentation {
+  id: number;
+  price: number;
+  size?: string;
+}
+
 interface KioskProduct {
   id: number;
   name: string;
@@ -17,15 +23,33 @@ interface KioskProduct {
   imageUrl: string | null;
   description: string;
   category: string;
+  cup?: ProductPresentation;
+  bottle?: ProductPresentation;
 }
 
 interface CartLine {
   product: KioskProduct;
   qty: number;
   notes?: string[];
+  presentation?: 'Copa' | 'Botella';
+  size?: string;
 }
 
 type KioskStage = 'browse' | 'waiting' | 'success' | 'error';
+
+/** Mezcladores/servicio por categoría de bebida. */
+const CATEGORY_MIXERS: Record<string, string[]> = {
+  VODKA: ['Agua quina', 'Sprite', 'Derecho', 'Tonic', 'Twist limón', 'Cítricos', 'Pepino', 'Frutos rojos', 'Mineral'],
+  GINEBRA: ['Agua quina', 'Sprite', 'Derecho', 'Tonic', 'Twist limón', 'Cítricos', 'Pepino', 'Frutos rojos', 'Mineral'],
+  WHISKY: ['Rocas', 'Derecho', 'Divorciado', 'Ginger', 'Manzana', 'Campechano', 'Mineral'],
+  RON: ['Campechano', 'Coca', 'Mineral', 'Manzana', 'Quemadita'],
+  MEZCAL: ['Derecho', 'Limón y sal', 'Naranja', 'Cheiser'],
+  TEQUILA: ['Derecho', 'Bandera', 'Sal y limón', 'Paloma', 'Fresca', 'Campechano', 'Divorciado'],
+  BRANDY: ['Coca', 'Campechano', 'París de noche', 'Divorciado'],
+  COGNAC: ['Coca', 'Campechano', 'París de noche', 'Divorciado'],
+  LICORES: ['Derecho', 'Rocas', 'Cheiser'],
+  VINOS: ['Con hielo', 'Para llevar', 'Copa extra'],
+};
 
 /**
  * Kiosco de autoservicio (modo cliente).
@@ -88,33 +112,51 @@ export class KioskComponent implements OnDestroy {
   readonly detailNotes = signal<string[]>([]);
   readonly detailClosing = signal(false);
   readonly detailCustomNote = signal('');
+  readonly detailPresentation = signal<'Copa' | 'Botella' | null>(null);
 
   /**
    * Chips de notas rápidas según la categoría del producto: evita opciones
    * de comida salada en bebidas/postres y viceversa.
    */
   readonly detailNoteOptions = computed<string[]>(() => {
-    const category = (this.detailProduct()?.category || '').toLowerCase();
-    if (category.includes('bebida')) {
+    const category = (this.detailProduct()?.category || '').trim();
+    const upper = category.toUpperCase();
+    if (CATEGORY_MIXERS[upper]) {
+      return CATEGORY_MIXERS[upper];
+    }
+    const lower = category.toLowerCase();
+    if (lower.includes('bebida')) {
       return ['Sin hielo', 'Sin popote', 'Para llevar', 'Vaso extra'];
     }
-    if (category.includes('postre')) {
+    if (lower.includes('postre')) {
       return ['Sin cubiertos', 'Cubiertos extra', 'Sin crema', 'Para llevar'];
     }
     if (
-      category.includes('entrada') ||
-      category.includes('platillo') ||
-      category.includes('combo') ||
-      category.includes('comida')
+      lower.includes('entrada') ||
+      lower.includes('platillo') ||
+      lower.includes('combo') ||
+      lower.includes('comida')
     ) {
       return ['Sin cebolla', 'Sin picante', 'Salsa aparte', 'Extra queso', 'Para llevar'];
     }
     return ['Para llevar', 'Sin cubiertos', 'Cubiertos extra'];
   });
-  readonly detailTotal = computed(() => {
+
+  /** Precio unitario según la presentación elegida (Copa/Botella). */
+  readonly detailUnitPrice = computed(() => {
     const product = this.detailProduct();
-    return product ? Math.round(product.price * this.detailQty() * 100) / 100 : 0;
+    if (!product) return 0;
+    if (this.detailPresentation() === 'Botella' && product.bottle) {
+      return product.bottle.price;
+    }
+    if (product.cup) return product.cup.price;
+    if (product.bottle) return product.bottle.price;
+    return product.price;
   });
+
+  readonly detailTotal = computed(
+    () => Math.round(this.detailUnitPrice() * this.detailQty() * 100) / 100,
+  );
 
   // -------------------- Pago --------------------
   readonly stage = signal<KioskStage>('browse');
@@ -223,8 +265,16 @@ export class KioskComponent implements OnDestroy {
           .filter((p) => p?.isActive !== false && p?.esVariable !== true && p?.disponibleKiosko === true)
           .map((p) => this.mapProduct(p))
           .filter((p) => p.price > 0);
-        console.log('[Kiosk] tenant', this.tenantId, 'productos crudos', list.length, 'visibles', mapped.length);
-        this.products.set(mapped);
+        const grouped = this.groupBeveragePresentations(mapped);
+        console.log(
+          '[Kiosk] tenant',
+          this.tenantId,
+          'productos crudos',
+          list.length,
+          'tarjetas',
+          grouped.length,
+        );
+        this.products.set(grouped);
         this.loading.set(false);
       },
       error: (err: any) => {
@@ -255,6 +305,76 @@ export class KioskComponent implements OnDestroy {
       description: String(description || ''),
       category: category || 'Menú',
     };
+  }
+
+  /**
+   * Agrupa las presentaciones "— Copa" y "— Botella" de las bebidas en una
+   * sola tarjeta por marca, conservando ambos precios para el selector del modal.
+   */
+  private groupBeveragePresentations(products: KioskProduct[]): KioskProduct[] {
+    const groups = new Map<string, KioskProduct>();
+    const order: string[] = [];
+
+    for (const raw of products) {
+      const match = raw.name.match(/^(.*?)\s+—\s+(Botella|Copa)\s*$/u);
+      if (!match) {
+        const key = `__single__${raw.category}__${raw.id}`;
+        if (!groups.has(key)) {
+          groups.set(key, { ...raw });
+          order.push(key);
+        }
+        continue;
+      }
+
+      const baseName = match[1].trim();
+      const presentation = match[2] as 'Botella' | 'Copa';
+      const key = `${raw.category}__${baseName.toLowerCase()}`;
+      let group = groups.get(key);
+      if (!group) {
+        group = {
+          id: raw.id,
+          name: baseName,
+          price: raw.price,
+          imageUrl: raw.imageUrl,
+          description: raw.description,
+          category: raw.category,
+        };
+        groups.set(key, group);
+        order.push(key);
+      }
+
+      if (presentation === 'Copa') {
+        group.cup = { id: raw.id, price: raw.price };
+        group.price = raw.price;
+        if (!group.imageUrl) group.imageUrl = raw.imageUrl;
+      } else {
+        const sizeMatch = raw.description.match(/Botella\s+([0-9]+\s*(?:ml|l))\b/i);
+        const size = sizeMatch ? sizeMatch[1].replace(/\s+/g, ' ') : undefined;
+        group.bottle = { id: raw.id, price: raw.price, size };
+        group.imageUrl = raw.imageUrl || group.imageUrl;
+      }
+    }
+
+    const result: KioskProduct[] = [];
+    for (const key of order) {
+      const group = groups.get(key)!;
+      if (group.cup || group.bottle) {
+        group.id = group.cup?.id ?? group.bottle?.id ?? group.id;
+        group.price = group.cup?.price ?? group.bottle?.price ?? group.price;
+        const size = group.bottle?.size;
+        if (group.cup && group.bottle) {
+          group.description = size
+            ? `${size} • Disponible por Copa o Botella`
+            : 'Disponible por Copa o Botella';
+        } else if (group.cup) {
+          group.description = 'Disponible por Copa';
+        } else if (group.bottle) {
+          group.description = size ? `${size} • Disponible por Botella` : 'Disponible por Botella';
+        }
+      }
+      result.push(group);
+    }
+    return result;
   }
 
   private resolveImageUrl(url: string | null | undefined): string | null {
@@ -295,11 +415,22 @@ export class KioskComponent implements OnDestroy {
     qty = 1,
     notes: string[] = [],
     openDrawer = true,
+    presentation?: 'Copa' | 'Botella',
   ): void {
     if (this.stage() !== 'browse') return;
+
+    const pres =
+      presentation ?? (product.cup ? 'Copa' : product.bottle ? 'Botella' : undefined);
+    const variant =
+      pres === 'Botella' ? product.bottle : pres === 'Copa' ? product.cup : null;
+    const lineProduct: KioskProduct = variant
+      ? { ...product, id: variant.id, price: variant.price }
+      : product;
+    const size = pres === 'Botella' ? (product.bottle?.size ?? '') : '';
+
     const current = this.cart();
     const wasEmpty = current.length === 0;
-    const idx = current.findIndex((l) => l.product.id === product.id);
+    const idx = current.findIndex((l) => l.product.id === lineProduct.id);
     if (idx >= 0) {
       const next = [...current];
       const mergedNotes = new Set([...(next[idx].notes || []), ...notes]);
@@ -307,10 +438,21 @@ export class KioskComponent implements OnDestroy {
         ...next[idx],
         qty: next[idx].qty + qty,
         notes: mergedNotes.size ? [...mergedNotes] : undefined,
+        presentation: pres ?? next[idx].presentation,
+        size: size || next[idx].size,
       };
       this.cart.set(next);
     } else {
-      this.cart.set([...current, { product, qty, notes: notes.length ? notes : undefined }]);
+      this.cart.set([
+        ...current,
+        {
+          product: lineProduct,
+          qty,
+          notes: notes.length ? notes : undefined,
+          presentation: pres,
+          size: size || undefined,
+        },
+      ]);
     }
 
     // Abre el carrito automáticamente al agregar el primer producto (desde el botón rápido).
@@ -346,7 +488,9 @@ export class KioskComponent implements OnDestroy {
   }
 
   qtyOf(product: KioskProduct): number {
-    return this.cart().find((l) => l.product.id === product.id)?.qty ?? 0;
+    return this.cart()
+      .filter((l) => l.product.name === product.name && l.product.category === product.category)
+      .reduce((total, line) => total + line.qty, 0);
   }
 
   // -------------------- Drawer del carrito --------------------
@@ -382,6 +526,7 @@ export class KioskComponent implements OnDestroy {
     this.detailQty.set(1);
     this.detailNotes.set([]);
     this.detailCustomNote.set('');
+    this.detailPresentation.set(product.cup ? 'Copa' : product.bottle ? 'Botella' : null);
     this.detailClosing.set(false);
   }
 
@@ -404,6 +549,10 @@ export class KioskComponent implements OnDestroy {
     this.detailQty.update((qty) => Math.max(1, qty - 1));
   }
 
+  selectPresentation(presentation: 'Copa' | 'Botella'): void {
+    this.detailPresentation.set(presentation);
+  }
+
   isNoteSelected(note: string): boolean {
     return this.detailNotes().includes(note);
   }
@@ -420,7 +569,13 @@ export class KioskComponent implements OnDestroy {
     const notes = [...this.detailNotes()];
     const custom = this.detailCustomNote().trim();
     if (custom) notes.push(custom);
-    this.addToCart(product, this.detailQty(), notes, false);
+    this.addToCart(
+      product,
+      this.detailQty(),
+      notes,
+      false,
+      this.detailPresentation() ?? undefined,
+    );
     this.closeProduct();
   }
 
@@ -509,6 +664,7 @@ export class KioskComponent implements OnDestroy {
     this.detailProduct.set(null);
     this.detailClosing.set(false);
     this.detailCustomNote.set('');
+    this.detailPresentation.set(null);
     if (this.detailCloseTimer) {
       clearTimeout(this.detailCloseTimer);
       this.detailCloseTimer = null;
@@ -592,12 +748,21 @@ export class KioskComponent implements OnDestroy {
       const orderRequest: TenantClientOrderCreateRequest = {
         customerId: null,
         tenantId: this.tenantId,
-        items: snapshot.map((line) => ({
-          productId: line.product.id,
-          cantidad: line.qty,
-          precioUnitario: line.product.price,
-          comentarios: line.notes?.length ? line.notes.join(', ') : undefined,
-        })),
+        items: snapshot.map((line) => {
+          const presentationLabel = line.presentation
+            ? `${line.presentation}${
+                line.presentation === 'Botella' && line.size ? ` ${line.size}` : ''
+              }`
+            : '';
+          const notesText = (line.notes || []).join(', ');
+          const commentParts = [presentationLabel, notesText].filter(Boolean);
+          return {
+            productId: line.product.id,
+            cantidad: line.qty,
+            precioUnitario: line.product.price,
+            comentarios: commentParts.length ? commentParts.join(' - ') : undefined,
+          };
+        }),
         subtotal: total,
         descuento: 0,
         totalFinal: total,

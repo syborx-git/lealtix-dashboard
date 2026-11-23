@@ -524,6 +524,12 @@
   line-height: 1.25;
 }
 
+.line-pres {
+  color: #64748b;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
 .line-remove {
   border: none;
   background: transparent;
@@ -967,6 +973,59 @@
   font-size: 0.9rem;
   font-weight: 800;
   color: #0f172a;
+}
+
+.detail-presentations h3 {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.pres-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.pres-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.pres-option:hover {
+  background: #f8fafc;
+}
+
+.pres-option.active {
+  border-color: #6366f1;
+  background: #eef2ff;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.pres-name {
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: #0f172a;
+}
+
+.pres-price {
+  font-weight: 900;
+  font-size: 1rem;
+  color: #4338ca;
+}
+
+.pres-option:not(.active) .pres-price {
+  color: #64748b;
 }
 
 .note-chips {
