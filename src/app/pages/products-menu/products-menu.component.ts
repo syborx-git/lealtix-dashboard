@@ -238,6 +238,8 @@ export class ProductMenuComponent implements OnInit {
     manualBebidaStock: number = 0;
     manualBebidaStockMin: number = 0;
     manualBebidaEsVariable: boolean = false;
+    manualBebidaDisponibleKiosko: boolean = false;
+    bebidaDisponibleKiosko: boolean = false;
 
     manualInsumoUnidad: string = 'pieza';
     manualInsumoStock: number = 0;
@@ -691,6 +693,7 @@ export class ProductMenuComponent implements OnInit {
         this.bebidaPrecioVenta = 0;
         this.bebidaCategoryIds = [];
         this.bebidaCategoryPicker = null;
+        this.bebidaDisponibleKiosko = false;
         this.bebidaDialogVisible = true;
         this.cdr.detectChanges();
     }
@@ -706,6 +709,7 @@ export class ProductMenuComponent implements OnInit {
             ? bebida.categoryIds.map((n: any) => Number(n)).filter((n: number) => !Number.isNaN(n))
             : [];
         this.bebidaCategoryPicker = null;
+        this.bebidaDisponibleKiosko = Boolean(bebida.disponibleKiosko);
         this.bebidaDialogVisible = true;
         this.cdr.detectChanges();
     }
@@ -745,14 +749,14 @@ export class ProductMenuComponent implements OnInit {
         };
         if (this.editingBebida) {
             this.inventoryService.updateBebida(
-                this.editingBebida.id, this.bebidaNombre, this.bebidaUnidad, this.bebidaStock, this.bebidaMin, this.bebidaPrecioVenta, this.bebidaCategoryIds
+                this.editingBebida.id, this.bebidaNombre, this.bebidaUnidad, this.bebidaStock, this.bebidaMin, this.bebidaPrecioVenta, this.bebidaCategoryIds, undefined, undefined, this.bebidaDisponibleKiosko
             ).subscribe({
                 next: () => { this.messageService.add({ severity: 'success', summary: 'Bebida actualizada', detail: 'Listo', life: 3000 }); done(); },
                 error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar la bebida', life: 3000 })
             });
         } else {
             this.inventoryService.createBebida(
-                this.tenantId, this.bebidaNombre, this.bebidaUnidad, this.bebidaStock, this.bebidaMin, this.bebidaPrecioVenta, this.bebidaCategoryIds
+                this.tenantId, this.bebidaNombre, this.bebidaUnidad, this.bebidaStock, this.bebidaMin, this.bebidaPrecioVenta, this.bebidaCategoryIds, false, false, this.bebidaDisponibleKiosko
             ).subscribe({
                 next: () => { this.messageService.add({ severity: 'success', summary: 'Bebida creada', detail: 'Aparecerá en el menú y en Comandix', life: 3000 }); done(); },
                 error: () => this.messageService.add({ severity: 'error', summary: 'Error', detail: 'No se pudo crear la bebida', life: 3000 })
@@ -1016,6 +1020,7 @@ export class ProductMenuComponent implements OnInit {
         this.manualBebidaStock = 0;
         this.manualBebidaStockMin = 3;
         this.manualBebidaEsVariable = false;
+        this.manualBebidaDisponibleKiosko = false;
 
         this.manualInsumoUnidad = 'pieza';
         this.manualInsumoStock = 0;
@@ -1165,7 +1170,8 @@ export class ProductMenuComponent implements OnInit {
                 this.manualTieneVariantes ? 0 : (this.manualBebidaPrecio || 0),
                 this.manualCategoryIds,
                 !!this.manualBebidaEsVariable,
-                !!this.manualTieneVariantes
+                !!this.manualTieneVariantes,
+                !!this.manualBebidaDisponibleKiosko
             ).subscribe({
                 next: () => {
                     this.messageService.add({

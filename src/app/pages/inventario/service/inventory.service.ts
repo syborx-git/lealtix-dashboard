@@ -59,7 +59,7 @@ export class InventoryService {
     return this.http.get<any>(`${this.baseUrl}/bebidas/tenant/${tenantId}`);
   }
 
-  createBebida(tenantId: number, nombre: string, unidad: string, stock: number, stockMinimo: number, precioVenta: number, categoryIds?: number[], esVariable?: boolean, tieneVariantes?: boolean): Observable<any> {
+  createBebida(tenantId: number, nombre: string, unidad: string, stock: number, stockMinimo: number, precioVenta: number, categoryIds?: number[], esVariable?: boolean, tieneVariantes?: boolean, disponibleKiosko?: boolean): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/bebidas`, {
       tenantId,
       nombre,
@@ -69,11 +69,12 @@ export class InventoryService {
       precioVenta,
       categoryIds: categoryIds ?? [],
       esVariable: !!esVariable,
-      tieneVariantes: !!tieneVariantes
+      tieneVariantes: !!tieneVariantes,
+      disponibleKiosko: !!disponibleKiosko
     });
   }
 
-  updateBebida(insumoId: number, nombre: string, unidad: string, stock: number, stockMinimo: number, precioVenta: number, categoryIds?: number[], esVariable?: boolean, tieneVariantes?: boolean): Observable<any> {
+  updateBebida(insumoId: number, nombre: string, unidad: string, stock: number, stockMinimo: number, precioVenta: number, categoryIds?: number[], esVariable?: boolean, tieneVariantes?: boolean, disponibleKiosko?: boolean): Observable<any> {
     return this.http.put<any>(`${this.baseUrl}/bebidas/${insumoId}`, {
       nombre,
       unidad,
@@ -82,7 +83,8 @@ export class InventoryService {
       precioVenta,
       categoryIds: categoryIds ?? [],
       esVariable: esVariable !== undefined ? !!esVariable : undefined,
-      tieneVariantes: tieneVariantes !== undefined ? !!tieneVariantes : undefined
+      tieneVariantes: tieneVariantes !== undefined ? !!tieneVariantes : undefined,
+      disponibleKiosko: disponibleKiosko !== undefined ? !!disponibleKiosko : undefined
     });
   }
 

@@ -560,6 +560,12 @@
                         ¿Es artículo variable / variante de otra bebida? (ej. Botella para sub-variante)
                     </label>
                 </div>
+                <div class="flex align-items-center gap-2 mt-1">
+                    <p-checkbox [(ngModel)]="manualBebidaDisponibleKiosko" [binary]="true" inputId="chkManualBebidaKiosko"></p-checkbox>
+                    <label for="chkManualBebidaKiosko" class="text-sm text-700 cursor-pointer font-semibold">
+                        ¿Apto para venta en Kiosko / Autoservicio?
+                    </label>
+                </div>
                 <small class="text-500 block -mt-1 ml-6 text-xs" *ngIf="manualBebidaEsVariable">
                     Al activarse, este artículo funcionará como variante de marca/etiqueta y se integrará en el selector de variantes de Comandix.
                 </small>
@@ -736,6 +742,12 @@
                     <button type="button" class="cat-chip-x" (click)="removeBebidaCategory(id)"><i class="pi pi-times"></i></button>
                 </span>
             </div>
+        </div>
+        <div class="flex align-items-center gap-2 mt-2 pt-2 border-top-1 border-slate-200">
+            <p-checkbox [(ngModel)]="bebidaDisponibleKiosko" [binary]="true" inputId="chkDialogBebidaKiosko"></p-checkbox>
+            <label for="chkDialogBebidaKiosko" class="text-sm text-700 cursor-pointer font-semibold">
+                ¿Apto para venta en Kiosko / Autoservicio?
+            </label>
         </div>
     </div>
     <ng-template #footer>

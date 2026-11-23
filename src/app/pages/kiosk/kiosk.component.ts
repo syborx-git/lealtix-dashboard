@@ -262,7 +262,12 @@ export class KioskComponent implements OnDestroy {
         const paged = obj?.content ?? resp?.content;
         const list: any[] = Array.isArray(obj) ? obj : Array.isArray(paged) ? paged : [];
         const mapped = list
-          .filter((p) => p?.isActive !== false && p?.esVariable !== true && p?.disponibleKiosko === true)
+          .filter(
+            (p) =>
+              p?.isActive !== false &&
+              p?.esVariable !== true &&
+              (p?.disponibleKiosko === true || String(p?.disponibleKiosko) === 'true'),
+          )
           .map((p) => this.mapProduct(p))
           .filter((p) => p.price > 0);
         const grouped = this.groupBeveragePresentations(mapped);
